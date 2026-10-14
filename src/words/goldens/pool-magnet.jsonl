@@ -1,38 +1,29 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Magnet","name":"Magnet","hp":12,"pwr":5},{"id":"A2:Medic","name":"Medic","hp":12,"pwr":1}],"B":[{"id":"B1:Understudy","name":"Understudy","hp":12,"pwr":5},{"id":"B2:Conductor","name":"Conductor","hp":4,"pwr":1},{"id":"B3:Coin Thief","name":"Coin Thief","hp":4,"pwr":2}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Magnet","name":"Magnet","hp":12,"pwr":6},{"id":"A2:Medic","name":"Medic","hp":3,"pwr":0}],"B":[{"id":"B1:Understudy","name":"Understudy","hp":12,"pwr":6},{"id":"B2:Conductor","name":"Conductor","hp":8,"pwr":2},{"id":"B3:Coin Thief","name":"Coin Thief","hp":6,"pwr":1}]}}
 {"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":2,"turn":1,"causedBy":1,"source":"kernel","type":"Flipped","unit":"B3:Coin Thief","by":{"unit":"B3:Coin Thief","ability":0,"when":0},"heads":true}
 {"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"Redirected","by":{"unit":"A1:Magnet","ability":0,"when":0},"original":"Hurt","from":"A2:Medic","to":"A1:Magnet"}
-{"id":4,"turn":1,"causedBy":1,"source":{"unit":"B3:Coin Thief","ability":0,"when":0},"type":"Hurt","unit":"A1:Magnet","amount":4,"hpAfter":8}
-{"id":5,"turn":1,"causedBy":4,"source":{"unit":"A2:Medic","ability":0,"when":0},"type":"Heal","unit":"A1:Magnet","amount":1,"hpAfter":9}
-{"id":6,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Magnet","b":"B1:Understudy","first":"B1:Understudy"}
-{"id":7,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Understudy","defender":"A1:Magnet"}
-{"id":8,"turn":1,"causedBy":7,"source":"kernel","type":"Hurt","unit":"A1:Magnet","amount":5,"hpAfter":4}
-{"id":9,"turn":1,"causedBy":8,"source":{"unit":"A2:Medic","ability":0,"when":0},"type":"Heal","unit":"A1:Magnet","amount":1,"hpAfter":5}
-{"id":10,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Magnet","defender":"B1:Understudy"}
-{"id":11,"turn":1,"causedBy":10,"source":"kernel","type":"Hurt","unit":"B1:Understudy","amount":5,"hpAfter":7}
-{"id":12,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":13,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":14,"turn":2,"causedBy":13,"source":{"unit":"B2:Conductor","ability":0,"when":0},"type":"RuleMod","unit":"B2:Conductor","op":"actAgain","other":"B1:Understudy"}
-{"id":15,"turn":2,"causedBy":13,"source":{"unit":"B2:Conductor","ability":0,"when":0},"type":"RuleMod","unit":"B2:Conductor","op":"actAgain","other":"B3:Coin Thief"}
-{"id":16,"turn":2,"causedBy":13,"source":"kernel","type":"Flipped","unit":"B3:Coin Thief","by":{"unit":"B3:Coin Thief","ability":0},"heads":false}
-{"id":17,"turn":2,"causedBy":13,"source":"kernel","type":"Flipped","unit":"B3:Coin Thief","by":{"unit":"B3:Coin Thief","ability":0,"when":0},"heads":false}
-{"id":18,"turn":2,"causedBy":13,"source":"kernel","type":"Strike","striker":"B1:Understudy","defender":"A1:Magnet"}
-{"id":19,"turn":2,"causedBy":18,"source":"kernel","type":"Hurt","unit":"A1:Magnet","amount":5,"hpAfter":0}
-{"id":20,"turn":2,"causedBy":19,"source":"kernel","type":"Death","unit":"A1:Magnet"}
-{"id":21,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":22,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":23,"turn":3,"causedBy":22,"source":"kernel","type":"Flipped","unit":"B3:Coin Thief","by":{"unit":"B3:Coin Thief","ability":0,"when":0},"heads":true}
-{"id":24,"turn":3,"causedBy":22,"source":{"unit":"B3:Coin Thief","ability":0,"when":0},"type":"Hurt","unit":"A2:Medic","amount":4,"hpAfter":8}
-{"id":25,"turn":3,"causedBy":22,"source":"kernel","type":"PairFaced","a":"A2:Medic","b":"B1:Understudy","first":"B1:Understudy"}
-{"id":26,"turn":3,"causedBy":22,"source":"kernel","type":"Strike","striker":"B1:Understudy","defender":"A2:Medic"}
-{"id":27,"turn":3,"causedBy":26,"source":"kernel","type":"Hurt","unit":"A2:Medic","amount":5,"hpAfter":3}
-{"id":28,"turn":3,"causedBy":22,"source":"kernel","type":"Strike","striker":"A2:Medic","defender":"B1:Understudy"}
-{"id":29,"turn":3,"causedBy":28,"source":"kernel","type":"Hurt","unit":"B1:Understudy","amount":1,"hpAfter":6}
-{"id":30,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":31,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":32,"turn":4,"causedBy":31,"source":{"unit":"B2:Conductor","ability":0,"when":0},"type":"RuleMod","unit":"B2:Conductor","op":"actAgain","other":"B1:Understudy"}
-{"id":33,"turn":4,"causedBy":31,"source":{"unit":"B2:Conductor","ability":0,"when":0},"type":"RuleMod","unit":"B2:Conductor","op":"actAgain","other":"B3:Coin Thief"}
-{"id":34,"turn":4,"causedBy":31,"source":"kernel","type":"Flipped","unit":"B3:Coin Thief","by":{"unit":"B3:Coin Thief","ability":0},"heads":true}
-{"id":35,"turn":4,"causedBy":31,"source":{"unit":"B3:Coin Thief","ability":0},"type":"Hurt","unit":"A2:Medic","amount":4,"hpAfter":-1}
-{"id":36,"turn":4,"causedBy":35,"source":"kernel","type":"Death","unit":"A2:Medic"}
-{"id":37,"turn":4,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":4}
+{"id":4,"turn":1,"causedBy":1,"source":{"unit":"B3:Coin Thief","ability":0,"when":0},"type":"Hurt","unit":"A1:Magnet","amount":1,"hpAfter":11}
+{"id":5,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Magnet","b":"B1:Understudy","first":"B1:Understudy"}
+{"id":6,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Understudy","defender":"A1:Magnet"}
+{"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"Hurt","unit":"A1:Magnet","amount":6,"hpAfter":5}
+{"id":8,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Magnet","defender":"B1:Understudy"}
+{"id":9,"turn":1,"causedBy":8,"source":"kernel","type":"Hurt","unit":"B1:Understudy","amount":6,"hpAfter":6}
+{"id":10,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":11,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":12,"turn":2,"causedBy":11,"source":"kernel","type":"Flipped","unit":"B3:Coin Thief","by":{"unit":"B3:Coin Thief","ability":0,"when":0},"heads":false}
+{"id":13,"turn":2,"causedBy":11,"source":"kernel","type":"Strike","striker":"B1:Understudy","defender":"A1:Magnet"}
+{"id":14,"turn":2,"causedBy":13,"source":"kernel","type":"Hurt","unit":"A1:Magnet","amount":6,"hpAfter":-1}
+{"id":15,"turn":2,"causedBy":14,"source":"kernel","type":"Death","unit":"A1:Magnet"}
+{"id":16,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":17,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":18,"turn":3,"causedBy":17,"source":{"unit":"B2:Conductor","ability":0,"when":0},"type":"RuleMod","unit":"B2:Conductor","op":"actAgain","other":"B1:Understudy"}
+{"id":19,"turn":3,"causedBy":17,"source":{"unit":"B2:Conductor","ability":0,"when":0},"type":"RuleMod","unit":"B2:Conductor","op":"actAgain","other":"B3:Coin Thief"}
+{"id":20,"turn":3,"causedBy":17,"source":"kernel","type":"Flipped","unit":"B3:Coin Thief","by":{"unit":"B3:Coin Thief","ability":0},"heads":false}
+{"id":21,"turn":3,"causedBy":17,"source":"kernel","type":"Flipped","unit":"B3:Coin Thief","by":{"unit":"B3:Coin Thief","ability":0,"when":0},"heads":true}
+{"id":22,"turn":3,"causedBy":17,"source":{"unit":"B3:Coin Thief","ability":0,"when":0},"type":"Hurt","unit":"A2:Medic","amount":1,"hpAfter":2}
+{"id":23,"turn":3,"causedBy":17,"source":"kernel","type":"PairFaced","a":"A2:Medic","b":"B1:Understudy","first":"B1:Understudy"}
+{"id":24,"turn":3,"causedBy":17,"source":"kernel","type":"Strike","striker":"B1:Understudy","defender":"A2:Medic"}
+{"id":25,"turn":3,"causedBy":24,"source":"kernel","type":"Hurt","unit":"A2:Medic","amount":6,"hpAfter":-4}
+{"id":26,"turn":3,"causedBy":25,"source":"kernel","type":"Death","unit":"A2:Medic"}
+{"id":27,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":28,"turn":3,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":3}

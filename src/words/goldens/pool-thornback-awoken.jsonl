@@ -1,39 +1,43 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Thornback","name":"Thornback","hp":20,"pwr":5},{"id":"A2:Lantern","name":"Lantern","hp":12,"pwr":4}],"B":[{"id":"B1:Wolf Pup","name":"Wolf Pup","hp":11,"pwr":4},{"id":"B2:Hexer","name":"Hexer","hp":4,"pwr":1},{"id":"B3:Aegis","name":"Aegis","hp":9,"pwr":1}]}}
-{"id":1,"turn":0,"causedBy":0,"source":{"unit":"B2:Hexer","ability":0,"when":0},"type":"Silenced","unit":"A2:Lantern"}
-{"id":2,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":3,"turn":1,"causedBy":2,"source":"kernel","type":"PairFaced","a":"A1:Thornback","b":"B1:Wolf Pup","first":"B1:Wolf Pup"}
-{"id":4,"turn":1,"causedBy":2,"source":"kernel","type":"Strike","striker":"B1:Wolf Pup","defender":"A1:Thornback"}
-{"id":5,"turn":1,"causedBy":4,"source":"kernel","type":"Hurt","unit":"A1:Thornback","amount":4,"hpAfter":16}
-{"id":6,"turn":1,"causedBy":5,"source":{"unit":"A1:Thornback","ability":0,"when":0},"type":"Hurt","unit":"B1:Wolf Pup","amount":5,"hpAfter":6}
-{"id":7,"turn":1,"causedBy":2,"source":"kernel","type":"Strike","striker":"A1:Thornback","defender":"B1:Wolf Pup"}
-{"id":8,"turn":1,"causedBy":7,"source":"kernel","type":"Hurt","unit":"B1:Wolf Pup","amount":5,"hpAfter":1}
-{"id":9,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":10,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":11,"turn":2,"causedBy":10,"source":"kernel","type":"Strike","striker":"B1:Wolf Pup","defender":"A1:Thornback"}
-{"id":12,"turn":2,"causedBy":11,"source":"kernel","type":"Hurt","unit":"A1:Thornback","amount":4,"hpAfter":12}
-{"id":13,"turn":2,"causedBy":12,"source":{"unit":"A1:Thornback","ability":0,"when":0},"type":"Hurt","unit":"B1:Wolf Pup","amount":5,"hpAfter":-4}
-{"id":14,"turn":2,"causedBy":13,"source":"kernel","type":"Death","unit":"B1:Wolf Pup"}
-{"id":15,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":16,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":17,"turn":3,"causedBy":16,"source":"kernel","type":"PairFaced","a":"A1:Thornback","b":"B2:Hexer","first":"A1:Thornback"}
-{"id":18,"turn":3,"causedBy":16,"source":"kernel","type":"Strike","striker":"A1:Thornback","defender":"B2:Hexer"}
-{"id":19,"turn":3,"causedBy":18,"source":"kernel","type":"Hurt","unit":"B2:Hexer","amount":5,"hpAfter":-1}
-{"id":20,"turn":3,"causedBy":19,"source":"kernel","type":"Death","unit":"B2:Hexer"}
-{"id":21,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":22,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":23,"turn":4,"causedBy":22,"source":"kernel","type":"PairFaced","a":"A1:Thornback","b":"B3:Aegis","first":"B3:Aegis"}
-{"id":24,"turn":4,"causedBy":22,"source":"kernel","type":"Strike","striker":"B3:Aegis","defender":"A1:Thornback"}
-{"id":25,"turn":4,"causedBy":24,"source":"kernel","type":"Hurt","unit":"A1:Thornback","amount":1,"hpAfter":11}
-{"id":26,"turn":4,"causedBy":25,"source":{"unit":"B3:Aegis","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B3:Aegis","ability":0,"when":0},"original":"Hurt","unit":"B3:Aegis"}
-{"id":27,"turn":4,"causedBy":22,"source":"kernel","type":"Strike","striker":"A1:Thornback","defender":"B3:Aegis"}
-{"id":28,"turn":4,"causedBy":27,"source":"kernel","type":"Hurt","unit":"B3:Aegis","amount":5,"hpAfter":4}
-{"id":29,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":30,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":31,"turn":5,"causedBy":30,"source":"kernel","type":"Strike","striker":"B3:Aegis","defender":"A1:Thornback"}
-{"id":32,"turn":5,"causedBy":31,"source":"kernel","type":"Hurt","unit":"A1:Thornback","amount":1,"hpAfter":10}
-{"id":33,"turn":5,"causedBy":32,"source":{"unit":"B3:Aegis","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B3:Aegis","ability":0,"when":0},"original":"Hurt","unit":"B3:Aegis"}
-{"id":34,"turn":5,"causedBy":30,"source":"kernel","type":"Strike","striker":"A1:Thornback","defender":"B3:Aegis"}
-{"id":35,"turn":5,"causedBy":34,"source":"kernel","type":"Hurt","unit":"B3:Aegis","amount":5,"hpAfter":-1}
-{"id":36,"turn":5,"causedBy":35,"source":"kernel","type":"Death","unit":"B3:Aegis"}
-{"id":37,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":38,"turn":5,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":5}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Thornback","name":"Thornback","hp":15,"pwr":5},{"id":"A2:Lantern","name":"Lantern","hp":11,"pwr":6}],"B":[{"id":"B1:Wolf Pup","name":"Wolf Pup","hp":12,"pwr":6},{"id":"B2:Hexer","name":"Hexer","hp":5,"pwr":1},{"id":"B3:Aegis","name":"Aegis","hp":6,"pwr":1}]}}
+{"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":2,"turn":1,"causedBy":1,"source":{"unit":"A2:Lantern","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Thornback","status":"Shield","stacks":1,"total":1}
+{"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Thornback","b":"B1:Wolf Pup","first":"B1:Wolf Pup"}
+{"id":4,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Wolf Pup","defender":"A1:Thornback"}
+{"id":5,"turn":1,"causedBy":4,"source":"kernel","type":"Hurt","unit":"A1:Thornback","amount":5,"absorbed":1,"hpAfter":10}
+{"id":6,"turn":1,"causedBy":5,"source":{"unit":"A1:Thornback","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:Thornback","status":"Shield","stacks":1,"remaining":0}
+{"id":7,"turn":1,"causedBy":5,"source":{"unit":"A1:Thornback","ability":0,"when":0},"type":"Hurt","unit":"B1:Wolf Pup","amount":5,"hpAfter":7}
+{"id":8,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Thornback","defender":"B1:Wolf Pup"}
+{"id":9,"turn":1,"causedBy":8,"source":"kernel","type":"Hurt","unit":"B1:Wolf Pup","amount":5,"hpAfter":2}
+{"id":10,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":11,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":12,"turn":2,"causedBy":11,"source":{"unit":"A2:Lantern","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Thornback","status":"Shield","stacks":1,"total":1}
+{"id":13,"turn":2,"causedBy":11,"source":{"unit":"B2:Hexer","ability":0,"when":0},"type":"Silenced","unit":"A2:Lantern"}
+{"id":14,"turn":2,"causedBy":11,"source":"kernel","type":"Strike","striker":"B1:Wolf Pup","defender":"A1:Thornback"}
+{"id":15,"turn":2,"causedBy":14,"source":"kernel","type":"Hurt","unit":"A1:Thornback","amount":5,"absorbed":1,"hpAfter":5}
+{"id":16,"turn":2,"causedBy":15,"source":{"unit":"A1:Thornback","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:Thornback","status":"Shield","stacks":1,"remaining":0}
+{"id":17,"turn":2,"causedBy":15,"source":{"unit":"A1:Thornback","ability":0,"when":0},"type":"Hurt","unit":"B1:Wolf Pup","amount":5,"hpAfter":-3}
+{"id":18,"turn":2,"causedBy":17,"source":"kernel","type":"Death","unit":"B1:Wolf Pup"}
+{"id":19,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":20,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":21,"turn":3,"causedBy":20,"source":"kernel","type":"PairFaced","a":"A1:Thornback","b":"B2:Hexer","first":"A1:Thornback"}
+{"id":22,"turn":3,"causedBy":20,"source":"kernel","type":"Strike","striker":"A1:Thornback","defender":"B2:Hexer"}
+{"id":23,"turn":3,"causedBy":22,"source":"kernel","type":"Hurt","unit":"B2:Hexer","amount":5,"hpAfter":0}
+{"id":24,"turn":3,"causedBy":23,"source":"kernel","type":"Death","unit":"B2:Hexer"}
+{"id":25,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":26,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":27,"turn":4,"causedBy":26,"source":"kernel","type":"PairFaced","a":"A1:Thornback","b":"B3:Aegis","first":"B3:Aegis"}
+{"id":28,"turn":4,"causedBy":26,"source":"kernel","type":"Strike","striker":"B3:Aegis","defender":"A1:Thornback"}
+{"id":29,"turn":4,"causedBy":28,"source":"kernel","type":"Hurt","unit":"A1:Thornback","amount":1,"hpAfter":4}
+{"id":30,"turn":4,"causedBy":29,"source":{"unit":"B3:Aegis","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B3:Aegis","ability":0,"when":0},"original":"Hurt","unit":"B3:Aegis"}
+{"id":31,"turn":4,"causedBy":26,"source":"kernel","type":"Strike","striker":"A1:Thornback","defender":"B3:Aegis"}
+{"id":32,"turn":4,"causedBy":31,"source":"kernel","type":"Hurt","unit":"B3:Aegis","amount":5,"hpAfter":1}
+{"id":33,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":34,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":35,"turn":5,"causedBy":34,"source":"kernel","type":"Strike","striker":"B3:Aegis","defender":"A1:Thornback"}
+{"id":36,"turn":5,"causedBy":35,"source":"kernel","type":"Hurt","unit":"A1:Thornback","amount":1,"hpAfter":3}
+{"id":37,"turn":5,"causedBy":36,"source":{"unit":"B3:Aegis","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B3:Aegis","ability":0,"when":0},"original":"Hurt","unit":"B3:Aegis"}
+{"id":38,"turn":5,"causedBy":34,"source":"kernel","type":"Strike","striker":"A1:Thornback","defender":"B3:Aegis"}
+{"id":39,"turn":5,"causedBy":38,"source":"kernel","type":"Hurt","unit":"B3:Aegis","amount":5,"hpAfter":-4}
+{"id":40,"turn":5,"causedBy":39,"source":"kernel","type":"Death","unit":"B3:Aegis"}
+{"id":41,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":42,"turn":5,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":5}

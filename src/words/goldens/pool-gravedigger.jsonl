@@ -1,61 +1,73 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Gravedigger","name":"Gravedigger","hp":4,"pwr":1},{"id":"A2:Coin Thief","name":"Coin Thief","hp":4,"pwr":2}],"B":[{"id":"B1:Echo Bell","name":"Echo Bell","hp":6,"pwr":1},{"id":"B2:Copycat","name":"Copycat","hp":4,"pwr":1},{"id":"B3:Hexer","name":"Hexer","hp":4,"pwr":1}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Gravedigger","name":"Gravedigger","hp":3,"pwr":2},{"id":"A2:Coin Thief","name":"Coin Thief","hp":6,"pwr":1}],"B":[{"id":"B1:Echo Bell","name":"Echo Bell","hp":10,"pwr":1},{"id":"B2:Copycat","name":"Copycat","hp":3,"pwr":1},{"id":"B3:Hexer","name":"Hexer","hp":5,"pwr":1}]}}
 {"id":1,"turn":0,"causedBy":0,"source":"kernel","type":"StatusApplied","unit":"B1:Echo Bell","status":"Chime","stacks":1,"total":1}
 {"id":2,"turn":0,"causedBy":0,"source":{"unit":"B1:Echo Bell","ability":0,"when":0},"type":"RuleMod","unit":"B1:Echo Bell","op":"remember","other":"B2:Copycat"}
 {"id":3,"turn":0,"causedBy":0,"source":{"unit":"B2:Copycat","ability":0,"when":0},"type":"RuleMod","unit":"B2:Copycat","op":"copyRule","other":"B1:Echo Bell"}
-{"id":4,"turn":0,"causedBy":0,"source":{"unit":"B3:Hexer","ability":0,"when":0},"type":"Silenced","unit":"A2:Coin Thief"}
-{"id":5,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":6,"turn":1,"causedBy":5,"source":{"unit":"A1:Gravedigger","ability":0,"when":0},"type":"Hurt","unit":"B1:Echo Bell","amount":1,"hpAfter":5}
-{"id":7,"turn":1,"causedBy":5,"source":"kernel","type":"PairFaced","a":"A1:Gravedigger","b":"B1:Echo Bell","first":"B1:Echo Bell"}
-{"id":8,"turn":1,"causedBy":5,"source":"kernel","type":"Strike","striker":"B1:Echo Bell","defender":"A1:Gravedigger"}
-{"id":9,"turn":1,"causedBy":8,"source":"kernel","type":"Hurt","unit":"A1:Gravedigger","amount":1,"hpAfter":3}
-{"id":10,"turn":1,"causedBy":5,"source":"kernel","type":"Strike","striker":"A1:Gravedigger","defender":"B1:Echo Bell"}
-{"id":11,"turn":1,"causedBy":10,"source":"kernel","type":"Hurt","unit":"B1:Echo Bell","amount":1,"hpAfter":4}
-{"id":12,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":13,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":14,"turn":2,"causedBy":13,"source":{"unit":"A1:Gravedigger","ability":0,"when":0},"type":"Hurt","unit":"B1:Echo Bell","amount":1,"hpAfter":3}
-{"id":15,"turn":2,"causedBy":13,"source":{"unit":"B1:Echo Bell","status":"Chime","ability":0,"when":0},"type":"RuleMod","unit":"B1:Echo Bell","op":"performRemembered","other":"B2:Copycat"}
-{"id":16,"turn":2,"causedBy":13,"source":"kernel","type":"Strike","striker":"B1:Echo Bell","defender":"A1:Gravedigger"}
-{"id":17,"turn":2,"causedBy":16,"source":"kernel","type":"Hurt","unit":"A1:Gravedigger","amount":1,"hpAfter":2}
-{"id":18,"turn":2,"causedBy":13,"source":"kernel","type":"Strike","striker":"A1:Gravedigger","defender":"B1:Echo Bell"}
-{"id":19,"turn":2,"causedBy":18,"source":"kernel","type":"Hurt","unit":"B1:Echo Bell","amount":1,"hpAfter":2}
-{"id":20,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":21,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":22,"turn":3,"causedBy":21,"source":{"unit":"A1:Gravedigger","ability":0,"when":0},"type":"Hurt","unit":"B1:Echo Bell","amount":1,"hpAfter":1}
-{"id":23,"turn":3,"causedBy":21,"source":"kernel","type":"Strike","striker":"B1:Echo Bell","defender":"A1:Gravedigger"}
-{"id":24,"turn":3,"causedBy":23,"source":"kernel","type":"Hurt","unit":"A1:Gravedigger","amount":1,"hpAfter":1}
-{"id":25,"turn":3,"causedBy":21,"source":"kernel","type":"Strike","striker":"A1:Gravedigger","defender":"B1:Echo Bell"}
-{"id":26,"turn":3,"causedBy":25,"source":"kernel","type":"Hurt","unit":"B1:Echo Bell","amount":1,"hpAfter":0}
-{"id":27,"turn":3,"causedBy":26,"source":"kernel","type":"Death","unit":"B1:Echo Bell"}
-{"id":28,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":29,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":30,"turn":4,"causedBy":29,"source":{"unit":"A1:Gravedigger","ability":0,"when":0},"type":"Hurt","unit":"B2:Copycat","amount":1,"hpAfter":3}
-{"id":31,"turn":4,"causedBy":29,"source":"kernel","type":"PairFaced","a":"A1:Gravedigger","b":"B2:Copycat","first":"A1:Gravedigger"}
-{"id":32,"turn":4,"causedBy":29,"source":"kernel","type":"Strike","striker":"A1:Gravedigger","defender":"B2:Copycat"}
-{"id":33,"turn":4,"causedBy":32,"source":"kernel","type":"Hurt","unit":"B2:Copycat","amount":1,"hpAfter":2}
-{"id":34,"turn":4,"causedBy":29,"source":"kernel","type":"Strike","striker":"B2:Copycat","defender":"A1:Gravedigger"}
-{"id":35,"turn":4,"causedBy":34,"source":"kernel","type":"Hurt","unit":"A1:Gravedigger","amount":1,"hpAfter":0}
-{"id":36,"turn":4,"causedBy":35,"source":"kernel","type":"Death","unit":"A1:Gravedigger"}
-{"id":37,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":38,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":39,"turn":5,"causedBy":38,"source":"kernel","type":"PairFaced","a":"A2:Coin Thief","b":"B2:Copycat","first":"B2:Copycat"}
-{"id":40,"turn":5,"causedBy":38,"source":"kernel","type":"Strike","striker":"B2:Copycat","defender":"A2:Coin Thief"}
-{"id":41,"turn":5,"causedBy":40,"source":"kernel","type":"Hurt","unit":"A2:Coin Thief","amount":1,"hpAfter":3}
-{"id":42,"turn":5,"causedBy":38,"source":"kernel","type":"Strike","striker":"A2:Coin Thief","defender":"B2:Copycat"}
-{"id":43,"turn":5,"causedBy":42,"source":"kernel","type":"Hurt","unit":"B2:Copycat","amount":2,"hpAfter":0}
-{"id":44,"turn":5,"causedBy":43,"source":"kernel","type":"Death","unit":"B2:Copycat"}
-{"id":45,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":46,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":47,"turn":6,"causedBy":46,"source":"kernel","type":"PairFaced","a":"A2:Coin Thief","b":"B3:Hexer","first":"B3:Hexer"}
-{"id":48,"turn":6,"causedBy":46,"source":"kernel","type":"Strike","striker":"B3:Hexer","defender":"A2:Coin Thief"}
-{"id":49,"turn":6,"causedBy":48,"source":"kernel","type":"Hurt","unit":"A2:Coin Thief","amount":1,"hpAfter":2}
-{"id":50,"turn":6,"causedBy":46,"source":"kernel","type":"Strike","striker":"A2:Coin Thief","defender":"B3:Hexer"}
-{"id":51,"turn":6,"causedBy":50,"source":"kernel","type":"Hurt","unit":"B3:Hexer","amount":2,"hpAfter":2}
-{"id":52,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":53,"turn":7,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":54,"turn":7,"causedBy":53,"source":"kernel","type":"Strike","striker":"B3:Hexer","defender":"A2:Coin Thief"}
-{"id":55,"turn":7,"causedBy":54,"source":"kernel","type":"Hurt","unit":"A2:Coin Thief","amount":1,"hpAfter":1}
-{"id":56,"turn":7,"causedBy":53,"source":"kernel","type":"Strike","striker":"A2:Coin Thief","defender":"B3:Hexer"}
-{"id":57,"turn":7,"causedBy":56,"source":"kernel","type":"Hurt","unit":"B3:Hexer","amount":2,"hpAfter":0}
-{"id":58,"turn":7,"causedBy":57,"source":"kernel","type":"Death","unit":"B3:Hexer"}
-{"id":59,"turn":7,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":60,"turn":7,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":7}
+{"id":4,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":5,"turn":1,"causedBy":4,"source":{"unit":"A1:Gravedigger","ability":0,"when":0},"type":"Hurt","unit":"B1:Echo Bell","amount":0,"hpAfter":10}
+{"id":6,"turn":1,"causedBy":4,"source":"kernel","type":"Flipped","unit":"A2:Coin Thief","by":{"unit":"A2:Coin Thief","ability":0,"when":0},"heads":true}
+{"id":7,"turn":1,"causedBy":4,"source":{"unit":"A2:Coin Thief","ability":0,"when":0},"type":"Hurt","unit":"B2:Copycat","amount":1,"hpAfter":2}
+{"id":8,"turn":1,"causedBy":4,"source":"kernel","type":"PairFaced","a":"A1:Gravedigger","b":"B1:Echo Bell","first":"B1:Echo Bell"}
+{"id":9,"turn":1,"causedBy":4,"source":"kernel","type":"Strike","striker":"B1:Echo Bell","defender":"A1:Gravedigger"}
+{"id":10,"turn":1,"causedBy":9,"source":"kernel","type":"Hurt","unit":"A1:Gravedigger","amount":1,"hpAfter":2}
+{"id":11,"turn":1,"causedBy":4,"source":"kernel","type":"Strike","striker":"A1:Gravedigger","defender":"B1:Echo Bell"}
+{"id":12,"turn":1,"causedBy":11,"source":"kernel","type":"Hurt","unit":"B1:Echo Bell","amount":2,"hpAfter":8}
+{"id":13,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":14,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":15,"turn":2,"causedBy":14,"source":{"unit":"A1:Gravedigger","ability":0,"when":0},"type":"Hurt","unit":"B1:Echo Bell","amount":0,"hpAfter":8}
+{"id":16,"turn":2,"causedBy":14,"source":"kernel","type":"Flipped","unit":"A2:Coin Thief","by":{"unit":"A2:Coin Thief","ability":0,"when":0},"heads":false}
+{"id":17,"turn":2,"causedBy":14,"source":{"unit":"B1:Echo Bell","status":"Chime","ability":0,"when":0},"type":"RuleMod","unit":"B1:Echo Bell","op":"performRemembered","other":"B2:Copycat"}
+{"id":18,"turn":2,"causedBy":14,"source":{"unit":"B3:Hexer","ability":0,"when":0},"type":"Silenced","unit":"A2:Coin Thief"}
+{"id":19,"turn":2,"causedBy":14,"source":"kernel","type":"Strike","striker":"B1:Echo Bell","defender":"A1:Gravedigger"}
+{"id":20,"turn":2,"causedBy":19,"source":"kernel","type":"Hurt","unit":"A1:Gravedigger","amount":1,"hpAfter":1}
+{"id":21,"turn":2,"causedBy":14,"source":"kernel","type":"Strike","striker":"A1:Gravedigger","defender":"B1:Echo Bell"}
+{"id":22,"turn":2,"causedBy":21,"source":"kernel","type":"Hurt","unit":"B1:Echo Bell","amount":2,"hpAfter":6}
+{"id":23,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":24,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":25,"turn":3,"causedBy":24,"source":{"unit":"A1:Gravedigger","ability":0,"when":0},"type":"Hurt","unit":"B1:Echo Bell","amount":0,"hpAfter":6}
+{"id":26,"turn":3,"causedBy":24,"source":"kernel","type":"Strike","striker":"B1:Echo Bell","defender":"A1:Gravedigger"}
+{"id":27,"turn":3,"causedBy":26,"source":"kernel","type":"Hurt","unit":"A1:Gravedigger","amount":1,"hpAfter":0}
+{"id":28,"turn":3,"causedBy":27,"source":"kernel","type":"Death","unit":"A1:Gravedigger"}
+{"id":29,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":30,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":31,"turn":4,"causedBy":30,"source":"kernel","type":"PairFaced","a":"A2:Coin Thief","b":"B1:Echo Bell","first":"A2:Coin Thief"}
+{"id":32,"turn":4,"causedBy":30,"source":"kernel","type":"Strike","striker":"A2:Coin Thief","defender":"B1:Echo Bell"}
+{"id":33,"turn":4,"causedBy":32,"source":"kernel","type":"Hurt","unit":"B1:Echo Bell","amount":1,"hpAfter":5}
+{"id":34,"turn":4,"causedBy":30,"source":"kernel","type":"Strike","striker":"B1:Echo Bell","defender":"A2:Coin Thief"}
+{"id":35,"turn":4,"causedBy":34,"source":"kernel","type":"Hurt","unit":"A2:Coin Thief","amount":1,"hpAfter":5}
+{"id":36,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":37,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":38,"turn":5,"causedBy":37,"source":"kernel","type":"Strike","striker":"A2:Coin Thief","defender":"B1:Echo Bell"}
+{"id":39,"turn":5,"causedBy":38,"source":"kernel","type":"Hurt","unit":"B1:Echo Bell","amount":1,"hpAfter":4}
+{"id":40,"turn":5,"causedBy":37,"source":"kernel","type":"Strike","striker":"B1:Echo Bell","defender":"A2:Coin Thief"}
+{"id":41,"turn":5,"causedBy":40,"source":"kernel","type":"Hurt","unit":"A2:Coin Thief","amount":1,"hpAfter":4}
+{"id":42,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":43,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":44,"turn":6,"causedBy":43,"source":"kernel","type":"Strike","striker":"A2:Coin Thief","defender":"B1:Echo Bell"}
+{"id":45,"turn":6,"causedBy":44,"source":"kernel","type":"Hurt","unit":"B1:Echo Bell","amount":1,"hpAfter":3}
+{"id":46,"turn":6,"causedBy":43,"source":"kernel","type":"Strike","striker":"B1:Echo Bell","defender":"A2:Coin Thief"}
+{"id":47,"turn":6,"causedBy":46,"source":"kernel","type":"Hurt","unit":"A2:Coin Thief","amount":1,"hpAfter":3}
+{"id":48,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":49,"turn":7,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":50,"turn":7,"causedBy":49,"source":"kernel","type":"Strike","striker":"A2:Coin Thief","defender":"B1:Echo Bell"}
+{"id":51,"turn":7,"causedBy":50,"source":"kernel","type":"Hurt","unit":"B1:Echo Bell","amount":1,"hpAfter":2}
+{"id":52,"turn":7,"causedBy":49,"source":"kernel","type":"Strike","striker":"B1:Echo Bell","defender":"A2:Coin Thief"}
+{"id":53,"turn":7,"causedBy":52,"source":"kernel","type":"Hurt","unit":"A2:Coin Thief","amount":1,"hpAfter":2}
+{"id":54,"turn":7,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":55,"turn":8,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":56,"turn":8,"causedBy":55,"source":"kernel","type":"Strike","striker":"A2:Coin Thief","defender":"B1:Echo Bell"}
+{"id":57,"turn":8,"causedBy":56,"source":"kernel","type":"Hurt","unit":"B1:Echo Bell","amount":1,"hpAfter":1}
+{"id":58,"turn":8,"causedBy":55,"source":"kernel","type":"Strike","striker":"B1:Echo Bell","defender":"A2:Coin Thief"}
+{"id":59,"turn":8,"causedBy":58,"source":"kernel","type":"Hurt","unit":"A2:Coin Thief","amount":1,"hpAfter":1}
+{"id":60,"turn":8,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":61,"turn":9,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":62,"turn":9,"causedBy":61,"source":"kernel","type":"Strike","striker":"A2:Coin Thief","defender":"B1:Echo Bell"}
+{"id":63,"turn":9,"causedBy":62,"source":"kernel","type":"Hurt","unit":"B1:Echo Bell","amount":1,"hpAfter":0}
+{"id":64,"turn":9,"causedBy":63,"source":"kernel","type":"Death","unit":"B1:Echo Bell"}
+{"id":65,"turn":9,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":66,"turn":10,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":67,"turn":10,"causedBy":66,"source":"kernel","type":"PairFaced","a":"A2:Coin Thief","b":"B2:Copycat","first":"B2:Copycat"}
+{"id":68,"turn":10,"causedBy":66,"source":"kernel","type":"Strike","striker":"B2:Copycat","defender":"A2:Coin Thief"}
+{"id":69,"turn":10,"causedBy":68,"source":"kernel","type":"Hurt","unit":"A2:Coin Thief","amount":1,"hpAfter":0}
+{"id":70,"turn":10,"causedBy":69,"source":"kernel","type":"Death","unit":"A2:Coin Thief"}
+{"id":71,"turn":10,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":72,"turn":10,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":10}

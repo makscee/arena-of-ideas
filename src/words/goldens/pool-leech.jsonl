@@ -1,40 +1,37 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Leech","name":"Leech","hp":9,"pwr":5},{"id":"A2:Drummer","name":"Drummer","hp":10,"pwr":3}],"B":[{"id":"B1:Understudy","name":"Understudy","hp":12,"pwr":5},{"id":"B2:Coin Thief","name":"Coin Thief","hp":4,"pwr":2},{"id":"B3:Lantern","name":"Lantern","hp":12,"pwr":4}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Leech","name":"Leech","hp":7,"pwr":4},{"id":"A2:Drummer","name":"Drummer","hp":12,"pwr":5}],"B":[{"id":"B1:Understudy","name":"Understudy","hp":12,"pwr":6},{"id":"B2:Coin Thief","name":"Coin Thief","hp":6,"pwr":1},{"id":"B3:Lantern","name":"Lantern","hp":11,"pwr":6}]}}
 {"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":2,"turn":1,"causedBy":1,"source":"kernel","type":"Flipped","unit":"B2:Coin Thief","by":{"unit":"B2:Coin Thief","ability":0,"when":0},"heads":true}
-{"id":3,"turn":1,"causedBy":1,"source":{"unit":"B2:Coin Thief","ability":0,"when":0},"type":"Hurt","unit":"A2:Drummer","amount":4,"hpAfter":6}
+{"id":3,"turn":1,"causedBy":1,"source":{"unit":"B2:Coin Thief","ability":0,"when":0},"type":"Hurt","unit":"A2:Drummer","amount":1,"hpAfter":11}
 {"id":4,"turn":1,"causedBy":1,"source":{"unit":"B3:Lantern","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Coin Thief","status":"Shield","stacks":1,"total":1}
 {"id":5,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Leech","b":"B1:Understudy","first":"B1:Understudy"}
 {"id":6,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Understudy","defender":"A1:Leech"}
-{"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"Hurt","unit":"A1:Leech","amount":5,"hpAfter":4}
+{"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"Hurt","unit":"A1:Leech","amount":6,"hpAfter":1}
 {"id":8,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Leech","defender":"B1:Understudy"}
-{"id":9,"turn":1,"causedBy":8,"source":"kernel","type":"Hurt","unit":"B1:Understudy","amount":5,"hpAfter":7}
-{"id":10,"turn":1,"causedBy":8,"source":{"unit":"A1:Leech","ability":0,"when":0},"type":"Heal","unit":"A1:Leech","amount":2,"hpAfter":6}
+{"id":9,"turn":1,"causedBy":8,"source":"kernel","type":"Hurt","unit":"B1:Understudy","amount":4,"hpAfter":8}
+{"id":10,"turn":1,"causedBy":8,"source":{"unit":"A1:Leech","ability":0,"when":0},"type":"Heal","unit":"A1:Leech","amount":2,"hpAfter":3}
 {"id":11,"turn":1,"causedBy":8,"source":{"unit":"A2:Drummer","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Drummer","status":"Beats","stacks":1,"total":1}
 {"id":12,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":13,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":14,"turn":2,"causedBy":13,"source":"kernel","type":"Flipped","unit":"B2:Coin Thief","by":{"unit":"B2:Coin Thief","ability":0,"when":0},"heads":false}
 {"id":15,"turn":2,"causedBy":13,"source":{"unit":"B3:Lantern","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Coin Thief","status":"Shield","stacks":1,"total":2}
 {"id":16,"turn":2,"causedBy":13,"source":"kernel","type":"Strike","striker":"B1:Understudy","defender":"A1:Leech"}
-{"id":17,"turn":2,"causedBy":16,"source":"kernel","type":"Hurt","unit":"A1:Leech","amount":5,"hpAfter":1}
-{"id":18,"turn":2,"causedBy":13,"source":"kernel","type":"Strike","striker":"A1:Leech","defender":"B1:Understudy"}
-{"id":19,"turn":2,"causedBy":18,"source":"kernel","type":"Hurt","unit":"B1:Understudy","amount":5,"hpAfter":2}
-{"id":20,"turn":2,"causedBy":18,"source":{"unit":"A1:Leech","ability":0,"when":0},"type":"Heal","unit":"A1:Leech","amount":2,"hpAfter":3}
-{"id":21,"turn":2,"causedBy":18,"source":{"unit":"A2:Drummer","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Drummer","status":"Beats","stacks":1,"total":2}
-{"id":22,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":23,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":24,"turn":3,"causedBy":23,"source":"kernel","type":"Flipped","unit":"B2:Coin Thief","by":{"unit":"B2:Coin Thief","ability":0,"when":0},"heads":false}
-{"id":25,"turn":3,"causedBy":23,"source":{"unit":"B3:Lantern","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Coin Thief","status":"Shield","stacks":1,"total":3}
-{"id":26,"turn":3,"causedBy":23,"source":"kernel","type":"Strike","striker":"B1:Understudy","defender":"A1:Leech"}
-{"id":27,"turn":3,"causedBy":26,"source":"kernel","type":"Hurt","unit":"A1:Leech","amount":5,"hpAfter":-2}
-{"id":28,"turn":3,"causedBy":27,"source":"kernel","type":"Death","unit":"A1:Leech"}
-{"id":29,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":30,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":31,"turn":4,"causedBy":30,"source":"kernel","type":"Flipped","unit":"B2:Coin Thief","by":{"unit":"B2:Coin Thief","ability":0,"when":0},"heads":true}
-{"id":32,"turn":4,"causedBy":30,"source":{"unit":"B2:Coin Thief","ability":0,"when":0},"type":"Hurt","unit":"A2:Drummer","amount":4,"hpAfter":2}
-{"id":33,"turn":4,"causedBy":30,"source":{"unit":"B3:Lantern","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Coin Thief","status":"Shield","stacks":1,"total":4}
-{"id":34,"turn":4,"causedBy":30,"source":"kernel","type":"PairFaced","a":"A2:Drummer","b":"B1:Understudy","first":"B1:Understudy"}
-{"id":35,"turn":4,"causedBy":30,"source":"kernel","type":"Strike","striker":"B1:Understudy","defender":"A2:Drummer"}
-{"id":36,"turn":4,"causedBy":35,"source":"kernel","type":"Hurt","unit":"A2:Drummer","amount":5,"hpAfter":-3}
-{"id":37,"turn":4,"causedBy":36,"source":"kernel","type":"Death","unit":"A2:Drummer"}
-{"id":38,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":39,"turn":4,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":4}
+{"id":17,"turn":2,"causedBy":16,"source":"kernel","type":"Hurt","unit":"A1:Leech","amount":6,"hpAfter":-3}
+{"id":18,"turn":2,"causedBy":17,"source":"kernel","type":"Death","unit":"A1:Leech"}
+{"id":19,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":20,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":21,"turn":3,"causedBy":20,"source":"kernel","type":"Flipped","unit":"B2:Coin Thief","by":{"unit":"B2:Coin Thief","ability":0,"when":0},"heads":false}
+{"id":22,"turn":3,"causedBy":20,"source":{"unit":"B3:Lantern","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Coin Thief","status":"Shield","stacks":1,"total":3}
+{"id":23,"turn":3,"causedBy":20,"source":"kernel","type":"PairFaced","a":"A2:Drummer","b":"B1:Understudy","first":"B1:Understudy"}
+{"id":24,"turn":3,"causedBy":20,"source":"kernel","type":"Strike","striker":"B1:Understudy","defender":"A2:Drummer"}
+{"id":25,"turn":3,"causedBy":24,"source":"kernel","type":"Hurt","unit":"A2:Drummer","amount":6,"hpAfter":5}
+{"id":26,"turn":3,"causedBy":20,"source":"kernel","type":"Strike","striker":"A2:Drummer","defender":"B1:Understudy"}
+{"id":27,"turn":3,"causedBy":26,"source":"kernel","type":"Hurt","unit":"B1:Understudy","amount":5,"hpAfter":3}
+{"id":28,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":29,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":30,"turn":4,"causedBy":29,"source":"kernel","type":"Flipped","unit":"B2:Coin Thief","by":{"unit":"B2:Coin Thief","ability":0,"when":0},"heads":false}
+{"id":31,"turn":4,"causedBy":29,"source":{"unit":"B3:Lantern","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Coin Thief","status":"Shield","stacks":1,"total":4}
+{"id":32,"turn":4,"causedBy":29,"source":"kernel","type":"Strike","striker":"B1:Understudy","defender":"A2:Drummer"}
+{"id":33,"turn":4,"causedBy":32,"source":"kernel","type":"Hurt","unit":"A2:Drummer","amount":6,"hpAfter":-1}
+{"id":34,"turn":4,"causedBy":33,"source":"kernel","type":"Death","unit":"A2:Drummer"}
+{"id":35,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":36,"turn":4,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":4}

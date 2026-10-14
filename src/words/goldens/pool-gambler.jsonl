@@ -1,155 +1,49 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Gambler","name":"Gambler","hp":6,"pwr":2},{"id":"A2:Nautilus","name":"Nautilus","hp":4,"pwr":1}],"B":[{"id":"B1:Sniper","name":"Sniper","hp":6,"pwr":2},{"id":"B2:Lone Wolf","name":"Lone Wolf","hp":12,"pwr":5},{"id":"B3:Thornback","name":"Thornback","hp":12,"pwr":3}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Gambler","name":"Gambler","hp":10,"pwr":2},{"id":"A2:Nautilus","name":"Nautilus","hp":11,"pwr":4}],"B":[{"id":"B1:Sniper","name":"Sniper","hp":2,"pwr":0},{"id":"B2:Lone Wolf","name":"Lone Wolf","hp":12,"pwr":6},{"id":"B3:Thornback","name":"Thornback","hp":7,"pwr":3}]}}
 {"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":2,"turn":1,"causedBy":1,"source":{"unit":"B1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"A2:Nautilus","amount":2,"hpAfter":2}
+{"id":2,"turn":1,"causedBy":1,"source":{"unit":"B1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"A2:Nautilus","amount":0,"hpAfter":11}
 {"id":3,"turn":1,"causedBy":2,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":1,"total":1}
 {"id":4,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Gambler","b":"B1:Sniper","first":"B1:Sniper"}
 {"id":5,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Sniper","defender":"A1:Gambler"}
-{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"A1:Gambler","amount":2,"hpAfter":4}
+{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"A1:Gambler","amount":0,"hpAfter":10}
 {"id":7,"turn":1,"causedBy":1,"source":"kernel","type":"Flipped","unit":"A1:Gambler","by":{"unit":"A1:Gambler","ability":0,"when":0},"heads":true}
 {"id":8,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Gambler","defender":"B1:Sniper","amount":4}
-{"id":9,"turn":1,"causedBy":8,"source":"kernel","type":"Hurt","unit":"B1:Sniper","amount":4,"hpAfter":2}
-{"id":10,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":11,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":12,"turn":2,"causedBy":11,"source":{"unit":"B1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"A2:Nautilus","amount":1,"absorbed":1,"hpAfter":1}
-{"id":13,"turn":2,"causedBy":12,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":1,"remaining":0}
-{"id":14,"turn":2,"causedBy":12,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":2,"total":2}
-{"id":15,"turn":2,"causedBy":11,"source":"kernel","type":"Strike","striker":"B1:Sniper","defender":"A1:Gambler"}
-{"id":16,"turn":2,"causedBy":15,"source":"kernel","type":"Hurt","unit":"A1:Gambler","amount":2,"hpAfter":2}
-{"id":17,"turn":2,"causedBy":11,"source":"kernel","type":"Flipped","unit":"A1:Gambler","by":{"unit":"A1:Gambler","ability":0,"when":0},"heads":false}
-{"id":18,"turn":2,"causedBy":11,"source":"kernel","type":"Strike","striker":"A1:Gambler","defender":"B1:Sniper","amount":0}
-{"id":19,"turn":2,"causedBy":18,"source":"kernel","type":"Hurt","unit":"B1:Sniper","amount":0,"hpAfter":2}
-{"id":20,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":21,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":22,"turn":3,"causedBy":21,"source":{"unit":"B1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"A2:Nautilus","amount":0,"absorbed":2,"hpAfter":1}
-{"id":23,"turn":3,"causedBy":22,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":2,"remaining":0}
-{"id":24,"turn":3,"causedBy":22,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":3,"total":3}
-{"id":25,"turn":3,"causedBy":21,"source":"kernel","type":"Strike","striker":"B1:Sniper","defender":"A1:Gambler"}
-{"id":26,"turn":3,"causedBy":25,"source":"kernel","type":"Hurt","unit":"A1:Gambler","amount":2,"hpAfter":0}
-{"id":27,"turn":3,"causedBy":26,"source":"kernel","type":"Death","unit":"A1:Gambler"}
-{"id":28,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":29,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":30,"turn":4,"causedBy":29,"source":{"unit":"B1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"A2:Nautilus","amount":0,"absorbed":2,"hpAfter":1}
-{"id":31,"turn":4,"causedBy":30,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":2,"remaining":1}
-{"id":32,"turn":4,"causedBy":30,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":4,"total":5}
-{"id":33,"turn":4,"causedBy":29,"source":"kernel","type":"PairFaced","a":"A2:Nautilus","b":"B1:Sniper","first":"B1:Sniper"}
-{"id":34,"turn":4,"causedBy":29,"source":"kernel","type":"Strike","striker":"B1:Sniper","defender":"A2:Nautilus"}
-{"id":35,"turn":4,"causedBy":34,"source":"kernel","type":"Hurt","unit":"A2:Nautilus","amount":0,"absorbed":2,"hpAfter":1}
-{"id":36,"turn":4,"causedBy":35,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":2,"remaining":3}
-{"id":37,"turn":4,"causedBy":35,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":5,"total":8}
-{"id":38,"turn":4,"causedBy":29,"source":"kernel","type":"Strike","striker":"A2:Nautilus","defender":"B1:Sniper"}
-{"id":39,"turn":4,"causedBy":38,"source":"kernel","type":"Hurt","unit":"B1:Sniper","amount":1,"hpAfter":1}
-{"id":40,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":41,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":42,"turn":5,"causedBy":41,"source":{"unit":"B1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"A2:Nautilus","amount":0,"absorbed":2,"hpAfter":1}
-{"id":43,"turn":5,"causedBy":42,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":2,"remaining":6}
-{"id":44,"turn":5,"causedBy":42,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":6,"total":12}
-{"id":45,"turn":5,"causedBy":41,"source":"kernel","type":"Strike","striker":"B1:Sniper","defender":"A2:Nautilus"}
-{"id":46,"turn":5,"causedBy":45,"source":"kernel","type":"Hurt","unit":"A2:Nautilus","amount":0,"absorbed":2,"hpAfter":1}
-{"id":47,"turn":5,"causedBy":46,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":2,"remaining":10}
-{"id":48,"turn":5,"causedBy":46,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":7,"total":17}
-{"id":49,"turn":5,"causedBy":41,"source":"kernel","type":"Strike","striker":"A2:Nautilus","defender":"B1:Sniper"}
-{"id":50,"turn":5,"causedBy":49,"source":"kernel","type":"Hurt","unit":"B1:Sniper","amount":1,"hpAfter":0}
-{"id":51,"turn":5,"causedBy":50,"source":"kernel","type":"Death","unit":"B1:Sniper"}
-{"id":52,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":53,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":54,"turn":6,"causedBy":53,"source":"kernel","type":"PairFaced","a":"A2:Nautilus","b":"B2:Lone Wolf","first":"B2:Lone Wolf"}
-{"id":55,"turn":6,"causedBy":53,"source":"kernel","type":"Strike","striker":"B2:Lone Wolf","defender":"A2:Nautilus"}
-{"id":56,"turn":6,"causedBy":55,"source":"kernel","type":"Hurt","unit":"A2:Nautilus","amount":0,"absorbed":5,"hpAfter":1}
-{"id":57,"turn":6,"causedBy":56,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":5,"remaining":12}
-{"id":58,"turn":6,"causedBy":56,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":8,"total":20}
-{"id":59,"turn":6,"causedBy":53,"source":"kernel","type":"Strike","striker":"A2:Nautilus","defender":"B2:Lone Wolf"}
-{"id":60,"turn":6,"causedBy":59,"source":"kernel","type":"Hurt","unit":"B2:Lone Wolf","amount":1,"hpAfter":11}
-{"id":61,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":62,"turn":7,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":63,"turn":7,"causedBy":62,"source":"kernel","type":"Strike","striker":"B2:Lone Wolf","defender":"A2:Nautilus"}
-{"id":64,"turn":7,"causedBy":63,"source":"kernel","type":"Hurt","unit":"A2:Nautilus","amount":0,"absorbed":5,"hpAfter":1}
-{"id":65,"turn":7,"causedBy":64,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":5,"remaining":15}
-{"id":66,"turn":7,"causedBy":64,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":9,"total":24}
-{"id":67,"turn":7,"causedBy":62,"source":"kernel","type":"Strike","striker":"A2:Nautilus","defender":"B2:Lone Wolf"}
-{"id":68,"turn":7,"causedBy":67,"source":"kernel","type":"Hurt","unit":"B2:Lone Wolf","amount":1,"hpAfter":10}
-{"id":69,"turn":7,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":70,"turn":8,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":71,"turn":8,"causedBy":70,"source":"kernel","type":"Strike","striker":"B2:Lone Wolf","defender":"A2:Nautilus"}
-{"id":72,"turn":8,"causedBy":71,"source":"kernel","type":"Hurt","unit":"A2:Nautilus","amount":0,"absorbed":5,"hpAfter":1}
-{"id":73,"turn":8,"causedBy":72,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":5,"remaining":19}
-{"id":74,"turn":8,"causedBy":72,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":10,"total":29}
-{"id":75,"turn":8,"causedBy":70,"source":"kernel","type":"Strike","striker":"A2:Nautilus","defender":"B2:Lone Wolf"}
-{"id":76,"turn":8,"causedBy":75,"source":"kernel","type":"Hurt","unit":"B2:Lone Wolf","amount":1,"hpAfter":9}
-{"id":77,"turn":8,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":78,"turn":9,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":79,"turn":9,"causedBy":78,"source":"kernel","type":"Strike","striker":"B2:Lone Wolf","defender":"A2:Nautilus"}
-{"id":80,"turn":9,"causedBy":79,"source":"kernel","type":"Hurt","unit":"A2:Nautilus","amount":0,"absorbed":5,"hpAfter":1}
-{"id":81,"turn":9,"causedBy":80,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":5,"remaining":24}
-{"id":82,"turn":9,"causedBy":80,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":11,"total":35}
-{"id":83,"turn":9,"causedBy":78,"source":"kernel","type":"Strike","striker":"A2:Nautilus","defender":"B2:Lone Wolf"}
-{"id":84,"turn":9,"causedBy":83,"source":"kernel","type":"Hurt","unit":"B2:Lone Wolf","amount":1,"hpAfter":8}
-{"id":85,"turn":9,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":86,"turn":10,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":87,"turn":10,"causedBy":86,"source":"kernel","type":"Strike","striker":"B2:Lone Wolf","defender":"A2:Nautilus"}
-{"id":88,"turn":10,"causedBy":87,"source":"kernel","type":"Hurt","unit":"A2:Nautilus","amount":0,"absorbed":5,"hpAfter":1}
-{"id":89,"turn":10,"causedBy":88,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":5,"remaining":30}
-{"id":90,"turn":10,"causedBy":88,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":12,"total":42}
-{"id":91,"turn":10,"causedBy":86,"source":"kernel","type":"Strike","striker":"A2:Nautilus","defender":"B2:Lone Wolf"}
-{"id":92,"turn":10,"causedBy":91,"source":"kernel","type":"Hurt","unit":"B2:Lone Wolf","amount":1,"hpAfter":7}
-{"id":93,"turn":10,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":94,"turn":10,"causedBy":93,"source":"kernel","type":"Fatigue","amount":1}
-{"id":95,"turn":10,"causedBy":94,"source":"kernel","type":"Hurt","unit":"A2:Nautilus","amount":0,"absorbed":1,"hpAfter":1}
-{"id":96,"turn":10,"causedBy":95,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":1,"remaining":41}
-{"id":97,"turn":10,"causedBy":94,"source":"kernel","type":"Hurt","unit":"B2:Lone Wolf","amount":1,"hpAfter":6}
-{"id":98,"turn":10,"causedBy":94,"source":"kernel","type":"Hurt","unit":"B3:Thornback","amount":1,"hpAfter":11}
-{"id":99,"turn":10,"causedBy":95,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":13,"total":54}
-{"id":100,"turn":11,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":101,"turn":11,"causedBy":100,"source":"kernel","type":"Strike","striker":"B2:Lone Wolf","defender":"A2:Nautilus"}
-{"id":102,"turn":11,"causedBy":101,"source":"kernel","type":"Hurt","unit":"A2:Nautilus","amount":0,"absorbed":5,"hpAfter":1}
-{"id":103,"turn":11,"causedBy":102,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":5,"remaining":49}
-{"id":104,"turn":11,"causedBy":102,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":14,"total":63}
-{"id":105,"turn":11,"causedBy":100,"source":"kernel","type":"Strike","striker":"A2:Nautilus","defender":"B2:Lone Wolf"}
-{"id":106,"turn":11,"causedBy":105,"source":"kernel","type":"Hurt","unit":"B2:Lone Wolf","amount":1,"hpAfter":5}
-{"id":107,"turn":11,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":108,"turn":11,"causedBy":107,"source":"kernel","type":"Fatigue","amount":2}
-{"id":109,"turn":11,"causedBy":108,"source":"kernel","type":"Hurt","unit":"A2:Nautilus","amount":0,"absorbed":2,"hpAfter":1}
-{"id":110,"turn":11,"causedBy":109,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":2,"remaining":61}
-{"id":111,"turn":11,"causedBy":108,"source":"kernel","type":"Hurt","unit":"B2:Lone Wolf","amount":2,"hpAfter":3}
-{"id":112,"turn":11,"causedBy":108,"source":"kernel","type":"Hurt","unit":"B3:Thornback","amount":2,"hpAfter":9}
-{"id":113,"turn":11,"causedBy":109,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":15,"total":76}
-{"id":114,"turn":12,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":115,"turn":12,"causedBy":114,"source":"kernel","type":"Strike","striker":"B2:Lone Wolf","defender":"A2:Nautilus"}
-{"id":116,"turn":12,"causedBy":115,"source":"kernel","type":"Hurt","unit":"A2:Nautilus","amount":0,"absorbed":5,"hpAfter":1}
-{"id":117,"turn":12,"causedBy":116,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":5,"remaining":71}
-{"id":118,"turn":12,"causedBy":116,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":16,"total":87}
-{"id":119,"turn":12,"causedBy":114,"source":"kernel","type":"Strike","striker":"A2:Nautilus","defender":"B2:Lone Wolf"}
-{"id":120,"turn":12,"causedBy":119,"source":"kernel","type":"Hurt","unit":"B2:Lone Wolf","amount":1,"hpAfter":2}
-{"id":121,"turn":12,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":122,"turn":12,"causedBy":121,"source":"kernel","type":"Fatigue","amount":3}
-{"id":123,"turn":12,"causedBy":122,"source":"kernel","type":"Hurt","unit":"A2:Nautilus","amount":0,"absorbed":3,"hpAfter":1}
-{"id":124,"turn":12,"causedBy":123,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":3,"remaining":84}
-{"id":125,"turn":12,"causedBy":122,"source":"kernel","type":"Hurt","unit":"B2:Lone Wolf","amount":3,"hpAfter":-1}
-{"id":126,"turn":12,"causedBy":125,"source":"kernel","type":"Death","unit":"B2:Lone Wolf"}
-{"id":127,"turn":12,"causedBy":122,"source":"kernel","type":"Hurt","unit":"B3:Thornback","amount":3,"hpAfter":6}
-{"id":128,"turn":12,"causedBy":123,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":17,"total":101}
-{"id":129,"turn":13,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":130,"turn":13,"causedBy":129,"source":"kernel","type":"PairFaced","a":"A2:Nautilus","b":"B3:Thornback","first":"A2:Nautilus"}
-{"id":131,"turn":13,"causedBy":129,"source":"kernel","type":"Strike","striker":"A2:Nautilus","defender":"B3:Thornback"}
-{"id":132,"turn":13,"causedBy":131,"source":"kernel","type":"Hurt","unit":"B3:Thornback","amount":1,"hpAfter":5}
-{"id":133,"turn":13,"causedBy":132,"source":{"unit":"B3:Thornback","ability":0,"when":0},"type":"Hurt","unit":"A2:Nautilus","amount":0,"absorbed":1,"hpAfter":1}
-{"id":134,"turn":13,"causedBy":133,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":1,"remaining":100}
-{"id":135,"turn":13,"causedBy":133,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":18,"total":118}
-{"id":136,"turn":13,"causedBy":129,"source":"kernel","type":"Strike","striker":"B3:Thornback","defender":"A2:Nautilus"}
-{"id":137,"turn":13,"causedBy":136,"source":"kernel","type":"Hurt","unit":"A2:Nautilus","amount":0,"absorbed":3,"hpAfter":1}
-{"id":138,"turn":13,"causedBy":137,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":3,"remaining":115}
-{"id":139,"turn":13,"causedBy":137,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":19,"total":134}
-{"id":140,"turn":13,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":141,"turn":13,"causedBy":140,"source":"kernel","type":"Fatigue","amount":4}
-{"id":142,"turn":13,"causedBy":141,"source":"kernel","type":"Hurt","unit":"A2:Nautilus","amount":0,"absorbed":4,"hpAfter":1}
-{"id":143,"turn":13,"causedBy":142,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":4,"remaining":130}
-{"id":144,"turn":13,"causedBy":141,"source":"kernel","type":"Hurt","unit":"B3:Thornback","amount":4,"hpAfter":1}
-{"id":145,"turn":13,"causedBy":142,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":20,"total":150}
-{"id":146,"turn":14,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":147,"turn":14,"causedBy":146,"source":"kernel","type":"Strike","striker":"A2:Nautilus","defender":"B3:Thornback"}
-{"id":148,"turn":14,"causedBy":147,"source":"kernel","type":"Hurt","unit":"B3:Thornback","amount":1,"hpAfter":0}
-{"id":149,"turn":14,"causedBy":148,"source":"kernel","type":"Death","unit":"B3:Thornback"}
-{"id":150,"turn":14,"causedBy":148,"source":{"unit":"B3:Thornback","ability":0,"when":0},"type":"Hurt","unit":"A2:Nautilus","amount":0,"absorbed":1,"hpAfter":1}
-{"id":151,"turn":14,"causedBy":150,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":1,"remaining":149}
-{"id":152,"turn":14,"causedBy":150,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":21,"total":170}
-{"id":153,"turn":14,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":154,"turn":14,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":14}
+{"id":9,"turn":1,"causedBy":8,"source":"kernel","type":"Hurt","unit":"B1:Sniper","amount":4,"hpAfter":-2}
+{"id":10,"turn":1,"causedBy":9,"source":"kernel","type":"Death","unit":"B1:Sniper"}
+{"id":11,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":12,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":13,"turn":2,"causedBy":12,"source":"kernel","type":"PairFaced","a":"A1:Gambler","b":"B2:Lone Wolf","first":"B2:Lone Wolf"}
+{"id":14,"turn":2,"causedBy":12,"source":"kernel","type":"Strike","striker":"B2:Lone Wolf","defender":"A1:Gambler"}
+{"id":15,"turn":2,"causedBy":14,"source":"kernel","type":"Hurt","unit":"A1:Gambler","amount":6,"hpAfter":4}
+{"id":16,"turn":2,"causedBy":12,"source":"kernel","type":"Flipped","unit":"A1:Gambler","by":{"unit":"A1:Gambler","ability":0,"when":0},"heads":false}
+{"id":17,"turn":2,"causedBy":12,"source":"kernel","type":"Strike","striker":"A1:Gambler","defender":"B2:Lone Wolf","amount":0}
+{"id":18,"turn":2,"causedBy":17,"source":"kernel","type":"Hurt","unit":"B2:Lone Wolf","amount":0,"hpAfter":12}
+{"id":19,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":20,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":21,"turn":3,"causedBy":20,"source":"kernel","type":"Strike","striker":"B2:Lone Wolf","defender":"A1:Gambler"}
+{"id":22,"turn":3,"causedBy":21,"source":"kernel","type":"Hurt","unit":"A1:Gambler","amount":6,"hpAfter":-2}
+{"id":23,"turn":3,"causedBy":22,"source":"kernel","type":"Death","unit":"A1:Gambler"}
+{"id":24,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":25,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":26,"turn":4,"causedBy":25,"source":"kernel","type":"PairFaced","a":"A2:Nautilus","b":"B2:Lone Wolf","first":"B2:Lone Wolf"}
+{"id":27,"turn":4,"causedBy":25,"source":"kernel","type":"Strike","striker":"B2:Lone Wolf","defender":"A2:Nautilus"}
+{"id":28,"turn":4,"causedBy":27,"source":"kernel","type":"Hurt","unit":"A2:Nautilus","amount":5,"absorbed":1,"hpAfter":6}
+{"id":29,"turn":4,"causedBy":28,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":1,"remaining":0}
+{"id":30,"turn":4,"causedBy":28,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":1,"total":1}
+{"id":31,"turn":4,"causedBy":25,"source":"kernel","type":"Strike","striker":"A2:Nautilus","defender":"B2:Lone Wolf"}
+{"id":32,"turn":4,"causedBy":31,"source":"kernel","type":"Hurt","unit":"B2:Lone Wolf","amount":4,"hpAfter":8}
+{"id":33,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":34,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":35,"turn":5,"causedBy":34,"source":"kernel","type":"Strike","striker":"B2:Lone Wolf","defender":"A2:Nautilus"}
+{"id":36,"turn":5,"causedBy":35,"source":"kernel","type":"Hurt","unit":"A2:Nautilus","amount":5,"absorbed":1,"hpAfter":1}
+{"id":37,"turn":5,"causedBy":36,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":1,"remaining":0}
+{"id":38,"turn":5,"causedBy":36,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":1,"total":1}
+{"id":39,"turn":5,"causedBy":34,"source":"kernel","type":"Strike","striker":"A2:Nautilus","defender":"B2:Lone Wolf"}
+{"id":40,"turn":5,"causedBy":39,"source":"kernel","type":"Hurt","unit":"B2:Lone Wolf","amount":4,"hpAfter":4}
+{"id":41,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":42,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":43,"turn":6,"causedBy":42,"source":"kernel","type":"Strike","striker":"B2:Lone Wolf","defender":"A2:Nautilus"}
+{"id":44,"turn":6,"causedBy":43,"source":"kernel","type":"Hurt","unit":"A2:Nautilus","amount":5,"absorbed":1,"hpAfter":-4}
+{"id":45,"turn":6,"causedBy":44,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":1,"remaining":0}
+{"id":46,"turn":6,"causedBy":45,"source":"kernel","type":"Death","unit":"A2:Nautilus"}
+{"id":47,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":48,"turn":6,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":6}
