@@ -99,6 +99,39 @@ export const V2_STATUSES: StatusRegistry = {
     selectors: [{ kind: "holder" }],
     abilities: [{ effects: [{ kind: "performRemembered", mode: "once" }] }],
   },
+  // Echo Bell's chime (batch 2, #1047): every second turn, perform the remembered rule once.
+  Chime: {
+    name: "Chime",
+    names: { en: "Chime", ru: { name: "Звон", acc: "Звон", count: ["Звон", "Звона", "Звонов"] } },
+    counter: true,
+    triggers: [{ kind: "trigger", on: { on: "TurnStart" } }],
+    condition: { kind: "turnEvery", n: 2 },
+    selectors: [{ kind: "holder" }],
+    abilities: [{ effects: [{ kind: "performRemembered", mode: "once" }] }],
+  },
+  // Archmage's counter: at 3 mana, its power to every enemy (awoken: Arcana, and a Curse on each).
+  Mana: {
+    name: "Mana",
+    names: { en: "Mana", ru: { name: "Мана", acc: "Ману", count: ["Мана", "Маны", "Маны"] } },
+    counter: true,
+    triggers: [{ kind: "trigger", on: { on: "TurnEnd" } }],
+    condition: { kind: "stacksAtLeast", status: "Mana", n: 3, of: "holder" },
+    abilities: [
+      { selectors: [{ kind: "allEnemies" }], effects: [{ kind: "damage", amount: { kind: "stat", stat: "pwr", of: "holder" } }] },
+      { selectors: [{ kind: "holder" }], effects: [{ kind: "consumeStacks", stacks: c(3) }] },
+    ],
+  },
+  Arcana: {
+    name: "Arcana",
+    names: { en: "Arcana", ru: { name: "Аркана", acc: "Аркану", count: ["Аркана", "Арканы", "Аркан"] } },
+    counter: true,
+    triggers: [{ kind: "trigger", on: { on: "TurnEnd" } }],
+    condition: { kind: "stacksAtLeast", status: "Arcana", n: 3, of: "holder" },
+    abilities: [
+      { selectors: [{ kind: "allEnemies" }], effects: [{ kind: "damage", amount: { kind: "stat", stat: "pwr", of: "holder" } }, { kind: "applyStatus", status: "Curse", stacks: c(1) }] },
+      { selectors: [{ kind: "holder" }], effects: [{ kind: "consumeStacks", stacks: c(3) }] },
+    ],
+  },
   Memories: {
     name: "Memories",
     names: { en: "Memories", ru: { name: "Воспоминания", acc: "Воспоминания", count: ["Воспоминание", "Воспоминания", "Воспоминаний"] } },
@@ -136,6 +169,26 @@ const butterfly = (awoken: boolean) => ({
   ...(awoken ? { also: [{ selectors: [{ kind: "allAllies" as const }], abilities: ["Charge"] }] } : {}),
 });
 
+/** Wolf Pup grows into: a Dire Wolf that grows stronger each turn end (awoken: a bigger one). */
+const direWolf = (awoken: boolean) => ({
+  name: "Dire Wolf",
+  names: { ru: { name: "Лютоволк", acc: "Лютоволка" } },
+  base: awoken ? { hp: 10, pwr: 4 } : { hp: 8, pwr: 3 },
+  triggers: [{ kind: "trigger" as const, on: { on: "TurnEnd" as const } }],
+  selectors: [{ kind: "holder" as const }],
+  abilities: ["Charge"],
+});
+
+/** Hydra's heads: each a 2/3 whose strikes heal it by half its power. */
+const head = {
+  name: "Head",
+  names: { ru: { name: "Голова", acc: "Голову" } },
+  base: { hp: 3, pwr: 2 },
+  triggers: [{ kind: "trigger" as const, on: { on: "Strike" as const, striker: "holder" as const } }],
+  selectors: [{ kind: "holder" as const }],
+  abilities: ["Sip"],
+};
+
 /** Named abilities of the v2 units: each is a word sentence, not a "Hit 1". */
 export const V2_ABILITIES: AbilityRegistry = {
   // batch 1, the twelve after the eight (#1046)
@@ -172,6 +225,28 @@ export const V2_ABILITIES: AbilityRegistry = {
   SproutAwoken: { name: "SproutAwoken", family: "Summon", effects: [{ kind: "delay", turns: 2, effect: { kind: "transform", into: tree(true) } }] },
   Grow: { name: "Grow", family: "Control", effects: [{ kind: "applyStatus", status: "Strength", stacks: c(1) }] },
   Guard: { name: "Guard", family: "Shield", effects: [{ kind: "applyStatus", status: "Shield", stacks: c(1) }] },
+  // batch 2 (#1047)
+  Prick: { name: "Prick", family: "Strike", effects: [{ kind: "damage", amount: c(1) }] },
+  Spine: { name: "Spine", family: "Strike", effects: [{ kind: "damage", amount: pwrOfHolder }] },
+  Pilfer: { name: "Pilfer", family: "Strike", effects: [{ kind: "branch", if: { kind: "flip", p: 0.5 }, then: [{ kind: "damage", amount: { kind: "twice", of: pwrOfHolder } }], else: [] }] },
+  PilferLucky: { name: "PilferLucky", family: "Strike", effects: [{ kind: "branch", if: { kind: "flip", p: 0.75 }, then: [{ kind: "damage", amount: { kind: "twice", of: pwrOfHolder } }], else: [] }] },
+  Feast: { name: "Feast", family: "Control", effects: [{ kind: "applyStatus", status: "Strength", stacks: c(1) }, { kind: "heal", amount: pwrOfHolder }] },
+  Sting: { name: "Sting", family: "Poison", effects: [{ kind: "applyStatus", status: "Poison", stacks: c(1) }] },
+  Bounce: { name: "Bounce", family: "Control", effects: [{ kind: "redirect", to: { kind: "randomEnemy" } }] },
+  Howl: { name: "Howl", family: "Summon", effects: [{ kind: "transform", into: direWolf(false) }] },
+  HowlAwoken: { name: "HowlAwoken", family: "Summon", effects: [{ kind: "transform", into: direWolf(true) }] },
+  Hush2: { name: "Hush2", family: "Control", effects: [{ kind: "silence" }] },
+  Fortune: { name: "Fortune", family: "Control", effects: [{ kind: "branch", if: { kind: "flip", p: 0.5 }, then: [{ kind: "applyStatus", status: "Strength", stacks: c(2) }], else: [{ kind: "applyStatus", status: "Shield", stacks: c(2) }] }] },
+  FortuneAwoken: { name: "FortuneAwoken", family: "Control", effects: [{ kind: "branch", if: { kind: "flip", p: 0.5 }, then: [{ kind: "applyStatus", status: "Strength", stacks: c(3) }], else: [{ kind: "applyStatus", status: "Shield", stacks: c(3) }] }] },
+  Block: { name: "Block", family: "Shield", effects: [{ kind: "cancel" }] },
+  Raise: { name: "Raise", family: "Summon", effects: [{ kind: "resurrect", hp: c(1) }] },
+  RaiseAwoken: { name: "RaiseAwoken", family: "Summon", effects: [{ kind: "resurrect", hp: pwrOfHolder }] },
+  Heads: { name: "Heads", family: "Summon", effects: [{ kind: "summon", unit: head }, { kind: "summon", unit: head }] },
+  HeadsAwoken: { name: "HeadsAwoken", family: "Summon", effects: [{ kind: "summon", unit: head }, { kind: "summon", unit: head }, { kind: "summon", unit: head }] },
+  Focus: { name: "Focus", family: "Arcane", effects: [{ kind: "applyStatus", status: "Mana", stacks: c(1) }] },
+  FocusAwoken: { name: "FocusAwoken", family: "Arcane", effects: [{ kind: "applyStatus", status: "Arcana", stacks: c(1) }] },
+  Hex: { name: "Hex", family: "Curse", effects: [{ kind: "applyStatus", status: "Curse", stacks: c(1) }] },
+  Rage: { name: "Rage", family: "Strike", effects: [{ kind: "replaceAmount", amount: { kind: "plus", a: pwrOfHolder, b: { kind: "missingHp" } } }] },
 };
 
 type Form = Omit<UnitForm, "who" | "does"> & { who?: UnitForm["who"]; does: string };
@@ -225,6 +300,28 @@ const Understudy = sleeping(trig({ on: "Death", unit: "otherAlly" }), [{ kind: "
 const Gravedigger = sleeping(trig({ on: "TurnStart" }), [{ kind: "frontEnemy" }], "Toll");
 const Conductor = sleeping(trig({ on: "TurnStart" }), [{ kind: "neighbours" }], "Encore", { condition: { kind: "turnEvery", n: 2 } });
 
+// Batch 2 (#1047): twenty more, every shape class and tier again.
+const Thornback = sleeping(trig({ on: "Hurt", unit: "holder" }), [{ kind: "attacker" }], "Prick");
+const CoinThief = sleeping(trig({ on: "TurnStart" }), [{ kind: "randomEnemy" }], "Pilfer");
+const Scavenger = sleeping(trig({ on: "Death", unit: "otherAlly" }), me, "Charge");
+const Lantern = sleeping(trig({ on: "TurnStart" }), [{ kind: "allyAhead" }], "Guard", { condition: { kind: "unhurt" } });
+const Hornet = sleeping(trig({ on: "Strike", striker: "holder" }), [{ kind: "eventTarget" }], "Sting");
+const EchoBell = sleeping(trig({ on: "BattleStart" }), [{ kind: "allyBehind" }], "Recall", { statuses: [{ status: "Chime", stacks: 1 }] });
+const Prism = sleeping(intercept({ on: "Hurt", unit: "holder", aim: "random" }), me, "Bounce");
+const WolfPup = sleeping(trig({ on: "Death", unit: "otherAlly" }), me, "Howl", { condition: { kind: "onceHolder" } });
+const Horn = sleeping(trig({ on: "TurnStart" }), [{ kind: "allAllies" }], "Charge", { condition: { kind: "alliesAlive", op: "<=", n: 2 } });
+const Copycat = sleeping(trig({ on: "BattleStart" }), [{ kind: "allyAhead" }], "Copy");
+const Vulture = sleeping(trig({ on: "Death", unit: "enemy" }), me, "Charge");
+const Hexer = sleeping(trig({ on: "BattleStart" }), [{ kind: "lastEnemy" }], "Hush2");
+const Fortune = sleeping(trig({ on: "BattleStart" }), [{ kind: "allAllies" }], "Fortune");
+const Aegis = sleeping(intercept({ on: "Hurt", unit: "holder" }), me, "Block", { condition: { kind: "oncePerTurn" } });
+const Gravecaller = sleeping(trig({ on: "Death", unit: "otherAlly" }), [{ kind: "lastDeadAlly" }], "Raise", { condition: { kind: "onceHolder" } });
+const Jester = sleeping(trig({ on: "Hurt", unit: "holder" }), [{ kind: "attacker" }], "Swap", { condition: { kind: "onceHolder" } });
+const Hydra = sleeping(trig({ on: "Death", unit: "holder" }), me, "Heads");
+const Archmage = sleeping(trig({ on: "TurnEnd" }), me, "Focus");
+const Oracle = sleeping(trig({ on: "TurnStart" }), [{ kind: "frontEnemy" }], "Hex", { condition: { kind: "turnAtLeast", n: 3 } });
+const Berserker = sleeping(intercept({ on: "Strike", striker: "holder" }), me, "Rage");
+
 /* eslint-disable prettier/prettier */
 export const ROWS_V2: V2Row[] = [
   v2("Hourglass", "⏳", 2, "counter",     1,  8, "Keeps time: every third grain, the ally behind it acts again.",            Hourglass, { does: "Sand" }),
@@ -248,5 +345,26 @@ export const ROWS_V2: V2Row[] = [
   v2("Understudy",  "🎭", 3, "copy",        1,  8, "When an ally falls, takes over its rule for good.",                     Understudy,  { does: "CopyPower" }),
   v2("Gravedigger", "⚰️", 4, "scaling",     2, 10, "Hits the front enemy harder for every fallen ally.",                    Gravedigger, { who: [{ kind: "allEnemies" }] }),
   v2("Conductor",   "🎼", 4, "rule",        1,  9, "Every second turn, its neighbours act again.",                          Conductor,   { also: [{ who: [{ kind: "neighbours" }], does: ["Charge"] }] }),
+  // batch 2 (#1047)
+  v2("Thornback",   "🦔", 1, "position",    1,  8, "Pricks whoever hits it.",                                               Thornback,   { does: "Spine" }),
+  v2("Coin Thief",  "🪙", 1, "swing",       2,  6, "Each turn, a coin decides whether a random enemy gets robbed hard.",   CoinThief,   { does: "PilferLucky" }),
+  v2("Scavenger",   "🦝", 1, "scaling",     1,  7, "Grows stronger from every ally that falls.",                            Scavenger,   { does: "Feast" }),
+  v2("Lantern",     "🏮", 1, "condition",   1,  7, "While untouched, shields the ally ahead of it.",                        Lantern,     { who: [{ kind: "neighbours" }] }),
+  v2("Hornet",      "🐝", 1, "position",    2,  5, "Poisons whatever it strikes.",                                          Hornet,      { who: [{ kind: "allEnemies" }] }),
+  v2("Echo Bell",   "🔔", 2, "memory",      1,  8, "Learns the rule of the ally behind it and rings it every second turn.", EchoBell,    { statuses: [{ status: "Memory", stacks: 1 }] }),
+  v2("Prism",       "🔮", 2, "redirect",    1,  9, "Random shots aimed at it bend onto a random enemy.",                    Prism,       { also: [{ who: me, does: ["Guard"] }] }),
+  v2("Wolf Pup",    "🐕", 2, "form",        1,  5, "When the first ally falls, it grows into a Dire Wolf.",                 WolfPup,     { does: "HowlAwoken" }),
+  v2("War Horn",    "📯", 2, "condition",   1,  8, "When the line runs thin, it rallies everyone left.",                    Horn,        { also: [{ who: [{ kind: "allAllies" }], does: ["Guard"] }] }),
+  v2("Copycat",     "🐈", 2, "copy",        1,  7, "Copies the rule of the ally ahead of it.",                              Copycat,     { does: "CopyPower" }),
+  v2("Vulture",     "🦅", 2, "scaling",     2,  7, "Feeds on every enemy that falls.",                                      Vulture,     { who: [{ kind: "allAllies" }] }),
+  v2("Hexer",       "🧿", 3, "rule",        1,  7, "Silences the enemy at the back before the fight begins.",               Hexer,       { who: [{ kind: "lastEnemy" }, { kind: "frontEnemy" }] }),
+  v2("Fortune Teller", "🪬", 3, "swing",    1,  7, "One coin at the start: the whole line strikes harder or stands sturdier.", Fortune,  { does: "FortuneAwoken" }),
+  v2("Aegis",       "🛡️", 3, "replacement", 1,  9, "Shrugs off the first hit each turn.",                                   Aegis,       { also: [{ who: [{ kind: "allyBehind" }], does: ["Guard"] }] }),
+  v2("Gravecaller", "💀", 3, "memory",      1,  7, "Calls the first fallen ally back to the line.",                         Gravecaller, { does: "RaiseAwoken" }),
+  v2("Jester",      "🤡", 3, "rule",        1,  8, "The first one to hit it walks away with its rule.",                     Jester,      { also: [{ who: me, does: ["Guard"] }] }),
+  v2("Hydra",       "🐉", 4, "form",        2,  8, "Cut it down and two heads take its place.",                             Hydra,       { does: "HeadsAwoken" }),
+  v2("Archmage",    "🧙", 4, "counter",     2,  7, "Gathers mana; every third turn end, it strikes every enemy.",           Archmage,    { does: "FocusAwoken" }),
+  v2("Oracle",      "👁️", 4, "condition",   1,  8, "From the third turn on, curses the enemy in front.",                    Oracle,      { who: [{ kind: "allEnemies" }] }),
+  v2("Berserker",   "🪓", 4, "scaling",     2,  9, "The more it bleeds, the harder it strikes.",                            Berserker,   { also: [{ who: me, does: ["Sip"] }] }),
 ];
 /* eslint-enable prettier/prettier */

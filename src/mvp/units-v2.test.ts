@@ -27,7 +27,7 @@ describe("rules v2 pool", () => {
 
   it("the eight §4 units build into content with no form problems", () => {
     expect(content.units.map((u) => u.name).slice(0, 8)).toEqual(["Hourglass", "Mirror", "Candle", "Gambler", "Nautilus", "Magnet", "Raven", "Seed"]);
-    expect(content.units).toHaveLength(20);
+    expect(content.units).toHaveLength(40);
     expect(new Set(content.units.map((u) => u.tier))).toEqual(new Set([1, 2, 3, 4]));
     expect(contentFormProblems(content)).toEqual([]);
     expect(Object.keys(content.statuses)).toEqual(expect.arrayContaining(["Grains", "Sands", "Memory", "Memories", "Shield", "Strength"]));

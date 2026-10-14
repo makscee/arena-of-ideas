@@ -83,7 +83,7 @@ const SUMMONS: Record<string, UnitDef> = {
 };
 
 /** Each summoned body's emoji, by its name (R3-5). */
-const SUMMON_EMOJI: Record<string, string> = { Imp: "👺", Wolf: "🐺", Golem: "🗿", Wraith: "👻", Treant: "🌳", Warg: "🐕", Ghoul: "🧟", Puffball: "💨", Chick: "🐣" };
+const SUMMON_EMOJI: Record<string, string> = { Imp: "👺", Wolf: "🐺", Golem: "🗿", Wraith: "👻", Treant: "🌳", Warg: "🐕", Ghoul: "🧟", Puffball: "💨", Chick: "🐣", Head: "🐲" };
 
 
 /** A summoned body as content: its emoji, and its form unless it only strikes. */
