@@ -4,7 +4,7 @@ import { ROWS, type Row } from "../../../src/mvp/units.js";
 import { createMvpApp } from "./app.js";
 import { mvpContent } from "./content.js";
 import { archetypeDraftProblems, checkReading, takenShapes, type ArchetypeDraft, type ReadingDraft } from "./idea-checks.js";
-import { archetypesPrompt, fakeIdeaReader, ideaBlock, ideaReaderFromEnv, readerArgs, readerSystemPrompt, type IdeaReader, type ReaderAnswer } from "./idea-reader.js";
+import { archetypesPrompt, fakeIdeaReader, ideaBlock, ideaSubject, ideaReaderFromEnv, readerArgs, readerSystemPrompt, type IdeaReader, type ReaderAnswer } from "./idea-reader.js";
 import { COULD_NOT, DECLINED_TWICE, declineOptions, dueIdeas, ideaReadingJobWith, pickArchetype, pickReading, readEveryMs, readIdeas } from "./idea-reading.js";
 import { grantIdea, ideasOf, writeIdea } from "./ideas.js";
 import { seedUnits } from "./pool.js";
@@ -52,6 +52,28 @@ function scripted(archetypes: ReaderAnswer<ArchetypeDraft>[], readings: ReaderAn
 const arch = (name: string, line = `A ${name.toLowerCase()} with spines for every foe.`): ArchetypeDraft => ({ name, emoji: "🦔", line, ru: { name: cyrillic(name), line: `Ру: ${cyrillic(line)}` } });
 const answer = <T>(options: T[], cantExpress: ReaderAnswer<T>["cantExpress"] = []): ReaderAnswer<T> => ({ options, cantExpress });
 const HOG: IdeaArchetype = { name: "Spinehog", emoji: "🦔", line: "Spines that punish every hit it takes." };
+
+describe("the fake reader's subject (#1120)", () => {
+  it.each([
+    ["A lantern keeper who heals the ally behind it whenever an enemy dies", "lantern keeper"],
+    ["Whenever an enemy dies, a phoenix rises with full health", "phoenix"],
+    ["a hedgehog that punishes whoever hits it", "hedgehog"],
+    ["Each turn, a knight shields the ally in front", "knight"],
+    ["The old blacksmith gives every ally 1 strength at battle start", "blacksmith"],
+    ["A dragon breathes fire on all enemies when it is hurt", "dragon"],
+    ["If an ally falls, the grieving widow strikes twice", "grieving widow"],
+    ["Plague rat: poisons whoever kills it", "plague rat"],
+    ["ёж, который травит того, кто его бьёт", "ёж"],
+    ["Когда враг умирает, фонарщик лечит союзника позади", "фонарщик"],
+    ["Shield maiden blocks the first hit every turn", "shield maiden"],
+    ["When hit, the cactus spikes back at the attacker", "cactus"],
+  ])("%s → %s", (text, subject) => expect(ideaSubject(text)).toBe(subject));
+  it("names the lantern keeper's archetypes after it, never after 'whenever'", async () => {
+    const a = await fakeIdeaReader().archetypes("A lantern keeper who heals the ally behind it whenever an enemy dies", { want: 3, units: [] } as never);
+    expect(a.options.map((o) => o.name)).toEqual(["Lantern Keeper", "Young Lantern Keeper", "Old Lantern Keeper"]);
+    expect(a.options.map((o) => o.line).join(" ")).not.toMatch(/whenever/i);
+  });
+});
 
 describe("reading ideas with the fake reader (M2-5)", () => {
   it("written → 3 archetypes → pick → 3 readings → pick: the idea is simulating, its unit a candidate", async () => {

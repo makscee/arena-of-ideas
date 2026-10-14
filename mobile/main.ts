@@ -22,7 +22,7 @@ import { setCodexLink } from "./ui/term";
 import { ideasScreen, refillTime } from "./screens/ideas";
 import { votePanel } from "./screens/vote";
 import { pickScreen } from "./screens/pick";
-import { card, roman, setCardCredits, unitSheet, type CardUnit } from "./ui/card";
+import { card, formRich, roman, setCardCredits, unitSheet, type CardUnit } from "./ui/card";
 import { previewName } from "./ui/fusion";
 import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
@@ -1192,9 +1192,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
           h("div", { class: "dim small" }, t("forge.sealed", { n: designs.length })),
           h(
             "div",
-            { class: "forge-cards", "data-testid": "forge-cards" },
+            { class: "seal-list", "data-testid": "forge-cards" },
+            // #1120: one row per design, the card beside its rule (the sentence
+            // the Codex says), the flavour small under it: pick by the mechanic
             ...designs.map((u, i) => {
-              const b = h("button", { class: `forge-card${i === at ? " on" : ""}`, "data-testid": `forge-card-${i}`, "aria-pressed": String(i === at) }, card(u, { side: "you" }), h("span", { class: "forge-flavour" }, flavour(i)));
+              const words = h("span", { class: "seal-words" }, h("b", { class: "seal-name" }, u.name), h("span", { class: "seal-rule", "data-testid": `forge-rule-${i}` }, ...(u.recipe ? formRich(u.recipe, content) : [])), h("span", { class: "seal-flavour" }, flavour(i)));
+              const b = h("button", { class: `seal${i === at ? " on" : ""}`, "data-testid": `forge-card-${i}`, "aria-pressed": String(i === at) }, card(u, { side: "you" }), words);
               b.addEventListener("click", () => keepFocus(() => ((at = i), render())));
               return withKey(b, String(i + 1));
             }),

@@ -122,7 +122,7 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
 
 /** A run's fused units carry their design's own abilities (#1065): the cards learn them. */
 function learnFusions(run: RunView): RunView {
-  for (const u of [...run.line, ...(run.bench ?? [])]) if (u.fusion?.abilities) addCardAbilities(u.fusion.abilities);
+  for (const u of [...run.line, ...(run.bench ?? [])]) if (u.fusion?.abilities || u.fusion?.statuses) addCardAbilities(u.fusion.abilities ?? {}, u.fusion.statuses);
   return run;
 }
 
@@ -241,8 +241,8 @@ export const api = {
   forge: async (id: string) => {
     const f = await call<RunForge>("GET", `/runs/${id}/forge`);
     // a designed fusion's own abilities (#1065), so its card reads its rule, not an id
-    for (const p of f.pairs) for (const d of [...(p.candidates ?? []), ...(p.design ? [p.design] : [])]) if (d.abilities) addCardAbilities(d.abilities);
-    for (const o of f.offers) if (o.design?.abilities) addCardAbilities(o.design.abilities);
+    for (const p of f.pairs) for (const d of [...(p.candidates ?? []), ...(p.design ? [p.design] : [])]) if (d.abilities || d.statuses) addCardAbilities(d.abilities ?? {}, d.statuses);
+    for (const o of f.offers) if (o.design?.abilities || o.design?.statuses) addCardAbilities(o.design.abilities ?? {}, o.design.statuses);
     return f;
   },
   /** A wish on an unforged pair: it goes on tonight's list. */

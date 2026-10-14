@@ -128,7 +128,8 @@ export function forgeDesignOf(d: FusionDesign, pair: [UnitContent | undefined, U
   return {
     emoji: d.emoji ?? pair.map((u) => u?.emoji ?? "").join(""),
     name: b(d.name, ru?.name ?? d.name),
-    rule: sentence(d.recipe, content),
+    // its own coined words read as sentences, never as ids (#1120: "keep inherit")
+    rule: sentence(d.recipe, { abilities: { ...content.abilities, ...d.abilities }, statuses: { ...content.statuses, ...d.statuses } }),
     flavour: b(d.flavour ?? "", ru?.flavour ?? d.flavour ?? ""),
     lean: d.lean,
     ...(newWords.length ? { newWords: newWords.map((w) => b(w, w)) } : {}),

@@ -452,6 +452,20 @@ export async function runBatch(list: ListedPair[], o: BatchOptions): Promise<Pai
   return out;
 }
 
+/** The pool units a design's texts name that aren't in its pair, by their
+ * capitalised name as a whole word (#1120: "Spite Mirror" for Magnet + Prism,
+ * the designer mixing Mirror up with Prism). A lower-case "a seed of doubt" is
+ * a word, not the unit. */
+export function foreignUnits(texts: readonly string[], pair: readonly [string, string], units: Record<string, { def: { name: string } }>): string[] {
+  const out: string[] = [];
+  for (const [id, u] of Object.entries(units)) {
+    if (pair.includes(id) || out.includes(u.def.name)) continue;
+    const word = new RegExp(`(?<![\\p{L}\\p{N}])${u.def.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\p{L}\\p{N}])`, "u");
+    if (texts.some((t) => word.test(t))) out.push(u.def.name);
+  }
+  return out;
+}
+
 async function designPair(pair: ListedPair, a: Parent, b: Parent, o: BatchOptions): Promise<Candidate[]> {
   const drafts = (await o.designer.design(a, b)).slice(0, 3);
   // named one after another, so the namer sees the names the pair already has
@@ -467,6 +481,9 @@ async function designPair(pair: ListedPair, a: Parent, b: Parent, o: BatchOption
       const naming = namings[i]!;
       const base = { pair: pair.key, lean: d.lean, intent: d.intent ?? "", name: naming.name, flavour: naming.flavour };
       const empty = { unit: { name: naming.name.en, base: fusedBase(a, b) }, abilities: {}, statuses: {}, text: { en: "", ru: "" }, check: null };
+      // no text may name a unit outside the pair (#1120)
+      const foreign = foreignUnits([naming.name.en, naming.name.ru, naming.flavour.en, naming.flavour.ru, d.intent ?? ""], [pair.a, pair.b], o.parents);
+      if (foreign.length) return { ...base, ...empty, state: "rejected", why: `names a unit outside its pair: ${foreign.join(", ")}` };
       if (d.wordRequest?.word) return { ...base, ...empty, state: "word", wordRequest: d.wordRequest, why: `waiting for a new word: ${d.wordRequest.word}` };
       const taken = new Set([...Object.keys(a.abilities), ...Object.keys(b.abilities), ...Object.keys(a.statuses), ...Object.keys(b.statuses), ...Object.keys(o.field.abilities), ...Object.keys(o.field.statuses)]);
       const c = compile(d, a, b, naming.name.en, taken, o.field);

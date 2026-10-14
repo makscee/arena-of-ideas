@@ -1772,11 +1772,15 @@ button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padd
 .holding-list + .lang-row { margin-top: 12px; }
 
 /* The forge (rules v2's Codex, #1049): three sealed designs to claim from. */
-.forge-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.forge-card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 4px; background: transparent; border: var(--bw, 2px) solid transparent; box-shadow: none; color: var(--text); }
-.forge-card .card { width: 64px; }
-.forge-card.on { border-color: var(--action); }
-.forge-flavour { font-size: 11px; line-height: 1.3; color: var(--dim); text-align: center; }
+/* #1120: a row per design, its card left and its rule right, readable in full at any width. */
+.seal-list { display: flex; flex-direction: column; gap: 8px; }
+.seal { display: flex; flex-direction: row; align-items: flex-start; gap: 12px; padding: 8px 10px; text-align: left; background: transparent; border: var(--bw, 2px) solid var(--outline); box-shadow: none; color: var(--text); font-weight: normal; position: relative; }
+.seal > .card { width: 72px; flex: none; }
+.seal.on { border-color: var(--action); }
+.seal-words { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.seal-name { font-size: 15px; }
+.seal-rule { font-size: 14px; line-height: 1.4; white-space: normal; }
+.seal-flavour { font-size: 12px; line-height: 1.3; color: var(--dim); font-style: italic; }
 /* Codex v2 (#1051): unit pages, Today, the Dictionary, the claim moment (mobile/screens/forge.ts). Tokens only, so every palette carries it. */
 .forge-head { gap: 12px; }
 .forge-head h1 { font-size: 26px; }
