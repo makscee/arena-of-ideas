@@ -17,10 +17,11 @@
 //                    breakers sits in band; breakers only under 50 ghosts.
 //   store            three candidates per pair, as `ready to claim`.
 //
-// No numbers come from a model: stats are the parents' sum, the rule's cost
+// No numbers come from a model: stats are the game's fuse (fusedBase), the rule's cost
 // is what the quick tune measured.
 
 import { battle } from "../../../src/battle.js";
+import { MVP_RULES } from "../../../src/mvp/contract.js";
 import type { DescribeSegment, Lang } from "../../../src/describe.js";
 import { formSegments } from "../../../src/mvp/form-text.js";
 import type { AbilityDef, AbilityRegistry, Amount, BattleEvent, Effect, StatusDef, StatusRegistry, UnitDef } from "../../../src/types.js";
@@ -206,6 +207,14 @@ export interface Candidate {
   wordRequest?: { word: string; meaning: string };
 }
 
+/** A fusion's stats as the game's fuse gives them (src/mvp/forms.ts): the
+ * stronger parent's PWR and HP, each plus one copy's growth (#1065; the batch
+ * used to sum them, which no fused unit ever has). */
+export function fusedBase(a: Parent, b: Parent): { hp: number; pwr: number } {
+  const g = MVP_RULES.copyGrowth;
+  return { hp: Math.max(a.def.base.hp, b.def.base.hp) + g.hp, pwr: Math.max(a.def.base.pwr, b.def.base.pwr) + g.pwr };
+}
+
 /** The draft's own ids (name = key, as the validator wants). An id the
  * parents or the field already have (Shield, Strength) is the registry's: the
  * draft's redeclaration is dropped, so no "Shield2" reaches the card. Each
@@ -238,7 +247,7 @@ export function compile(d: DesignDraft, a: Parent, b: Parent, name: string, take
   const n = owned(d, taken);
   const unit: UnitDef = {
     name,
-    base: { hp: a.def.base.hp + b.def.base.hp, pwr: a.def.base.pwr + b.def.base.pwr },
+    base: fusedBase(a, b),
     ...(n.rule.triggers ? { triggers: n.rule.triggers } : {}),
     ...(n.rule.condition ? { condition: n.rule.condition } : {}),
     ...(n.rule.selectors ? { selectors: n.rule.selectors } : {}),
@@ -425,7 +434,7 @@ async function designPair(pair: ListedPair, a: Parent, b: Parent, o: BatchOption
     drafts.map(async (d, i): Promise<Candidate> => {
       const naming = namings[i]!;
       const base = { pair: pair.key, lean: d.lean, intent: d.intent ?? "", name: naming.name, flavour: naming.flavour };
-      const empty = { unit: { name: naming.name.en, base: { hp: a.def.base.hp + b.def.base.hp, pwr: a.def.base.pwr + b.def.base.pwr } }, abilities: {}, statuses: {}, text: { en: "", ru: "" }, check: null };
+      const empty = { unit: { name: naming.name.en, base: fusedBase(a, b) }, abilities: {}, statuses: {}, text: { en: "", ru: "" }, check: null };
       if (d.wordRequest?.word) return { ...base, ...empty, state: "word", wordRequest: d.wordRequest, why: `waiting for a new word: ${d.wordRequest.word}` };
       const taken = new Set([...Object.keys(a.abilities), ...Object.keys(b.abilities), ...Object.keys(a.statuses), ...Object.keys(b.statuses), ...Object.keys(o.field.abilities), ...Object.keys(o.field.statuses)]);
       const c = compile(d, a, b, naming.name.en, taken);
