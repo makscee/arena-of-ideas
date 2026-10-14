@@ -48,6 +48,7 @@
     "mvp:scenes": "node e2e/scenes.mjs",
     "mvp:fusion-marks": "node e2e/fusion-marks.mjs",
     "mvp:keyboard": "node e2e/mvp-keyboard.mjs",
+    "mvp:history": "node e2e/mvp-history.mjs",
     "mvp:scenes-index": "node --import tsx/esm scripts/scenes-index.ts",
     "mvp:lab": "scripts/arena-lab.sh",
     "mvp:workshop": "scripts/arena-workshop.sh",

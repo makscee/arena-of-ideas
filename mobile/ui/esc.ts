@@ -15,13 +15,13 @@ export function escStep(s: { popover: boolean; overlays: number; field: "none" |
   return "screen";
 }
 
-/** The screens whose Esc does something (back, or the run menu): the phone's
- * Back gesture is their Esc too (R3-26). Home and the name form have none, so
- * Back there leaves the game, as an app's root does. */
-const BACK_SCREENS = new Set(["shop", "battle", "codex", "stats", "over"]);
+/** The screens where Back is an Esc and not a step to the screen before: a
+ * battle (Back skips or leaves it). Every other screen change is a history
+ * entry of its own (ui/dom.ts), so Back there goes to the previous screen. */
+const BACK_SCREENS = new Set(["battle"]);
 
-/** Whether Back must stay in the game right now (ui/dom.ts keeps one history
- * entry for it): a sheet is open, or the screen has its own Esc step. */
+/** Whether Back must close something first right now (ui/dom.ts keeps one
+ * guard entry for it): a sheet is open, or a battle is playing. */
 export function backStays(s: { overlays: number; screen: string }): boolean {
   return s.overlays > 0 || BACK_SCREENS.has(s.screen);
 }

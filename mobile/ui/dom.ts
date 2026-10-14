@@ -214,27 +214,75 @@ addEventListener(
   { capture: true },
 );
 
-// ---------- Back (R3-26) ----------
+// ---------- Back and Forward (R3-26, #1146) ----------
 
-// The phone's Back gesture (Android's Esc) and the browser's Back are one Esc
-// while Esc has something to do (esc.ts backStays: a sheet, the shop, a
-// battle, the Codex...): one history entry of ours sits on top, and Back
-// pops it instead of leaving the game. Home has no Esc, so Back leaves there.
+// Every screen change is a history entry of its own, so the browser's Back
+// and Forward (and the phone's Back gesture) step through the screens. A
+// screen's entry is named by its group: the shop, a fight, its result and the
+// run's end are one group ("run"), the Codex's tabs are one. Over an entry
+// sits at most one guard entry while Back must close something first: a
+// sheet is open, or a battle is playing (Back is its Esc).
 const GUARD = "arenaBack";
-/** The top history entry is ours. A reload with a sheet open (the language
- * switch in the Throne's settings, M5-3) keeps our entry on top: it counts as
- * armed, so the first sync takes it off instead of stacking a second one. */
+const GROUP: Record<string, string> = { home: "home", shop: "run", result: "run", battle: "run", over: "run", codex: "codex", stats: "codex", ideas: "ideas", forge: "forge" };
+const groupOf = (name: string | undefined): string | undefined => (name ? GROUP[name] : undefined);
+type NavState = { at: number; group: string; [GUARD]?: true };
+const navState = (): NavState | null => {
+  const s = history.state as Partial<NavState> | null;
+  return s && typeof s.at === "number" && typeof s.group === "string" ? (s as NavState) : null;
+};
+/** The group of each entry of this page's trail, by position. */
+const trail: string[] = [];
+/** Where we are in the trail. A reload keeps the entry it was on. */
+let at = navState()?.at ?? 0;
+const was = navState();
+if (was) trail[at] = was.group;
+/** The top history entry is the guard over entry `at`. A reload with a sheet
+ * open (the language switch in the Throne's settings, M5-3) keeps it on top:
+ * it counts as armed, so the first sync takes it off instead of stacking a second one. */
 let armed = (history.state as Record<string, unknown> | null)?.[GUARD] === true;
-/** Our own history.back() calls whose popstate is still to come. */
+/** Our own history moves whose popstate is still to come. */
 let ownBacks = 0;
+/** Rebuilds a screen group from the server (main.ts): Back onto a screen that is gone. */
+let restore: ((group: string) => Promise<void>) | null = null;
+export function onRestore(fn: (group: string) => Promise<void>): void {
+  restore = fn;
+}
+/** A restore is out: the old screen may redraw meanwhile, and that is no new screen. */
+let restoring = false;
 function syncBack(): void {
-  if (ownBacks > 0) return; // pushing now would race the pending back
-  const stays = backStays({ overlays: topLayer() ? 1 : 0, screen: app.dataset.screen ?? "" });
+  if (ownBacks > 0 || restoring) return; // pushing now would race the pending move
+  const name = app.dataset.screen;
+  const group = groupOf(name);
+  if (group && group !== trail[at]) {
+    if (trail[at] === undefined) {
+      // The first screen of the page takes the entry the page loaded with.
+      trail[at] = group;
+      history.replaceState({ at, group }, "");
+      armed = false;
+    } else if (trail[at - 1] === group) {
+      // An in-app Back button onto the screen before: the browser's Back.
+      const steps = armed ? 2 : 1;
+      armed = false;
+      at--;
+      ownBacks++;
+      history.go(-steps);
+      return;
+    } else {
+      // A new screen: a new entry (it takes the guard's place if one is up).
+      at++;
+      trail.length = at;
+      trail[at] = group;
+      if (armed) history.replaceState({ at, group }, "");
+      else history.pushState({ at, group }, "");
+      armed = false;
+    }
+  }
+  const stays = backStays({ overlays: topLayer() ? 1 : 0, screen: name ?? "" });
   if (stays && !armed) {
-    history.pushState({ [GUARD]: true }, "");
+    history.pushState({ at, group: trail[at] ?? "", [GUARD]: true }, "");
     armed = true;
   } else if (!stays && armed) {
-    // A sheet closed by a tap, or Home: the entry goes, so the next Back leaves.
+    // A sheet closed by a tap, or the battle over: the guard goes.
     armed = false;
     ownBacks++;
     history.back();
@@ -242,11 +290,35 @@ function syncBack(): void {
 }
 addEventListener("popstate", (e) => {
   if (ownBacks > 0) return void (ownBacks--, syncBack());
-  armed = (e.state as Record<string, unknown> | null)?.[GUARD] === true;
-  if (armed) return; // Forward, back onto our entry: nothing to undo
-  // The Esc path: the popover or the top sheet, else the screen's own Esc.
-  const step = escClose(null);
-  if (step === "screen" && !topLayer()) keys?.(new KeyboardEvent("keydown", { key: "Escape" }));
+  const s = e.state as Partial<NavState> | null;
+  const moved = typeof s?.at === "number" && s.at !== at;
+  if (s?.[GUARD] === true) {
+    // Forward, back onto a guard: nothing to undo, and it goes if nothing needs it.
+    armed = true;
+    if (typeof s.at === "number") at = s.at;
+    return syncBack();
+  }
+  const wasArmed = armed;
+  armed = false;
+  if (wasArmed && !moved) {
+    // The guard popped: the Esc path, the popover or the top sheet, else the screen's own Esc.
+    const step = escClose(null);
+    if (step === "screen" && !topLayer()) keys?.(new KeyboardEvent("keydown", { key: "Escape" }));
+    return syncBack();
+  }
+  if (!moved || !s || typeof s.at !== "number" || typeof s.group !== "string") return syncBack();
+  // Another screen's entry (Back or Forward over a screen change).
+  at = s.at;
+  trail[at] = s.group;
+  const target = s.group;
+  // The Codex and the Forge sit over a kept screen: their Back puts it back as it was.
+  const shown = groupOf(app.dataset.screen);
+  if (shown !== target && (shown === "codex" || shown === "forge")) keys?.(new KeyboardEvent("keydown", { key: "Escape" }));
+  if (groupOf(app.dataset.screen) !== target && restore) {
+    restoring = true;
+    void restore(target).finally(() => ((restoring = false), syncBack()));
+    return;
+  }
   syncBack();
 });
 let backQueued = false;
