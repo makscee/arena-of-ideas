@@ -262,7 +262,12 @@ async function fullRun(lang) {
       battleChecked = true;
     }
     if (!(await tid("end-card").isVisible().catch(() => false))) {
-      if (await tabTo("battle-end")) await press("Enter");
+      if (await tabTo("battle-end")) {
+        await press("Enter");
+        // ⏭ disables itself: the keyboard moves to Continue, or the next Enter is lost (#1128).
+        await tid("end-card").waitFor({ timeout: 10_000 });
+        expect(`round ${round + 1}: after ⏭ Continue has the keyboard`, (await k.active()) === "battle-done");
+      }
     }
     await tid("end-card").waitFor({ timeout: 10_000 });
     // Enter on the end card goes on.
