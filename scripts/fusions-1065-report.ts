@@ -103,7 +103,7 @@ const code = /#invite=([^&]+)/.exec(invite)?.[1] ?? "";
 const link = (hash: string) => `${base}#${[code ? `invite=${code}` : "", hash].filter(Boolean).join("&")}`;
 const page2 = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Arena discover</title>${STYLE}</head><body>
 <h1>Arena v2 · discover a fusion</h1>
-<p class="dim">Card <a href="https://github.com/makscee/void-board/issues/1065">#1065</a>. Each link signs you in to the workshop (your admin invite) and puts your run in the shop with two Awoken units of one pair on the line: one Fuse left. Keys only: <b>Tab</b> / arrows to move, <b>Enter</b> to press; select the first unit, then the second, then Fuse; in the forge pick one of the three sealed cards and Claim. A checkpoint works again after you discovered other pairs; on a pair you already discovered it fuses straight into your pick.</p>
+<p class="dim">Card <a href="https://github.com/makscee/void-board/issues/1065">#1065</a>. Each link signs you in to the workshop (your admin invite) and puts your run in the shop with two Awoken units of one pair on the line: one Fuse left. Keys only: <b>Tab</b> to the first unit, <b>Enter</b>, <b>F</b>, <b>Tab</b> to the second, <b>Enter</b>: the forge opens with three sealed cards; <b>1</b>–<b>3</b> picks one, <b>Enter</b> claims it. A checkpoint works again after you discovered other pairs; on a pair you already discovered it fuses straight into your pick.</p>
 <p><a href="${link("")}">▶ A full fresh run</a> <span class="dim">(Home → Play)</span></p>
 <ol>${hidden
   .map((k) => {
