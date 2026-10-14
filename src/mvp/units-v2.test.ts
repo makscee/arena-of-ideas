@@ -239,7 +239,7 @@ describe("rules v2 pool", () => {
       ["Squire", ["Squire", "Paladin", "Lantern"], ["Nautilus"], /^Squire → self \(Squire\) → Strength 1$/],
       ["Dynamo", ["Dynamo"], ["Seed", "Seed"], /^Dynamo strikes again$/],
       ["Siphon", ["Siphon"], ["Leech", "Medic"], /^Siphon intercepts: the heal on Leech lands on Siphon$/],
-      ["Comet", ["Comet"], ["Seed", "Seed"], /^Comet → random enemy \(Seed\) → 2 damage$/],
+      ["Comet", ["Comet"], ["Seed", "Seed"], /^Comet \(on turns 3, 6, 9…\) → all enemies \(Seed, Seed\) → 3 damage$/],
       ["Heckler", ["Heckler"], ["Leech", "Seed"], /^Heckler → it \(Leech\) → \d+ damage$/],
       ["Broodmother", ["Broodmother"], ["Nautilus", "Seed"], /^Broodmother \(on turns 2, 4, 6…\) → self \(Spiderling\)$/],
       ["Dragon", ["Dragon"], ["Nautilus", "Seed"], /^Dragon → all enemies \(Nautilus, Seed\) → \d+ damage/],
