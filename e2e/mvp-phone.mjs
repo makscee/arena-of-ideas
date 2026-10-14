@@ -961,7 +961,8 @@ try {
     await page.getByTestId("forge-discovered").waitFor();
     await page.getByTestId("preview-confirm").waitFor();
     page.off("response", onPreview);
-    if (previews.some((p) => p.first === second && p.second === first)) errors.push("fusion: the forge previewed the swapped order (a splice)");
+    const orders = new Set(previews.map((p) => `${p.first}>${p.second}`));
+    if (orders.size > 1) errors.push("fusion: the forge previewed both orders (a splice)");
     if ((await page.getByTestId("fusion-recipe").count()) > 0 || (await page.getByTestId("preview-swap").count()) > 0) errors.push("fusion: the forge shows a splice recipe or Swap");
     if (/Fusion preview|Предпросмотр слияния/.test(await page.getByTestId("overlay").textContent())) errors.push("fusion: 'Fusion preview' copy in the forge");
     await shot("fusion-forge"); await noHScroll("fusion-forge");
