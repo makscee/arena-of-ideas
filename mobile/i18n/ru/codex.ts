@@ -90,6 +90,11 @@ export const codex = {
   "codex.credits3": ". Heart-plus от Zeromancer (CC0). Иконки перекрашены, фон убран.",
   // Codex v2 (#1051)
   "forge.title": "КОДЕКС",
+  "forge.keys.tabs": " вкладки · ",
+  "forge.keys.unit": " юнит · ",
+  "forge.keys.move": " перейти · ",
+  "forge.keys.press": " нажать · ",
+  "forge.keys.back": " назад",
   "forge.tab.units": "Юниты",
   "forge.tab.feed": "Сегодня",
   "forge.tab.words": "Словарь",

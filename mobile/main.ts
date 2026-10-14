@@ -26,7 +26,7 @@ import { card, roman, setCardCredits, unitSheet, type CardUnit } from "./ui/card
 import { previewName } from "./ui/fusion";
 import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
-import { app, button, closable, desktopQuery, dismissable, h, isDesktop, keepScreen, onKeys, overlay, screen, show, who } from "./ui/dom";
+import { actionable, app, button, closable, desktopQuery, dismissable, h, isDesktop, keepFocus, keepScreen, keyboardLost, onKeys, overlay, screen, show, who, withKey } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
 import { telegramSheet } from "./screens/telegram";
 import { emailAttach, emailSignIn, emailSignUp } from "./screens/email";
@@ -399,6 +399,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
       ? h("span", { class: "play-main" }, t("home.continue", { where: active.round > rules.rounds ? t("home.continueCrown") : t("home.continueRound", { round: active.round }) }), hearts(active.hearts))
       : h("span", { class: "play-main" }, t("home.play")),
   );
+  if (isDesktop()) play.append(h("kbd", { class: "play-key" }, "Enter"));
   if (!active) play.append(h("span", { class: "play-sub" }, t(!champ ? "home.playSubNone" : own ? "home.playSubOwn" : "home.playSub", { n: rules.rounds })));
   const newRun = active
     ? button(t("home.newRun"), () => abandonSheet(active, "new", () => void guarded(err, async () => {
@@ -407,10 +408,10 @@ async function homeScreen(ended: number | null = null): Promise<void> {
         runOverScreen(await api.abandon(active.runId), content, "", true);
       })), "small link", "new-run")
     : null;
-  const codex = button(t("menu.codex"), () => void guarded(err, () => openCodex()), "throne-link", "codex");
-  const stats = button(t("home.stats"), () => void guarded(err, () => openCodex({ tab: "champions" })), "throne-link", "stats");
-  const forge = codexOn ? button(t("menu.forge"), () => void guarded(err, () => openForge()), "throne-link", "forge-open") : null;
-  const words = codexOn ? button(t("menu.dictionary"), () => void guarded(err, () => openForge("words")), "throne-link", "dictionary-open") : null;
+  const codex = withKey(button(t("menu.codex"), () => void guarded(err, () => openCodex()), "throne-link", "codex"), "C");
+  const stats = withKey(button(t("home.stats"), () => void guarded(err, () => openCodex({ tab: "champions" })), "throne-link", "stats"), "S");
+  const forge = codexOn ? withKey(button(t("menu.forge"), () => void guarded(err, () => openForge()), "throne-link", "forge-open"), "F") : null;
+  const words = codexOn ? withKey(button(t("menu.dictionary"), () => void guarded(err, () => openForge("words")), "throne-link", "dictionary-open"), "D") : null;
   const endDay = button(
     t("dev.endDay"),
     () =>
@@ -446,6 +447,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
   const pill = h("div", { class: "rating-pill keep", title: t("home.ratingAria") }, rating);
   const gear = button("", () => settingsSheet(home, err), "gear keep", "settings");
   gear.setAttribute("aria-label", t("home.settings"));
+  if (isDesktop()) gear.title = `${t("home.settings")} (G)`;
   gear.append(GEAR_SVG());
   show(
     h("header", { class: "row throne-top" }, h("h1", {}, t("home.title")), h("div", { class: "grow" }), pill, gear),
@@ -494,6 +496,17 @@ async function homeScreen(ended: number | null = null): Promise<void> {
   screen("home");
   music("home");
   if (justEnded) playoff?.classList.add("fresh");
+  // Keys (#1064): Enter plays, and a letter on each link (it is on the button).
+  const press = (id: string) => document.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`);
+  const letters: Record<string, string> = { c: "codex", f: "forge-open", d: "dictionary-open", s: "stats", i: "ideas", g: "settings" };
+  onKeys((e) => {
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    const b = k === "Enter" ? press("play") : press(letters[k] ?? "");
+    if (!b || b.disabled) return false;
+    b.click();
+    return true;
+  });
+  if (isDesktop() && (document.activeElement === document.body || !app.contains(document.activeElement))) play.focus({ preventScroll: true });
 }
 
 const svg = (paths: string, attrs: Record<string, string>) => () => {
@@ -539,7 +552,7 @@ function ideasMeter(ideas: IdeasView): HTMLElement {
   if (!ideas.ready && ideas.held < ideas.perDay)
     b.append(h("span", { class: "idea-runs", "data-testid": "ideas-refill" }, t("home.ideaRefill", { n: ideas.perDay - ideas.held, time: refillTime(ideas.refillsAt) })));
   if (ideas.ready) b.dataset.ready = String(ideas.ready);
-  return b;
+  return withKey(b, "I");
 }
 
 /** This device's last finished run (M5-3): the run-over screen keeps its id,
@@ -622,7 +635,7 @@ function abandonSheet(run: RunView, why: "menu" | "new", onConfirm: () => void):
     h(
       "div",
       { class: "row sheet-actions" },
-      button(t("abandon.cancel"), () => close(), "grow", "abandon-cancel"),
+      withKey(button(t("abandon.cancel"), () => close(), "grow", "abandon-cancel"), "Esc"),
       button(t("abandon.confirm"), () => (close(), onConfirm()), "danger grow", "abandon-confirm"),
     ),
   );
@@ -703,7 +716,7 @@ function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: F
     { class: "stack run-menu", "data-testid": "run-menu" },
     h("div", { class: "label" }, run.phase === "over" ? t("menu.runOver") : crown ? t("menu.runCrown") : t("menu.runRound", { round, rounds: rules.rounds })),
     // Over a battle that was playing, Resume plays on (R2-17 batch F).
-    button(t("menu.resume"), () => (close(), resume?.()), "primary", "menu-resume"),
+    withKey(button(t("menu.resume"), () => (close(), resume?.()), "primary", "menu-resume"), "Esc"),
     codex,
     forge,
     soundRow(),
@@ -870,6 +883,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     return t(f.awakens ? "fuse.offerNow" : "fuse.offerNear", { pair, fusion: fusionName(f) });
   };
 
+  /** Desktop: the keyboard goes to the fusion in the inspector (its primary button), as it does into a sheet. */
+  const focusPreview = () => queueMicrotask(() => (fuseView?.querySelector<HTMLElement>("button.primary:not(:disabled)") ?? fuseView?.querySelector<HTMLElement>("button:not(:disabled)"))?.focus({ preventScroll: true }));
+
   /** Move the unit at board slot `from` to `to` (a reorder), keeping it selected where it lands. */
   const moveTo = (from: number, to: number) => {
     if (from === to) return;
@@ -896,7 +912,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       if (desk && !crown) dropOn(e, slot);
       return e;
     }
-    const c = card(u, { side: "you", extra: [copiesBadge(u)], testid: id });
+    const c = actionable(card(u, { side: "you", extra: [copiesBadge(u)], testid: id }), `${u.name}, ${onBench ? t("board.onBench", { n: slot - L + 1 }) : t("board.inLine", { n: slot + 1 })}`);
     if (pick.mode === "picked" && pick.index === slot) c.classList.add("selected");
     if (pick.mode === "fuse") {
       if (pick.first === slot) c.classList.add("selected");
@@ -927,7 +943,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     return c;
   };
 
-  const renderLine = () => {
+  const renderLine = () => keepFocus(drawLine);
+  const drawLine = () => {
     line.replaceChildren(...Array.from({ length: L }, (_, i) => slotCard(i)));
     bench.replaceChildren(
       h("div", { class: "bench-label label" }, h("span", {}, t("board.bench")), h("span", {}, `${run.bench.length}/${B}`)),
@@ -943,6 +960,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const desktopCard = (c: HTMLElement, at: At) => {
     c.addEventListener("mouseenter", () => ((hover = at), renderInspector()));
     c.addEventListener("mouseleave", () => ((hover = null), renderInspector()));
+    // The keyboard reads a card as the mouse does (#1064): Tab to it and the inspector shows it.
+    c.addEventListener("focus", () => ((hover = at), renderInspector()));
+    c.addEventListener("blur", () => ((hover = null), renderInspector()));
     if (at.kind !== "line" || crown) return;
     const i = at.index;
     c.draggable = true;
@@ -1118,9 +1138,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
           h(
             "div",
             { class: "row sheet-actions" },
-            button(t("fuse.cancel"), () => close(), "grow", "preview-cancel"),
-            button(t("fuse.swap"), () => ((at = 1 - at), render()), "", "preview-swap"),
-            button(t("fuse.confirm"), () => (close(), void fuse(o, views[at]!)), "primary grow", "preview-confirm"),
+            withKey(button(t("fuse.cancel"), () => close(), "grow", "preview-cancel"), "Esc"),
+            button(t("fuse.swap"), () => keepFocus(() => ((at = 1 - at), render())), "", "preview-swap"),
+            withKey(button(t("fuse.confirm"), () => (close(), void fuse(o, views[at]!)), "primary grow", "preview-confirm"), "Enter"),
           ),
           unitSheet(fused, content, { preview: true }),
         );
@@ -1134,6 +1154,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         close = () => ((fuseView = null), renderLine());
       } else close = overlay(head, body);
       renderLine();
+      if (desk) focusPreview();
     });
 
   /** Rules v2's forge (#1049, server/src/mvp/codex.ts): the pair's Codex
@@ -1148,14 +1169,14 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const head = h("div", { class: "label" }, t(`forge.${slot.state}`));
     const body = h("div", { class: "stack", "data-testid": `forge-${slot.state}` });
     let close: () => void = () => {};
-    const cancel = () => button(t("fuse.cancel"), () => close(), "grow", "preview-cancel");
+    const cancel = () => withKey(button(t("fuse.cancel"), () => close(), "grow", "preview-cancel"), "Esc");
     if (slot.state === "discovered") {
       const fused = fusedOf(await api.preview(run.runId, { kind: "fuse", ...o }));
       const date = slot.claimedAt ? new Date(slot.claimedAt).toLocaleDateString(uiLang()) : "";
       body.replaceChildren(
         h("div", { class: "preview-card" }, card(fused, { side: "you", extra: [copiesBadge(fused)] })),
         h("div", { class: "dim small", "data-testid": "forge-credit" }, t("forge.by", { name: slot.claimedBy?.name ?? "?", date })),
-        h("div", { class: "row sheet-actions" }, cancel(), button(t("fuse.confirm"), () => (close(), void fuse(o, fused)), "primary grow", "preview-confirm")),
+        h("div", { class: "row sheet-actions" }, cancel(), withKey(button(t("fuse.confirm"), () => (close(), void fuse(o, fused)), "primary grow", "preview-confirm"), "Enter")),
         unitSheet(fused, content, { preview: true }),
       );
     } else if (slot.state === "ready") {
@@ -1174,11 +1195,11 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
             { class: "forge-cards", "data-testid": "forge-cards" },
             ...designs.map((u, i) => {
               const b = h("button", { class: `forge-card${i === at ? " on" : ""}`, "data-testid": `forge-card-${i}`, "aria-pressed": String(i === at) }, card(u, { side: "you" }), h("span", { class: "forge-flavour" }, flavour(i)));
-              b.addEventListener("click", () => ((at = i), render()));
-              return b;
+              b.addEventListener("click", () => keepFocus(() => ((at = i), render())));
+              return withKey(b, String(i + 1));
             }),
           ),
-          h("div", { class: "row sheet-actions" }, cancel(), button(t("forge.claim", { name: chosen.name }), () => (close(), void fuse({ ...o, pick: at }, chosen, slot)), "primary grow", "forge-claim")),
+          h("div", { class: "row sheet-actions" }, cancel(), withKey(button(t("forge.claim", { name: chosen.name }), () => (close(), void fuse({ ...o, pick: at }, chosen, slot)), "primary grow", "forge-claim"), "Enter")),
           unitSheet(chosen, content, { preview: true }),
         );
       };
@@ -1199,12 +1220,19 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         );
       render(slot);
     }
+    // Keys (#1064): 1–3 look at the sealed design with that number.
+    body.addEventListener("keydown", (e) => {
+      if (slot.state !== "ready" || e.ctrlKey || e.metaKey || e.altKey || !/^[1-3]$/.test(e.key)) return;
+      const b = body.querySelector<HTMLButtonElement>(`[data-testid="forge-card-${Number(e.key) - 1}"]`);
+      if (b) (e.preventDefault(), e.stopPropagation(), b.click());
+    });
     pick = { mode: "none" };
     if (desk) {
       fuseView = h("div", { class: "stack", "data-testid": "fuse-preview" }, head, body);
       close = () => ((fuseView = null), renderLine());
     } else close = overlay(head, body);
     renderLine();
+    if (desk) focusPreview();
   };
 
   /** Confirm a fuse; a pair nobody had fused (or only bots had) then shows
@@ -1322,7 +1350,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const owned = owns(o.unitId);
       // The lock is a corner mark, so "3g ＋" keeps one line at 360 px.
       const price = `${t("shop.gold", { n: o.cost })}${owned ? " ＋" : ""}`;
-      const c = card(cu, { side: "you", tier: o.tier, extra: [h("div", { class: "cost" }, price)], testid: `offer-${o.slot}` });
+      const c = actionable(card(cu, { side: "you", tier: o.tier, extra: [h("div", { class: "cost" }, price)], testid: `offer-${o.slot}` }), `${cu.name}, ${price}`);
       if (o.locked) c.append(h("span", { class: "lock-mark", "aria-label": t("offer.locked") }, "🔒"));
       if (run.gold < o.cost) c.classList.add("poor");
       if (o.locked) c.classList.add("locked");
@@ -1461,7 +1489,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       // Yours: a copy merges in, a fused unit's part included (owns()).
       const mine = board[mergeTarget(board, id)] ?? null;
       const cu: CardUnit = { unitId: id, emoji: u?.emoji ?? "?", name: u?.name ?? id, stats: u?.base ?? { pwr: 0, hp: 0 }, ...(u ? { recipe: u.forms.sleeping } : {}) };
-      const c = card(cu, { side: "you", ...(u ? { tier: u.tier } : {}), extra: mine ? [h("div", { class: "cost" }, "＋")] : [], testid: `gift-card-${i}` });
+      const c = actionable(card(cu, { side: "you", ...(u ? { tier: u.tier } : {}), extra: mine ? [h("div", { class: "cost" }, "＋")] : [], testid: `gift-card-${i}` }), cu.name);
       if (mine) c.classList.add("owned");
       const sheetOf = () => (mine ? unitSheet(mine, content) : u ? unitSheet(u, content) : h("h2", {}, id));
       readers.push(() => sheetOf());
@@ -1472,7 +1500,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         c.addEventListener("click", () => readGift(i));
       } else c.addEventListener("click", () => (play("click"), void closable(sheetOf())));
       const ok = giftPickable(id);
-      const pickBtn = button(ok ? (mine ? t("gift.pickOwned") : t("gift.pick")) : t("gift.full"), () => (close(), void decide({ kind: "gift", pick: i })), "primary", `gift-pick-${i}`);
+      const pickBtn = withKey(button(ok ? (mine ? t("gift.pickOwned") : t("gift.pick")) : t("gift.full"), () => (close(), void decide({ kind: "gift", pick: i })), "primary", `gift-pick-${i}`), String(i + 1));
       pickBtn.disabled = !ok;
       return h("div", { class: "gift-choice" }, c, pickBtn);
     });
@@ -1500,6 +1528,13 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       read.closest(".sheet")?.classList.add("gift-sheet");
       readGift(0);
     }
+    // Keys (#1064): 1–3 pick the card with that number (it is on its button).
+    document.querySelector<HTMLElement>('[data-testid="gift-title"]')?.closest(".sheet")?.addEventListener("keydown", (e) => {
+      const ev = e as KeyboardEvent;
+      if (ev.ctrlKey || ev.metaKey || ev.altKey || !/^[1-9]$/.test(ev.key)) return;
+      const b = document.querySelector<HTMLButtonElement>(`[data-testid="gift-pick-${Number(ev.key) - 1}"]`);
+      if (b && !b.disabled) (ev.preventDefault(), b.click());
+    });
   }
 
   // "?" opens the Codex's How to play (M5-6: the rules and how to read a card); until a player has opened it once, it says so.
@@ -1508,7 +1543,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
 
   const menuBtn = button("☰", () => runMenu(run, content, err), "menu-btn", "menu-open");
   menuBtn.setAttribute("aria-label", t("shop.menu"));
-  if (desk) menuBtn.title = t("shop.menuEsc");
+  if (desk) (menuBtn.title = t("shop.menuEsc"), withKey(menuBtn, "Esc"));
 
   const nextOpp = h("span", { class: "dim next-opp", "data-testid": "next-opponent" }, ...(opp ? [`${crown ? t("opp.crownVs") : t("opp.next")} `, who(opp.player.name), `${opp.player.bot ? " 🤖" : ""}${ownCrown ? t("opp.yourChampionTeam") : ""}`] : [crown ? t("opp.crownVsChampion") : t("opp.nextSaved")]));
   show(
@@ -1561,6 +1596,16 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     err,
   );
   screen("shop");
+  // The keyboard stays with the unit in hand (#1064): a move or a merge redraws the
+  // shop, and the focus that was on a board card follows the selection.
+  if (desk && pick.mode === "none" && keyboardLost()) document.querySelector<HTMLElement>('[data-testid="line-0"], [data-testid="bench-0"], [data-testid="offer-0"]')?.focus({ preventScroll: true });
+  if (desk && pick.mode === "picked") {
+    const on = document.activeElement;
+    if (on === document.body || (on instanceof HTMLElement && /^(line|bench)-\d+$/.test(on.dataset.testid ?? ""))) {
+      const at = pick.index;
+      document.querySelector<HTMLElement>(`[data-testid="${at < L ? `line-${at}` : `bench-${at - L}`}"]`)?.focus({ preventScroll: true });
+    }
+  }
   music("shop", run.runId);
   // The gift opens by itself, unless it was set aside (and, if set aside for
   // a full board, there is still no room).
@@ -1839,11 +1884,12 @@ function runOverScreen(run: RunView, content: MvpContent, notice = "", newRun = 
     run.line.length ? h("div", { class: "over-line" }, h("div", { class: "label" }, t("over.lastLine")), team(run.line, "you", content)) : null,
     votePanel(content),
     h("div", { class: "spacer" }),
-    h("div", { class: "row footer" }, ...(newRun ? [button(t("over.home"), home, "grow", "home"), button(t("over.newRun"), next, "primary grow", "new-run-start")] : [button(t("over.home"), home, "primary grow", "home")])),
+    h("div", { class: "row footer" }, ...(newRun ? [withKey(button(t("over.home"), home, "grow", "home"), "Esc"), withKey(button(t("over.newRun"), next, "primary grow", "new-run-start"), "Enter")] : [withKey(button(t("over.home"), home, "primary grow", "home"), "Enter")])),
   );
   screen("over");
   music("shop", run.runId);
   onKeys((e) => (e.key === "Enter" ? ((newRun ? next : home)(), true) : e.key === "Escape" ? (home(), true) : false));
+  (document.querySelector<HTMLElement>('[data-testid="new-run-start"], [data-testid="home"]'))?.focus({ preventScroll: true });
 }
 
 /** This device's own invite link (R4-20), after a join through the open link. */

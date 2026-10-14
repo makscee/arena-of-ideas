@@ -186,7 +186,7 @@ export const main = {
   "board.inLine": "In your line, slot {n}",
   "board.onBench": "On your bench, slot {n} · doesn't fight",
   "board.crownFinal": "Your line is final for the Crown.",
-  "board.clickSelect": "Click to select it: move, bench, fuse or sell.",
+  "board.clickSelect": "Click or press Enter to select it: move, bench, fuse or sell.",
   "board.offerHead": "Shop · offer {n} · key {n}",
   "board.buyDesk": "Buy {cost}g · {n}",
 } satisfies Record<string, Msg>;

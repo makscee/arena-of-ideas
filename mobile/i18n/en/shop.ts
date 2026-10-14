@@ -5,8 +5,8 @@ import type { Msg } from "../index";
 
 export const shop = {
   // The desktop inspector, empty.
-  "inspector.idleCrown": "Hover a card to read it here.",
-  "inspector.idle": "Hover a card to read it here.",
+  "inspector.idleCrown": "Hover a card, or Tab to it, to read it here.",
+  "inspector.idle": "Hover a card, or Tab to it, to read it here.",
 
   // The shop's one hint.
   "hint.lineFullSwap": "Line full: Swap trades with the back unit, or tap one.",
@@ -17,10 +17,10 @@ export const shop = {
   "hint.oneMore": "One more {name} awakens it. It's in the shop.",
   "hint.moveToLine": "Move a unit to your line: only the line fights.",
   "hint.noGold": "No gold for a unit. Fight to move on: an empty line loses, and costs a heart.",
-  "hint.buyDesk": "Double-click an offer, or press its number, to buy it.",
+  "hint.buyDesk": "Double-click an offer, or press its number, to buy it. Tab reaches every card.",
   "hint.buyPhone": "Tap an offer to read it and buy it.",
   "hint.outOfGold": "Out of gold for units. Fight when ready.",
-  "hint.moveDesk": "Drag a unit to move it, or click it: ← → move it, S sells it.",
+  "hint.moveDesk": "Drag a unit to move it, or click it (Tab, Enter): ← → move it, S sells it.",
   "hint.movePhone": "Tap a unit in your line to move, sell or read it.",
   "hint.oneMoreCost": "One more {name} awakens it. It's in the shop for {cost}g.{keep}",
   "hint.lockToKeep": " Not enough gold: lock it to keep it for next round.",
@@ -97,7 +97,7 @@ export const shop = {
   "gift.freeTierAhead": "Free: one of these tier {tier} units, a tier ahead of the shop. It joins your line, else your bench; one you own merges in.",
   "gift.noneFits": "Line and bench full: make room (sell a unit), then pick.",
   "gift.onlyOwned": "Line and bench full: only a unit you own merges in now. Make room (sell a unit) to pick another.",
-  "gift.readDesk": "Hover a card to read it here. Esc sets the gift aside.",
+  "gift.readDesk": "Hover or Tab to a card to read it here. Esc sets the gift aside.",
   "gift.readPhone": "Tap a card to read it.",
   "gift.makeRoom": "Make room",
   "gift.skip": "Skip",
@@ -107,7 +107,7 @@ export const shop = {
   "shop.menu": "Menu",
   "shop.menuEsc": "Menu (Esc)",
   "keys.title": "Keys",
-  "keys.lead": "Click selects · drag reorders · double-click",
+  "keys.lead": "Tab moves · Enter selects · click selects · drag reorders · double-click",
   "keys.or": " or ",
   "keys.buys": " buys · ",
   "keys.reroll": " reroll · ",

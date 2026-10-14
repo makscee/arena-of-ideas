@@ -89,6 +89,11 @@ export const codex = {
   "codex.credits3": ". Heart-plus by Zeromancer (CC0). Icons were recoloured and their background removed.",
   // Codex v2 (#1051): unit pages, the daily feed, the Dictionary, the claim moment
   "forge.title": "CODEX",
+  "forge.keys.tabs": " tabs · ",
+  "forge.keys.unit": " unit · ",
+  "forge.keys.move": " move · ",
+  "forge.keys.press": " press · ",
+  "forge.keys.back": " back",
   "forge.tab.units": "Units",
   "forge.tab.feed": "Today",
   "forge.tab.words": "Dictionary",

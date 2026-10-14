@@ -13,7 +13,7 @@ import { MVP_RULES, type BattleUnit, type UnitCredit, type VersionCredit, type L
 import { summonId } from "../../src/describe";
 import type { AbilityRegistry, Stats } from "../../src/types";
 import { t } from "../i18n";
-import { closable, h, who } from "./dom";
+import { actionable, closable, h, who } from "./dom";
 import { discoveredLine } from "./fusion";
 import { icon } from "./icon";
 import { roman } from "./roman";
@@ -131,7 +131,10 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
     el.title = `${u.name}: idea by @${credit.by.name}`;
     el.append(h("span", { class: "by-mark", "data-testid": "card-by", "aria-label": t("card.ideaByAria", { name: credit.by.name }) }, "💡"));
   }
-  if (o.onOpen) el.addEventListener("click", o.onOpen);
+  if (o.onOpen) {
+    el.addEventListener("click", o.onOpen);
+    actionable(el, u.name);
+  }
   return el;
 }
 

@@ -8,7 +8,7 @@ import type { MvpContent, UnitContent, VoteCard } from "../../src/mvp/contract";
 import { api } from "../api";
 import { addCardAbilities, card, formText } from "../ui/card";
 import { t } from "../i18n";
-import { button, h } from "../ui/dom";
+import { actionable, button, h } from "../ui/dom";
 import { localUnit } from "../unit-names";
 
 /** A box that fills itself with the player's next vote card, if any. */
@@ -53,7 +53,7 @@ export function votePanel(content: MvpContent): HTMLElement {
         h("div", { class: "dim small vote-text" }, t("vote.awoken", { text: formText(u.forms.awoken, pool) })),
       );
       el.addEventListener("click", () => void send(u.id));
-      return el;
+      return actionable(el, u.name);
     };
     box.replaceChildren(
       h(

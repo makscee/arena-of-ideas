@@ -6,7 +6,7 @@
 import type { Champion, HomeView, MvpContent, StatsView } from "../../src/mvp/contract";
 import { card, unitSheet } from "../ui/card";
 import { t } from "../i18n";
-import { h, isDesktop, overlay, who } from "../ui/dom";
+import { actionable, h, isDesktop, overlay, who } from "../ui/dom";
 import { keepUnitRates } from "../ui/unit-stats";
 
 /** The Codex's Champions tab (M5-6): the champions, newest first, then your records. */
@@ -43,6 +43,7 @@ function championsPanel(champions: Champion[], content: MvpContent): HTMLElement
       h("span", { class: "grow" }, h("div", {}, t("stats.dayPrefix", { seq: c.seq }), who(c.player.name), c.player.bot ? " 🤖" : ""), h("div", { class: "dim small" }, `${c.day} · ${c.line.map((u) => u.emoji).join(" ")}`)),
     );
     row.addEventListener("click", () => overlay(championSheet(c, content)));
+    actionable(row);
     return row;
   });
   return h("div", { class: "panel stack", "data-testid": "stats-champions" }, ...(rows.length ? rows : [h("div", { class: "dim" }, t("stats.noChampion"))]));
@@ -60,7 +61,7 @@ function championSheet(c: Champion, content: MvpContent): HTMLElement {
       ...c.line.map((u) => {
         const el = card(u, { side: "ghost" });
         el.addEventListener("click", () => overlay(unitSheet(u, content)));
-        return el;
+        return actionable(el, u.name);
       }),
     ),
   );

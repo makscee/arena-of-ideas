@@ -25,7 +25,7 @@ import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { summonId } from "../../src/describe";
 import { card, formRich, summonById, summonSheet, summonText, unitSheet } from "../ui/card";
-import { app, button, closable, fitText, h, isDesktop, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
+import { actionable, app, button, closable, fitText, h, isDesktop, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
 import { t as tr } from "../i18n";
 import { icon } from "../ui/icon";
 import { statusesShown, STATUS_ROW_FALLBACK } from "../ui/status-row";
@@ -830,7 +830,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     triggerFlash(el, u.id, v);
     // The change's chip traces it; the rest of the card opens the unit.
     el.addEventListener("click", () => openUnit(u.id));
-    return el;
+    return actionable(el);
   }
   /** One chip for a unit's changes this step. Two changes (a status and the
    * stat it moves: "Vitality ×2" and "+2 HP") show as two lines, each in its
@@ -1095,7 +1095,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     if (step?.actor === id) el.classList.add("acting");
     motion(el, id, sides.get(id) ?? you, v);
     el.addEventListener("click", () => openUnit(id));
-    return el;
+    return actionable(el);
   }
 
   /** What the board shows: the open beat's changes so far (the chips), the
