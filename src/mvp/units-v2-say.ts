@@ -358,10 +358,10 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "В конце каждого хода бьёт всех врагов на 1 за каждый удар, полученный им в этом бою.",
   ],
   Puppeteer: () => [
-    "Once a turn, when an enemy strikes, the strike hits the enemy at the back instead.",
-    "Once a turn, when an enemy strikes, the strike hits the enemy at the back instead, and it gains 1 Shield.",
-    "Раз в ход, когда враг атакует, удар попадает в заднего врага.",
-    "Раз в ход, когда враг атакует, удар попадает в заднего врага, а он получает 1 Щит.",
+    "On turns 2, 4, 6…, the first time an enemy strikes, the strike hits the enemy at the back instead.",
+    "On turns 2, 4, 6…, the first time an enemy strikes, the strike hits the enemy at the back instead, and it gains 1 Shield.",
+    "На 2-м, 4-м, 6-м… ходу, когда враг атакует впервые за ход, удар попадает в заднего врага.",
+    "На 2-м, 4-м, 6-м… ходу, когда враг атакует впервые за ход, удар попадает в заднего врага, а он получает 1 Щит.",
   ],
   Phoenix: () => [
     "The first time it dies, it comes back at the back of its line with HP equal to its power.",
@@ -370,9 +370,9 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "Когда погибает впервые, возвращается в конец своего ряда с ОЗ, равными его АТК, и бьёт всех врагов на свою АТК.",
   ],
   Volcano: () => [
-    "At each turn start, it hits every unit on the field for 1, its own side and itself included.",
-    "At each turn start, it hits every enemy for 1 and every ally gains 1 Shield.",
-    "В начале каждого хода бьёт всех бойцов на поле на 1, включая свою сторону и себя.",
-    "В начале каждого хода бьёт всех врагов на 1, а все союзники получают 1 Щит.",
+    "At the start of turns 2, 4, 6…, it hits every unit on the field for 1, its own side and itself included.",
+    "At the start of turns 2, 4, 6…, it hits every enemy for 1 and every ally gains 1 Shield.",
+    "В начале 2-го, 4-го, 6-го… хода бьёт всех бойцов на поле на 1, включая свою сторону и себя.",
+    "В начале 2-го, 4-го, 6-го… хода бьёт всех врагов на 1, а все союзники получают 1 Щит.",
   ],
 };

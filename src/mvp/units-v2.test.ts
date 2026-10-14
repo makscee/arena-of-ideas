@@ -245,7 +245,7 @@ describe("rules v2 pool", () => {
       ["Dragon", ["Dragon"], ["Nautilus", "Seed"], /^Dragon → all enemies \(Nautilus, Seed\) → \d+ damage/],
       ["Puppeteer", ["Puppeteer"], ["Leech", "Seed"], /^Puppeteer intercepts: the strike on Puppeteer lands on Seed$/],
       ["Phoenix", ["Phoenix"], ["Berserker", "Leech"], /^Phoenix \(once per battle\) → self \(Phoenix\)$/],
-      ["Volcano", ["Volcano", "Sniper"], ["Nautilus", "Seed"], /^Volcano → all enemies \(Nautilus, Seed, Volcano, Sniper\) → 1 damage$/],
+      ["Volcano", ["Volcano", "Sniper"], ["Nautilus", "Seed"], /^Volcano \(on turns 2, 4, 6…\) → all enemies \(Nautilus, Seed, Volcano, Sniper\) → .*1 damage$/],
     ];
     for (const [name, A, B, want] of cases) {
       const a = A.map((n, i) => unit(n, `a${i}`));
@@ -258,12 +258,12 @@ describe("rules v2 pool", () => {
   it("batch 3 (#1048): each awoken upgrade fires too", () => {
     const p = { id: "bot", name: "bot", bot: true };
     const cases: [string, string[], string[], RegExp][] = [
-      ["Puppeteer", ["Puppeteer"], ["Leech", "Seed"], /^Puppeteer \(once per turn\) → self \(Puppeteer\) → Shield 1$/],
+      ["Puppeteer", ["Puppeteer"], ["Leech", "Seed"], /^Puppeteer \(on turns 2, 4, 6… and once per turn\) → self \(Puppeteer\) → Shield 1$/],
       ["Squire", ["Squire", "Paladin", "Lantern"], ["Nautilus"], /^Squire → self \(Squire, Paladin\) → Strength 1$/],
       ["Dynamo", ["Dynamo"], ["Seed", "Seed"], /^Dynamo → self \(Dynamo\) → Charge 1, Strength 1$/],
       ["Siphon", ["Siphon"], ["Leech", "Medic"], /^Siphon → self \(Siphon\) → Strength 1$/],
       ["Phoenix", ["Phoenix"], ["Berserker", "Leech"], /^Phoenix \(once per battle\) → .*→ \d+ damage$/],
-      ["Volcano", ["Volcano", "Sniper"], ["Nautilus", "Seed"], /^Volcano → .* → 1 damage, Shield 1$/],
+      ["Volcano", ["Volcano", "Sniper"], ["Nautilus", "Seed"], /^Volcano \(on turns 2, 4, 6…\) → .* → .*1 damage, Shield 1$/],
       ["Witch Doctor", ["Hornet", "Frostling", "Witch Doctor"], ["Seed", "Seed", "Seed"], /^Witch Doctor → .*Shield 1$/],
       ["Heckler", ["Heckler"], ["Leech", "Seed"], /^Heckler → it \(Leech\) → \d+ damage, Curse 1$/],
       ["Comet", ["Comet"], ["Seed", "Seed"], /^Comet \(on turns 3, 6, 9…\) → all enemies \(Seed, Seed\) → 3 damage$/],
