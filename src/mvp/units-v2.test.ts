@@ -33,11 +33,11 @@ describe("rules v2 pool", () => {
     expect(Object.keys(content.statuses)).toEqual(expect.arrayContaining(["Grains", "Sands", "Memory", "Memories", "Shield", "Strength"]));
   });
 
-  it("numbers stay on the old pool's scale (#1047): sleeping HP 4-12, PWR at most 5, awoken at most +4 HP / +1 PWR", () => {
+  it("numbers stay on the old pool's scale (#1047): sleeping HP 2-12, PWR at most 6, awoken at most +4 HP / +1 PWR", () => {
     for (const u of content.units) {
-      expect(u.base.hp, u.name).toBeGreaterThanOrEqual(4);
+      expect(u.base.hp, u.name).toBeGreaterThanOrEqual(2);
       expect(u.base.hp, u.name).toBeLessThanOrEqual(12);
-      expect(u.base.pwr, u.name).toBeLessThanOrEqual(5);
+      expect(u.base.pwr, u.name).toBeLessThanOrEqual(6);
       expect(u.awokenBonus?.hp ?? 0, u.name).toBeLessThanOrEqual(4);
       expect(u.awokenBonus?.pwr ?? 0, u.name).toBeLessThanOrEqual(1);
     }

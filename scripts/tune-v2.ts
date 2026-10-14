@@ -48,10 +48,11 @@ const CHECKS = arg("--checks", 12);
 const BAND = 0.08;
 /** Far out: HP moves by 2. */
 const FAR = 0.16;
-/** Sleeping numbers stay in the old pool's range (main's units: HP 4-12,
- * PWR 1-4; Maks's note on batch 1, #1047: awoken Medic had 33 HP). */
-const PWR = { min: 1, max: 5 };
-const HP = { min: 4, max: 12 };
+/** Sleeping numbers: HP at most 12 (main's units: HP 4-12; Maks's note on
+ * batch 1, #1047: awoken Medic had 33 HP), widened down to HP 2 and PWR 0-6
+ * so the units at the old floor can still move (Maks's (a), 10-14). */
+const PWR = { min: 0, max: 6 };
+const HP = { min: 2, max: 12 };
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const median = (xs: number[]) => {
@@ -83,6 +84,8 @@ function measureChild(rs: V2Row[], seed: number): Promise<Measured> {
 const clamp = (x: number, b: { min: number; max: number }) => Math.max(b.min, Math.min(b.max, x));
 /** The pool's numbers, clamped into today's bounds and the awoken cap (a
  * unit with no strike keeps PWR 0). */
+/** Units that strike by design: they keep the PWR knob even at PWR 0. */
+const STRIKES = new Set(ROWS_V2.filter((r) => r.pwr > 0).map((r) => r.name));
 let rows: V2Row[] = ROWS_V2.map((r) => {
   const a = r.awoken ?? { pwr: 0, hp: 0 };
   return { ...r, pwr: r.pwr > 0 ? clamp(r.pwr, PWR) : 0, hp: clamp(r.hp, HP), awoken: { pwr: Math.min(a.pwr, AWOKEN.pwr), hp: Math.min(a.hp, AWOKEN.hp) } };
@@ -94,7 +97,7 @@ const MARGIN = 0.02;
 const bonusUp = (row: V2Row): V2Row => {
   const a = row.awoken!;
   if (a.hp < AWOKEN.hp) return { ...row, awoken: { ...a, hp: a.hp + 2 } };
-  if (row.pwr > 0 && a.pwr < AWOKEN.pwr) return { ...row, awoken: { ...a, pwr: a.pwr + 1 } };
+  if (STRIKES.has(row.name) && a.pwr < AWOKEN.pwr) return { ...row, awoken: { ...a, pwr: a.pwr + 1 } };
   return row;
 };
 /** The pool with every unit's asleep twin (forms awoken = sleeping, no awoken bonus). */
@@ -179,7 +182,7 @@ for (let round = 1; round <= ROUNDS; round++) {
     const hp = Math.max(HP.min, Math.min(HP.max, row.hp + d * (far ? 2 : 1)));
     // PWR is the coarse knob (one point moves a unit's every strike): it
     // turns when HP is at its bound, or with HP when the unit is far out.
-    const pwrMoves = row.pwr > 0 && (hp === row.hp || far);
+    const pwrMoves = STRIKES.has(row.name) && (hp === row.hp || far);
     const pwr = pwrMoves ? Math.max(PWR.min, Math.min(PWR.max, row.pwr + d)) : row.pwr;
     if (hp === row.hp && pwr === row.pwr) return next;
     moves.push(`${row.name} ${pct(s)}: ${row.pwr}/${row.hp}→${pwr}/${hp}`);
