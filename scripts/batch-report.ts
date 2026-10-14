@@ -9,7 +9,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { contentOf } from "../server/src/mvp/content.js";
 import { battle } from "../src/battle.js";
-import { formSegments } from "../src/mvp/form-text.js";
+import { formText, sentenceText } from "../src/mvp/form-text.js";
 import { ROWS_V2 } from "../src/mvp/units-v2.js";
 import { FIXTURES } from "../src/words/fixtures.js";
 import { traceLines } from "../src/words/trace.js";
@@ -39,7 +39,6 @@ const balanceOf = (name: string) => {
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 
 const content = contentOf(ROWS_V2);
-const text = (segs: { text: string }[]) => segs.map((s) => s.text).join("");
 const scene = (id: string, lang: string) => `${base}#scene=${id}&lang=${lang}`;
 
 /** The fixture's trace line, and the first other line that names the unit. */
@@ -69,8 +68,9 @@ const cards = ROWS_V2.map((row) => {
     const tr = (hasFixture ? trace(fixture) : poolTrace(row.name, f === "awoken")).map((l, i) => `<li class="${i === 0 ? "trace main" : "trace"}">${esc(l)}</li>`).join("");
     return `<div class="form">
   <h3>${f === "sleeping" ? "Sleeping · Спящий" : "Awoken · Пробуждённый"}</h3>
-  <p class="en">${esc(text(formSegments(form, content.abilities, "en", content.statuses)))}</p>
-  <p class="ru">${esc(text(formSegments(form, content.abilities, "ru", content.statuses)))}</p>
+  <p class="en">${esc(sentenceText(form, content.abilities, "en", content.statuses))}</p>
+  <p class="ru">${esc(sentenceText(form, content.abilities, "ru", content.statuses))}</p>
+  <p class="chain"><code>${esc(formText(form, content.abilities, "en", content.statuses))}</code></p>
   ${tr ? `<ul class="traces">${tr}</ul>` : ""}
   <p class="go">Scene: <a href="${esc(scene(sceneId, "en"))}" target="_blank" rel="noopener">EN</a> <a href="${esc(scene(sceneId, "ru"))}" target="_blank" rel="noopener">RU</a> <code>${sceneId}</code></p>
 </div>`;

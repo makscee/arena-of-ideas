@@ -1371,6 +1371,10 @@ export function fellToFatigue(log: BattleEvent[], death: BattleEvent): boolean {
   return hit?.causedBy !== null && hit?.causedBy !== undefined && log[hit.causedBy]?.type === "Fatigue";
 }
 
+/** What a redirect moved, by the event it moved. */
+const REDIRECTED_EN: Record<string, string> = { Hurt: "the hit", Strike: "the strike", StatusApplied: "the status", Heal: "the heal" };
+const REDIRECTED_RU: Record<string, string> = { Hurt: "удар", Strike: "удар", StatusApplied: "статус", Heal: "лечение" };
+
 /** One line, cause → effect, for the event `id` (plus merged follow-ups). */
 export function captionOf(log: BattleEvent[], id: number, name: NameOf = displayNames(log), merged: number[] = [id], p: Perspective = {}): string {
   const e = log[id];
@@ -1423,6 +1427,19 @@ export function captionOf(log: BattleEvent[], id: number, name: NameOf = display
     case "BattleEnd":
       // The turn cap ran out (R3-26): say why it is a draw.
       return e.timeUp ? TIME_UP_CAPTION : endCaption(e.winner, p);
+    // Rules v2's words (#1043 §3): each says what it did, never its event name.
+    case "Flipped":
+      return `${name(e.unit)} flips a coin → ${e.heads ? "heads" : "tails"}`;
+    case "Redirected":
+      return `${name(e.by.unit)} → takes ${REDIRECTED_EN[e.original] ?? "the hit"} meant for ${name(e.from)}${e.to === e.by.unit ? "" : `, onto ${name(e.to)}`}`;
+    case "RuleMod": {
+      const o = e.other ? name(e.other) : "";
+      return { copyRule: `${name(e.unit)} copies the rule of ${o}`, actAgain: `${name(e.unit)} → ${o} acts again`, remember: `${name(e.unit)} remembers the rule of ${o}`, performRemembered: `${name(e.unit)} performs the rule of ${o}`, swapRules: `${name(e.unit)} trades rules with ${o}` }[e.op];
+    }
+    case "Delayed":
+      return `${name(e.by.unit)} → ${name(e.unit)}: lands at the end of turn ${e.at}`;
+    case "Transformed":
+      return `${name(e.unit)} becomes ${e.name} (${e.pwr}/${e.hp})`;
     default:
       return e.type;
   }
@@ -1473,6 +1490,18 @@ function captionOfRu(log: BattleEvent[], e: BattleEvent, name: NameOf, merged: n
       return `${name(e.by.unit)}${e.by.status ? ` (${st(e.by.status)})` : ""} → останавливает ${stoppedTextRu(e.original, e.unit, false, name)}`;
     case "BattleEnd":
       return e.timeUp ? TIME_UP_CAPTION_RU : endCaption(e.winner, p);
+    case "Flipped":
+      return `${name(e.unit)} бросает монету → ${e.heads ? "орёл" : "решка"}`;
+    case "Redirected":
+      return `${name(e.by.unit)} → перехватывает ${REDIRECTED_RU[e.original] ?? "удар"} (цель: ${name(e.from)})${e.to === e.by.unit ? "" : ` → ${name(e.to)}`}`;
+    case "RuleMod": {
+      const o = e.other ? name(e.other) : "";
+      return { copyRule: `${name(e.unit)} копирует правило ${o}`, actAgain: `${name(e.unit)} → ${o} действует ещё раз`, remember: `${name(e.unit)} запоминает правило ${o}`, performRemembered: `${name(e.unit)} исполняет правило ${o}`, swapRules: `${name(e.unit)} меняется правилами с ${o}` }[e.op];
+    }
+    case "Delayed":
+      return `${name(e.by.unit)} → ${name(e.unit)}: сработает в конце хода ${e.at}`;
+    case "Transformed":
+      return `${name(e.unit)} превращается в ${e.name} (${e.pwr}/${e.hp})`;
     default:
       return e.type;
   }

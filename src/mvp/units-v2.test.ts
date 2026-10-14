@@ -9,7 +9,7 @@ import { MVP_RULES } from "./contract.js";
 import { ROWS_V2 } from "./units-v2.js";
 import { V2_NUMBERS } from "./units-v2-numbers.js";
 import { traceLines } from "../words/trace.js";
-import { formSegments, formText } from "./form-text.js";
+import { formSegments, formText, sentenceSegments, sentenceText } from "./form-text.js";
 import { ruStatusName, setKnownStatusNames } from "../status-names.js";
 
 const content = contentOf(ROWS_V2);
@@ -31,6 +31,34 @@ describe("rules v2 pool", () => {
     expect(new Set(content.units.map((u) => u.tier))).toEqual(new Set([1, 2, 3, 4]));
     expect(contentFormProblems(content)).toEqual([]);
     expect(Object.keys(content.statuses)).toEqual(expect.arrayContaining(["Grains", "Sands", "Memory", "Memories", "Shield", "Strength"]));
+  });
+
+  it("every card sentence reads like a person wrote it (#1047): its own, EN and RU, never starting with a bare number or a status name", () => {
+    const statusNames = Object.values(content.statuses).flatMap((d) => [d.name, ...(d.names ? [d.names.en, d.names.ru.name] : [])]);
+    for (const u of content.units) {
+      for (const f of ["sleeping", "awoken"] as const) {
+        const form = u.forms[f];
+        expect(form.say, `${u.name} ${f}`).toBeDefined();
+        for (const lang of ["en", "ru"] as const) {
+          const said = sentenceText(form, content.abilities, lang, content.statuses);
+          expect(said, `${u.name} ${f} ${lang}`).toBe(form.say![lang]);
+          for (const sentence of said.split(/(?<=[.;:])\s+/)) {
+            expect(sentence, `${u.name} ${f} ${lang}: "${sentence}"`).not.toMatch(/^\d/);
+            for (const n of statusNames) expect(sentence.startsWith(n), `${u.name} ${f} ${lang}: "${sentence}" starts with ${n}`).toBe(false);
+          }
+        }
+      }
+      // the awoken sentence says what awakening changes
+      expect(u.forms.awoken.say!.en, u.name).not.toBe(u.forms.sleeping.say!.en);
+      expect(u.forms.awoken.say!.ru, u.name).not.toBe(u.forms.sleeping.say!.ru);
+    }
+  });
+
+  it("the card sentence keeps the word chain's glossary terms it names word for word (Drummer's Strength)", () => {
+    const drummer = content.units.find((u) => u.name === "Drummer")!;
+    const segs = sentenceSegments(drummer.forms.sleeping, content.abilities, "en", content.statuses);
+    expect(segs.map((s) => s.text).join("")).toBe("Each ally strike adds a beat; at 3 beats, every ally behind it gains 1 Strength.");
+    expect(segs.some((s) => s.term && s.text.includes("Strength"))).toBe(true);
   });
 
   it("every unit of the batch fights, sleeping and awoken, and says both forms in EN and RU", () => {

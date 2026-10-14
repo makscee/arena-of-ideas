@@ -12,6 +12,7 @@ import type { AbilityRegistry, StatusRegistry } from "../types.js";
 import { ALL_OR_NOTHING } from "../words/all-or-nothing.js";
 import type { Tier, UnitForm } from "./contract.js";
 import { V2_NUMBERS } from "./units-v2-numbers.js";
+import { V2_SAY } from "./units-v2-say.js";
 
 /** The six shape classes of rules v2 §3, as the design tags each unit. */
 export type Shape = "counter" | "copy" | "replacement" | "swing" | "scaling" | "redirect" | "memory" | "form" | "position" | "condition" | "rule";
@@ -182,8 +183,16 @@ const me: UnitForm["who"] = [{ kind: "holder" }];
 /** The awoken form: the sleeping one with one clause upgraded. */
 const awake = (s: UnitForm, up: Partial<Form>): UnitForm => ({ ...s, ...(up.does !== undefined ? { does: [up.does] } : {}), ...(up.who ? { who: up.who } : {}), ...(up.also ? { also: up.also } : {}), ...(up.statuses ? { statuses: up.statuses } : {}) });
 
-const v2 = (name: string, emoji: string, tier: Tier, shape: Shape, pwr: number, hp: number, archetype: string, s: UnitForm, up: Partial<Form>): V2Row =>
-  ({ v2: true, name, emoji, tier, shape, pwr, hp, ...V2_NUMBERS[name], archetype, forms: { sleeping: s, awoken: awake(s, up) } });
+/** Each form carries its card sentence (units-v2-say.ts), set per form so
+ * the awoken one never reads the sleeping one's. */
+const v2 = (name: string, emoji: string, tier: Tier, shape: Shape, pwr: number, hp: number, archetype: string, s: UnitForm, up: Partial<Form>): V2Row => {
+  const say = V2_SAY[name]?.({ hp: 8, awokenHp: 8 + seedAwoken().hp });
+  const awoken = awake(s, up);
+  return {
+    v2: true, name, emoji, tier, shape, pwr, hp, ...V2_NUMBERS[name], archetype,
+    forms: say ? { sleeping: { ...s, say: { en: say[0], ru: say[2] } }, awoken: { ...awoken, say: { en: say[1], ru: say[3] } } } : { sleeping: s, awoken },
+  };
+};
 
 // The pwr and hp columns are the designer's placeholders; the tune's numbers
 // (units-v2-numbers.ts, scripts/tune-v2.ts) replace them. A V2Row's knobs are

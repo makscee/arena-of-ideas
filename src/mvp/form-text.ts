@@ -126,3 +126,26 @@ function sumStatuses(effects: Effect[]): Effect[] {
 /** formSegments joined: the form's plain sentence. */
 export const formText = (form: UnitForm, abilities: AbilityRegistry, lang?: Lang, statuses?: StatusRegistry, carries?: readonly string[]): string =>
   formSegments(form, abilities, lang, statuses, carries).map((s) => s.text).join("");
+
+/** The card's sentence (#1047): the form's authored `say` in `lang` when it
+ * has one, else formSegments. The word chain's glossary terms that the
+ * sentence names word for word stay tappable. */
+export function sentenceSegments(form: UnitForm, abilities: AbilityRegistry, lang?: Lang, statuses?: StatusRegistry): DescribeSegment[] {
+  const chain = formSegments(form, abilities, lang, statuses);
+  if (!form.say) return chain;
+  let rest = lang === "ru" ? form.say.ru : form.say.en;
+  const out: DescribeSegment[] = [];
+  for (const term of chain.filter((s) => s.term && s.text.trim())) {
+    const at = rest.indexOf(term.text);
+    if (at < 0) continue;
+    if (at > 0) out.push({ text: rest.slice(0, at) });
+    out.push(term);
+    rest = rest.slice(at + term.text.length);
+  }
+  if (rest) out.push({ text: rest });
+  return out;
+}
+
+/** sentenceSegments joined. */
+export const sentenceText = (form: UnitForm, abilities: AbilityRegistry, lang?: Lang, statuses?: StatusRegistry): string =>
+  sentenceSegments(form, abilities, lang, statuses).map((s) => s.text).join("");
