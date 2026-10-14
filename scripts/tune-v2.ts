@@ -85,7 +85,6 @@ const clamp = (x: number, b: { min: number; max: number }) => Math.max(b.min, Ma
 /** The pool's numbers, clamped into today's bounds and the awoken cap (a
  * unit with no strike keeps PWR 0). */
 /** Units that strike by design: they keep the PWR knob even at PWR 0. */
-const STRIKES = new Set(ROWS_V2.filter((r) => r.pwr > 0).map((r) => r.name));
 /** The power floor (#1063): a unit whose rule reads its own power (Sniper's
  * Smite, Medic's Mend, Archmage's Blast…) never goes below PWR 1, else the
  * tune switches the rule off. */
@@ -97,9 +96,11 @@ const USES_PWR = new Set(
     }))(contentOf(ROWS_V2).abilities).map((r) => r.name),
 );
 const pwrMin = (name: string): number => (USES_PWR.has(name) ? Math.max(1, PWR.min) : PWR.min);
+/** Units that strike: PWR moves for them. A unit on the power floor strikes too, even if an earlier tune left it at 0 (#1063: Sniper, Medic, Archmage). */
+const STRIKES = new Set(ROWS_V2.filter((r) => r.pwr > 0 || USES_PWR.has(r.name)).map((r) => r.name));
 let rows: V2Row[] = ROWS_V2.map((r) => {
   const a = r.awoken ?? { pwr: 0, hp: 0 };
-  return { ...r, pwr: r.pwr > 0 ? clamp(r.pwr, { ...PWR, min: pwrMin(r.name) }) : 0, hp: clamp(r.hp, HP), awoken: { pwr: Math.min(a.pwr, AWOKEN.pwr), hp: Math.min(a.hp, AWOKEN.hp) } };
+  return { ...r, pwr: r.pwr > 0 || USES_PWR.has(r.name) ? clamp(r.pwr, { ...PWR, min: pwrMin(r.name) }) : 0, hp: clamp(r.hp, HP), awoken: { pwr: Math.min(a.pwr, AWOKEN.pwr), hp: Math.min(a.hp, AWOKEN.hp) } };
 });
 const t0 = Date.now();
 const rounds: { round: number; median: number; inBand: number; scores: Record<string, number>; moves: string[]; healthy: boolean }[] = [];
