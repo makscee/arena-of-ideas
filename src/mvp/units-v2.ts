@@ -245,7 +245,7 @@ export const V2_ABILITIES: AbilityRegistry = {
   HeadsAwoken: { name: "HeadsAwoken", family: "Summon", effects: [{ kind: "summon", unit: head }, { kind: "summon", unit: head }, { kind: "summon", unit: head }] },
   Focus: { name: "Focus", family: "Arcane", effects: [{ kind: "applyStatus", status: "Mana", stacks: c(1) }] },
   FocusAwoken: { name: "FocusAwoken", family: "Arcane", effects: [{ kind: "applyStatus", status: "Arcana", stacks: c(1) }] },
-  Hex: { name: "Hex", family: "Curse", effects: [{ kind: "applyStatus", status: "Curse", stacks: c(1) }] },
+  Hex: { name: "Hex", family: "Control", effects: [{ kind: "applyStatus", status: "Curse", stacks: c(1) }] },
   Rage: { name: "Rage", family: "Strike", effects: [{ kind: "replaceAmount", amount: { kind: "plus", a: pwrOfHolder, b: { kind: "missingHp" } } }] },
 };
 
