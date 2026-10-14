@@ -119,7 +119,7 @@ describe("a rule on a counter status reads on the unit's card", () => {
   });
   it("Raven: the memory it starts with", () => {
     const carries = (Raven.statuses ?? []).map((s) => s.status);
-    expect(formText(form(Raven), FIXTURE_ABILITIES, "ru", FIXTURE_STATUSES, carries)).toMatch(/Начало хода: исполнить одно запомненное правило\.$/);
+    expect(formText(form(Raven), FIXTURE_ABILITIES, "ru", FIXTURE_STATUSES, carries)).toMatch(/Начало хода: исполнить самое старое запомненное правило и забыть его\.$/);
   });
   it("a card without the registry reads as before", () => {
     expect(formText(form(Hourglass), FIXTURE_ABILITIES, "en")).toBe("Turn end: 1 Grains to self.");

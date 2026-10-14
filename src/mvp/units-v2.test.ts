@@ -64,10 +64,34 @@ describe("rules v2 pool", () => {
     }
   });
 
+  // Maks, 10-14: a card says the chance, never a coin; the battle log may keep the flavour.
+  // capital "Heads" stays allowed: Hydra's Heads are units
+  const COIN = { en: /\b(heads|tails|Tails|flips?|Flips?|flipped|coins?|Coins?)\b/, ru: /(орёл|орла|орле|решк|монет)/i };
+  it("no card sentence or archetype line names a coin: heads/tails/flip/coin, орёл/решка/монета (#1047)", () => {
+    for (const u of content.units) {
+      expect(u.archetype, u.name).not.toMatch(COIN.en);
+      for (const f of ["sleeping", "awoken"] as const)
+        for (const lang of ["en", "ru"] as const) {
+          for (const said of [u.forms[f].say![lang], formText(u.forms[f], content.abilities, lang, content.statuses)]) expect(said, `${u.name} ${f} ${lang}`).not.toMatch(COIN[lang]);
+        }
+    }
+    expect(content.units.find((u) => u.name === "Gambler")!.forms.sleeping.say!.en).toContain("50% chance");
+    expect(content.units.find((u) => u.name === "Fortune Teller")!.forms.sleeping.say!.ru).toContain("с вероятностью 50%");
+  });
+
+  it("every period says its turns, so no rule reads two ways: no 'every second/third turn' or 'every Nth' on a card (#1047)", () => {
+    const vague = { en: /\bevery (second|third|\d+(st|nd|rd|th))\b|\bunhurt\b/i, ru: /кажд(ый|ое|ую) \d+-[йм]|кажд(ый|ое) (второй|третий)|не ранен/i };
+    for (const u of content.units)
+      for (const f of ["sleeping", "awoken"] as const)
+        for (const lang of ["en", "ru"] as const) {
+          for (const said of [u.forms[f].say![lang], formText(u.forms[f], content.abilities, lang, content.statuses)]) expect(said, `${u.name} ${f} ${lang}`).not.toMatch(vague[lang]);
+        }
+  });
+
   it("the card sentence keeps the word chain's glossary terms it names word for word (Drummer's Strength)", () => {
     const drummer = content.units.find((u) => u.name === "Drummer")!;
     const segs = sentenceSegments(drummer.forms.sleeping, content.abilities, "en", content.statuses);
-    expect(segs.map((s) => s.text).join("")).toBe("Each ally strike adds a beat; at 3 beats, every ally behind it gains 1 Strength.");
+    expect(segs.map((s) => s.text).join("")).toBe("Each time an ally strikes, it gains 1 beat; at a turn end with 3+ beats, it spends 3 and every ally behind it gains 1 Strength.");
     expect(segs.some((s) => s.term && s.text.includes("Strength"))).toBe(true);
   });
 
@@ -125,7 +149,7 @@ describe("rules v2 pool", () => {
       "Конец хода: получить 1 Песчинку. Конец хода, если у него 3 Песчинки или больше: заставить союзника позади действовать ещё раз, и потратить 3 Песчинки.",
     );
     expect(say("Drummer", "sleeping", "en")).toBe("Ally strikes: gain 1 Beats. Turn end, if it has 3+ Beats: give every ally behind 1 Strength, and spend 3 Beats.");
-    expect(say("Raven", "sleeping", "en")).toBe("Ally dies: remember the rule of that unit. Turn start: perform a remembered rule once.");
+    expect(say("Raven", "sleeping", "en")).toBe("Ally dies: remember the rule of that unit. Turn start: perform the oldest remembered rule once and forget it.");
     expect(say("Raven", "awoken", "en")).toMatch(/Turn start: perform every remembered rule\.$/);
     expect(say("Seed", "awoken", "en")).toBe(`Battle start: in 2 turns: become Tree (0/${8 + V2_NUMBERS["Seed"]!.awoken!.hp}). Tree: Turn start: give the ally behind 1 Strength, and give its neighbours 1 Shield.`);
     expect(say("Chrysalis", "sleeping", "en")).toBe("Turn start, on turn 3: become Butterfly (2/6). Butterfly: Turn start: PWR damage to all enemies.");

@@ -99,7 +99,7 @@ export const V2_STATUSES: StatusRegistry = {
     selectors: [{ kind: "holder" }],
     abilities: [{ effects: [{ kind: "performRemembered", mode: "once" }] }],
   },
-  // Echo Bell's chime (batch 2, #1047): every second turn, perform the remembered rule once.
+  // Echo Bell's chime (batch 2, #1047): on even turns, perform the remembered rule once.
   Chime: {
     name: "Chime",
     names: { en: "Chime", ru: { name: "Звон", acc: "Звон", count: ["Звон", "Звона", "Звонов"] } },
@@ -211,7 +211,7 @@ export const V2_ABILITIES: AbilityRegistry = {
   Glow: { name: "Glow", family: "Heal", effects: [{ kind: "heal", amount: pwrOfHolder }] },
   // heads: double damage; tails: none (the branch word)
   AllIn: { name: "AllIn", family: "Strike", effects: [ALL_OR_NOTHING] },
-  // awoken: on heads it also strikes again
+  // awoken: on a win it also strikes again
   AllInAgain: {
     name: "AllInAgain",
     family: "Strike",
@@ -329,10 +329,10 @@ const Berserker = sleeping(intercept({ on: "Strike", striker: "holder" }), me, "
 
 /* eslint-disable prettier/prettier */
 export const ROWS_V2: V2Row[] = [
-  v2("Hourglass", "⏳", 2, "counter",     1,  8, "Keeps time: every third grain, the ally behind it acts again.",            Hourglass, { does: "Sand" }),
+  v2("Hourglass", "⏳", 2, "counter",     1,  8, "Keeps time: every third turn end, the ally behind it acts again.",            Hourglass, { does: "Sand" }),
   v2("Mirror",    "🪞", 2, "copy",        1,  6, "Becomes whatever stands in front of it.",                                 Mirror,    { does: "CopyPower" }),
   v2("Candle",    "🕯️", 3, "replacement", 3,  3, "Burns down instead of dying, one power at a time.",                       Candle,    { also: [{ who: [{ kind: "neighbours" }], does: ["Glow"] }] }),
-  v2("Gambler",   "🎲", 1, "swing",       2,  8, "Every strike is a coin: double or nothing.",                               Gambler,   { does: "AllInAgain" }),
+  v2("Gambler",   "🎲", 1, "swing",       2,  8, "Every strike is a gamble: double or nothing.",                               Gambler,   { does: "AllInAgain" }),
   v2("Nautilus",  "🐚", 1, "scaling",     1, 10, "Grows a shell from every hit it takes.",                                  Nautilus,  { does: "ShellAll" }),
   v2("Magnet",    "🧲", 3, "redirect",    1, 12, "Pulls the enemy's random shots onto itself.",                             Magnet,    { also: [{ who: me, does: ["Charge"] }] }),
   v2("Raven",     "🐦‍⬛", 4, "memory",      1,  8, "Remembers the rules of the fallen and performs them.",                   Raven,     { statuses: [{ status: "Memories", stacks: 1 }] }),
@@ -341,34 +341,34 @@ export const ROWS_V2: V2Row[] = [
   v2("Sniper",      "🎯", 1, "position",    2,  6, "Shoots the enemy at the back every turn.",                              Sniper,      { who: [{ kind: "lastEnemy" }, { kind: "frontEnemy" }] }),
   v2("Medic",       "💉", 1, "position",    1,  8, "Heals whichever ally just got hurt.",                                   Medic,       { does: "Mend + Guard" }),
   v2("Leech",       "🧛", 1, "scaling",     2,  7, "Drinks from every strike it makes.",                                    Leech,       { does: "Glow" }),
-  v2("Metronome",   "🎵", 2, "condition",   1,  8, "Every second turn, powers the ally behind it.",                         Metronome,   { who: [{ kind: "alliesBehind" }] }),
+  v2("Metronome",   "🎵", 2, "condition",   1,  8, "On every even turn, powers the ally behind it.",                         Metronome,   { who: [{ kind: "alliesBehind" }] }),
   v2("Lone Wolf",   "🐺", 2, "replacement", 3,  7, "Alone, its strikes deal double.",                                       LoneWolf,    { does: "FuryAgain" }),
-  v2("Drummer",     "🥁", 2, "counter",     1,  9, "Every third ally strike, the line behind it beats stronger.",           Drummer,     { does: "Drum" }),
+  v2("Drummer",     "🥁", 2, "counter",     1,  9, "Ally strikes keep the beat; every three beats, the line behind it grows stronger.",           Drummer,     { does: "Drum" }),
   v2("Bodyguard",   "🕴️", 2, "redirect",    1, 11, "Once a turn, takes a hit meant for an ally.",                           Bodyguard,   { also: [{ who: [{ kind: "eventUnit" }], does: ["Guard"] }] }),
   v2("Chrysalis",   "🐛", 3, "form",        0,  7, "On the third turn, becomes a Butterfly that strikes every enemy.",      Chrysalis,   { does: "EmergeMonarch" }),
   v2("Trickster",   "🃏", 3, "rule",        2,  8, "Trades rules with the front enemy before the first blow.",             Trickster,   { who: [{ kind: "frontEnemy" }, { kind: "lastEnemy" }] }),
   v2("Understudy",  "🎭", 3, "copy",        1,  8, "When an ally falls, takes over its rule for good.",                     Understudy,  { does: "CopyPower" }),
-  v2("Gravedigger", "⚰️", 4, "scaling",     2, 10, "Hits the front enemy harder for every fallen ally.",                    Gravedigger, { who: [{ kind: "allEnemies" }] }),
-  v2("Conductor",   "🎼", 4, "rule",        1,  9, "Every second turn, its neighbours act again.",                          Conductor,   { also: [{ who: [{ kind: "neighbours" }], does: ["Charge"] }] }),
+  v2("Gravedigger", "⚰️", 4, "scaling",     2, 10, "Hits the front enemy for every fallen ally.",                    Gravedigger, { who: [{ kind: "allEnemies" }] }),
+  v2("Conductor",   "🎼", 4, "rule",        1,  9, "On every even turn, its neighbours act again.",                          Conductor,   { also: [{ who: [{ kind: "neighbours" }], does: ["Charge"] }] }),
   // batch 2 (#1047)
   v2("Thornback",   "🦔", 1, "position",    1,  8, "Pricks whoever hits it.",                                               Thornback,   { does: "Spine" }),
-  v2("Coin Thief",  "🪙", 1, "swing",       2,  6, "Each turn, a coin decides whether a random enemy gets robbed hard.",   CoinThief,   { does: "PilferLucky" }),
+  v2("Coin Thief",  "🪙", 1, "swing",       2,  6, "Each turn, an even chance to rob a random enemy.",   CoinThief,   { does: "PilferLucky" }),
   v2("Scavenger",   "🦝", 1, "scaling",     1,  7, "Grows stronger from every ally that falls.",                            Scavenger,   { does: "Feast" }),
   v2("Lantern",     "🏮", 1, "condition",   1,  7, "While untouched, shields the ally ahead of it.",                        Lantern,     { who: [{ kind: "neighbours" }] }),
   v2("Hornet",      "🐝", 1, "position",    2,  5, "Poisons whatever it strikes.",                                          Hornet,      { who: [{ kind: "allEnemies" }] }),
-  v2("Echo Bell",   "🔔", 2, "memory",      1,  8, "Learns the rule of the ally behind it and rings it every second turn.", EchoBell,    { statuses: [{ status: "Memory", stacks: 1 }] }),
+  v2("Echo Bell",   "🔔", 2, "memory",      1,  8, "Learns the rule of the ally behind it and rings it on every even turn.", EchoBell,    { statuses: [{ status: "Memory", stacks: 1 }] }),
   v2("Prism",       "🔮", 2, "redirect",    1,  9, "Random shots aimed at it bend onto a random enemy.",                    Prism,       { also: [{ who: me, does: ["Guard"] }] }),
   v2("Wolf Pup",    "🐕", 2, "form",        1,  5, "When the first ally falls, it grows into a Dire Wolf.",                 WolfPup,     { does: "HowlAwoken" }),
   v2("War Horn",    "📯", 2, "condition",   1,  8, "When the line runs thin, it rallies everyone left.",                    Horn,        { also: [{ who: [{ kind: "allAllies" }], does: ["Guard"] }] }),
   v2("Copycat",     "🐈", 2, "copy",        1,  7, "Copies the rule of the ally ahead of it.",                              Copycat,     { does: "CopyPower" }),
   v2("Vulture",     "🦅", 2, "scaling",     2,  7, "Feeds on every enemy that falls.",                                      Vulture,     { who: [{ kind: "allAllies" }] }),
-  v2("Hexer",       "🧿", 3, "rule",        1,  7, "Silences the enemy at the back before the fight begins.",               Hexer,       { who: [{ kind: "lastEnemy" }, { kind: "frontEnemy" }] }),
-  v2("Fortune Teller", "🪬", 3, "swing",    1,  7, "One coin at the start: the whole line strikes harder or stands sturdier.", Fortune,  { does: "FortuneAwoken" }),
+  v2("Hexer",       "🧿", 3, "rule",        1,  7, "On turn 2, silences the enemy at the back.",               Hexer,       { who: [{ kind: "lastEnemy" }, { kind: "frontEnemy" }] }),
+  v2("Fortune Teller", "🪬", 3, "swing",    1,  7, "At the start, an even chance: the whole line strikes harder, or else stands sturdier.", Fortune,  { does: "FortuneAwoken" }),
   v2("Aegis",       "🛡️", 3, "replacement", 1,  9, "Shrugs off the first hit each turn.",                                   Aegis,       { also: [{ who: [{ kind: "allyBehind" }], does: ["Guard"] }] }),
   v2("Gravecaller", "💀", 3, "memory",      1,  7, "Calls the first fallen ally back to the line.",                         Gravecaller, { does: "RaiseAwoken" }),
   v2("Jester",      "🤡", 3, "rule",        1,  8, "The first one to hit it walks away with its rule.",                     Jester,      { also: [{ who: me, does: ["Guard"] }] }),
-  v2("Hydra",       "🐉", 4, "form",        2,  8, "Cut it down and two heads take its place.",                             Hydra,       { does: "HeadsAwoken" }),
-  v2("Archmage",    "🧙", 4, "counter",     2,  7, "Gathers mana; every third turn end, it strikes every enemy.",           Archmage,    { does: "FocusAwoken" }),
+  v2("Hydra",       "🐉", 4, "form",        2,  8, "Cut it down and two Heads take its place.",                             Hydra,       { does: "HeadsAwoken" }),
+  v2("Archmage",    "🧙", 4, "counter",     2,  7, "Gathers mana; every third turn end, it spends it to strike every enemy.",           Archmage,    { does: "FocusAwoken" }),
   v2("Oracle",      "👁️", 4, "condition",   1,  8, "From the third turn on, curses the enemy in front.",                    Oracle,      { who: [{ kind: "allEnemies" }] }),
   v2("Berserker",   "🪓", 4, "scaling",     2,  9, "The more it bleeds, the harder it strikes.",                            Berserker,   { also: [{ who: me, does: ["Sip"] }] }),
 ];

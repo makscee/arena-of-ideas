@@ -97,6 +97,22 @@ describe("one pair through the batch", () => {
     expect(ruleText(c as never, "ru")).toBe("Конец хода: получить 2 Блика. Конец хода, если у него 3 Блика или больше: дать союзнику позади 1 Силу, и потратить 3 Блика.");
   });
 
+  it("a fusion's sentence says the chance and the turns, never a coin or 'every third turn' (Maks, 10-14)", () => {
+    const c = {
+      unit: { name: "Wick", base: { hp: 9, pwr: 2 }, triggers: [{ kind: "interceptor" as const, on: { on: "Death" as const, unit: "otherAlly" as const } }], condition: { kind: "turnEvery" as const, n: 3 }, selectors: [{ kind: "holder" as const }], abilities: ["Toss"] },
+      abilities: { Toss: { name: "Toss", family: "Shield" as const, effects: [{ kind: "branch" as const, if: { kind: "flip" as const, p: 0.5 }, then: [{ kind: "preventDeath" as const, at: 1, cost: { stat: "pwr" as const, amount: 0 } }], else: [{ kind: "preventDeath" as const, at: 1, cost: { stat: "pwr" as const, amount: 2 } }] }] } },
+      statuses: FIXTURE_STATUSES,
+    };
+    const en = ruleText(c as never, "en");
+    const ru = ruleText(c as never, "ru");
+    expect(en).toContain("on turns 3, 6, 9…");
+    expect(en).toContain("with a 50% chance");
+    expect(ru).toContain("на 3-м, 6-м, 9-м… ходу");
+    expect(ru).toContain("с вероятностью 50%");
+    expect(en).not.toMatch(/\b(heads|tails|flips?|coins?)\b|every third/i);
+    expect(ru).not.toMatch(/орёл|орле|решк|монет|каждый 3-й/i);
+  });
+
   it("rejects a rule the engine can't validate", () => {
     const d: DesignDraft = { lean: "A", intent: "nonsense", rule: { triggers: [{ kind: "trigger", on: { on: "TurnStart" } }], selectors: [{ kind: "frontEnemy" }], abilities: ["NoSuch"] }, abilities: {} };
     const c = compile(d, parent(Hourglass), parent(Mirror), "X", new Set());
