@@ -1,22 +1,22 @@
 {
-  "seconds": 739,
+  "seconds": 891,
   "band": 0.08,
-  "median": 0.559,
-  "healthy": true,
+  "median": 0.544,
+  "healthy": false,
   "checks": {
     "teamsInEquilibrium": {
-      "value": 11,
-      "pass": true,
+      "value": 3,
+      "pass": false,
       "rule": "≥5 teams with ≥2% share"
     },
     "largestShare": {
-      "value": 0.224,
-      "pass": true,
+      "value": 0.506,
+      "pass": false,
       "rule": "largest share ≤40%"
     },
     "topTeamsBeaten": {
-      "value": 5,
-      "pass": true,
+      "value": 1,
+      "pass": false,
       "rule": "every top team beaten ≥60% by ≥3 others"
     }
   },
@@ -31,10 +31,10 @@
         "pwr": 3,
         "hp": 12
       },
-      "fieldScore": 0.531,
+      "fieldScore": 0.452,
       "awokenMargin": 0.031,
-      "share": 0.025,
-      "inBand": true,
+      "share": 0,
+      "inBand": false,
       "team": [
         "hourglass",
         "mirror",
@@ -53,16 +53,16 @@
         "pwr": 0,
         "hp": 2
       },
-      "fieldScore": 0.525,
-      "awokenMargin": 0.088,
-      "share": 0.316,
+      "fieldScore": 0.547,
+      "awokenMargin": 0.052,
+      "share": 0,
       "inBand": true,
       "team": [
-        "hourglass",
         "mirror",
+        "magnet",
         "trickster",
         "sniper",
-        "magnet"
+        "hourglass"
       ]
     },
     {
@@ -75,16 +75,16 @@
         "pwr": 2,
         "hp": 10
       },
-      "fieldScore": 0.566,
-      "awokenMargin": 0.049,
-      "share": 0.589,
+      "fieldScore": 0.61,
+      "awokenMargin": 0.053,
+      "share": 0.027,
       "inBand": true,
       "team": [
-        "mirror",
-        "sniper",
-        "leech",
+        "candle",
         "conductor",
-        "candle"
+        "sniper",
+        "seed",
+        "leech"
       ]
     },
     {
@@ -95,18 +95,18 @@
       "hp": 6,
       "awoken": {
         "pwr": 2,
-        "hp": 10
+        "hp": 12
       },
-      "fieldScore": 0.631,
-      "awokenMargin": 0.028,
-      "share": 0.232,
-      "inBand": true,
+      "fieldScore": 0.454,
+      "awokenMargin": 0.059,
+      "share": 0,
+      "inBand": false,
       "team": [
         "bodyguard",
         "trickster",
-        "conductor",
+        "gambler",
         "chrysalis",
-        "gambler"
+        "conductor"
       ]
     },
     {
@@ -119,15 +119,15 @@
         "pwr": 0,
         "hp": 4
       },
-      "fieldScore": 0.578,
-      "awokenMargin": 0.192,
-      "share": 0.457,
+      "fieldScore": 0.513,
+      "awokenMargin": 0.158,
+      "share": 0.97,
       "inBand": true,
       "team": [
-        "candle",
-        "raven",
-        "drummer",
         "magnet",
+        "raven",
+        "metronome",
+        "leech",
         "nautilus"
       ]
     },
@@ -141,16 +141,16 @@
         "pwr": 2,
         "hp": 8
       },
-      "fieldScore": 0.551,
-      "awokenMargin": 0.047,
-      "share": 0.249,
+      "fieldScore": 0.5,
+      "awokenMargin": 0.046,
+      "share": 0.506,
       "inBand": true,
       "team": [
         "magnet",
+        "mirror",
+        "trickster",
         "medic",
-        "sniper",
-        "seed",
-        "chrysalis"
+        "raven"
       ]
     },
     {
@@ -163,16 +163,16 @@
         "pwr": 0,
         "hp": 8
       },
-      "fieldScore": 0.576,
+      "fieldScore": 0.551,
       "awokenMargin": 0.058,
-      "share": 0.103,
+      "share": 0.437,
       "inBand": true,
       "team": [
         "magnet",
+        "mirror",
         "trickster",
         "gravedigger",
-        "raven",
-        "lone-wolf"
+        "raven"
       ]
     },
     {
@@ -185,15 +185,15 @@
         "pwr": 0,
         "hp": 12
       },
-      "fieldScore": 0.584,
-      "awokenMargin": 0.05,
-      "share": 0.028,
+      "fieldScore": 0.471,
+      "awokenMargin": 0.026,
+      "share": 0,
       "inBand": true,
       "team": [
-        "mirror",
-        "candle",
+        "magnet",
         "sniper",
-        "conductor",
+        "metronome",
+        "leech",
         "seed"
       ]
     },
@@ -207,16 +207,16 @@
         "pwr": 0,
         "hp": 4
       },
-      "fieldScore": 0.549,
-      "awokenMargin": 0.166,
-      "share": 0.374,
+      "fieldScore": 0.605,
+      "awokenMargin": 0.143,
+      "share": 0.533,
       "inBand": true,
       "team": [
-        "gambler",
-        "mirror",
+        "magnet",
+        "candle",
+        "conductor",
         "sniper",
-        "gravedigger",
-        "magnet"
+        "seed"
       ]
     },
     {
@@ -229,16 +229,16 @@
         "pwr": 1,
         "hp": 10
       },
-      "fieldScore": 0.553,
-      "awokenMargin": 0.052,
-      "share": 0.28,
+      "fieldScore": 0.547,
+      "awokenMargin": 0.049,
+      "share": 0,
       "inBand": true,
       "team": [
-        "trickster",
-        "nautilus",
-        "raven",
         "medic",
-        "bodyguard"
+        "raven",
+        "trickster",
+        "gravedigger",
+        "magnet"
       ]
     },
     {
@@ -251,16 +251,16 @@
         "pwr": 0,
         "hp": 6
       },
-      "fieldScore": 0.528,
-      "awokenMargin": 0.142,
-      "share": 0.208,
+      "fieldScore": 0.552,
+      "awokenMargin": 0.104,
+      "share": 0,
       "inBand": true,
       "team": [
-        "trickster",
-        "conductor",
+        "seed",
         "leech",
         "nautilus",
-        "seed"
+        "drummer",
+        "magnet"
       ]
     },
     {
@@ -273,16 +273,16 @@
         "pwr": 2,
         "hp": 10
       },
-      "fieldScore": 0.617,
-      "awokenMargin": 0.057,
-      "share": 0.211,
+      "fieldScore": 0.541,
+      "awokenMargin": 0.04,
+      "share": 0.437,
       "inBand": true,
       "team": [
-        "mirror",
+        "conductor",
         "metronome",
+        "candle",
         "nautilus",
-        "seed",
-        "hourglass"
+        "understudy"
       ]
     },
     {
@@ -295,16 +295,16 @@
         "pwr": 2,
         "hp": 10
       },
-      "fieldScore": 0.471,
-      "awokenMargin": 0.02,
-      "share": 0,
-      "inBand": false,
+      "fieldScore": 0.529,
+      "awokenMargin": 0.032,
+      "share": 0.506,
+      "inBand": true,
       "team": [
-        "bodyguard",
-        "lone-wolf",
+        "magnet",
         "nautilus",
-        "seed",
-        "raven"
+        "conductor",
+        "sniper",
+        "lone-wolf"
       ]
     },
     {
@@ -317,16 +317,16 @@
         "pwr": 0,
         "hp": 6
       },
-      "fieldScore": 0.589,
-      "awokenMargin": 0.08,
-      "share": 0.116,
-      "inBand": true,
+      "fieldScore": 0.462,
+      "awokenMargin": 0.027,
+      "share": 0.027,
+      "inBand": false,
       "team": [
-        "drummer",
-        "metronome",
-        "gravedigger",
+        "candle",
+        "trickster",
         "nautilus",
-        "candle"
+        "sniper",
+        "drummer"
       ]
     },
     {
@@ -339,16 +339,16 @@
         "pwr": 2,
         "hp": 12
       },
-      "fieldScore": 0.576,
+      "fieldScore": 0.552,
       "awokenMargin": 0.033,
-      "share": 0,
+      "share": 0.437,
       "inBand": true,
       "team": [
-        "nautilus",
         "bodyguard",
-        "hourglass",
-        "trickster",
-        "medic"
+        "metronome",
+        "nautilus",
+        "raven",
+        "gravedigger"
       ]
     },
     {
@@ -361,15 +361,15 @@
         "pwr": 0,
         "hp": 6
       },
-      "fieldScore": 0.485,
-      "awokenMargin": 0.057,
-      "share": 0.185,
+      "fieldScore": 0.513,
+      "awokenMargin": 0.101,
+      "share": 0,
       "inBand": true,
       "team": [
         "candle",
-        "sniper",
-        "mirror",
-        "gravedigger",
+        "nautilus",
+        "seed",
+        "bodyguard",
         "chrysalis"
       ]
     },
@@ -381,18 +381,18 @@
       "hp": 7,
       "awoken": {
         "pwr": 2,
-        "hp": 10
+        "hp": 12
       },
-      "fieldScore": 0.49,
-      "awokenMargin": 0.047,
-      "share": 0.129,
+      "fieldScore": 0.605,
+      "awokenMargin": 0.049,
+      "share": 0.027,
       "inBand": true,
       "team": [
         "trickster",
-        "medic",
         "nautilus",
+        "medic",
         "sniper",
-        "raven"
+        "gravedigger"
       ]
     },
     {
@@ -405,16 +405,16 @@
         "pwr": 2,
         "hp": 12
       },
-      "fieldScore": 0.53,
-      "awokenMargin": 0.037,
-      "share": 0.025,
+      "fieldScore": 0.518,
+      "awokenMargin": 0.027,
+      "share": 0,
       "inBand": true,
       "team": [
+        "magnet",
+        "trickster",
+        "candle",
         "understudy",
-        "seed",
-        "leech",
-        "sniper",
-        "hourglass"
+        "bodyguard"
       ]
     },
     {
@@ -427,16 +427,16 @@
         "pwr": 0,
         "hp": 2
       },
-      "fieldScore": 0.667,
-      "awokenMargin": 0.158,
-      "share": 0.538,
-      "inBand": false,
+      "fieldScore": 0.602,
+      "awokenMargin": 0.197,
+      "share": 0.437,
+      "inBand": true,
       "team": [
-        "gravedigger",
         "lone-wolf",
-        "nautilus",
-        "sniper",
-        "mirror"
+        "leech",
+        "chrysalis",
+        "gravedigger",
+        "candle"
       ]
     },
     {
@@ -449,16 +449,16 @@
         "pwr": 0,
         "hp": 6
       },
-      "fieldScore": 0.639,
-      "awokenMargin": 0.067,
-      "share": 0.598,
+      "fieldScore": 0.605,
+      "awokenMargin": 0.13,
+      "share": 0.506,
       "inBand": true,
       "team": [
-        "mirror",
-        "nautilus",
+        "leech",
         "candle",
         "conductor",
-        "sniper"
+        "nautilus",
+        "chrysalis"
       ]
     }
   ],
