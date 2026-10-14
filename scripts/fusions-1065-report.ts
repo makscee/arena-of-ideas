@@ -91,7 +91,7 @@ const sections = designed
   .join("\n");
 const page1 = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Arena fusions 20</title>${STYLE}</head><body>
 <h1>Arena v2 · 20 designed fusions</h1>
-<p class="dim">Card <a href="https://github.com/makscee/void-board/issues/1065">#1065</a>. Each pair: two Awoken units of the 40 (every unit once), three candidates from the night batch's designer (Opus) and quick tune (vs 16 seeded Awoken lines and 2 breakers; in band = wins 35-75%), and the one picked. The picks are discovered in the workshop Codex, credited to “the forge”. Batch ran ${esc(batch.ranAt.slice(0, 16).replace("T", " "))}.</p>
+<p class="dim">Card <a href="https://github.com/makscee/void-board/issues/1065">#1065</a>. Each pair: two Awoken units of the 40, three candidates from the night batch's designer (Opus) and quick tune (vs 16 seeded Awoken lines and 2 breakers; in band = wins 35-75%), and the one picked. The picks are discovered in the workshop Codex, credited to “the forge”. First list: every unit once; magnet+prism, hydra+lone-wolf and alchemist+hornet never came into band in three runs (75-94% wins: two Awoken units' summed stats outweigh any rule numbers the tune scales), so candle+medic, frostling+sniper and coin-thief+hexer took their places. Batch ran ${esc(batch.ranAt.slice(0, 16).replace("T", " "))}.</p>
 ${sections}
 <h2>10 more, waiting to be discovered</h2>
 <p class="dim">Three sealed candidates each, unclaimed. Play them from <a href="arena-discover.html">arena-discover.html</a>.</p>
@@ -103,7 +103,7 @@ const code = /#invite=([^&]+)/.exec(invite)?.[1] ?? "";
 const link = (hash: string) => `${base}#${[code ? `invite=${code}` : "", hash].filter(Boolean).join("&")}`;
 const page2 = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Arena discover</title>${STYLE}</head><body>
 <h1>Arena v2 · discover a fusion</h1>
-<p class="dim">Card <a href="https://github.com/makscee/void-board/issues/1065">#1065</a>. Each link signs you in to the workshop (your admin invite) and puts your run in the shop with two Awoken units of one pair on the line: one Fuse left. Keys only: <b>Tab</b> / arrows to move, <b>Enter</b> to press; select the first unit, then the second, then Fuse; in the forge pick one of the three sealed cards and Claim. A checkpoint works again after you discovered other pairs; on a pair you already discovered it fuses straight into your pick.</p>
+<p class="dim">Card <a href="https://github.com/makscee/void-board/issues/1065">#1065</a>. Each link signs you in to the workshop (your admin invite) and puts your run in the shop with two Awoken units of one pair on the line: one Fuse left. Keys only: <b>Tab</b> to the first unit, <b>Enter</b>, <b>F</b>, <b>Tab</b> to the second, <b>Enter</b>: the forge opens with three sealed cards; <b>1</b>–<b>3</b> picks one, <b>Enter</b> claims it. A checkpoint works again after you discovered other pairs; on a pair you already discovered it fuses straight into your pick.</p>
 <p><a href="${link("")}">▶ A full fresh run</a> <span class="dim">(Home → Play)</span></p>
 <ol>${hidden
   .map((k) => {
