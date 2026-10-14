@@ -11,7 +11,7 @@
 // with the mappers below; the test scenes draw it from forgeFixture().
 import type { FusionDesign } from "./codex.js";
 import type { MvpContent, UnitContent } from "./contract.js";
-import { formText } from "./form-text.js";
+import { sentenceText } from "./form-text.js";
 
 /** One text in both languages (unit and word texts aren't in the client catalog). */
 export interface Both {
@@ -104,12 +104,13 @@ export interface ClaimView {
 const b = (en: string, ru: string): Both => ({ en, ru });
 
 type Texts = Pick<MvpContent, "abilities" | "statuses">;
-/** A form as one sentence in both languages ("" when a word isn't in the registry). */
+/** A form as one sentence in both languages: its written `say` when it has
+ * one (#1122), else the word chain ("" when a word isn't in the registry). */
 function sentence(form: UnitContent["forms"]["sleeping"] | undefined, content: Texts): Both {
   const one = (lang?: "ru"): string => {
     if (!form) return "";
     try {
-      return formText(form, content.abilities, lang, content.statuses);
+      return sentenceText(form, content.abilities, lang, content.statuses);
     } catch {
       return form.text ?? "";
     }

@@ -28,7 +28,7 @@ export function recipeOf(c: Candidate): UnitForm {
     does: [...(u.abilities ?? [])],
     ...(u.condition ? { condition: structuredClone(u.condition) } : {}),
     ...(u.also?.length ? { also: u.also.map((x) => ({ who: structuredClone(x.selectors ?? []), does: [...(x.abilities ?? [])] })) } : {}),
-    // no stored sentence: the card renders the rule in the reader's language with today's words (#1047)
+    // the sentence is the design's say (designOf), never the word chain's text
   };
 }
 
@@ -37,7 +37,8 @@ export function designOf(c: Candidate, emoji?: string): FusionDesign {
   const d: FusionDesign = {
     name: c.name.en,
     lean: c.lean === "A" ? "a" : c.lean === "B" ? "b" : "twist",
-    recipe: recipeOf(c),
+    // the designer's written sentence when it matched the rule (#1122)
+    recipe: c.say ? { ...recipeOf(c), say: { ...c.say } } : recipeOf(c),
     texts: { ru: { name: c.name.ru, ...(c.flavour.ru ? { flavour: c.flavour.ru } : {}) } },
   };
   if (emoji) d.emoji = emoji;
