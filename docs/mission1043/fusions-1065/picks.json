@@ -5,21 +5,21 @@
   "mirror+trickster": "Two rule-thieves: the fusion has to steal rules in a way neither parent does.",
   "berserker+candle": "Both live on missing HP: one refuses to die, the other hits harder the more it bleeds.",
   "nautilus+thornback": "The armour and the spikes: what a hit gives it and what it gives back.",
+  "magnet+prism": "Two rule-benders on statuses: one pulls them, one bounces them; Maks's pick of the best three.",
   "gravecaller+raven": "Two death-rules: remembering the fallen and bringing them back.",
   "chrysalis+seed": "Two slow growers: a timed metamorphosis that can pass to an ally.",
   "hexer+sniper": "Both reach the enemy's back line: silence and the shot.",
   "bodyguard+medic": "Protection two ways: take the hit or heal it.",
   "leech+vulture": "Two feeders: one drinks from strikes, the other from deaths.",
+  "hydra+lone-wolf": "Many heads against the lone wolf: one wants a crowd, the other wants to stand alone; Maks's pick of the best three.",
   "conductor+drummer": "Two rhythm units: ally actions build a beat, and the beat repeats actions.",
   "bully+frostling": "Freeze sets up the Bully's double hit: a combo inside one unit.",
+  "alchemist+hornet": "Brewing and stinging: Poison made and Poison spread in one unit; Maks's pick of the best three.",
   "fortune-teller+war-horn": "Both read the board's numbers: who has more units, how few stand.",
   "aegis+lantern": "Two shields: one cancels the first hit, one works while untouched.",
   "archmage+battery": "The pool's two Charge builders: the fusion must spend Charge differently from both.",
   "frost-witch+oracle": "Two timed debuffers: Freeze on turn 2, Curse from turn 3.",
-  "executioner+gravedigger": "Death as fuel: kills and fallen allies both count.",
-  "candle+medic": "Two kinds of care: one refuses to die, the other heals whoever is hit.",
-  "frostling+sniper": "A front-line freezer and a back-line shooter: cold that reaches the back.",
-  "coin-thief+hexer": "Two ways to take from the enemy: its power, or its rule."
+  "executioner+gravedigger": "Death as fuel: kills and fallen allies both count."
  },
  "picks": {
   "coin-thief+priest": {
@@ -35,12 +35,16 @@
    "why": "Learns the front enemy's rule by watching it act and keeps it as a second rule. Rule Pilferer was the Trickster on turn 3."
   },
   "berserker+candle": {
-   "name": "Martyr Flame",
-   "why": "The only one in band: each turn end it burns 1 HP and heals its neighbours for all it has lost."
+   "name": "Last Ember",
+   "why": "Under the new stats Martyr Flame fell to 28% and the other two came into band: it refuses to die and burns the front enemy for all it has lost, the Berserker and the Candle in one moment. Wickrager is close to the Berserker alone."
   },
   "nautilus+thornback": {
    "name": "Grudge Whorl",
    "why": "Every hit it has taken comes back on the next attacker: grows like the shell, bites like the spikes."
+  },
+  "magnet+prism": {
+   "name": "Spite Mirror",
+   "why": "Pays a status back to whoever gave it to an ally, and grows each time: the Magnet's pull and the Prism's bounce in one short rule. Hexlens only takes it on itself; Reflectorus is a long Charge rule."
   },
   "gravecaller+raven": {
    "name": "Omen Scavenger",
@@ -62,6 +66,10 @@
    "name": "Bloodcrow",
    "why": "The only one in band (from a top-up run): each enemy death heals the ally behind."
   },
+  "hydra+lone-wolf": {
+   "name": "Grief Fang",
+   "why": "The lone wolf's last stand fed by the line's losses: strikes twice, harder for each fallen ally. Last Head is just a Hydra with three heads; Solitary Hydra stacks two conditions."
+  },
   "conductor+drummer": {
    "name": "Downbeat Marshal",
    "why": "Every third ally action plays again: the beat and the repeat in one rule."
@@ -69,6 +77,10 @@
   "bully+frostling": {
    "name": "Chillknuckle",
    "why": "The only one in band: freezes, then curses what is already frozen."
+  },
+  "alchemist+hornet": {
+   "name": "Venom Brewer",
+   "why": "Every poisoned enemy gets Poison equal to the turn number at turn end: it brews what the Hornet spread. Toxin Swarmer is a Charge counter; Plague Vespa waits on a death."
   },
   "fortune-teller+war-horn": {
    "name": "Omen Horn",
@@ -89,18 +101,6 @@
   "executioner+gravedigger": {
    "name": "Grave Headsman",
    "why": "Each kill turns its fallen allies into power. Tollkeeper was close to the Gravedigger."
-  },
-  "candle+medic": {
-   "name": "Vigil Wick",
-   "why": "The Candle's trick, given to its allies: once a turn, an ally that would die stays at 1 HP and loses 1 PWR."
-  },
-  "frostling+sniper": {
-   "name": "Rimeshot",
-   "why": "Each strike freezes the back enemy a turn later: a delay and a reach neither parent has. Glacier Marksman was both parents side by side."
-  },
-  "coin-thief+hexer": {
-   "name": "Pickpocket Hex",
-   "why": "The only one in band: curses a random enemy each turn, and every third turn silences one instead."
   }
  },
  "discover": {
@@ -121,21 +121,21 @@
   "mirror+trickster",
   "berserker+candle",
   "nautilus+thornback",
+  "magnet+prism",
   "gravecaller+raven",
   "chrysalis+seed",
   "hexer+sniper",
   "bodyguard+medic",
   "leech+vulture",
+  "hydra+lone-wolf",
   "conductor+drummer",
   "bully+frostling",
+  "alchemist+hornet",
   "fortune-teller+war-horn",
   "aegis+lantern",
   "archmage+battery",
   "frost-witch+oracle",
-  "executioner+gravedigger",
-  "candle+medic",
-  "frostling+sniper",
-  "coin-thief+hexer"
+  "executioner+gravedigger"
  ],
  "pairs10": [
   "mirror+raven",
@@ -148,5 +148,10 @@
   "archmage+oracle",
   "executioner+vulture",
   "lantern+seed"
- ]
+ ],
+ "swappedBack": {
+  "candle+medic": "magnet+prism",
+  "frostling+sniper": "hydra+lone-wolf",
+  "coin-thief+hexer": "alchemist+hornet"
+ }
 }

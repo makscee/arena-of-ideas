@@ -1,8 +1,8 @@
 {
- "day": "1065",
- "designer": "claude",
- "ranAt": "2026-10-14T15:15:55.581Z",
- "seconds": 194,
+ "day": "1065-retune",
+ "designer": "retune",
+ "ranAt": "2026-10-14T15:38:32.895Z",
+ "seconds": 69,
  "parents": {
   "hourglass": {
    "emoji": "⏳"
@@ -149,8 +149,8 @@
      "unit": {
       "name": "Tithe Cutpurse",
       "base": {
-       "hp": 24,
-       "pwr": 6
+       "hp": 18,
+       "pwr": 4
       },
       "triggers": [
        {
@@ -349,12 +349,13 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.35753676470588236,
-      "inBand": true,
+      "score": 0.24724264705882354,
+      "inBand": false,
       "scale": 1,
       "trace": "Tithe Cutpurse → random enemy (Mirror, Tithe Cutpurse) → Curse 1, Charge 1"
      },
-     "state": "ready"
+     "state": "rejected",
+     "why": "out of band: wins 25% at best (band 35-75%)"
     },
     {
      "pair": "coin-thief+priest",
@@ -371,8 +372,8 @@
      "unit": {
       "name": "Shadow Almoner",
       "base": {
-       "hp": 24,
-       "pwr": 6
+       "hp": 18,
+       "pwr": 4
       },
       "triggers": [
        {
@@ -483,12 +484,13 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.46875,
-      "inBand": true,
+      "score": 0.3134191176470588,
+      "inBand": false,
       "scale": 1,
-      "trace": "Shadow Almoner → its neighbours (Oracle, Mirror) → Blessing 6, Curse 6"
+      "trace": "Shadow Almoner → its neighbours (Oracle, Mirror) → Blessing 4, Curse 4"
      },
-     "state": "ready"
+     "state": "rejected",
+     "why": "out of band: wins 31% at best (band 35-75%)"
     },
     {
      "pair": "coin-thief+priest",
@@ -505,8 +507,8 @@
      "unit": {
       "name": "Soul Fence",
       "base": {
-       "hp": 24,
-       "pwr": 6
+       "hp": 18,
+       "pwr": 4
       },
       "triggers": [
        {
@@ -584,13 +586,13 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.25643382352941174,
+      "score": 0.14981617647058823,
       "inBand": false,
       "scale": 1,
-      "trace": "Soul Fence → the ally behind it (Oracle) → Blessing 8"
+      "trace": "Soul Fence → the ally behind it (Oracle) → Blessing 6"
      },
      "state": "rejected",
-     "why": "out of band: wins 26% at best (band 35-75%)"
+     "why": "out of band: wins 15% at best (band 35-75%)"
     }
    ]
   },
@@ -617,8 +619,8 @@
      "unit": {
       "name": "Sandcaster",
       "base": {
-       "hp": 38,
-       "pwr": 14
+       "hp": 29,
+       "pwr": 11
       },
       "triggers": [
        {
@@ -769,13 +771,12 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7987132352941176,
-      "inBand": false,
+      "score": 0.5643382352941176,
+      "inBand": true,
       "scale": 1,
       "trace": "Sandcaster → self (Sandcaster) → Charge 1"
      },
-     "state": "rejected",
-     "why": "out of band: wins 80% at best (band 35-75%)"
+     "state": "ready"
     },
     {
      "pair": "gambler+hourglass",
@@ -792,8 +793,8 @@
      "unit": {
       "name": "Fatebound Glass",
       "base": {
-       "hp": 38,
-       "pwr": 14
+       "hp": 29,
+       "pwr": 11
       },
       "triggers": [
        {
@@ -935,9 +936,9 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7444852941176471,
+      "score": 0.5238970588235294,
       "inBand": true,
-      "scale": 0.5,
+      "scale": 1,
       "trace": "Fatebound Glass: 50% → nothing"
      },
      "state": "ready"
@@ -957,8 +958,8 @@
      "unit": {
       "name": "Tempo Trickster",
       "base": {
-       "hp": 38,
-       "pwr": 14
+       "hp": 29,
+       "pwr": 11
       },
       "triggers": [
        {
@@ -1013,7 +1014,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7472426470588235,
+      "score": 0.5634191176470589,
       "inBand": true,
       "scale": 1,
       "trace": "Tempo Trickster: 50% → nothing"
@@ -1074,8 +1075,8 @@
      "unit": {
       "name": "Rule Pilferer",
       "base": {
-       "hp": 25,
-       "pwr": 9
+       "hp": 19,
+       "pwr": 7
       },
       "triggers": [
        {
@@ -1119,12 +1120,13 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.42922794117647056,
-      "inBand": true,
+      "score": 0.27389705882352944,
+      "inBand": false,
       "scale": 1,
       "trace": "Rule Pilferer takes the rule of Nautilus"
      },
-     "state": "ready"
+     "state": "rejected",
+     "why": "out of band: wins 27% at best (band 35-75%)"
     },
     {
      "pair": "mirror+trickster",
@@ -1141,8 +1143,8 @@
      "unit": {
       "name": "Glass Mimic",
       "base": {
-       "hp": 25,
-       "pwr": 9
+       "hp": 19,
+       "pwr": 7
       },
       "triggers": [
        {
@@ -1187,12 +1189,13 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.390625,
-      "inBand": true,
+      "score": 0.22977941176470587,
+      "inBand": false,
       "scale": 1,
       "trace": "Glass Mimic keeps the rule of Nautilus"
      },
-     "state": "ready"
+     "state": "rejected",
+     "why": "out of band: wins 23% at best (band 35-75%)"
     }
    ]
   },
@@ -1219,8 +1222,8 @@
      "unit": {
       "name": "Wickrager",
       "base": {
-       "hp": 30,
-       "pwr": 12
+       "hp": 23,
+       "pwr": 8
       },
       "triggers": [
        {
@@ -1306,13 +1309,12 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.8345588235294118,
-      "inBand": false,
+      "score": 0.5459558823529411,
+      "inBand": true,
       "scale": 1,
-      "trace": "Wickrager's strike on Oracle hits for 15"
+      "trace": "Wickrager's strike on Oracle hits for 11"
      },
-     "state": "rejected",
-     "why": "out of band: wins 83% at best (band 35-75%)"
+     "state": "ready"
     },
     {
      "pair": "berserker+candle",
@@ -1329,8 +1331,8 @@
      "unit": {
       "name": "Last Ember",
       "base": {
-       "hp": 30,
-       "pwr": 12
+       "hp": 23,
+       "pwr": 8
       },
       "triggers": [
        {
@@ -1400,13 +1402,12 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7720588235294118,
-      "inBand": false,
+      "score": 0.4650735294117647,
+      "inBand": true,
       "scale": 1,
       "trace": "Last Ember intercepts: Last Ember survives at 1 HP, loses 1 PWR"
      },
-     "state": "rejected",
-     "why": "out of band: wins 77% at best (band 35-75%)"
+     "state": "ready"
     },
     {
      "pair": "berserker+candle",
@@ -1423,8 +1424,8 @@
      "unit": {
       "name": "Martyr Flame",
       "base": {
-       "hp": 30,
-       "pwr": 12
+       "hp": 23,
+       "pwr": 8
       },
       "triggers": [
        {
@@ -1492,12 +1493,13 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.5413602941176471,
-      "inBand": true,
+      "score": 0.2849264705882353,
+      "inBand": false,
       "scale": 1,
       "trace": "Martyr Flame → its neighbours (Martyr Flame) → 1 damage"
      },
-     "state": "ready"
+     "state": "rejected",
+     "why": "out of band: wins 28% at best (band 35-75%)"
     }
    ]
   },
@@ -1524,8 +1526,8 @@
      "unit": {
       "name": "Spiral Quill",
       "base": {
-       "hp": 31,
-       "pwr": 13
+       "hp": 25,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -1697,13 +1699,12 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7886029411764706,
-      "inBand": false,
-      "scale": 0.5,
+      "score": 0.5505514705882353,
+      "inBand": true,
+      "scale": 1,
       "trace": "Spiral Quill → self (Spiral Quill) → Shield 1, Charge 1"
      },
-     "state": "rejected",
-     "why": "out of band: wins 79% at best (band 35-75%)"
+     "state": "ready"
     },
     {
      "pair": "nautilus+thornback",
@@ -1720,8 +1721,8 @@
      "unit": {
       "name": "Grudge Whorl",
       "base": {
-       "hp": 31,
-       "pwr": 13
+       "hp": 25,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -1799,7 +1800,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7270220588235294,
+      "score": 0.5386029411764706,
       "inBand": true,
       "scale": 1,
       "trace": "Grudge Whorl → the attacker (Oracle) → 1 damage"
@@ -1821,8 +1822,8 @@
      "unit": {
       "name": "Bulwark Urchin",
       "base": {
-       "hp": 31,
-       "pwr": 13
+       "hp": 25,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -1956,7 +1957,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.6452205882352942,
+      "score": 0.41544117647058826,
       "inBand": true,
       "scale": 1,
       "trace": "Bulwark Urchin → it (War Horn, Sniper) → Shield 1, Poison 1"
@@ -1988,8 +1989,8 @@
      "unit": {
       "name": "Hexlens",
       "base": {
-       "hp": 40,
-       "pwr": 18
+       "hp": 30,
+       "pwr": 13
       },
       "triggers": [
        {
@@ -2146,13 +2147,12 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.8556985294117647,
-      "inBand": false,
+      "score": 0.6047794117647058,
+      "inBand": true,
       "scale": 1,
       "trace": "Hexlens intercepts: the status on Oracle lands on Hexlens"
      },
-     "state": "rejected",
-     "why": "out of band: wins 86% at best (band 35-75%)"
+     "state": "ready"
     },
     {
      "pair": "magnet+prism",
@@ -2169,8 +2169,8 @@
      "unit": {
       "name": "Reflectorus",
       "base": {
-       "hp": 40,
-       "pwr": 18
+       "hp": 30,
+       "pwr": 13
       },
       "triggers": [
        {
@@ -2442,13 +2442,12 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.9227941176470589,
-      "inBand": false,
+      "score": 0.65625,
+      "inBand": true,
       "scale": 1,
       "trace": "Reflectorus intercepts: the status on Reflectorus lands on Hornet"
      },
-     "state": "rejected",
-     "why": "out of band: wins 92% at best (band 35-75%)"
+     "state": "ready"
     },
     {
      "pair": "magnet+prism",
@@ -2465,8 +2464,8 @@
      "unit": {
       "name": "Spite Mirror",
       "base": {
-       "hp": 40,
-       "pwr": 18
+       "hp": 30,
+       "pwr": 13
       },
       "triggers": [
        {
@@ -2630,13 +2629,12 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.9154411764705882,
-      "inBand": false,
+      "score": 0.6534926470588235,
+      "inBand": true,
       "scale": 1,
       "trace": "Spite Mirror → the giver (Mirror, Spite Mirror) → Curse 1, Strength 1"
      },
-     "state": "rejected",
-     "why": "out of band: wins 92% at best (band 35-75%)"
+     "state": "ready"
     }
    ],
    "topUps": 2
@@ -2664,8 +2662,8 @@
      "unit": {
       "name": "Corvid Reaper",
       "base": {
-       "hp": 35,
-       "pwr": 13
+       "hp": 27,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -2718,7 +2716,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.6654411764705882,
+      "score": 0.4108455882352941,
       "inBand": true,
       "scale": 1,
       "trace": "Corvid Reaper sets a delay on Mirror: lands at the end of turn 4"
@@ -2740,8 +2738,8 @@
      "unit": {
       "name": "Omen Scavenger",
       "base": {
-       "hp": 35,
-       "pwr": 13
+       "hp": 27,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -2843,7 +2841,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.6498161764705882,
+      "score": 0.42371323529411764,
       "inBand": true,
       "scale": 1,
       "trace": "Omen Scavenger keeps the rule of Mirror"
@@ -2865,8 +2863,8 @@
      "unit": {
       "name": "Dusk Warden",
       "base": {
-       "hp": 35,
-       "pwr": 13
+       "hp": 27,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -2954,15 +2952,15 @@
      "check": {
       "terminates": false,
       "games": 544,
-      "capped": 147,
+      "capped": 153,
       "timeUp": 0,
-      "score": 0.5165441176470589,
+      "score": 0.33455882352941174,
       "inBand": false,
       "scale": 1,
       "trace": "Dusk Warden intercepts: Dusk Warden survives at 3 HP"
      },
      "state": "rejected",
-     "why": "doesn't terminate (147 capped, 0 time-up of 544)"
+     "why": "doesn't terminate (153 capped, 0 time-up of 544)"
     }
    ]
   },
@@ -2989,8 +2987,8 @@
      "unit": {
       "name": "Rose Cocoon",
       "base": {
-       "hp": 28,
-       "pwr": 4
+       "hp": 23,
+       "pwr": 3
       },
       "triggers": [
        {
@@ -3019,7 +3017,7 @@
          "status": "Charge",
          "stacks": {
           "kind": "const",
-          "value": 2
+          "value": 1
          }
         },
         {
@@ -3144,21 +3142,21 @@
       }
      },
      "text": {
-      "en": "Turn start: gain 2 Charge, then if it has 3+ Charge, spend 3 Charge and become Rose Monarch (2/3); otherwise, nothing.",
-      "ru": "Начало хода: получить 2 Заряда, затем если у него 3 Заряда или больше, потратить 3 Заряда и превратиться в Розового Монарха (2/3); иначе ничего."
+      "en": "Turn start: gain 1 Charge, then if it has 3+ Charge, spend 3 Charge and become Rose Monarch (2/3); otherwise, nothing.",
+      "ru": "Начало хода: получить 1 Заряд, затем если у него 3 Заряда или больше, потратить 3 Заряда и превратиться в Розового Монарха (2/3); иначе ничего."
      },
      "check": {
       "terminates": true,
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.19669117647058823,
+      "score": 0.18198529411764705,
       "inBand": false,
-      "scale": 1.5,
-      "trace": "Rose Cocoon → self (Rose Cocoon) → Charge 2"
+      "scale": 0.5,
+      "trace": "Rose Cocoon → self (Rose Cocoon) → Charge 1"
      },
      "state": "rejected",
-     "why": "out of band: wins 20% at best (band 35-75%)"
+     "why": "out of band: wins 18% at best (band 35-75%)"
     },
     {
      "pair": "chrysalis+seed",
@@ -3175,8 +3173,8 @@
      "unit": {
       "name": "Sproutshell",
       "base": {
-       "hp": 28,
-       "pwr": 4
+       "hp": 23,
+       "pwr": 3
       },
       "triggers": [
        {
@@ -3234,7 +3232,7 @@
          "status": "Blessing",
          "stacks": {
           "kind": "const",
-          "value": 3
+          "value": 9
          }
         }
        ]
@@ -3273,20 +3271,21 @@
       }
      },
      "text": {
-      "en": "Turn start, from turn 2: heal self for 2, and 3 Blessing to the ally behind.",
-      "ru": "Начало хода, начиная с 2-го хода: лечение на 2 себе, и 3 Благословения союзнику позади."
+      "en": "Turn start, from turn 2: heal self for 2, and 9 Blessing to the ally behind.",
+      "ru": "Начало хода, начиная с 2-го хода: лечение на 2 себе, и 9 Благословений союзнику позади."
      },
      "check": {
       "terminates": true,
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.3538602941176471,
-      "inBand": true,
+      "score": 0.33639705882352944,
+      "inBand": false,
       "scale": 3,
-      "trace": "Sproutshell (from turn 2) → self (Sproutshell, Oracle) → heal 2, Blessing 3"
+      "trace": "Sproutshell (from turn 2) → self (Sproutshell, Oracle) → heal 2, Blessing 9"
      },
-     "state": "ready"
+     "state": "rejected",
+     "why": "out of band: wins 34% at best (band 35-75%)"
     },
     {
      "pair": "chrysalis+seed",
@@ -3303,8 +3302,8 @@
      "unit": {
       "name": "Hatchwarden",
       "base": {
-       "hp": 28,
-       "pwr": 4
+       "hp": 23,
+       "pwr": 3
       },
       "triggers": [
        {
@@ -3361,13 +3360,13 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.3336397058823529,
+      "score": 0.23529411764705882,
       "inBand": false,
       "scale": 1,
       "trace": "Hatchwarden (from turn 2) → the ally behind it (Oracle) → Vitality 2"
      },
      "state": "rejected",
-     "why": "out of band: wins 33% at best (band 35-75%)"
+     "why": "out of band: wins 24% at best (band 35-75%)"
     }
    ]
   },
@@ -3394,8 +3393,8 @@
      "unit": {
       "name": "Frostbolt Hex",
       "base": {
-       "hp": 18,
-       "pwr": 5
+       "hp": 14,
+       "pwr": 4
       },
       "triggers": [
        {
@@ -3442,7 +3441,7 @@
            "status": "Freeze",
            "stacks": {
             "kind": "const",
-            "value": 1
+            "value": 3
            }
           }
          ],
@@ -3481,18 +3480,18 @@
       }
      },
      "text": {
-      "en": "Turn start: PWR damage to the back enemy and front enemy, then on turn 2, 1 Freeze to the back enemy and front enemy; otherwise, nothing.",
-      "ru": "Начало хода: урон, равный АТК, заднему врагу и переднему врагу, затем на 2-м ходу, 1 Заморозка заднему врагу и переднему врагу; иначе ничего."
+      "en": "Turn start: PWR damage to the back enemy and front enemy, then on turn 2, 3 Freeze to the back enemy and front enemy; otherwise, nothing.",
+      "ru": "Начало хода: урон, равный АТК, заднему врагу и переднему врагу, затем на 2-м ходу, 3 Заморозки заднему врагу и переднему врагу; иначе ничего."
      },
      "check": {
       "terminates": true,
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.45036764705882354,
+      "score": 0.3547794117647059,
       "inBand": true,
-      "scale": 1,
-      "trace": "Frostbolt Hex → the enemy at the back and front enemy (Bully, Oracle) → 5 damage"
+      "scale": 3,
+      "trace": "Frostbolt Hex → the enemy at the back and front enemy (Bully, Oracle) → 4 damage"
      },
      "state": "ready"
     },
@@ -3511,8 +3510,8 @@
      "unit": {
       "name": "Hushmark",
       "base": {
-       "hp": 18,
-       "pwr": 5
+       "hp": 14,
+       "pwr": 4
       },
       "triggers": [
        {
@@ -3558,13 +3557,13 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.22150735294117646,
+      "score": 0.15716911764705882,
       "inBand": false,
       "scale": 1,
       "trace": "Hushmark (once per battle) → it (Mirror)"
      },
      "state": "rejected",
-     "why": "out of band: wins 22% at best (band 35-75%)"
+     "why": "out of band: wins 16% at best (band 35-75%)"
     },
     {
      "pair": "hexer+sniper",
@@ -3581,8 +3580,8 @@
      "unit": {
       "name": "Dread Cadence",
       "base": {
-       "hp": 18,
-       "pwr": 5
+       "hp": 14,
+       "pwr": 4
       },
       "triggers": [
        {
@@ -3626,13 +3625,13 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.21875,
+      "score": 0.15992647058823528,
       "inBand": false,
       "scale": 1,
       "trace": "Dread Cadence → the enemy at the back (Bully) → 1 damage"
      },
      "state": "rejected",
-     "why": "out of band: wins 22% at best (band 35-75%)"
+     "why": "out of band: wins 16% at best (band 35-75%)"
     }
    ],
    "topUps": 2
@@ -3660,8 +3659,8 @@
      "unit": {
       "name": "Martyr Guard",
       "base": {
-       "hp": 29,
-       "pwr": 12
+       "hp": 22,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -3765,7 +3764,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.5459558823529411,
+      "score": 0.4163602941176471,
       "inBand": true,
       "scale": 1,
       "trace": "Martyr Guard intercepts: the hit on Oracle lands on Martyr Guard"
@@ -3787,8 +3786,8 @@
      "unit": {
       "name": "Field Warden",
       "base": {
-       "hp": 29,
-       "pwr": 12
+       "hp": 22,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -3868,7 +3867,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.4990808823529412,
+      "score": 0.359375,
       "inBand": true,
       "scale": 1,
       "trace": "Field Warden → it (Field Warden) → Vitality 1"
@@ -3890,8 +3889,8 @@
      "unit": {
       "name": "Pain Conduit",
       "base": {
-       "hp": 29,
-       "pwr": 12
+       "hp": 22,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -3937,7 +3936,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.5248161764705882,
+      "score": 0.3805147058823529,
       "inBand": true,
       "scale": 1,
       "trace": "Pain Conduit → its neighbours (Mirror) → heal 2"
@@ -3969,8 +3968,8 @@
      "unit": {
       "name": "Bloodcrow",
       "base": {
-       "hp": 31,
-       "pwr": 16
+       "hp": 24,
+       "pwr": 12
       },
       "triggers": [
        {
@@ -4016,7 +4015,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7224264705882353,
+      "score": 0.4485294117647059,
       "inBand": true,
       "scale": 1,
       "trace": "Bloodcrow → the ally behind it (Mirror) → heal 2"
@@ -4038,8 +4037,8 @@
      "unit": {
       "name": "Carrion Leech",
       "base": {
-       "hp": 31,
-       "pwr": 16
+       "hp": 24,
+       "pwr": 12
       },
       "triggers": [
        {
@@ -4089,7 +4088,7 @@
          "status": "Strength",
          "stacks": {
           "kind": "const",
-          "value": 1
+          "value": 2
          }
         }
        ]
@@ -4126,21 +4125,21 @@
       }
      },
      "text": {
-      "en": "Strikes: heal self for PWR, then 1 Strength to self, and 1 Curse to its target.",
-      "ru": "Атака: лечение на АТК себе, затем 1 Сила себе, и 1 Проклятие цели."
+      "en": "Strikes: heal self for PWR, then 2 Strength to self, and 1 Curse to its target.",
+      "ru": "Атака: лечение на АТК себе, затем 2 Силы себе, и 1 Проклятие цели."
      },
      "check": {
       "terminates": true,
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.9356617647058824,
+      "score": 0.8768382352941176,
       "inBand": false,
-      "scale": 1,
-      "trace": "Carrion Leech → self (Carrion Leech) → heal 2, Strength 1"
+      "scale": 1.5,
+      "trace": "Carrion Leech → self (Carrion Leech, Oracle) → heal 2, Strength 2, Curse 1"
      },
      "state": "rejected",
-     "why": "out of band: wins 94% at best (band 35-75%)"
+     "why": "out of band: wins 88% at best (band 35-75%)"
     },
     {
      "pair": "leech+vulture",
@@ -4157,8 +4156,8 @@
      "unit": {
       "name": "Gorewing",
       "base": {
-       "hp": 31,
-       "pwr": 16
+       "hp": 24,
+       "pwr": 12
       },
       "triggers": [
        {
@@ -4224,13 +4223,12 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.8520220588235294,
-      "inBand": false,
+      "score": 0.6029411764705882,
+      "inBand": true,
       "scale": 1,
       "trace": "Gorewing → self (Gorewing) → Strength 1"
      },
-     "state": "rejected",
-     "why": "out of band: wins 85% at best (band 35-75%)"
+     "state": "ready"
     }
    ],
    "topUps": 2
@@ -4258,8 +4256,8 @@
      "unit": {
       "name": "Last Head",
       "base": {
-       "hp": 38,
-       "pwr": 15
+       "hp": 29,
+       "pwr": 11
       },
       "triggers": [
        {
@@ -4431,13 +4429,12 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7738970588235294,
-      "inBand": false,
+      "score": 0.5238970588235294,
+      "inBand": true,
       "scale": 1,
       "trace": "Last Head → self (Wolf Head, Wolf Head, Wolf Head)"
      },
-     "state": "rejected",
-     "why": "out of band: wins 77% at best (band 35-75%)"
+     "state": "ready"
     },
     {
      "pair": "hydra+lone-wolf",
@@ -4454,8 +4451,8 @@
      "unit": {
       "name": "Grief Fang",
       "base": {
-       "hp": 38,
-       "pwr": 15
+       "hp": 29,
+       "pwr": 11
       },
       "triggers": [
        {
@@ -4516,13 +4513,12 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7711397058823529,
-      "inBand": false,
+      "score": 0.49816176470588236,
+      "inBand": true,
       "scale": 1,
-      "trace": "Grief Fang's strike on Raven hits for 17"
+      "trace": "Grief Fang's strike on Raven hits for 13"
      },
-     "state": "rejected",
-     "why": "out of band: wins 77% at best (band 35-75%)"
+     "state": "ready"
     },
     {
      "pair": "hydra+lone-wolf",
@@ -4539,8 +4535,8 @@
      "unit": {
       "name": "Solitary Hydra",
       "base": {
-       "hp": 38,
-       "pwr": 15
+       "hp": 29,
+       "pwr": 11
       },
       "triggers": [
        {
@@ -4671,13 +4667,12 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.765625,
-      "inBand": false,
+      "score": 0.4963235294117647,
+      "inBand": true,
       "scale": 1,
       "trace": "Solitary Hydra (if exactly 1 ally stands and once per battle) → self (Head, Head)"
      },
-     "state": "rejected",
-     "why": "out of band: wins 77% at best (band 35-75%)"
+     "state": "ready"
     }
    ],
    "topUps": 2
@@ -4705,8 +4700,8 @@
      "unit": {
       "name": "Downbeat Marshal",
       "base": {
-       "hp": 36,
-       "pwr": 14
+       "hp": 28,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -4839,7 +4834,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7178308823529411,
+      "score": 0.4641544117647059,
       "inBand": true,
       "scale": 1,
       "trace": "Downbeat Marshal → self (Downbeat Marshal) → Charge 1"
@@ -4861,8 +4856,8 @@
      "unit": {
       "name": "Pulse Keeper",
       "base": {
-       "hp": 36,
-       "pwr": 14
+       "hp": 28,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -5007,7 +5002,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7196691176470589,
+      "score": 0.4494485294117647,
       "inBand": true,
       "scale": 1,
       "trace": "Pulse Keeper → self (Pulse Keeper) → Charge 1"
@@ -5029,8 +5024,8 @@
      "unit": {
       "name": "Encore Drum",
       "base": {
-       "hp": 36,
-       "pwr": 14
+       "hp": 28,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -5163,7 +5158,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7196691176470589,
+      "score": 0.4678308823529412,
       "inBand": true,
       "scale": 1,
       "trace": "Encore Drum → self (Encore Drum) → Charge 1"
@@ -5224,8 +5219,8 @@
      "unit": {
       "name": "Chillknuckle",
       "base": {
-       "hp": 36,
-       "pwr": 11
+       "hp": 27,
+       "pwr": 8
       },
       "triggers": [
        {
@@ -5327,9 +5322,9 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7334558823529411,
+      "score": 0.6286764705882353,
       "inBand": true,
-      "scale": 3,
+      "scale": 1,
       "trace": "Chillknuckle → the target (Oracle) → Freeze 3"
      },
      "state": "ready"
@@ -5349,8 +5344,8 @@
      "unit": {
       "name": "Shatterfist",
       "base": {
-       "hp": 36,
-       "pwr": 11
+       "hp": 27,
+       "pwr": 8
       },
       "triggers": [
        {
@@ -5447,13 +5442,12 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7830882352941176,
-      "inBand": false,
-      "scale": 3,
+      "score": 0.6479779411764706,
+      "inBand": true,
+      "scale": 1,
       "trace": "Shatterfist → front enemy (Oracle) → Freeze 3"
      },
-     "state": "rejected",
-     "why": "out of band: wins 78% at best (band 35-75%)"
+     "state": "ready"
     }
    ]
   },
@@ -5480,8 +5474,8 @@
      "unit": {
       "name": "Venom Brewer",
       "base": {
-       "hp": 37,
-       "pwr": 16
+       "hp": 28,
+       "pwr": 12
       },
       "triggers": [
        {
@@ -5562,13 +5556,12 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7711397058823529,
-      "inBand": false,
+      "score": 0.5137867647058824,
+      "inBand": true,
       "scale": 1,
       "trace": "Venom Brewer → every poisoned enemy (Hornet) → Poison 5"
      },
-     "state": "rejected",
-     "why": "out of band: wins 77% at best (band 35-75%)"
+     "state": "ready"
     },
     {
      "pair": "alchemist+hornet",
@@ -5585,8 +5578,8 @@
      "unit": {
       "name": "Toxin Swarmer",
       "base": {
-       "hp": 37,
-       "pwr": 16
+       "hp": 28,
+       "pwr": 12
       },
       "triggers": [
        {
@@ -5759,13 +5752,12 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.8088235294117647,
-      "inBand": false,
-      "scale": 0.25,
+      "score": 0.5716911764705882,
+      "inBand": true,
+      "scale": 1,
       "trace": "Toxin Swarmer → self (Toxin Swarmer) → Charge 1"
      },
-     "state": "rejected",
-     "why": "out of band: wins 81% at best (band 35-75%)"
+     "state": "ready"
     },
     {
      "pair": "alchemist+hornet",
@@ -5782,8 +5774,8 @@
      "unit": {
       "name": "Plague Vespa",
       "base": {
-       "hp": 37,
-       "pwr": 16
+       "hp": 28,
+       "pwr": 12
       },
       "triggers": [
        {
@@ -5865,13 +5857,12 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7711397058823529,
-      "inBand": false,
+      "score": 0.5137867647058824,
+      "inBand": true,
       "scale": 1,
       "trace": "Plague Vespa intercepts: Plague Vespa survives at 3 HP"
      },
-     "state": "rejected",
-     "why": "out of band: wins 77% at best (band 35-75%)"
+     "state": "ready"
     }
    ],
    "topUps": 2
@@ -5899,8 +5890,8 @@
      "unit": {
       "name": "Omen Horn",
       "base": {
-       "hp": 25,
-       "pwr": 10
+       "hp": 22,
+       "pwr": 9
       },
       "triggers": [
        {
@@ -5936,7 +5927,7 @@
            "status": "Shield",
            "stacks": {
             "kind": "const",
-            "value": 2
+            "value": 1
            }
           }
          ],
@@ -5946,7 +5937,7 @@
            "status": "Strength",
            "stacks": {
             "kind": "const",
-            "value": 2
+            "value": 1
            }
           }
          ]
@@ -5990,20 +5981,21 @@
       }
      },
      "text": {
-      "en": "Ally dies: if the enemy has more units, 2 Shield to all allies; otherwise, 2 Strength to all allies.",
-      "ru": "Смерть союзника: если у врага больше бойцов, 2 Щита всем союзникам; иначе 2 Силы всем союзникам."
+      "en": "Ally dies: if the enemy has more units, 1 Shield to all allies; otherwise, 1 Strength to all allies.",
+      "ru": "Смерть союзника: если у врага больше бойцов, 1 Щит всем союзникам; иначе 1 Сила всем союзникам."
      },
      "check": {
       "terminates": true,
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.3795955882352941,
-      "inBand": true,
-      "scale": 1,
-      "trace": "Omen Horn → all allies (Omen Horn, Bully) → Shield 2"
+      "score": 0.31525735294117646,
+      "inBand": false,
+      "scale": 0.5,
+      "trace": "Omen Horn → all allies (Omen Horn, Bully) → Shield 1"
      },
-     "state": "ready"
+     "state": "rejected",
+     "why": "out of band: wins 32% at best (band 35-75%)"
     },
     {
      "pair": "fortune-teller+war-horn",
@@ -6020,8 +6012,8 @@
      "unit": {
       "name": "Dire Herald",
       "base": {
-       "hp": 25,
-       "pwr": 10
+       "hp": 22,
+       "pwr": 9
       },
       "triggers": [
        {
@@ -6209,7 +6201,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.5036764705882353,
+      "score": 0.3786764705882353,
       "inBand": true,
       "scale": 1,
       "trace": "Dire Herald → self (Dire Herald) → Charge 1"
@@ -6231,8 +6223,8 @@
      "unit": {
       "name": "Dusk Augur",
       "base": {
-       "hp": 25,
-       "pwr": 10
+       "hp": 22,
+       "pwr": 9
       },
       "triggers": [
        {
@@ -6344,7 +6336,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.4834558823529412,
+      "score": 0.39705882352941174,
       "inBand": true,
       "scale": 1,
       "trace": "Dusk Augur → it (Dusk Augur) → Vitality 2"
@@ -6376,8 +6368,8 @@
      "unit": {
       "name": "Beacon Ward",
       "base": {
-       "hp": 34,
-       "pwr": 13
+       "hp": 25,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -6474,13 +6466,12 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.8602941176470589,
-      "inBand": false,
+      "score": 0.7417279411764706,
+      "inBand": true,
       "scale": 1,
       "trace": "Beacon Ward (once per turn) → self (Beacon Ward)"
      },
-     "state": "rejected",
-     "why": "out of band: wins 86% at best (band 35-75%)"
+     "state": "ready"
     },
     {
      "pair": "aegis+lantern",
@@ -6497,8 +6488,8 @@
      "unit": {
       "name": "Vigil Flame",
       "base": {
-       "hp": 34,
-       "pwr": 13
+       "hp": 25,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -6664,7 +6655,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.6571691176470589,
+      "score": 0.4007352941176471,
       "inBand": true,
       "scale": 1,
       "trace": "Vigil Flame (while at full HP) → self (Vigil Flame) → Charge 1"
@@ -6686,8 +6677,8 @@
      "unit": {
       "name": "Frostwarden",
       "base": {
-       "hp": 34,
-       "pwr": 13
+       "hp": 25,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -6788,7 +6779,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.6636029411764706,
+      "score": 0.41911764705882354,
       "inBand": true,
       "scale": 1,
       "trace": "Frostwarden intercepts: the hit on War Horn lands on Frostwarden"
@@ -6820,8 +6811,8 @@
      "unit": {
       "name": "Voltmage",
       "base": {
-       "hp": 26,
-       "pwr": 7
+       "hp": 22,
+       "pwr": 5
       },
       "triggers": [
        {
@@ -6902,7 +6893,7 @@
            "status": "Curse",
            "stacks": {
             "kind": "const",
-            "value": 1
+            "value": 3
            }
           }
          ],
@@ -6964,17 +6955,17 @@
       }
      },
      "text": {
-      "en": "Turn end: gain 1 Charge, and if it has 3+ Charge, damage equal to the hits its allies have taken to all enemies and 1 Curse to all enemies; otherwise, nothing, and if it has 3+ Charge, spend 3 Charge; otherwise, nothing.",
-      "ru": "Конец хода: получить 1 Заряд, и если у него 3 Заряда или больше, урон, равный ударам по союзникам, всем врагам и 1 Проклятие всем врагам; иначе ничего, и если у него 3 Заряда или больше, потратить 3 Заряда; иначе ничего."
+      "en": "Turn end: gain 1 Charge, and if it has 3+ Charge, damage equal to the hits its allies have taken to all enemies and 3 Curse to all enemies; otherwise, nothing, and if it has 3+ Charge, spend 3 Charge; otherwise, nothing.",
+      "ru": "Конец хода: получить 1 Заряд, и если у него 3 Заряда или больше, урон, равный ударам по союзникам, всем врагам и 3 Проклятия всем врагам; иначе ничего, и если у него 3 Заряда или больше, потратить 3 Заряда; иначе ничего."
      },
      "check": {
       "terminates": true,
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.3602941176470588,
+      "score": 0.359375,
       "inBand": true,
-      "scale": 1,
+      "scale": 3,
       "trace": "Voltmage → self (Voltmage) → Charge 1"
      },
      "state": "ready"
@@ -6994,8 +6985,8 @@
      "unit": {
       "name": "Warding Cell",
       "base": {
-       "hp": 26,
-       "pwr": 7
+       "hp": 22,
+       "pwr": 5
       },
       "triggers": [
        {
@@ -7202,13 +7193,13 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.2693014705882353,
+      "score": 0.1801470588235294,
       "inBand": false,
-      "scale": 0.5,
+      "scale": 1,
       "trace": "Warding Cell → self (Warding Cell) → Charge 1"
      },
      "state": "rejected",
-     "why": "out of band: wins 27% at best (band 35-75%)"
+     "why": "out of band: wins 18% at best (band 35-75%)"
     },
     {
      "pair": "archmage+battery",
@@ -7225,8 +7216,8 @@
      "unit": {
       "name": "Stormwarden",
       "base": {
-       "hp": 26,
-       "pwr": 7
+       "hp": 22,
+       "pwr": 5
       },
       "triggers": [
        {
@@ -7256,7 +7247,7 @@
          "status": "Charge",
          "stacks": {
           "kind": "const",
-          "value": 3
+          "value": 9
          }
         },
         {
@@ -7281,7 +7272,7 @@
            "status": "Strength",
            "stacks": {
             "kind": "const",
-            "value": 6
+            "value": 18
            }
           },
           {
@@ -7289,7 +7280,7 @@
            "status": "Shield",
            "stacks": {
             "kind": "const",
-            "value": 3
+            "value": 9
            }
           }
          ],
@@ -7351,21 +7342,21 @@
       }
      },
      "text": {
-      "en": "Ally hit: give it 3 Charge, then if the unit has 3+ Charge, spend 3 Charge and 6 Strength to it and 3 Shield to it; otherwise, nothing.",
-      "ru": "Удар по союзнику: дать ему 3 Заряда, затем если у цели 3 Заряда или больше, потратить 3 Заряда и 6 Сил ему и 3 Щита ему; иначе ничего."
+      "en": "Ally hit: give it 9 Charge, then if the unit has 3+ Charge, spend 3 Charge and 18 Strength to it and 9 Shield to it; otherwise, nothing.",
+      "ru": "Удар по союзнику: дать ему 9 Зарядов, затем если у цели 3 Заряда или больше, потратить 3 Заряда и 18 Сил ему и 9 Щитов ему; иначе ничего."
      },
      "check": {
       "terminates": true,
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.33547794117647056,
+      "score": 0.3235294117647059,
       "inBand": false,
       "scale": 3,
-      "trace": "Stormwarden → it (War Horn) → Charge 3, Strength 6, Shield 3"
+      "trace": "Stormwarden → it (War Horn) → Charge 9, Strength 18, Shield 9"
      },
      "state": "rejected",
-     "why": "out of band: wins 34% at best (band 35-75%)"
+     "why": "out of band: wins 32% at best (band 35-75%)"
     }
    ]
   },
@@ -7392,8 +7383,8 @@
      "unit": {
       "name": "Rime Seer",
       "base": {
-       "hp": 26,
-       "pwr": 6
+       "hp": 20,
+       "pwr": 4
       },
       "triggers": [
        {
@@ -7426,7 +7417,7 @@
          "status": "Freeze",
          "stacks": {
           "kind": "const",
-          "value": 1
+          "value": 2
          }
         },
         {
@@ -7437,7 +7428,7 @@
           "status": "Curse",
           "stacks": {
            "kind": "const",
-           "value": 1
+           "value": 2
           }
          }
         }
@@ -7481,18 +7472,18 @@
       }
      },
      "text": {
-      "en": "Turn start, on turn 2: 1 Freeze to all enemies, then in 1 turn: 1 Curse to all enemies.",
-      "ru": "Начало хода, на 2-м ходу: 1 Заморозка всем врагам, затем через 1 ход: 1 Проклятие всем врагам."
+      "en": "Turn start, on turn 2: 2 Freeze to all enemies, then in 1 turn: 2 Curse to all enemies.",
+      "ru": "Начало хода, на 2-м ходу: 2 Заморозки всем врагам, затем через 1 ход: 2 Проклятия всем врагам."
      },
      "check": {
       "terminates": true,
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.4209558823529412,
+      "score": 0.4485294117647059,
       "inBand": true,
-      "scale": 1,
-      "trace": "Rime Seer (on turn 2) → all enemies (Oracle, Nautilus, Mirror, Bully) → Freeze 1"
+      "scale": 1.5,
+      "trace": "Rime Seer (on turn 2) → all enemies (Oracle, Nautilus, Mirror, Bully) → Freeze 2"
      },
      "state": "ready"
     },
@@ -7511,8 +7502,8 @@
      "unit": {
       "name": "Hoarfate",
       "base": {
-       "hp": 26,
-       "pwr": 6
+       "hp": 20,
+       "pwr": 4
       },
       "triggers": [
        {
@@ -7557,7 +7548,7 @@
            "status": "Freeze",
            "stacks": {
             "kind": "const",
-            "value": 3
+            "value": 6
            }
           }
          ],
@@ -7567,7 +7558,7 @@
            "status": "Curse",
            "stacks": {
             "kind": "const",
-            "value": 3
+            "value": 6
            }
           }
          ]
@@ -7612,18 +7603,18 @@
       }
      },
      "text": {
-      "en": "Turn start, from turn 3: if the target has Curse, 3 Freeze to front enemy and the back enemy; otherwise, 3 Curse to front enemy and the back enemy.",
-      "ru": "Начало хода, начиная с 3-го хода: если у цели есть Проклятие, 3 Заморозки переднему врагу и заднему врагу; иначе 3 Проклятия переднему врагу и заднему врагу."
+      "en": "Turn start, from turn 3: if the target has Curse, 6 Freeze to front enemy and the back enemy; otherwise, 6 Curse to front enemy and the back enemy.",
+      "ru": "Начало хода, начиная с 3-го хода: если у цели есть Проклятие, 6 Заморозок переднему врагу и заднему врагу; иначе 6 Проклятий переднему врагу и заднему врагу."
      },
      "check": {
       "terminates": true,
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.3851102941176471,
+      "score": 0.36672794117647056,
       "inBand": true,
-      "scale": 3,
-      "trace": "Hoarfate (from turn 3) → front enemy and the enemy at the back (Nautilus, Bully) → Curse 3"
+      "scale": 2,
+      "trace": "Hoarfate (from turn 3) → front enemy and the enemy at the back (Oracle, Bully) → Curse 6"
      },
      "state": "ready"
     },
@@ -7642,8 +7633,8 @@
      "unit": {
       "name": "Winter Portent",
       "base": {
-       "hp": 26,
-       "pwr": 6
+       "hp": 20,
+       "pwr": 4
       },
       "triggers": [
        {
@@ -7822,7 +7813,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.5202205882352942,
+      "score": 0.3943014705882353,
       "inBand": true,
       "scale": 1,
       "trace": "Winter Portent → self (Winter Portent) → Charge 1"
@@ -7854,8 +7845,8 @@
      "unit": {
       "name": "Grave Headsman",
       "base": {
-       "hp": 28,
-       "pwr": 10
+       "hp": 23,
+       "pwr": 8
       },
       "triggers": [
        {
@@ -7912,12 +7903,13 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.46599264705882354,
-      "inBand": true,
+      "score": 0.3005514705882353,
+      "inBand": false,
       "scale": 1,
       "trace": "Grave Headsman (if its strike made the kill) → self (Grave Headsman) → Strength 1"
      },
-     "state": "ready"
+     "state": "rejected",
+     "why": "out of band: wins 30% at best (band 35-75%)"
     },
     {
      "pair": "executioner+gravedigger",
@@ -7934,8 +7926,8 @@
      "unit": {
       "name": "Tollkeeper",
       "base": {
-       "hp": 28,
-       "pwr": 10
+       "hp": 23,
+       "pwr": 8
       },
       "triggers": [
        {
@@ -7986,7 +7978,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.5431985294117647,
+      "score": 0.39981617647058826,
       "inBand": true,
       "scale": 1,
       "trace": "Tollkeeper → front enemy (Oracle) → 1 damage"
@@ -8008,8 +8000,8 @@
      "unit": {
       "name": "Dirge Reaper",
       "base": {
-       "hp": 28,
-       "pwr": 10
+       "hp": 23,
+       "pwr": 8
       },
       "triggers": [
        {
@@ -8147,562 +8139,15 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.4650735294117647,
-      "inBand": true,
+      "score": 0.28125,
+      "inBand": false,
       "scale": 1,
       "trace": "Dirge Reaper → self (Dirge Reaper) → Charge 1"
      },
-     "state": "ready"
+     "state": "rejected",
+     "why": "out of band: wins 28% at best (band 35-75%)"
     }
    ]
-  },
-  {
-   "pair": {
-    "key": "conductor+hourglass",
-    "a": "conductor",
-    "b": "hourglass",
-    "why": "requested"
-   },
-   "candidates": [
-    {
-     "pair": "conductor+hourglass",
-     "lean": "B",
-     "intent": "At the end of each turn it gains 1 Charge. At 3 Charge it spends them, and every ally behind it acts again but gets 1 Freeze, paying for the borrowed turn.",
-     "name": {
-      "en": "Sandglass Maestro",
-      "ru": "Маэстро Песка"
-     },
-     "flavour": {
-      "en": "Each grain keeps the beat; every borrowed measure leaves frost behind.",
-      "ru": "Песчинка за песчинкой копит такт, а за каждый взятый взаймы — платит холодом."
-     },
-     "unit": {
-      "name": "Sandglass Maestro",
-      "base": {
-       "hp": 40,
-       "pwr": 16
-      },
-      "triggers": [
-       {
-        "kind": "trigger",
-        "on": {
-         "on": "TurnEnd"
-        }
-       }
-      ],
-      "selectors": [
-       {
-        "kind": "holder"
-       }
-      ],
-      "abilities": [
-       "Spark"
-      ],
-      "also": [
-       {
-        "selectors": [
-         {
-          "kind": "alliesBehind"
-         }
-        ],
-        "abilities": [
-         "BorrowCharged"
-        ]
-       },
-       {
-        "selectors": [
-         {
-          "kind": "holder"
-         }
-        ],
-        "abilities": [
-         "Spend"
-        ]
-       }
-      ]
-     },
-     "abilities": {
-      "Spark": {
-       "name": "Spark",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "applyStatus",
-         "status": "Charge",
-         "stacks": {
-          "kind": "const",
-          "value": 1
-         }
-        }
-       ]
-      },
-      "BorrowCharged": {
-       "name": "BorrowCharged",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "branch",
-         "if": {
-          "kind": "stacksAtLeast",
-          "status": "Charge",
-          "n": 3,
-          "of": "holder"
-         },
-         "then": [
-          {
-           "kind": "actAgain"
-          },
-          {
-           "kind": "applyStatus",
-           "status": "Freeze",
-           "stacks": {
-            "kind": "const",
-            "value": 1
-           }
-          }
-         ],
-         "else": []
-        }
-       ]
-      },
-      "Spend": {
-       "name": "Spend",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "branch",
-         "if": {
-          "kind": "stacksAtLeast",
-          "status": "Charge",
-          "n": 3,
-          "of": "holder"
-         },
-         "then": [
-          {
-           "kind": "consumeStacks",
-           "status": "Charge",
-           "stacks": {
-            "kind": "const",
-            "value": 3
-           }
-          }
-         ],
-         "else": []
-        }
-       ]
-      }
-     },
-     "statuses": {
-      "Charge": {
-       "name": "Charge",
-       "names": {
-        "en": "Charge",
-        "ru": {
-         "name": "Заряд",
-         "acc": "Заряд",
-         "count": [
-          "Заряд",
-          "Заряда",
-          "Зарядов"
-         ]
-        }
-       },
-       "counter": true,
-       "abilities": []
-      },
-      "Freeze": {
-       "name": "Freeze",
-       "triggers": [
-        {
-         "kind": "interceptor",
-         "on": {
-          "on": "Strike",
-          "striker": "holder"
-         }
-        }
-       ],
-       "selectors": [
-        {
-         "kind": "holder"
-        }
-       ],
-       "abilities": [
-        {
-         "effects": [
-          {
-           "kind": "cancel",
-           "consumeSelf": 1
-          }
-         ]
-        }
-       ]
-      }
-     },
-     "text": {
-      "en": "Turn end: gain 1 Charge, and if it has 3+ Charge, every ally behind acts again and 1 Freeze to every ally behind; otherwise, nothing, and if it has 3+ Charge, spend 3 Charge; otherwise, nothing.",
-      "ru": "Конец хода: получить 1 Заряд, и если у него 3 Заряда или больше, заставить всех союзников позади действовать ещё раз и 1 Заморозка всем союзникам позади; иначе ничего, и если у него 3 Заряда или больше, потратить 3 Заряда; иначе ничего."
-     },
-     "check": {
-      "terminates": true,
-      "games": 544,
-      "capped": 0,
-      "timeUp": 0,
-      "score": 0.7463235294117647,
-      "inBand": true,
-      "scale": 1,
-      "trace": "Sandglass Maestro → self (Sandglass Maestro) → Charge 1"
-     },
-     "state": "ready"
-    },
-    {
-     "pair": "conductor+hourglass",
-     "lean": "A",
-     "intent": "At the start of each turn it gains 1 Charge. At 3 Charge it spends them, and both neighbours act again and gain Strength equal to half the turn number.",
-     "name": {
-      "en": "Tempo Keeper",
-      "ru": "Хранитель такта"
-     },
-     "flavour": {
-      "en": "Every third beat, the whole orchestra plays again — louder.",
-      "ru": "Каждая третья доля — и оркестр играет снова, только громче."
-     },
-     "unit": {
-      "name": "Tempo Keeper",
-      "base": {
-       "hp": 40,
-       "pwr": 16
-      },
-      "triggers": [
-       {
-        "kind": "trigger",
-        "on": {
-         "on": "TurnStart"
-        }
-       }
-      ],
-      "selectors": [
-       {
-        "kind": "holder"
-       }
-      ],
-      "abilities": [
-       "Spark"
-      ],
-      "also": [
-       {
-        "selectors": [
-         {
-          "kind": "neighbours"
-         }
-        ],
-        "abilities": [
-         "CueCharged"
-        ]
-       },
-       {
-        "selectors": [
-         {
-          "kind": "holder"
-         }
-        ],
-        "abilities": [
-         "Spend"
-        ]
-       }
-      ]
-     },
-     "abilities": {
-      "Spark": {
-       "name": "Spark",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "applyStatus",
-         "status": "Charge",
-         "stacks": {
-          "kind": "const",
-          "value": 1
-         }
-        }
-       ]
-      },
-      "CueCharged": {
-       "name": "CueCharged",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "branch",
-         "if": {
-          "kind": "stacksAtLeast",
-          "status": "Charge",
-          "n": 3,
-          "of": "holder"
-         },
-         "then": [
-          {
-           "kind": "actAgain"
-          },
-          {
-           "kind": "applyStatus",
-           "status": "Strength",
-           "stacks": {
-            "kind": "half",
-            "of": {
-             "kind": "count",
-             "fact": "turn"
-            }
-           }
-          }
-         ],
-         "else": []
-        }
-       ]
-      },
-      "Spend": {
-       "name": "Spend",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "branch",
-         "if": {
-          "kind": "stacksAtLeast",
-          "status": "Charge",
-          "n": 3,
-          "of": "holder"
-         },
-         "then": [
-          {
-           "kind": "consumeStacks",
-           "status": "Charge",
-           "stacks": {
-            "kind": "const",
-            "value": 3
-           }
-          }
-         ],
-         "else": []
-        }
-       ]
-      }
-     },
-     "statuses": {
-      "Charge": {
-       "name": "Charge",
-       "names": {
-        "en": "Charge",
-        "ru": {
-         "name": "Заряд",
-         "acc": "Заряд",
-         "count": [
-          "Заряд",
-          "Заряда",
-          "Зарядов"
-         ]
-        }
-       },
-       "counter": true,
-       "abilities": []
-      },
-      "Strength": {
-       "name": "Strength",
-       "statMods": {
-        "pwr": 1
-       },
-       "abilities": []
-      }
-     },
-     "text": {
-      "en": "Turn start: gain 1 Charge, and if it has 3+ Charge, its neighbours act again and Strength equal to half the turn number to its neighbours; otherwise, nothing, and if it has 3+ Charge, spend 3 Charge; otherwise, nothing.",
-      "ru": "Начало хода: получить 1 Заряд, и если у него 3 Заряда или больше, заставить соседей действовать ещё раз и Сила, равная половине номеру хода, соседям; иначе ничего, и если у него 3 Заряда или больше, потратить 3 Заряда; иначе ничего."
-     },
-     "check": {
-      "terminates": true,
-      "games": 544,
-      "capped": 0,
-      "timeUp": 0,
-      "score": 0.8419117647058824,
-      "inBand": false,
-      "scale": 1,
-      "trace": "Tempo Keeper → self (Tempo Keeper) → Charge 1"
-     },
-     "state": "rejected",
-     "why": "out of band: wins 84% at best (band 35-75%)"
-    },
-    {
-     "pair": "conductor+hourglass",
-     "lean": "twist",
-     "intent": "Each time the ally at the front acts, it gains 1 Charge. At 3 Charge it spends them, and the ally behind it acts again and gains 1 Strength.",
-     "name": {
-      "en": "Cadence Wraith",
-      "ru": "Призрак Каданса"
-     },
-     "flavour": {
-      "en": "Every third beat slips a moment the rest never see.",
-      "ru": "Каждый третий такт крадёт мгновение, которого другие не замечают."
-     },
-     "unit": {
-      "name": "Cadence Wraith",
-      "base": {
-       "hp": 40,
-       "pwr": 16
-      },
-      "triggers": [
-       {
-        "kind": "trigger",
-        "on": {
-         "on": "Acted",
-         "unit": "otherAlly",
-         "front": true
-        }
-       }
-      ],
-      "selectors": [
-       {
-        "kind": "holder"
-       }
-      ],
-      "abilities": [
-       "Spark"
-      ],
-      "also": [
-       {
-        "selectors": [
-         {
-          "kind": "allyBehind"
-         }
-        ],
-        "abilities": [
-         "PromptCharged"
-        ]
-       },
-       {
-        "selectors": [
-         {
-          "kind": "holder"
-         }
-        ],
-        "abilities": [
-         "Spend"
-        ]
-       }
-      ]
-     },
-     "abilities": {
-      "Spark": {
-       "name": "Spark",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "applyStatus",
-         "status": "Charge",
-         "stacks": {
-          "kind": "const",
-          "value": 1
-         }
-        }
-       ]
-      },
-      "PromptCharged": {
-       "name": "PromptCharged",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "branch",
-         "if": {
-          "kind": "stacksAtLeast",
-          "status": "Charge",
-          "n": 3,
-          "of": "holder"
-         },
-         "then": [
-          {
-           "kind": "actAgain"
-          },
-          {
-           "kind": "applyStatus",
-           "status": "Strength",
-           "stacks": {
-            "kind": "const",
-            "value": 1
-           }
-          }
-         ],
-         "else": []
-        }
-       ]
-      },
-      "Spend": {
-       "name": "Spend",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "branch",
-         "if": {
-          "kind": "stacksAtLeast",
-          "status": "Charge",
-          "n": 3,
-          "of": "holder"
-         },
-         "then": [
-          {
-           "kind": "consumeStacks",
-           "status": "Charge",
-           "stacks": {
-            "kind": "const",
-            "value": 3
-           }
-          }
-         ],
-         "else": []
-        }
-       ]
-      }
-     },
-     "statuses": {
-      "Charge": {
-       "name": "Charge",
-       "names": {
-        "en": "Charge",
-        "ru": {
-         "name": "Заряд",
-         "acc": "Заряд",
-         "count": [
-          "Заряд",
-          "Заряда",
-          "Зарядов"
-         ]
-        }
-       },
-       "counter": true,
-       "abilities": []
-      },
-      "Strength": {
-       "name": "Strength",
-       "statMods": {
-        "pwr": 1
-       },
-       "abilities": []
-      }
-     },
-     "text": {
-      "en": "Ally acts: gain 1 Charge, and if it has 3+ Charge, the ally behind acts again and 1 Strength to the ally behind; otherwise, nothing, and if it has 3+ Charge, spend 3 Charge; otherwise, nothing.",
-      "ru": "Союзник действует: получить 1 Заряд, и если у него 3 Заряда или больше, заставить союзника позади действовать ещё раз и 1 Сила союзнику позади; иначе ничего, и если у него 3 Заряда или больше, потратить 3 Заряда; иначе ничего."
-     },
-     "check": {
-      "terminates": true,
-      "games": 544,
-      "capped": 0,
-      "timeUp": 0,
-      "score": 0.8051470588235294,
-      "inBand": false,
-      "scale": 1,
-      "trace": "Cadence Wraith → self (Cadence Wraith) → Charge 1"
-     },
-     "state": "rejected",
-     "why": "out of band: wins 81% at best (band 35-75%)"
-    }
-   ],
-   "topUps": 2
   },
   {
    "pair": {
@@ -8727,8 +8172,8 @@
      "unit": {
       "name": "Grave Echo",
       "base": {
-       "hp": 28,
-       "pwr": 11
+       "hp": 21,
+       "pwr": 8
       },
       "triggers": [
        {
@@ -8804,12 +8249,13 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.4678308823529412,
-      "inBand": true,
+      "score": 0.25183823529411764,
+      "inBand": false,
       "scale": 1,
       "trace": "Grave Echo keeps the rule of Mirror"
      },
-     "state": "ready"
+     "state": "rejected",
+     "why": "out of band: wins 25% at best (band 35-75%)"
     },
     {
      "pair": "mirror+raven",
@@ -8826,8 +8272,8 @@
      "unit": {
       "name": "Mimic Crow",
       "base": {
-       "hp": 28,
-       "pwr": 11
+       "hp": 21,
+       "pwr": 8
       },
       "triggers": [
        {
@@ -8871,12 +8317,13 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.5487132352941176,
-      "inBand": true,
+      "score": 0.296875,
+      "inBand": false,
       "scale": 1,
       "trace": "Mimic Crow keeps the rule of Oracle"
      },
-     "state": "ready"
+     "state": "rejected",
+     "why": "out of band: wins 30% at best (band 35-75%)"
     },
     {
      "pair": "mirror+raven",
@@ -8893,8 +8340,8 @@
      "unit": {
       "name": "Glass Corvid",
       "base": {
-       "hp": 28,
-       "pwr": 11
+       "hp": 21,
+       "pwr": 8
       },
       "triggers": [
        {
@@ -8934,7 +8381,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.6700367647058824,
+      "score": 0.4181985294117647,
       "inBand": true,
       "scale": 1,
       "trace": "Glass Corvid keeps the rule of Bully"
@@ -8967,8 +8414,8 @@
      "unit": {
       "name": "Dead Man's Toss",
       "base": {
-       "hp": 36,
-       "pwr": 13
+       "hp": 27,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -9054,10 +8501,10 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7132352941176471,
+      "score": 0.4577205882352941,
       "inBand": true,
       "scale": 1,
-      "trace": "Dead Man's Toss: 50% → nothing"
+      "trace": "Dead Man's Toss: 50% → double"
      },
      "state": "ready"
     },
@@ -9076,8 +8523,8 @@
      "unit": {
       "name": "Grief Flipper",
       "base": {
-       "hp": 36,
-       "pwr": 13
+       "hp": 27,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -9176,7 +8623,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7224264705882353,
+      "score": 0.46047794117647056,
       "inBand": true,
       "scale": 1,
       "trace": "Grief Flipper: 50% → double"
@@ -9198,8 +8645,8 @@
      "unit": {
       "name": "Last Chance",
       "base": {
-       "hp": 36,
-       "pwr": 13
+       "hp": 27,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -9289,7 +8736,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.6838235294117647,
+      "score": 0.5422794117647058,
       "inBand": true,
       "scale": 1,
       "trace": "Last Chance: 50% → nothing"
@@ -9322,8 +8769,8 @@
      "unit": {
       "name": "Shellwright",
       "base": {
-       "hp": 33,
-       "pwr": 12
+       "hp": 26,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -9408,7 +8855,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.5900735294117647,
+      "score": 0.45128676470588236,
       "inBand": true,
       "scale": 1,
       "trace": "Shellwright sets a delay on Oracle: lands at the end of turn 11"
@@ -9430,8 +8877,8 @@
      "unit": {
       "name": "Chambered Mender",
       "base": {
-       "hp": 33,
-       "pwr": 12
+       "hp": 26,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -9595,7 +9042,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.6801470588235294,
+      "score": 0.5128676470588235,
       "inBand": true,
       "scale": 1,
       "trace": "Chambered Mender → self (Chambered Mender) → Charge 1"
@@ -9617,8 +9064,8 @@
      "unit": {
       "name": "Bulwark Nautilus",
       "base": {
-       "hp": 33,
-       "pwr": 12
+       "hp": 26,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -9698,7 +9145,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.6599264705882353,
+      "score": 0.515625,
       "inBand": true,
       "scale": 1,
       "trace": "Bulwark Nautilus intercepts: the hit on War Horn lands on Bulwark Nautilus"
@@ -9730,8 +9177,8 @@
      "unit": {
       "name": "Toxic Doubler",
       "base": {
-       "hp": 35,
-       "pwr": 14
+       "hp": 26,
+       "pwr": 11
       },
       "triggers": [
        {
@@ -9821,10 +9268,10 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7417279411764706,
+      "score": 0.5496323529411765,
       "inBand": true,
       "scale": 1,
-      "trace": "Toxic Doubler → all enemies (Nautilus, Mirror, Bully) → Poison 1"
+      "trace": "Toxic Doubler → all enemies (Oracle, Nautilus, Mirror, Bully) → Poison 1"
      },
      "state": "ready"
     },
@@ -9843,8 +9290,8 @@
      "unit": {
       "name": "Sting Brute",
       "base": {
-       "hp": 35,
-       "pwr": 14
+       "hp": 26,
+       "pwr": 11
       },
       "triggers": [
        {
@@ -9930,10 +9377,10 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7104779411764706,
+      "score": 0.4852941176470588,
       "inBand": true,
       "scale": 1,
-      "trace": "Sting Brute → self (Sting Brute) → heal 7"
+      "trace": "Sting Brute → self (Sting Brute) → heal 5"
      },
      "state": "ready"
     },
@@ -9952,8 +9399,8 @@
      "unit": {
       "name": "Festerbrute",
       "base": {
-       "hp": 35,
-       "pwr": 14
+       "hp": 26,
+       "pwr": 11
       },
       "triggers": [
        {
@@ -10034,7 +9481,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7104779411764706,
+      "score": 0.48253676470588236,
       "inBand": true,
       "scale": 1,
       "trace": "Festerbrute → every poisoned enemy (Hornet) → 1 damage"
@@ -10067,8 +9514,8 @@
      "unit": {
       "name": "Grave Hydra",
       "base": {
-       "hp": 30,
-       "pwr": 11
+       "hp": 25,
+       "pwr": 9
       },
       "triggers": [
        {
@@ -10117,7 +9564,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.5284926470588235,
+      "score": 0.37316176470588236,
       "inBand": true,
       "scale": 1,
       "trace": "Grave Hydra sets a delay on Mirror: lands at the end of turn 4"
@@ -10139,8 +9586,8 @@
      "unit": {
       "name": "Necrocrown",
       "base": {
-       "hp": 30,
-       "pwr": 11
+       "hp": 25,
+       "pwr": 9
       },
       "triggers": [
        {
@@ -10294,7 +9741,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.5974264705882353,
+      "score": 0.4944852941176471,
       "inBand": true,
       "scale": 1,
       "trace": "Necrocrown → self (Grave Head, Grave Head)"
@@ -10316,8 +9763,8 @@
      "unit": {
       "name": "Graveheart Maw",
       "base": {
-       "hp": 30,
-       "pwr": 11
+       "hp": 25,
+       "pwr": 9
       },
       "triggers": [
        {
@@ -10448,7 +9895,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.5137867647058824,
+      "score": 0.3704044117647059,
       "inBand": true,
       "scale": 1,
       "trace": "Graveheart Maw → self (Graveheart Maw) → Charge 1"
@@ -10480,8 +9927,8 @@
      "unit": {
       "name": "Hallow Sprout",
       "base": {
-       "hp": 30,
-       "pwr": 5
+       "hp": 24,
+       "pwr": 3
       },
       "triggers": [
        {
@@ -10514,7 +9961,7 @@
          "status": "Strength",
          "stacks": {
           "kind": "const",
-          "value": 1
+          "value": 2
          }
         },
         {
@@ -10522,7 +9969,7 @@
          "status": "Blessing",
          "stacks": {
           "kind": "const",
-          "value": 1
+          "value": 2
          }
         }
        ]
@@ -10568,18 +10015,18 @@
       }
      },
      "text": {
-      "en": "Turn start, from turn 2: 1 Strength and 1 Blessing to the ally behind.",
-      "ru": "Начало хода, начиная с 2-го хода: 1 Сила и 1 Благословение союзнику позади."
+      "en": "Turn start, from turn 2: 2 Strength and 2 Blessing to the ally behind.",
+      "ru": "Начало хода, начиная с 2-го хода: 2 Силы и 2 Благословения союзнику позади."
      },
      "check": {
       "terminates": true,
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.4181985294117647,
+      "score": 0.46047794117647056,
       "inBand": true,
-      "scale": 1,
-      "trace": "Hallow Sprout (from turn 2) → the ally behind it (Oracle) → Strength 1, Blessing 1"
+      "scale": 1.5,
+      "trace": "Hallow Sprout (from turn 2) → the ally behind it (Oracle) → Strength 2, Blessing 2"
      },
      "state": "ready"
     },
@@ -10598,8 +10045,8 @@
      "unit": {
       "name": "Sower Monk",
       "base": {
-       "hp": 30,
-       "pwr": 5
+       "hp": 24,
+       "pwr": 3
       },
       "triggers": [
        {
@@ -10640,7 +10087,7 @@
           "status": "Strength",
           "stacks": {
            "kind": "const",
-           "value": 2
+           "value": 3
           }
          }
         }
@@ -10687,18 +10134,18 @@
       }
      },
      "text": {
-      "en": "Battle start: Blessing equal to PWR to its neighbours, then in 2 turns: 2 Strength to its neighbours.",
-      "ru": "Начало боя: Благословение, равное АТК, соседям, затем через 2 хода: 2 Силы соседям."
+      "en": "Battle start: Blessing equal to PWR to its neighbours, then in 2 turns: 3 Strength to its neighbours.",
+      "ru": "Начало боя: Благословение, равное АТК, соседям, затем через 2 хода: 3 Силы соседям."
      },
      "check": {
       "terminates": true,
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.43106617647058826,
+      "score": 0.375,
       "inBand": true,
-      "scale": 1,
-      "trace": "Sower Monk → its neighbours (Oracle) → Blessing 5"
+      "scale": 1.5,
+      "trace": "Sower Monk → its neighbours (Oracle) → Blessing 3"
      },
      "state": "ready"
     },
@@ -10717,8 +10164,8 @@
      "unit": {
       "name": "Sower of Grace",
       "base": {
-       "hp": 30,
-       "pwr": 5
+       "hp": 24,
+       "pwr": 3
       },
       "triggers": [
        {
@@ -10747,7 +10194,7 @@
          "status": "Blessing",
          "stacks": {
           "kind": "const",
-          "value": 2
+          "value": 6
          }
         }
        ]
@@ -10786,20 +10233,21 @@
       }
      },
      "text": {
-      "en": "Battle start: 2 Blessing to every ally behind.",
-      "ru": "Начало боя: 2 Благословения всем союзникам позади."
+      "en": "Battle start: 6 Blessing to every ally behind.",
+      "ru": "Начало боя: 6 Благословений всем союзникам позади."
      },
      "check": {
       "terminates": true,
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.38419117647058826,
-      "inBand": true,
-      "scale": 1,
-      "trace": "Sower of Grace → every ally behind it (Oracle, War Horn) → Blessing 2"
+      "score": 0.328125,
+      "inBand": false,
+      "scale": 3,
+      "trace": "Sower of Grace → every ally behind it (Oracle, War Horn) → Blessing 6"
      },
-     "state": "ready"
+     "state": "rejected",
+     "why": "out of band: wins 33% at best (band 35-75%)"
     }
    ],
    "topUps": 2
@@ -10827,8 +10275,8 @@
      "unit": {
       "name": "Vengeance Burr",
       "base": {
-       "hp": 28,
-       "pwr": 10
+       "hp": 22,
+       "pwr": 7
       },
       "triggers": [
        {
@@ -10877,12 +10325,13 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.4485294117647059,
-      "inBand": true,
+      "score": 0.22242647058823528,
+      "inBand": false,
       "scale": 1,
-      "trace": "Vengeance Burr (once per turn) → the attacker (Sniper) → 11 damage"
+      "trace": "Vengeance Burr (once per turn) → the attacker (Sniper) → 8 damage"
      },
-     "state": "ready"
+     "state": "rejected",
+     "why": "out of band: wins 22% at best (band 35-75%)"
     },
     {
      "pair": "aegis+thornback",
@@ -10899,8 +10348,8 @@
      "unit": {
       "name": "Stormbristle",
       "base": {
-       "hp": 28,
-       "pwr": 10
+       "hp": 22,
+       "pwr": 7
       },
       "triggers": [
        {
@@ -11038,7 +10487,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7178308823529411,
+      "score": 0.39246323529411764,
       "inBand": true,
       "scale": 1,
       "trace": "Stormbristle → self (Stormbristle) → Charge 1"
@@ -11060,8 +10509,8 @@
      "unit": {
       "name": "Spiteguard",
       "base": {
-       "hp": 28,
-       "pwr": 10
+       "hp": 22,
+       "pwr": 7
       },
       "triggers": [
        {
@@ -11199,12 +10648,13 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.5257352941176471,
-      "inBand": true,
+      "score": 0.23621323529411764,
+      "inBand": false,
       "scale": 1,
       "trace": "Spiteguard → self (Spiteguard) → Charge 1"
      },
-     "state": "ready"
+     "state": "rejected",
+     "why": "out of band: wins 24% at best (band 35-75%)"
     }
    ],
    "topUps": 2
@@ -11232,8 +10682,8 @@
      "unit": {
       "name": "Doomseer",
       "base": {
-       "hp": 22,
-       "pwr": 6
+       "hp": 18,
+       "pwr": 4
       },
       "triggers": [
        {
@@ -11314,7 +10764,7 @@
            "status": "Curse",
            "stacks": {
             "kind": "const",
-            "value": 3
+            "value": 6
            }
           }
          ],
@@ -11376,17 +10826,17 @@
       }
      },
      "text": {
-      "en": "Turn end: gain 1 Charge, and if it has 3+ Charge, damage equal to the turn number to all enemies and 3 Curse to all enemies; otherwise, nothing, and if it has 3+ Charge, spend 3 Charge; otherwise, nothing.",
-      "ru": "Конец хода: получить 1 Заряд, и если у него 3 Заряда или больше, урон, равный номеру хода, всем врагам и 3 Проклятия всем врагам; иначе ничего, и если у него 3 Заряда или больше, потратить 3 Заряда; иначе ничего."
+      "en": "Turn end: gain 1 Charge, and if it has 3+ Charge, damage equal to the turn number to all enemies and 6 Curse to all enemies; otherwise, nothing, and if it has 3+ Charge, spend 3 Charge; otherwise, nothing.",
+      "ru": "Конец хода: получить 1 Заряд, и если у него 3 Заряда или больше, урон, равный номеру хода, всем врагам и 6 Проклятий всем врагам; иначе ничего, и если у него 3 Заряда или больше, потратить 3 Заряда; иначе ничего."
      },
      "check": {
       "terminates": true,
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.38878676470588236,
+      "score": 0.36856617647058826,
       "inBand": true,
-      "scale": 3,
+      "scale": 2,
       "trace": "Doomseer → self (Doomseer) → Charge 1"
      },
      "state": "ready"
@@ -11406,8 +10856,8 @@
      "unit": {
       "name": "Hexgazer",
       "base": {
-       "hp": 22,
-       "pwr": 6
+       "hp": 18,
+       "pwr": 4
       },
       "triggers": [
        {
@@ -11443,7 +10893,7 @@
          "status": "Curse",
          "stacks": {
           "kind": "const",
-          "value": 2
+          "value": 6
          }
         },
         {
@@ -11467,18 +10917,18 @@
       }
      },
      "text": {
-      "en": "Turn start, from turn 3: 2 Curse to front enemy and the back enemy, then damage equal to the target's Curse to front enemy and the back enemy.",
-      "ru": "Начало хода, начиная с 3-го хода: 2 Проклятия переднему врагу и заднему врагу, затем урон, равный числу Проклятий у цели, переднему врагу и заднему врагу."
+      "en": "Turn start, from turn 3: 6 Curse to front enemy and the back enemy, then damage equal to the target's Curse to front enemy and the back enemy.",
+      "ru": "Начало хода, начиная с 3-го хода: 6 Проклятий переднему врагу и заднему врагу, затем урон, равный числу Проклятий у цели, переднему врагу и заднему врагу."
      },
      "check": {
       "terminates": true,
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.40349264705882354,
+      "score": 0.40900735294117646,
       "inBand": true,
-      "scale": 1.5,
-      "trace": "Hexgazer (from turn 3) → front enemy and the enemy at the back (Nautilus, Bully) → Curse 2, 2 damage"
+      "scale": 3,
+      "trace": "Hexgazer (from turn 3) → front enemy and the enemy at the back (Oracle, Bully) → Curse 6, 6 damage"
      },
      "state": "ready"
     },
@@ -11497,8 +10947,8 @@
      "unit": {
       "name": "Dread Prophet",
       "base": {
-       "hp": 22,
-       "pwr": 6
+       "hp": 18,
+       "pwr": 4
       },
       "triggers": [
        {
@@ -11531,7 +10981,7 @@
          "status": "Curse",
          "stacks": {
           "kind": "const",
-          "value": 1
+          "value": 2
          }
         },
         {
@@ -11559,18 +11009,18 @@
       }
      },
      "text": {
-      "en": "Turn start, on turns 3, 6, 9…: 1 Curse to all enemies, then in 1 turn: PWR damage to all enemies.",
-      "ru": "Начало хода, на 3-м, 6-м, 9-м… ходу: 1 Проклятие всем врагам, затем через 1 ход: урон, равный АТК, всем врагам."
+      "en": "Turn start, on turns 3, 6, 9…: 2 Curse to all enemies, then in 1 turn: PWR damage to all enemies.",
+      "ru": "Начало хода, на 3-м, 6-м, 9-м… ходу: 2 Проклятия всем врагам, затем через 1 ход: урон, равный АТК, всем врагам."
      },
      "check": {
       "terminates": true,
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.4099264705882353,
+      "score": 0.35110294117647056,
       "inBand": true,
-      "scale": 1,
-      "trace": "Dread Prophet (on turns 3, 6, 9…) → all enemies (Nautilus, Mirror, Bully) → Curse 1"
+      "scale": 1.5,
+      "trace": "Dread Prophet (on turns 3, 6, 9…) → all enemies (Oracle, Nautilus, Mirror, Bully) → Curse 2"
      },
      "state": "ready"
     }
@@ -11600,8 +11050,8 @@
      "unit": {
       "name": "Gallows Kite",
       "base": {
-       "hp": 31,
-       "pwr": 14
+       "hp": 24,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -11724,7 +11174,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.6746323529411765,
+      "score": 0.4025735294117647,
       "inBand": true,
       "scale": 1,
       "trace": "Gallows Kite → self (Gallows Kite) → Charge 1"
@@ -11746,8 +11196,8 @@
      "unit": {
       "name": "Bonepicker",
       "base": {
-       "hp": 31,
-       "pwr": 14
+       "hp": 24,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -11802,7 +11252,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.6443014705882353,
+      "score": 0.39705882352941174,
       "inBand": true,
       "scale": 1,
       "trace": "Bonepicker → self (Bonepicker) → Strength 6"
@@ -11824,8 +11274,8 @@
      "unit": {
       "name": "Gorecrest",
       "base": {
-       "hp": 31,
-       "pwr": 14
+       "hp": 24,
+       "pwr": 10
       },
       "triggers": [
        {
@@ -11932,7 +11382,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.6810661764705882,
+      "score": 0.4227941176470588,
       "inBand": true,
       "scale": 1,
       "trace": "Gorecrest → self (Gorecrest) → Charge 1"
@@ -11941,392 +11391,6 @@
     }
    ],
    "topUps": 2
-  },
-  {
-   "pair": {
-    "key": "candle+medic",
-    "a": "candle",
-    "b": "medic",
-    "why": "requested"
-   },
-   "candidates": [
-    {
-     "pair": "candle+medic",
-     "lean": "A",
-     "intent": "Once per turn, when another ally would die, it stays at 1 HP and loses 1 power.",
-     "name": {
-      "en": "Vigil Wick",
-      "ru": "Негасимый"
-     },
-     "flavour": {
-      "en": "It burns a little lower each time, but no one goes out on its watch.",
-      "ru": "Горит всё тусклее, но при нём никто не гаснет."
-     },
-     "unit": {
-      "name": "Vigil Wick",
-      "base": {
-       "hp": 27,
-       "pwr": 11
-      },
-      "triggers": [
-       {
-        "kind": "interceptor",
-        "on": {
-         "on": "Death",
-         "unit": "otherAlly"
-        }
-       }
-      ],
-      "condition": {
-       "kind": "oncePerTurn"
-      },
-      "selectors": [
-       {
-        "kind": "eventUnit"
-       }
-      ],
-      "abilities": [
-       "Gutter"
-      ]
-     },
-     "abilities": {
-      "Gutter": {
-       "name": "Gutter",
-       "family": "Shield",
-       "effects": [
-        {
-         "kind": "preventDeath",
-         "at": 1,
-         "cost": {
-          "stat": "pwr",
-          "amount": 1
-         }
-        }
-       ]
-      }
-     },
-     "statuses": {},
-     "text": {
-      "en": "Ally would die, once per turn: stays at 1 HP and loses 1 PWR instead.",
-      "ru": "Перед смертью союзника, раз за ход: вместо смерти остаётся с 1 ОЗ и теряет 1 АТК."
-     },
-     "check": {
-      "terminates": true,
-      "games": 544,
-      "capped": 0,
-      "timeUp": 0,
-      "score": 0.47610294117647056,
-      "inBand": true,
-      "scale": 1,
-      "trace": "Vigil Wick intercepts: Mirror survives at 1 HP, loses 1 PWR"
-     },
-     "state": "ready"
-    },
-    {
-     "pair": "candle+medic",
-     "lean": "B",
-     "intent": "When another ally is hurt and has no Blessing, it gains 2 Blessing.",
-     "name": {
-      "en": "Ember Mender",
-      "ru": "Свеча-лекарь"
-     },
-     "flavour": {
-      "en": "Where someone bleeds, a small flame answers and a blessing takes hold.",
-      "ru": "Где кто-то ранен, вспыхивает огонёк, и благословение ложится на плечи."
-     },
-     "unit": {
-      "name": "Ember Mender",
-      "base": {
-       "hp": 27,
-       "pwr": 11
-      },
-      "triggers": [
-       {
-        "kind": "trigger",
-        "on": {
-         "on": "Hurt",
-         "unit": "otherAlly"
-        }
-       }
-      ],
-      "condition": {
-       "kind": "not",
-       "cond": {
-        "kind": "targetHas",
-        "statuses": [
-         "Blessing"
-        ]
-       }
-      },
-      "selectors": [
-       {
-        "kind": "eventUnit"
-       }
-      ],
-      "abilities": [
-       "Vigil"
-      ]
-     },
-     "abilities": {
-      "Vigil": {
-       "name": "Vigil",
-       "family": "Shield",
-       "effects": [
-        {
-         "kind": "applyStatus",
-         "status": "Blessing",
-         "stacks": {
-          "kind": "const",
-          "value": 2
-         }
-        }
-       ]
-      }
-     },
-     "statuses": {
-      "Blessing": {
-       "name": "Blessing",
-       "triggers": [
-        {
-         "kind": "interceptor",
-         "on": {
-          "on": "Death",
-          "unit": "holder"
-         }
-        }
-       ],
-       "selectors": [
-        {
-         "kind": "holder"
-        }
-       ],
-       "abilities": [
-        {
-         "effects": [
-          {
-           "kind": "preventDeathHeal",
-           "toHp": {
-            "kind": "stacks"
-           },
-           "removeSelf": true
-          }
-         ]
-        }
-       ]
-      }
-     },
-     "text": {
-      "en": "Ally hit, unless the target has Blessing: 2 Blessing to it.",
-      "ru": "Удар по союзнику, если не у цели есть Благословение: 2 Благословения ему."
-     },
-     "check": {
-      "terminates": true,
-      "games": 544,
-      "capped": 0,
-      "timeUp": 0,
-      "score": 0.49172794117647056,
-      "inBand": true,
-      "scale": 1,
-      "trace": "Ember Mender (unless the target has Blessing) → it (Oracle) → Blessing 2"
-     },
-     "state": "ready"
-    },
-    {
-     "pair": "candle+medic",
-     "lean": "twist",
-     "intent": "When this unit is hurt, it gains 1 Charge; at 3 Charge it spends them to heal its neighbours by its power and give each 1 Shield.",
-     "name": {
-      "en": "Tallow Saint",
-      "ru": "Воскоящий"
-     },
-     "flavour": {
-      "en": "Every wound feeds its flame, until the light spills over to its friends.",
-      "ru": "Каждая рана питает пламя, пока свет не польётся на соседей."
-     },
-     "unit": {
-      "name": "Tallow Saint",
-      "base": {
-       "hp": 27,
-       "pwr": 11
-      },
-      "triggers": [
-       {
-        "kind": "trigger",
-        "on": {
-         "on": "Hurt",
-         "unit": "holder"
-        }
-       }
-      ],
-      "selectors": [
-       {
-        "kind": "holder"
-       }
-      ],
-      "abilities": [
-       "Spark"
-      ],
-      "also": [
-       {
-        "selectors": [
-         {
-          "kind": "neighbours"
-         }
-        ],
-        "abilities": [
-         "MeltCharged"
-        ]
-       },
-       {
-        "selectors": [
-         {
-          "kind": "holder"
-         }
-        ],
-        "abilities": [
-         "Spend"
-        ]
-       }
-      ]
-     },
-     "abilities": {
-      "Spark": {
-       "name": "Spark",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "applyStatus",
-         "status": "Charge",
-         "stacks": {
-          "kind": "const",
-          "value": 1
-         }
-        }
-       ]
-      },
-      "MeltCharged": {
-       "name": "MeltCharged",
-       "family": "Heal",
-       "effects": [
-        {
-         "kind": "branch",
-         "if": {
-          "kind": "stacksAtLeast",
-          "status": "Charge",
-          "n": 3,
-          "of": "holder"
-         },
-         "then": [
-          {
-           "kind": "heal",
-           "amount": {
-            "kind": "stat",
-            "stat": "pwr",
-            "of": "holder"
-           }
-          },
-          {
-           "kind": "applyStatus",
-           "status": "Shield",
-           "stacks": {
-            "kind": "const",
-            "value": 1
-           }
-          }
-         ],
-         "else": []
-        }
-       ]
-      },
-      "Spend": {
-       "name": "Spend",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "branch",
-         "if": {
-          "kind": "stacksAtLeast",
-          "status": "Charge",
-          "n": 3,
-          "of": "holder"
-         },
-         "then": [
-          {
-           "kind": "consumeStacks",
-           "status": "Charge",
-           "stacks": {
-            "kind": "const",
-            "value": 3
-           }
-          }
-         ],
-         "else": []
-        }
-       ]
-      }
-     },
-     "statuses": {
-      "Charge": {
-       "name": "Charge",
-       "names": {
-        "en": "Charge",
-        "ru": {
-         "name": "Заряд",
-         "acc": "Заряд",
-         "count": [
-          "Заряд",
-          "Заряда",
-          "Зарядов"
-         ]
-        }
-       },
-       "counter": true,
-       "abilities": []
-      },
-      "Shield": {
-       "name": "Shield",
-       "triggers": [
-        {
-         "kind": "interceptor",
-         "on": {
-          "on": "Hurt",
-          "unit": "holder"
-         }
-        }
-       ],
-       "selectors": [
-        {
-         "kind": "holder"
-        }
-       ],
-       "abilities": [
-        {
-         "effects": [
-          {
-           "kind": "absorbHurt"
-          }
-         ]
-        }
-       ]
-      }
-     },
-     "text": {
-      "en": "Hit: gain 1 Charge, and if it has 3+ Charge, heal its neighbours for PWR and 1 Shield to its neighbours; otherwise, nothing, and if it has 3+ Charge, spend 3 Charge; otherwise, nothing.",
-      "ru": "Удар: получить 1 Заряд, и если у него 3 Заряда или больше, лечение на АТК соседям и 1 Щит соседям; иначе ничего, и если у него 3 Заряда или больше, потратить 3 Заряда; иначе ничего."
-     },
-     "check": {
-      "terminates": true,
-      "games": 544,
-      "capped": 0,
-      "timeUp": 0,
-      "score": 0.5,
-      "inBand": true,
-      "scale": 1,
-      "trace": "Tallow Saint → self (Tallow Saint) → Charge 1"
-     },
-     "state": "ready"
-    }
-   ]
   },
   {
    "pair": {
@@ -12351,8 +11415,8 @@
      "unit": {
       "name": "Glowsprout",
       "base": {
-       "hp": 35,
-       "pwr": 10
+       "hp": 26,
+       "pwr": 9
       },
       "triggers": [
        {
@@ -12427,7 +11491,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.5707720588235294,
+      "score": 0.3759191176470588,
       "inBand": true,
       "scale": 1,
       "trace": "Glowsprout (while at full HP) → its neighbours (Oracle) → Shield 1"
@@ -12449,8 +11513,8 @@
      "unit": {
       "name": "Dawnroot",
       "base": {
-       "hp": 35,
-       "pwr": 10
+       "hp": 26,
+       "pwr": 9
       },
       "triggers": [
        {
@@ -12514,7 +11578,7 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.6222426470588235,
+      "score": 0.42922794117647056,
       "inBand": true,
       "scale": 1,
       "trace": "Dawnroot (from turn 2) → the ally behind it (Oracle) → Vitality 1"
@@ -12536,8 +11600,8 @@
      "unit": {
       "name": "Embershell",
       "base": {
-       "hp": 35,
-       "pwr": 10
+       "hp": 26,
+       "pwr": 9
       },
       "triggers": [
        {
@@ -12624,716 +11688,12 @@
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.6470588235294118,
+      "score": 0.4384191176470588,
       "inBand": true,
       "scale": 1,
       "trace": "Embershell → it (Embershell) → Strength 1"
      },
      "state": "ready"
-    }
-   ]
-  },
-  {
-   "pair": {
-    "key": "frostling+sniper",
-    "a": "frostling",
-    "b": "sniper",
-    "why": "requested"
-   },
-   "candidates": [
-    {
-     "pair": "frostling+sniper",
-     "lean": "A",
-     "intent": "When it strikes, the enemy at the back gets 2 Freeze one turn later.",
-     "name": {
-      "en": "Rimeshot",
-      "ru": "Ледострел"
-     },
-     "flavour": {
-      "en": "The shot lands now. The cold arrives a moment later.",
-      "ru": "Выстрел уже попал. Холод дойдёт чуть позже."
-     },
-     "unit": {
-      "name": "Rimeshot",
-      "base": {
-       "hp": 28,
-       "pwr": 8
-      },
-      "triggers": [
-       {
-        "kind": "trigger",
-        "on": {
-         "on": "Strike",
-         "striker": "holder"
-        }
-       }
-      ],
-      "selectors": [
-       {
-        "kind": "lastEnemy"
-       }
-      ],
-      "abilities": [
-       "LateFrost"
-      ]
-     },
-     "abilities": {
-      "LateFrost": {
-       "name": "LateFrost",
-       "family": "Control",
-       "effects": [
-        {
-         "kind": "delay",
-         "turns": 1,
-         "effect": {
-          "kind": "applyStatus",
-          "status": "Freeze",
-          "stacks": {
-           "kind": "const",
-           "value": 2
-          }
-         }
-        }
-       ]
-      }
-     },
-     "statuses": {
-      "Freeze": {
-       "name": "Freeze",
-       "triggers": [
-        {
-         "kind": "interceptor",
-         "on": {
-          "on": "Strike",
-          "striker": "holder"
-         }
-        }
-       ],
-       "selectors": [
-        {
-         "kind": "holder"
-        }
-       ],
-       "abilities": [
-        {
-         "effects": [
-          {
-           "kind": "cancel",
-           "consumeSelf": 1
-          }
-         ]
-        }
-       ]
-      }
-     },
-     "text": {
-      "en": "Strikes: in 1 turn: 2 Freeze to the back enemy.",
-      "ru": "Атака: через 1 ход: 2 Заморозки заднему врагу."
-     },
-     "check": {
-      "terminates": true,
-      "games": 544,
-      "capped": 0,
-      "timeUp": 0,
-      "score": 0.4411764705882353,
-      "inBand": true,
-      "scale": 1,
-      "trace": "Rimeshot sets a delay on Bully: lands at the end of turn 2"
-     },
-     "state": "ready"
-    },
-    {
-     "pair": "frostling+sniper",
-     "lean": "B",
-     "intent": "At the start of each turn, it deals damage equal to its power to the enemy at the back and gives the front enemy 1 Freeze.",
-     "name": {
-      "en": "Glacier Marksman",
-      "ru": "Ледяной стрелок"
-     },
-     "flavour": {
-      "en": "One shot chills the front line; the other finds the back.",
-      "ru": "Один взгляд морозит первых, один выстрел находит последних."
-     },
-     "unit": {
-      "name": "Glacier Marksman",
-      "base": {
-       "hp": 28,
-       "pwr": 8
-      },
-      "triggers": [
-       {
-        "kind": "trigger",
-        "on": {
-         "on": "TurnStart"
-        }
-       }
-      ],
-      "selectors": [
-       {
-        "kind": "lastEnemy"
-       }
-      ],
-      "abilities": [
-       "Smite"
-      ],
-      "also": [
-       {
-        "selectors": [
-         {
-          "kind": "frontEnemy"
-         }
-        ],
-        "abilities": [
-         "Chill"
-        ]
-       }
-      ]
-     },
-     "abilities": {
-      "Smite": {
-       "name": "Smite",
-       "family": "Strike",
-       "effects": [
-        {
-         "kind": "damage",
-         "amount": {
-          "kind": "stat",
-          "stat": "pwr",
-          "of": "holder"
-         }
-        }
-       ]
-      },
-      "Chill": {
-       "name": "Chill",
-       "family": "Control",
-       "effects": [
-        {
-         "kind": "applyStatus",
-         "status": "Freeze",
-         "stacks": {
-          "kind": "const",
-          "value": 1
-         }
-        }
-       ]
-      }
-     },
-     "statuses": {
-      "Freeze": {
-       "name": "Freeze",
-       "triggers": [
-        {
-         "kind": "interceptor",
-         "on": {
-          "on": "Strike",
-          "striker": "holder"
-         }
-        }
-       ],
-       "selectors": [
-        {
-         "kind": "holder"
-        }
-       ],
-       "abilities": [
-        {
-         "effects": [
-          {
-           "kind": "cancel",
-           "consumeSelf": 1
-          }
-         ]
-        }
-       ]
-      }
-     },
-     "text": {
-      "en": "Turn start: PWR damage to the back enemy, and 1 Freeze to front enemy.",
-      "ru": "Начало хода: урон, равный АТК, заднему врагу, и 1 Заморозка переднему врагу."
-     },
-     "check": {
-      "terminates": true,
-      "games": 544,
-      "capped": 0,
-      "timeUp": 0,
-      "score": 0.7104779411764706,
-      "inBand": true,
-      "scale": 1,
-      "trace": "Glacier Marksman → the enemy at the back (Bully, Oracle) → 8 damage, Freeze 1"
-     },
-     "state": "ready"
-    },
-    {
-     "pair": "frostling+sniper",
-     "lean": "twist",
-     "intent": "When an enemy's Freeze wears off, it deals damage equal to its power to that enemy.",
-     "name": {
-      "en": "Thawstrike",
-      "ru": "Оттепельный выстрел"
-     },
-     "flavour": {
-      "en": "The ice melts. The bullet was waiting.",
-      "ru": "Лёд тает — и пуля уже в пути."
-     },
-     "unit": {
-      "name": "Thawstrike",
-      "base": {
-       "hp": 28,
-       "pwr": 8
-      },
-      "triggers": [
-       {
-        "kind": "trigger",
-        "on": {
-         "on": "StatusRemoved",
-         "unit": "enemy",
-         "status": "Freeze"
-        }
-       }
-      ],
-      "selectors": [
-       {
-        "kind": "eventUnit"
-       }
-      ],
-      "abilities": [
-       "Shatter"
-      ]
-     },
-     "abilities": {
-      "Shatter": {
-       "name": "Shatter",
-       "family": "Strike",
-       "effects": [
-        {
-         "kind": "damage",
-         "amount": {
-          "kind": "stat",
-          "stat": "pwr",
-          "of": "holder"
-         }
-        }
-       ]
-      }
-     },
-     "statuses": {
-      "Freeze": {
-       "name": "Freeze",
-       "triggers": [
-        {
-         "kind": "interceptor",
-         "on": {
-          "on": "Strike",
-          "striker": "holder"
-         }
-        }
-       ],
-       "selectors": [
-        {
-         "kind": "holder"
-        }
-       ],
-       "abilities": [
-        {
-         "effects": [
-          {
-           "kind": "cancel",
-           "consumeSelf": 1
-          }
-         ]
-        }
-       ]
-      }
-     },
-     "text": {
-      "en": "Enemy loses Freeze: PWR damage to it.",
-      "ru": "Враг теряет Заморозку: урон, равный АТК, ему."
-     },
-     "check": {
-      "terminates": true,
-      "games": 544,
-      "capped": 0,
-      "timeUp": 0,
-      "score": 0.37683823529411764,
-      "inBand": true,
-      "scale": 1,
-      "trace": "Thawstrike → it (Leech) → 10 damage"
-     },
-     "state": "ready"
-    }
-   ]
-  },
-  {
-   "pair": {
-    "key": "coin-thief+hexer",
-    "a": "coin-thief",
-    "b": "hexer",
-    "why": "requested"
-   },
-   "candidates": [
-    {
-     "pair": "coin-thief+hexer",
-     "lean": "A",
-     "intent": "At the start of each turn it gains 1 Charge and curses a random enemy; when it reaches 3 Charge, it spends them and silences that enemy instead.",
-     "name": {
-      "en": "Pickpocket Hex",
-      "ru": "Сглаз-карманник"
-     },
-     "flavour": {
-      "en": "It lifts a little luck each turn, then your voice.",
-      "ru": "Каждый ход таскает по крупице удачи, а потом и голос."
-     },
-     "unit": {
-      "name": "Pickpocket Hex",
-      "base": {
-       "hp": 20,
-       "pwr": 5
-      },
-      "triggers": [
-       {
-        "kind": "trigger",
-        "on": {
-         "on": "TurnStart"
-        }
-       }
-      ],
-      "selectors": [
-       {
-        "kind": "holder"
-       }
-      ],
-      "abilities": [
-       "Spark"
-      ],
-      "also": [
-       {
-        "selectors": [
-         {
-          "kind": "randomEnemy"
-         }
-        ],
-        "abilities": [
-         "HexOrHush"
-        ]
-       },
-       {
-        "selectors": [
-         {
-          "kind": "holder"
-         }
-        ],
-        "abilities": [
-         "Spend"
-        ]
-       }
-      ]
-     },
-     "abilities": {
-      "Spark": {
-       "name": "Spark",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "applyStatus",
-         "status": "Charge",
-         "stacks": {
-          "kind": "const",
-          "value": 1
-         }
-        }
-       ]
-      },
-      "HexOrHush": {
-       "name": "HexOrHush",
-       "family": "Control",
-       "effects": [
-        {
-         "kind": "branch",
-         "if": {
-          "kind": "stacksAtLeast",
-          "status": "Charge",
-          "n": 3,
-          "of": "holder"
-         },
-         "then": [
-          {
-           "kind": "silence"
-          }
-         ],
-         "else": [
-          {
-           "kind": "applyStatus",
-           "status": "Curse",
-           "stacks": {
-            "kind": "const",
-            "value": 3
-           }
-          }
-         ]
-        }
-       ]
-      },
-      "Spend": {
-       "name": "Spend",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "branch",
-         "if": {
-          "kind": "stacksAtLeast",
-          "status": "Charge",
-          "n": 3,
-          "of": "holder"
-         },
-         "then": [
-          {
-           "kind": "consumeStacks",
-           "status": "Charge",
-           "stacks": {
-            "kind": "const",
-            "value": 3
-           }
-          }
-         ],
-         "else": []
-        }
-       ]
-      }
-     },
-     "statuses": {
-      "Charge": {
-       "name": "Charge",
-       "names": {
-        "en": "Charge",
-        "ru": {
-         "name": "Заряд",
-         "acc": "Заряд",
-         "count": [
-          "Заряд",
-          "Заряда",
-          "Зарядов"
-         ]
-        }
-       },
-       "counter": true,
-       "abilities": []
-      },
-      "Curse": {
-       "name": "Curse",
-       "statMods": {
-        "pwr": -1
-       },
-       "abilities": []
-      }
-     },
-     "text": {
-      "en": "Turn start: gain 1 Charge, and if it has 3+ Charge, silence random enemy; otherwise, 3 Curse to random enemy, and if it has 3+ Charge, spend 3 Charge; otherwise, nothing.",
-      "ru": "Начало хода: получить 1 Заряд, и если у него 3 Заряда или больше, заглушить случайного врага; иначе 3 Проклятия случайному врагу, и если у него 3 Заряда или больше, потратить 3 Заряда; иначе ничего."
-     },
-     "check": {
-      "terminates": true,
-      "games": 544,
-      "capped": 0,
-      "timeUp": 0,
-      "score": 0.36213235294117646,
-      "inBand": true,
-      "scale": 3,
-      "trace": "Pickpocket Hex → self (Pickpocket Hex, Mirror) → Charge 1, Curse 3"
-     },
-     "state": "ready"
-    },
-    {
-     "pair": "coin-thief+hexer",
-     "lean": "B",
-     "intent": "On turn 2 it silences the enemy at the back and keeps the front enemy's rule as a second rule of its own.",
-     "name": {
-      "en": "Spellfilch",
-      "ru": "Сглазокрад"
-     },
-     "flavour": {
-      "en": "Hushes the back row, then pockets the front line's secrets.",
-      "ru": "Заткнёт тыл, а правила переднего украдёт себе в карман."
-     },
-     "unit": {
-      "name": "Spellfilch",
-      "base": {
-       "hp": 20,
-       "pwr": 5
-      },
-      "triggers": [
-       {
-        "kind": "trigger",
-        "on": {
-         "on": "TurnStart"
-        }
-       }
-      ],
-      "condition": {
-       "kind": "turnIs",
-       "n": 2
-      },
-      "selectors": [
-       {
-        "kind": "lastEnemy"
-       }
-      ],
-      "abilities": [
-       "Hush2"
-      ],
-      "also": [
-       {
-        "selectors": [
-         {
-          "kind": "frontEnemy"
-         }
-        ],
-        "abilities": [
-         "Pocket"
-        ]
-       }
-      ]
-     },
-     "abilities": {
-      "Hush2": {
-       "name": "Hush2",
-       "family": "Control",
-       "effects": [
-        {
-         "kind": "silence"
-        }
-       ]
-      },
-      "Pocket": {
-       "name": "Pocket",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "keepRule"
-        }
-       ]
-      }
-     },
-     "statuses": {},
-     "text": {
-      "en": "Turn start, on turn 2: silence the back enemy, and keep the rule of front enemy as a second rule of its own.",
-      "ru": "Начало хода, на 2-м ходу: заглушить заднего врага, и оставить себе правило переднего врага как второе правило."
-     },
-     "check": {
-      "terminates": true,
-      "games": 544,
-      "capped": 0,
-      "timeUp": 0,
-      "score": 0.23897058823529413,
-      "inBand": false,
-      "scale": 1,
-      "trace": "Spellfilch (on turn 2) → the enemy at the back (Bully)"
-     },
-     "state": "rejected",
-     "why": "out of band: wins 24% at best (band 35-75%)"
-    },
-    {
-     "pair": "coin-thief+hexer",
-     "lean": "twist",
-     "intent": "The first time an enemy gains Strength, it silences that enemy and gains 2 Strength itself.",
-     "name": {
-      "en": "Boon Leech",
-      "ru": "Пиявка силы"
-     },
-     "flavour": {
-      "en": "Strength is never given. It's merely borrowed, then hexed away.",
-      "ru": "Силу не дарят — её отнимают и запечатывают заклятием."
-     },
-     "unit": {
-      "name": "Boon Leech",
-      "base": {
-       "hp": 20,
-       "pwr": 5
-      },
-      "triggers": [
-       {
-        "kind": "trigger",
-        "on": {
-         "on": "StatusApplied",
-         "unit": "enemy",
-         "status": "Strength"
-        }
-       }
-      ],
-      "condition": {
-       "kind": "onceHolder"
-      },
-      "selectors": [
-       {
-        "kind": "eventUnit"
-       }
-      ],
-      "abilities": [
-       "Hush2"
-      ],
-      "also": [
-       {
-        "selectors": [
-         {
-          "kind": "holder"
-         }
-        ],
-        "abilities": [
-         "Pilfer"
-        ]
-       }
-      ]
-     },
-     "abilities": {
-      "Hush2": {
-       "name": "Hush2",
-       "family": "Control",
-       "effects": [
-        {
-         "kind": "silence"
-        }
-       ]
-      },
-      "Pilfer": {
-       "name": "Pilfer",
-       "family": "Control",
-       "effects": [
-        {
-         "kind": "applyStatus",
-         "status": "Strength",
-         "stacks": {
-          "kind": "const",
-          "value": 6
-         }
-        }
-       ]
-      }
-     },
-     "statuses": {
-      "Strength": {
-       "name": "Strength",
-       "statMods": {
-        "pwr": 1
-       },
-       "abilities": []
-      }
-     },
-     "text": {
-      "en": "Enemy gets Strength, once per battle: silence it, and 6 Strength to self.",
-      "ru": "Враг получает Силу, раз за бой: заглушить его, и 6 Сил себе."
-     },
-     "check": {
-      "terminates": true,
-      "games": 544,
-      "capped": 0,
-      "timeUp": 0,
-      "score": 0.3226102941176471,
-      "inBand": false,
-      "scale": 3,
-      "trace": "Boon Leech (once per battle) → it (Mirror, Boon Leech) → Strength 6"
-     },
-     "state": "rejected",
-     "why": "out of band: wins 32% at best (band 35-75%)"
     }
    ]
   }

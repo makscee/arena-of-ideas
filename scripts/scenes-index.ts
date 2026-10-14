@@ -16,6 +16,11 @@ const base = (opt("base") ?? "https://m1.twin-pogona.ts.net/arena-lab/").replace
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 
 const scenes = sceneList();
+/** Report pages that sit next to this index in ~/reports (#1065): name, file, what it shows. */
+const REPORTS: [string, string, string][] = [
+  ["20 designed fusions", "arena-fusions-20.html", "each pair, its 3 candidates and the pick (#1065)"],
+  ["Discover a fusion", "arena-discover.html", "click-and-play checkpoints, one Fuse from each undiscovered pair (#1065)"],
+];
 const groups = [...new Set(scenes.map((s) => s.group))];
 const link = (id: string, lang: string) => `${base}#scene=${id}&lang=${lang}`;
 const rows = (g: string) =>
@@ -49,6 +54,10 @@ button{font:inherit;border:1px solid var(--line);background:var(--card);color:va
 </style></head><body><main>
 <h1>Arena test scenes</h1>
 <p class="lead">${scenes.length} scenes, each opens its screen from one link on the lab server (tailnet). On the phone you see the phone layout; open the same link on a computer for desktop. Add <code>&amp;theme=brass|felt</code> or <code>&amp;speed=2</code> to a link. Visited rows grey out. <button id="reset">Clear visited</button></p>
+<h2>Reports</h2>
+<ul>
+${REPORTS.map(([t, f, look]) => `<li class="row" data-id="report-${f}">\n  <div class="what"><b>${esc(t)}</b><span>${esc(look)}</span><code>${f}</code></div>\n  <div class="go"><a href="${f}" target="_blank" rel="noopener">Open</a></div>\n</li>`).join("\n")}
+</ul>
 ${groups.map((g) => `<h2>${esc(g)}</h2>\n<ul>\n${rows(g)}\n</ul>`).join("\n")}
 </main>
 <script>
