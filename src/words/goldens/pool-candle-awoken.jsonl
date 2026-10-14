@@ -1,4 +1,4 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Candle","name":"Candle","hp":16,"pwr":7},{"id":"A2:Gambler","name":"Gambler","hp":10,"pwr":2}],"B":[{"id":"B1:Seed","name":"Seed","hp":5,"pwr":0},{"id":"B2:Lone Wolf","name":"Lone Wolf","hp":12,"pwr":6},{"id":"B3:Coin Thief","name":"Coin Thief","hp":6,"pwr":1}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Candle","name":"Candle","hp":14,"pwr":7},{"id":"A2:Gambler","name":"Gambler","hp":10,"pwr":2}],"B":[{"id":"B1:Seed","name":"Seed","hp":10,"pwr":0},{"id":"B2:Lone Wolf","name":"Lone Wolf","hp":10,"pwr":5},{"id":"B3:Coin Thief","name":"Coin Thief","hp":4,"pwr":1}]}}
 {"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":2,"turn":1,"causedBy":1,"source":{"unit":"B3:Coin Thief","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Gambler","status":"Curse","stacks":1,"total":1}
 {"id":3,"turn":1,"causedBy":2,"source":"kernel","type":"StatChanged","unit":"A2:Gambler","stat":"pwr","delta":-1,"now":1}
@@ -6,57 +6,54 @@
 {"id":5,"turn":1,"causedBy":4,"source":"kernel","type":"StatChanged","unit":"B3:Coin Thief","stat":"pwr","delta":1,"now":2}
 {"id":6,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Candle","b":"B1:Seed","first":"A1:Candle"}
 {"id":7,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Candle","defender":"B1:Seed"}
-{"id":8,"turn":1,"causedBy":7,"source":"kernel","type":"Hurt","unit":"B1:Seed","amount":7,"hpAfter":-2}
-{"id":9,"turn":1,"causedBy":8,"source":"kernel","type":"Death","unit":"B1:Seed"}
-{"id":10,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":11,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":12,"turn":2,"causedBy":11,"source":{"unit":"B3:Coin Thief","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Gambler","status":"Curse","stacks":1,"total":2}
-{"id":13,"turn":2,"causedBy":12,"source":"kernel","type":"StatChanged","unit":"A2:Gambler","stat":"pwr","delta":-1,"now":0}
-{"id":14,"turn":2,"causedBy":11,"source":{"unit":"B3:Coin Thief","ability":1,"when":0},"type":"StatusApplied","unit":"B3:Coin Thief","status":"Strength","stacks":1,"total":2}
-{"id":15,"turn":2,"causedBy":14,"source":"kernel","type":"StatChanged","unit":"B3:Coin Thief","stat":"pwr","delta":1,"now":3}
-{"id":16,"turn":2,"causedBy":11,"source":"kernel","type":"PairFaced","a":"A1:Candle","b":"B2:Lone Wolf","first":"B2:Lone Wolf"}
-{"id":17,"turn":2,"causedBy":11,"source":"kernel","type":"Strike","striker":"B2:Lone Wolf","defender":"A1:Candle"}
-{"id":18,"turn":2,"causedBy":17,"source":"kernel","type":"Hurt","unit":"A1:Candle","amount":6,"hpAfter":10}
-{"id":19,"turn":2,"causedBy":11,"source":"kernel","type":"Strike","striker":"A1:Candle","defender":"B2:Lone Wolf"}
-{"id":20,"turn":2,"causedBy":19,"source":"kernel","type":"Hurt","unit":"B2:Lone Wolf","amount":7,"hpAfter":5}
-{"id":21,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":22,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":23,"turn":3,"causedBy":22,"source":{"unit":"B3:Coin Thief","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Gambler","status":"Curse","stacks":1,"total":3}
-{"id":24,"turn":3,"causedBy":23,"source":"kernel","type":"StatChanged","unit":"A2:Gambler","stat":"pwr","delta":-1,"now":0}
-{"id":25,"turn":3,"causedBy":22,"source":{"unit":"B3:Coin Thief","ability":1,"when":0},"type":"StatusApplied","unit":"B3:Coin Thief","status":"Strength","stacks":1,"total":3}
-{"id":26,"turn":3,"causedBy":25,"source":"kernel","type":"StatChanged","unit":"B3:Coin Thief","stat":"pwr","delta":1,"now":4}
-{"id":27,"turn":3,"causedBy":22,"source":"kernel","type":"Strike","striker":"B2:Lone Wolf","defender":"A1:Candle"}
-{"id":28,"turn":3,"causedBy":27,"source":"kernel","type":"Hurt","unit":"A1:Candle","amount":6,"hpAfter":4}
-{"id":29,"turn":3,"causedBy":22,"source":"kernel","type":"Strike","striker":"A1:Candle","defender":"B2:Lone Wolf"}
-{"id":30,"turn":3,"causedBy":29,"source":"kernel","type":"Hurt","unit":"B2:Lone Wolf","amount":7,"hpAfter":-2}
-{"id":31,"turn":3,"causedBy":30,"source":"kernel","type":"Death","unit":"B2:Lone Wolf"}
-{"id":32,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":33,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":34,"turn":4,"causedBy":33,"source":{"unit":"B3:Coin Thief","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Candle","status":"Curse","stacks":1,"total":1}
-{"id":35,"turn":4,"causedBy":34,"source":"kernel","type":"StatChanged","unit":"A1:Candle","stat":"pwr","delta":-1,"now":6}
-{"id":36,"turn":4,"causedBy":33,"source":{"unit":"B3:Coin Thief","ability":1,"when":0},"type":"StatusApplied","unit":"B3:Coin Thief","status":"Strength","stacks":1,"total":4}
-{"id":37,"turn":4,"causedBy":36,"source":"kernel","type":"StatChanged","unit":"B3:Coin Thief","stat":"pwr","delta":1,"now":5}
-{"id":38,"turn":4,"causedBy":33,"source":"kernel","type":"PairFaced","a":"A1:Candle","b":"B3:Coin Thief","first":"B3:Coin Thief"}
-{"id":39,"turn":4,"causedBy":33,"source":"kernel","type":"Strike","striker":"B3:Coin Thief","defender":"A1:Candle"}
-{"id":40,"turn":4,"causedBy":39,"source":"kernel","type":"Hurt","unit":"A1:Candle","amount":5,"hpAfter":-1}
-{"id":41,"turn":4,"causedBy":40,"source":{"unit":"A1:Candle","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A1:Candle","ability":0,"when":0},"original":"Death","unit":"A1:Candle"}
-{"id":42,"turn":4,"causedBy":41,"source":{"unit":"A1:Candle","ability":0,"when":0},"type":"Heal","unit":"A1:Candle","amount":2,"hpAfter":1}
-{"id":43,"turn":4,"causedBy":41,"source":{"unit":"A1:Candle","ability":0,"when":0},"type":"StatChanged","unit":"A1:Candle","stat":"pwr","delta":-1,"now":5}
-{"id":44,"turn":4,"causedBy":33,"source":"kernel","type":"Strike","striker":"A1:Candle","defender":"B3:Coin Thief"}
-{"id":45,"turn":4,"causedBy":44,"source":"kernel","type":"Hurt","unit":"B3:Coin Thief","amount":5,"hpAfter":1}
-{"id":46,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":47,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":48,"turn":5,"causedBy":47,"source":{"unit":"B3:Coin Thief","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Gambler","status":"Curse","stacks":1,"total":4}
-{"id":49,"turn":5,"causedBy":48,"source":"kernel","type":"StatChanged","unit":"A2:Gambler","stat":"pwr","delta":-1,"now":0}
-{"id":50,"turn":5,"causedBy":47,"source":{"unit":"B3:Coin Thief","ability":1,"when":0},"type":"StatusApplied","unit":"B3:Coin Thief","status":"Strength","stacks":1,"total":5}
-{"id":51,"turn":5,"causedBy":50,"source":"kernel","type":"StatChanged","unit":"B3:Coin Thief","stat":"pwr","delta":1,"now":6}
-{"id":52,"turn":5,"causedBy":47,"source":"kernel","type":"Strike","striker":"B3:Coin Thief","defender":"A1:Candle"}
-{"id":53,"turn":5,"causedBy":52,"source":"kernel","type":"Hurt","unit":"A1:Candle","amount":6,"hpAfter":-5}
-{"id":54,"turn":5,"causedBy":53,"source":{"unit":"A1:Candle","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A1:Candle","ability":0,"when":0},"original":"Death","unit":"A1:Candle"}
-{"id":55,"turn":5,"causedBy":54,"source":{"unit":"A1:Candle","ability":0,"when":0},"type":"Heal","unit":"A1:Candle","amount":6,"hpAfter":1}
-{"id":56,"turn":5,"causedBy":54,"source":{"unit":"A1:Candle","ability":0,"when":0},"type":"StatChanged","unit":"A1:Candle","stat":"pwr","delta":-1,"now":4}
-{"id":57,"turn":5,"causedBy":47,"source":"kernel","type":"Strike","striker":"A1:Candle","defender":"B3:Coin Thief"}
-{"id":58,"turn":5,"causedBy":57,"source":"kernel","type":"Hurt","unit":"B3:Coin Thief","amount":4,"hpAfter":-3}
-{"id":59,"turn":5,"causedBy":58,"source":"kernel","type":"Death","unit":"B3:Coin Thief"}
-{"id":60,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":61,"turn":5,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":5}
+{"id":8,"turn":1,"causedBy":7,"source":"kernel","type":"Hurt","unit":"B1:Seed","amount":7,"hpAfter":3}
+{"id":9,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Seed","defender":"A1:Candle"}
+{"id":10,"turn":1,"causedBy":9,"source":"kernel","type":"Hurt","unit":"A1:Candle","amount":0,"hpAfter":14}
+{"id":11,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":12,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":13,"turn":2,"causedBy":12,"source":{"unit":"B3:Coin Thief","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Gambler","status":"Curse","stacks":1,"total":2}
+{"id":14,"turn":2,"causedBy":13,"source":"kernel","type":"StatChanged","unit":"A2:Gambler","stat":"pwr","delta":-1,"now":0}
+{"id":15,"turn":2,"causedBy":12,"source":{"unit":"B3:Coin Thief","ability":1,"when":0},"type":"StatusApplied","unit":"B3:Coin Thief","status":"Strength","stacks":1,"total":2}
+{"id":16,"turn":2,"causedBy":15,"source":"kernel","type":"StatChanged","unit":"B3:Coin Thief","stat":"pwr","delta":1,"now":3}
+{"id":17,"turn":2,"causedBy":12,"source":"kernel","type":"Strike","striker":"A1:Candle","defender":"B1:Seed"}
+{"id":18,"turn":2,"causedBy":17,"source":"kernel","type":"Hurt","unit":"B1:Seed","amount":7,"hpAfter":-4}
+{"id":19,"turn":2,"causedBy":18,"source":"kernel","type":"Death","unit":"B1:Seed"}
+{"id":20,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":21,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":22,"turn":3,"causedBy":21,"source":{"unit":"B3:Coin Thief","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Gambler","status":"Curse","stacks":1,"total":3}
+{"id":23,"turn":3,"causedBy":22,"source":"kernel","type":"StatChanged","unit":"A2:Gambler","stat":"pwr","delta":-1,"now":0}
+{"id":24,"turn":3,"causedBy":21,"source":{"unit":"B3:Coin Thief","ability":1,"when":0},"type":"StatusApplied","unit":"B3:Coin Thief","status":"Strength","stacks":1,"total":3}
+{"id":25,"turn":3,"causedBy":24,"source":"kernel","type":"StatChanged","unit":"B3:Coin Thief","stat":"pwr","delta":1,"now":4}
+{"id":26,"turn":3,"causedBy":21,"source":"kernel","type":"PairFaced","a":"A1:Candle","b":"B2:Lone Wolf","first":"B2:Lone Wolf"}
+{"id":27,"turn":3,"causedBy":21,"source":"kernel","type":"Strike","striker":"B2:Lone Wolf","defender":"A1:Candle"}
+{"id":28,"turn":3,"causedBy":27,"source":"kernel","type":"Hurt","unit":"A1:Candle","amount":5,"hpAfter":9}
+{"id":29,"turn":3,"causedBy":21,"source":"kernel","type":"Strike","striker":"A1:Candle","defender":"B2:Lone Wolf"}
+{"id":30,"turn":3,"causedBy":29,"source":"kernel","type":"Hurt","unit":"B2:Lone Wolf","amount":7,"hpAfter":3}
+{"id":31,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":32,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":33,"turn":4,"causedBy":32,"source":{"unit":"B3:Coin Thief","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Candle","status":"Curse","stacks":1,"total":1}
+{"id":34,"turn":4,"causedBy":33,"source":"kernel","type":"StatChanged","unit":"A1:Candle","stat":"pwr","delta":-1,"now":6}
+{"id":35,"turn":4,"causedBy":32,"source":{"unit":"B3:Coin Thief","ability":1,"when":0},"type":"StatusApplied","unit":"B3:Coin Thief","status":"Strength","stacks":1,"total":4}
+{"id":36,"turn":4,"causedBy":35,"source":"kernel","type":"StatChanged","unit":"B3:Coin Thief","stat":"pwr","delta":1,"now":5}
+{"id":37,"turn":4,"causedBy":32,"source":"kernel","type":"Strike","striker":"B2:Lone Wolf","defender":"A1:Candle"}
+{"id":38,"turn":4,"causedBy":37,"source":"kernel","type":"Hurt","unit":"A1:Candle","amount":5,"hpAfter":4}
+{"id":39,"turn":4,"causedBy":32,"source":"kernel","type":"Strike","striker":"A1:Candle","defender":"B2:Lone Wolf"}
+{"id":40,"turn":4,"causedBy":39,"source":"kernel","type":"Hurt","unit":"B2:Lone Wolf","amount":6,"hpAfter":-3}
+{"id":41,"turn":4,"causedBy":40,"source":"kernel","type":"Death","unit":"B2:Lone Wolf"}
+{"id":42,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":43,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":44,"turn":5,"causedBy":43,"source":{"unit":"B3:Coin Thief","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Gambler","status":"Curse","stacks":1,"total":4}
+{"id":45,"turn":5,"causedBy":44,"source":"kernel","type":"StatChanged","unit":"A2:Gambler","stat":"pwr","delta":-1,"now":0}
+{"id":46,"turn":5,"causedBy":43,"source":{"unit":"B3:Coin Thief","ability":1,"when":0},"type":"StatusApplied","unit":"B3:Coin Thief","status":"Strength","stacks":1,"total":5}
+{"id":47,"turn":5,"causedBy":46,"source":"kernel","type":"StatChanged","unit":"B3:Coin Thief","stat":"pwr","delta":1,"now":6}
+{"id":48,"turn":5,"causedBy":43,"source":"kernel","type":"PairFaced","a":"A1:Candle","b":"B3:Coin Thief","first":"B3:Coin Thief"}
+{"id":49,"turn":5,"causedBy":43,"source":"kernel","type":"Strike","striker":"B3:Coin Thief","defender":"A1:Candle"}
+{"id":50,"turn":5,"causedBy":49,"source":"kernel","type":"Hurt","unit":"A1:Candle","amount":6,"hpAfter":-2}
+{"id":51,"turn":5,"causedBy":50,"source":{"unit":"A1:Candle","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A1:Candle","ability":0,"when":0},"original":"Death","unit":"A1:Candle"}
+{"id":52,"turn":5,"causedBy":51,"source":{"unit":"A1:Candle","ability":0,"when":0},"type":"Heal","unit":"A1:Candle","amount":3,"hpAfter":1}
+{"id":53,"turn":5,"causedBy":51,"source":{"unit":"A1:Candle","ability":0,"when":0},"type":"StatChanged","unit":"A1:Candle","stat":"pwr","delta":-1,"now":5}
+{"id":54,"turn":5,"causedBy":43,"source":"kernel","type":"Strike","striker":"A1:Candle","defender":"B3:Coin Thief"}
+{"id":55,"turn":5,"causedBy":54,"source":"kernel","type":"Hurt","unit":"B3:Coin Thief","amount":5,"hpAfter":-1}
+{"id":56,"turn":5,"causedBy":55,"source":"kernel","type":"Death","unit":"B3:Coin Thief"}
+{"id":57,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":58,"turn":5,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":5}

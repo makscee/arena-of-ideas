@@ -1,37 +1,37 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Gravedigger","name":"Gravedigger","hp":3,"pwr":2},{"id":"A2:Coin Thief","name":"Coin Thief","hp":6,"pwr":1}],"B":[{"id":"B1:War Horn","name":"War Horn","hp":9,"pwr":4},{"id":"B2:Aegis","name":"Aegis","hp":6,"pwr":1},{"id":"B3:Hydra","name":"Hydra","hp":9,"pwr":3}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Gravedigger","name":"Gravedigger","hp":4,"pwr":2},{"id":"A2:Coin Thief","name":"Coin Thief","hp":4,"pwr":1}],"B":[{"id":"B1:War Horn","name":"War Horn","hp":11,"pwr":5},{"id":"B2:Aegis","name":"Aegis","hp":9,"pwr":2},{"id":"B3:Hydra","name":"Hydra","hp":12,"pwr":4}]}}
 {"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":2,"turn":1,"causedBy":1,"source":{"unit":"A1:Gravedigger","ability":0,"when":0},"type":"Hurt","unit":"B1:War Horn","amount":0,"hpAfter":9}
+{"id":2,"turn":1,"causedBy":1,"source":{"unit":"A1:Gravedigger","ability":0,"when":0},"type":"Hurt","unit":"B1:War Horn","amount":0,"hpAfter":11}
 {"id":3,"turn":1,"causedBy":1,"source":{"unit":"A2:Coin Thief","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Aegis","status":"Curse","stacks":1,"total":1}
-{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"StatChanged","unit":"B2:Aegis","stat":"pwr","delta":-1,"now":0}
+{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"StatChanged","unit":"B2:Aegis","stat":"pwr","delta":-1,"now":1}
 {"id":5,"turn":1,"causedBy":1,"source":{"unit":"A2:Coin Thief","ability":1,"when":0},"type":"StatusApplied","unit":"A2:Coin Thief","status":"Strength","stacks":1,"total":1}
 {"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"StatChanged","unit":"A2:Coin Thief","stat":"pwr","delta":1,"now":2}
 {"id":7,"turn":1,"causedBy":1,"source":{"unit":"B1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B1:War Horn","status":"Strength","stacks":1,"total":1}
-{"id":8,"turn":1,"causedBy":7,"source":"kernel","type":"StatChanged","unit":"B1:War Horn","stat":"pwr","delta":1,"now":5}
+{"id":8,"turn":1,"causedBy":7,"source":"kernel","type":"StatChanged","unit":"B1:War Horn","stat":"pwr","delta":1,"now":6}
 {"id":9,"turn":1,"causedBy":1,"source":{"unit":"B1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Aegis","status":"Strength","stacks":1,"total":1}
-{"id":10,"turn":1,"causedBy":9,"source":"kernel","type":"StatChanged","unit":"B2:Aegis","stat":"pwr","delta":1,"now":1}
+{"id":10,"turn":1,"causedBy":9,"source":"kernel","type":"StatChanged","unit":"B2:Aegis","stat":"pwr","delta":1,"now":2}
 {"id":11,"turn":1,"causedBy":1,"source":{"unit":"B1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Hydra","status":"Strength","stacks":1,"total":1}
-{"id":12,"turn":1,"causedBy":11,"source":"kernel","type":"StatChanged","unit":"B3:Hydra","stat":"pwr","delta":1,"now":4}
+{"id":12,"turn":1,"causedBy":11,"source":"kernel","type":"StatChanged","unit":"B3:Hydra","stat":"pwr","delta":1,"now":5}
 {"id":13,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Gravedigger","b":"B1:War Horn","first":"A1:Gravedigger"}
 {"id":14,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Gravedigger","defender":"B1:War Horn"}
-{"id":15,"turn":1,"causedBy":14,"source":"kernel","type":"Hurt","unit":"B1:War Horn","amount":2,"hpAfter":7}
+{"id":15,"turn":1,"causedBy":14,"source":"kernel","type":"Hurt","unit":"B1:War Horn","amount":2,"hpAfter":9}
 {"id":16,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:War Horn","defender":"A1:Gravedigger"}
-{"id":17,"turn":1,"causedBy":16,"source":"kernel","type":"Hurt","unit":"A1:Gravedigger","amount":5,"hpAfter":-2}
+{"id":17,"turn":1,"causedBy":16,"source":"kernel","type":"Hurt","unit":"A1:Gravedigger","amount":6,"hpAfter":-2}
 {"id":18,"turn":1,"causedBy":17,"source":"kernel","type":"Death","unit":"A1:Gravedigger"}
 {"id":19,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":20,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":21,"turn":2,"causedBy":20,"source":{"unit":"A2:Coin Thief","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Aegis","status":"Curse","stacks":1,"total":2}
-{"id":22,"turn":2,"causedBy":21,"source":"kernel","type":"StatChanged","unit":"B2:Aegis","stat":"pwr","delta":-1,"now":0}
+{"id":22,"turn":2,"causedBy":21,"source":"kernel","type":"StatChanged","unit":"B2:Aegis","stat":"pwr","delta":-1,"now":1}
 {"id":23,"turn":2,"causedBy":20,"source":{"unit":"A2:Coin Thief","ability":1,"when":0},"type":"StatusApplied","unit":"A2:Coin Thief","status":"Strength","stacks":1,"total":2}
 {"id":24,"turn":2,"causedBy":23,"source":"kernel","type":"StatChanged","unit":"A2:Coin Thief","stat":"pwr","delta":1,"now":3}
 {"id":25,"turn":2,"causedBy":20,"source":{"unit":"B1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B1:War Horn","status":"Strength","stacks":1,"total":2}
-{"id":26,"turn":2,"causedBy":25,"source":"kernel","type":"StatChanged","unit":"B1:War Horn","stat":"pwr","delta":1,"now":6}
+{"id":26,"turn":2,"causedBy":25,"source":"kernel","type":"StatChanged","unit":"B1:War Horn","stat":"pwr","delta":1,"now":7}
 {"id":27,"turn":2,"causedBy":20,"source":{"unit":"B1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Aegis","status":"Strength","stacks":1,"total":2}
-{"id":28,"turn":2,"causedBy":27,"source":"kernel","type":"StatChanged","unit":"B2:Aegis","stat":"pwr","delta":1,"now":1}
+{"id":28,"turn":2,"causedBy":27,"source":"kernel","type":"StatChanged","unit":"B2:Aegis","stat":"pwr","delta":1,"now":2}
 {"id":29,"turn":2,"causedBy":20,"source":{"unit":"B1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Hydra","status":"Strength","stacks":1,"total":2}
-{"id":30,"turn":2,"causedBy":29,"source":"kernel","type":"StatChanged","unit":"B3:Hydra","stat":"pwr","delta":1,"now":5}
+{"id":30,"turn":2,"causedBy":29,"source":"kernel","type":"StatChanged","unit":"B3:Hydra","stat":"pwr","delta":1,"now":6}
 {"id":31,"turn":2,"causedBy":20,"source":"kernel","type":"PairFaced","a":"A2:Coin Thief","b":"B1:War Horn","first":"B1:War Horn"}
 {"id":32,"turn":2,"causedBy":20,"source":"kernel","type":"Strike","striker":"B1:War Horn","defender":"A2:Coin Thief"}
-{"id":33,"turn":2,"causedBy":32,"source":"kernel","type":"Hurt","unit":"A2:Coin Thief","amount":6,"hpAfter":0}
+{"id":33,"turn":2,"causedBy":32,"source":"kernel","type":"Hurt","unit":"A2:Coin Thief","amount":7,"hpAfter":-3}
 {"id":34,"turn":2,"causedBy":33,"source":"kernel","type":"Death","unit":"A2:Coin Thief"}
 {"id":35,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":36,"turn":2,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":2}

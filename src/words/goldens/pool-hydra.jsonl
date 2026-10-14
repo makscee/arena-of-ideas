@@ -1,44 +1,44 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Hydra","name":"Hydra","hp":9,"pwr":3},{"id":"A2:Berserker","name":"Berserker","hp":8,"pwr":2}],"B":[{"id":"B1:Frost Witch","name":"Frost Witch","hp":7,"pwr":1},{"id":"B2:Hourglass","name":"Hourglass","hp":12,"pwr":6},{"id":"B3:Candle","name":"Candle","hp":8,"pwr":4}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Hydra","name":"Hydra","hp":12,"pwr":4},{"id":"A2:Berserker","name":"Berserker","hp":8,"pwr":2}],"B":[{"id":"B1:Frost Witch","name":"Frost Witch","hp":6,"pwr":1},{"id":"B2:Hourglass","name":"Hourglass","hp":12,"pwr":6},{"id":"B3:Candle","name":"Candle","hp":6,"pwr":4}]}}
 {"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":2,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Hydra","b":"B1:Frost Witch","first":"B1:Frost Witch"}
 {"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Frost Witch","defender":"A1:Hydra"}
-{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"Hurt","unit":"A1:Hydra","amount":1,"hpAfter":8}
+{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"Hurt","unit":"A1:Hydra","amount":1,"hpAfter":11}
 {"id":5,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Hydra","defender":"B1:Frost Witch"}
-{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"B1:Frost Witch","amount":3,"hpAfter":4}
+{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"B1:Frost Witch","amount":4,"hpAfter":2}
 {"id":7,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":8,"turn":1,"causedBy":7,"source":{"unit":"B2:Hourglass","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Hourglass","status":"Charge","stacks":1,"total":1}
 {"id":9,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":10,"turn":2,"causedBy":9,"source":{"unit":"B1:Frost Witch","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Hydra","status":"Freeze","stacks":1,"total":1}
 {"id":11,"turn":2,"causedBy":9,"source":{"unit":"B1:Frost Witch","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Berserker","status":"Freeze","stacks":1,"total":1}
 {"id":12,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"B1:Frost Witch","defender":"A1:Hydra"}
-{"id":13,"turn":2,"causedBy":12,"source":"kernel","type":"Hurt","unit":"A1:Hydra","amount":1,"hpAfter":7}
+{"id":13,"turn":2,"causedBy":12,"source":"kernel","type":"Hurt","unit":"A1:Hydra","amount":1,"hpAfter":10}
 {"id":14,"turn":2,"causedBy":9,"source":{"unit":"A1:Hydra","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A1:Hydra","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"A1:Hydra"}
 {"id":15,"turn":2,"causedBy":14,"source":{"unit":"A1:Hydra","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:Hydra","status":"Freeze","stacks":1,"remaining":0}
 {"id":16,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":17,"turn":2,"causedBy":16,"source":{"unit":"B2:Hourglass","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Hourglass","status":"Charge","stacks":1,"total":2}
 {"id":18,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":19,"turn":3,"causedBy":18,"source":"kernel","type":"Strike","striker":"B1:Frost Witch","defender":"A1:Hydra"}
-{"id":20,"turn":3,"causedBy":19,"source":"kernel","type":"Hurt","unit":"A1:Hydra","amount":1,"hpAfter":6}
+{"id":20,"turn":3,"causedBy":19,"source":"kernel","type":"Hurt","unit":"A1:Hydra","amount":1,"hpAfter":9}
 {"id":21,"turn":3,"causedBy":18,"source":"kernel","type":"Strike","striker":"A1:Hydra","defender":"B1:Frost Witch"}
-{"id":22,"turn":3,"causedBy":21,"source":"kernel","type":"Hurt","unit":"B1:Frost Witch","amount":3,"hpAfter":1}
-{"id":23,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":24,"turn":3,"causedBy":23,"source":{"unit":"B2:Hourglass","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Hourglass","status":"Charge","stacks":1,"total":3}
-{"id":25,"turn":3,"causedBy":23,"source":{"unit":"B2:Hourglass","ability":1,"when":0},"type":"RuleMod","unit":"B2:Hourglass","op":"actAgain","other":"B3:Candle"}
-{"id":26,"turn":3,"causedBy":23,"source":{"unit":"B2:Hourglass","ability":2,"when":0},"type":"StatusRemoved","unit":"B2:Hourglass","status":"Charge","stacks":3,"remaining":0}
-{"id":27,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":28,"turn":4,"causedBy":27,"source":"kernel","type":"Strike","striker":"B1:Frost Witch","defender":"A1:Hydra"}
-{"id":29,"turn":4,"causedBy":28,"source":"kernel","type":"Hurt","unit":"A1:Hydra","amount":1,"hpAfter":5}
-{"id":30,"turn":4,"causedBy":27,"source":"kernel","type":"Strike","striker":"A1:Hydra","defender":"B1:Frost Witch"}
-{"id":31,"turn":4,"causedBy":30,"source":"kernel","type":"Hurt","unit":"B1:Frost Witch","amount":3,"hpAfter":-2}
-{"id":32,"turn":4,"causedBy":31,"source":"kernel","type":"Death","unit":"B1:Frost Witch"}
-{"id":33,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":34,"turn":4,"causedBy":33,"source":{"unit":"B2:Hourglass","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Hourglass","status":"Charge","stacks":1,"total":1}
-{"id":35,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":36,"turn":5,"causedBy":35,"source":"kernel","type":"PairFaced","a":"A1:Hydra","b":"B2:Hourglass","first":"A1:Hydra"}
-{"id":37,"turn":5,"causedBy":35,"source":"kernel","type":"Strike","striker":"A1:Hydra","defender":"B2:Hourglass"}
-{"id":38,"turn":5,"causedBy":37,"source":"kernel","type":"Hurt","unit":"B2:Hourglass","amount":3,"hpAfter":9}
-{"id":39,"turn":5,"causedBy":35,"source":"kernel","type":"Strike","striker":"B2:Hourglass","defender":"A1:Hydra"}
-{"id":40,"turn":5,"causedBy":39,"source":"kernel","type":"Hurt","unit":"A1:Hydra","amount":6,"hpAfter":-1}
+{"id":22,"turn":3,"causedBy":21,"source":"kernel","type":"Hurt","unit":"B1:Frost Witch","amount":4,"hpAfter":-2}
+{"id":23,"turn":3,"causedBy":22,"source":"kernel","type":"Death","unit":"B1:Frost Witch"}
+{"id":24,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":25,"turn":3,"causedBy":24,"source":{"unit":"B2:Hourglass","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Hourglass","status":"Charge","stacks":1,"total":3}
+{"id":26,"turn":3,"causedBy":24,"source":{"unit":"B2:Hourglass","ability":1,"when":0},"type":"RuleMod","unit":"B2:Hourglass","op":"actAgain","other":"B3:Candle"}
+{"id":27,"turn":3,"causedBy":24,"source":{"unit":"B2:Hourglass","ability":2,"when":0},"type":"StatusRemoved","unit":"B2:Hourglass","status":"Charge","stacks":3,"remaining":0}
+{"id":28,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":29,"turn":4,"causedBy":28,"source":"kernel","type":"PairFaced","a":"A1:Hydra","b":"B2:Hourglass","first":"A1:Hydra"}
+{"id":30,"turn":4,"causedBy":28,"source":"kernel","type":"Strike","striker":"A1:Hydra","defender":"B2:Hourglass"}
+{"id":31,"turn":4,"causedBy":30,"source":"kernel","type":"Hurt","unit":"B2:Hourglass","amount":4,"hpAfter":8}
+{"id":32,"turn":4,"causedBy":28,"source":"kernel","type":"Strike","striker":"B2:Hourglass","defender":"A1:Hydra"}
+{"id":33,"turn":4,"causedBy":32,"source":"kernel","type":"Hurt","unit":"A1:Hydra","amount":6,"hpAfter":3}
+{"id":34,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":35,"turn":4,"causedBy":34,"source":{"unit":"B2:Hourglass","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Hourglass","status":"Charge","stacks":1,"total":1}
+{"id":36,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":37,"turn":5,"causedBy":36,"source":"kernel","type":"Strike","striker":"A1:Hydra","defender":"B2:Hourglass"}
+{"id":38,"turn":5,"causedBy":37,"source":"kernel","type":"Hurt","unit":"B2:Hourglass","amount":4,"hpAfter":4}
+{"id":39,"turn":5,"causedBy":36,"source":"kernel","type":"Strike","striker":"B2:Hourglass","defender":"A1:Hydra"}
+{"id":40,"turn":5,"causedBy":39,"source":"kernel","type":"Hurt","unit":"A1:Hydra","amount":6,"hpAfter":-3}
 {"id":41,"turn":5,"causedBy":40,"source":"kernel","type":"Death","unit":"A1:Hydra"}
 {"id":42,"turn":5,"causedBy":41,"source":{"unit":"A1:Hydra","ability":0,"when":0},"type":"Summon","unit":"A+1:Head","name":"Head","side":"A","hp":3,"pwr":2,"front":true}
 {"id":43,"turn":5,"causedBy":41,"source":{"unit":"A1:Hydra","ability":0,"when":0},"type":"Summon","unit":"A+2:Head","name":"Head","side":"A","hp":3,"pwr":2,"front":true}
