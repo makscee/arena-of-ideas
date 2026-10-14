@@ -115,8 +115,56 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 /** Not a Cyrillic letter before: \b only knows ASCII words. */
 const RU_START = "(?<![а-яё])";
 
+/** Words that end a subject (#1120: "whenever" was taken as the noun). */
+const SUBJECT_END = new Set([
+  "who", "whoever", "that", "which", "whose", "when", "whenever", "if", "and", "or", "but", "with", "while", "after", "before", "until", "then", "so", "each", "every", "all", "any",
+  "it", "its", "to", "on", "in", "at", "of", "by", "for", "from", "into", "behind", "next", "near", "unit", "enemy", "enemies", "ally", "allies", "turn", "battle",
+  "is", "are", "can", "will", "has", "have", "gets", "gives", "takes", "makes",
+  "который", "которая", "которое", "которые", "кто", "что", "когда", "если", "и", "или", "но", "с", "со", "в", "на", "за", "для", "при", "его", "её", "их", "каждый", "каждого", "каждую", "всех",
+  "враг", "врага", "врагу", "врагов", "союзник", "союзника", "союзнику", "союзников", "юнит", "позади", "рядом",
+]);
+/** A clause that opens a condition holds no subject at its start ("Whenever an enemy dies, a phoenix rises"). */
+const CONDITION = new Set(["when", "whenever", "if", "each", "every", "after", "before", "once", "while", "когда", "если", "каждый", "каждую", "после", "пока"]);
+const ARTICLE = new Set(["a", "an", "the", "one", "some", "my", "this", "этот", "эта", "один", "одна"]);
+/** A verb after the first word ends the subject: "a dragon breathes …", «ёж травит …». */
+const verbLike = (w: string) => (/^[a-z]{4,}$/.test(w) && /[^su]s$/.test(w) && !/ss$/.test(w)) || /^[а-яё]{2,}(ет|ит|ют|ят|ёт)$/.test(w);
+/** Kept off the subject's front, so a name never reads "Old Old Blacksmith". */
+const AGE = new Set(["old", "young", "little", "small", "big", "great", "старый", "старая", "юный", "малый", "маленький", "большой"]);
+
+/** The idea's subject, the unit it is about: the noun phrase it opens with
+ * (after "a", "the" …), else the first one after an article in a clause that
+ * isn't a condition, else its longest plain word. "A lantern keeper who heals
+ * the ally behind it whenever an enemy dies" → "lantern keeper". */
+export function ideaSubject(text: string): string {
+  const clauses = text.toLowerCase().split(/[,.;:!?()«»"“”]|\s[—–-]\s/).map((c) => c.match(/[a-zа-яё]+(?:-[a-zа-яё]+)*/g) ?? []);
+  const phrase = (ws: string[], from: number): string => {
+    const out: string[] = [];
+    for (let i = from; i < ws.length && out.length < 2; i++) {
+      const w = ws[i]!;
+      if (SUBJECT_END.has(w) || STOP.has(w) || ARTICLE.has(w) || (out.length > 0 && verbLike(w))) break;
+      out.push(w);
+    }
+    return out.join(" ");
+  };
+  for (const ws of clauses) {
+    if (!ws.length || CONDITION.has(ws[0]!)) continue;
+    let at = ARTICLE.has(ws[0]!) ? 1 : 0;
+    while (AGE.has(ws[at] ?? "") && at < ws.length - 1) at++;
+    const p = phrase(ws, at);
+    if (p) return p;
+  }
+  for (const ws of clauses)
+    for (let i = 0; i < ws.length; i++)
+      if (ARTICLE.has(ws[i]!)) {
+        const p = phrase(ws, i + 1);
+        if (p) return p;
+      }
+  const words = clauses.flat().filter((w) => w.length >= 3 && !STOP.has(w) && !SUBJECT_END.has(w));
+  return words.sort((a, b) => b.length - a.length)[0] ?? "notion";
+}
+
 /** A deterministic reader: the same text gives the same options. Archetypes
- * are named after the idea's longest word, in English and in Russian (M4-5:
+ * are named after the idea's subject (ideaSubject), in English and in Russian (M4-5:
  * a Russian word spelled in English, an English one in Cyrillic); readings are the first shapes, in
  * an order the text picks, that pass the checks. "steal" or "gold" in the
  * text is a part it can't express (the path an odd idea takes). "whoever
@@ -128,15 +176,14 @@ export function fakeIdeaReader(): IdeaReader {
   return {
     kind: "fake",
     async archetypes(text, opts) {
-      const words = (text.match(/[A-Za-zА-Яа-яЁё]{3,}/g) ?? []).map((w) => w.toLowerCase()).filter((w) => !STOP.has(w));
-      const longest = words.sort((a, b) => b.length - a.length)[0] ?? "notion";
-      const ruWord = /[а-яё]/.test(longest);
-      const w = (ruWord ? latin(longest) : longest).slice(0, 12) || "notion";
-      const r = (ruWord ? longest : cyrillic(w)).slice(0, 12);
-      const W = cap(w);
-      const R = cap(r);
+      const subject = ideaSubject(text);
+      const ruWord = /[а-яё]/.test(subject);
+      const w = (ruWord ? latin(subject) : subject).slice(0, 20).trim() || "notion";
+      const r = (ruWord ? subject : w.split(" ").map(cyrillic).join(" ")).slice(0, 20).trim();
+      const W = w.split(" ").map(cap).join(" ");
+      const R = r.split(" ").map(cap).join(" ");
       const h = hashOf(text);
-      const names = opts.problems ? [`${W} Prime`, `Grand ${W}`, `${W}kin`] : [W, `${W}ling`, `Old ${W}`];
+      const names = opts.problems ? [`${W} Prime`, `Grand ${W}`, `${W}kin`] : [W, W.includes(" ") ? `Young ${W}` : `${W}ling`, `Old ${W}`];
       const lines = opts.problems
         ? [`A ${w} that came back for more.`, `A grand ${w} with a long reach.`, `A young ${w} learning the ropes.`]
         : [`A ${w} with a trick of its own.`, `A small ${w} that grows into its job.`, `An old ${w} the team leans on.`];

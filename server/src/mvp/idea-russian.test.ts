@@ -58,9 +58,9 @@ describe("a Russian idea with the fake reader (M4-5)", () => {
       expect(a.texts?.ru?.line).toMatch(CYR);
     }
     expect(archetypes.map((a) => [a.name, a.texts!.ru!.name])).toEqual([
-      ["Travit", "Травит"],
-      ["Travitling", "Малый Травит"],
-      ["Old Travit", "Старый Травит"],
+      ["Yozh", "Ёж"],
+      ["Yozhling", "Малый Ёж"],
+      ["Old Yozh", "Старый Ёж"],
     ]);
     expect((await w.call("POST", `/ideas/${id}/archetype`, { index: 2 })).status).toBe(200);
     await readIdeas(w.rt, fakeIdeaReader());
@@ -69,16 +69,16 @@ describe("a Russian idea with the fake reader (M4-5)", () => {
     // «кто его бьёт» is the attacker, «травит» names Poison: that reading comes first.
     expect(readings.data.readings![0]).toMatchObject({ who: "attacker", does: "Poison 1" });
     const picked = await w.call<MyIdeasView>("POST", `/ideas/${id}/reading`, { index: 0 });
-    expect(picked.json.sent[0]).toMatchObject({ state: "simulating", data: { archetype: { name: "Old Travit", texts: { ru: { name: "Старый Травит" } } } } });
+    expect(picked.json.sent[0]).toMatchObject({ state: "simulating", data: { archetype: { name: "Old Yozh", texts: { ru: { name: "Старый Ёж" } } } } });
     const unit = w.store.unit(picked.json.sent[0]!.data.unitId!)!;
-    expect(unit.row.name).toBe("Old Travit");
+    expect(unit.row.name).toBe("Old Yozh");
     expect(unit.row.archetype).not.toMatch(CYR);
     expect(unit.texts).toEqual({ ru: archetypes[2]!.texts!.ru });
     // The vote card carries it to other players.
     expect(await overnightCheck(w.rt, w.rt.tuner.dev)).toBe(1);
     const card = (await w.call<{ card: VoteCard | null }>("GET", "/votes/next", undefined, eva)).json.card!;
     const cand = card.units.find((u) => u.id === card.candidateId)!;
-    expect(cand.texts?.ru?.name).toBe("Старый Травит");
+    expect(cand.texts?.ru?.name).toBe("Старый Ёж");
   });
 
   it("names an English idea in Russian too, its English names unchanged", async () => {
