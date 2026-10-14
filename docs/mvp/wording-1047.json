@@ -37,7 +37,7 @@
   "lang": "en",
   "before": "Each of its strikes is a coin flip: heads deals double, tails deals nothing.",
   "after": "Each of its strikes has a 50% chance to deal double; otherwise it deals nothing.",
-  "why": "coin → chance"
+  "why": "coin → chance; one reading"
  },
  {
   "unit": "Gambler",
@@ -45,7 +45,7 @@
   "lang": "en",
   "before": "Each of its strikes is a coin flip: heads deals double and strikes again, tails deals nothing.",
   "after": "Each of its strikes has a 50% chance to deal double and strike again; otherwise it deals nothing.",
-  "why": "coin → chance"
+  "why": "coin → chance; one reading"
  },
  {
   "unit": "Gambler",
@@ -53,7 +53,7 @@
   "lang": "ru",
   "before": "Каждая его атака — бросок монеты: орёл — двойной урон, решка — никакого.",
   "after": "Каждая его атака с вероятностью 50% наносит двойной урон, иначе — никакого.",
-  "why": "coin → chance"
+  "why": "coin → chance; one reading"
  },
  {
   "unit": "Gambler",
@@ -61,7 +61,7 @@
   "lang": "ru",
   "before": "Каждая его атака — бросок монеты: орёл — двойной урон и ещё одна атака, решка — никакого.",
   "after": "Каждая его атака с вероятностью 50% наносит двойной урон и бьёт ещё раз, иначе — никакого.",
-  "why": "coin → chance"
+  "why": "coin → chance; one reading"
  },
  {
   "unit": "Nautilus",
@@ -69,7 +69,7 @@
   "lang": "en",
   "before": "Each time it is hit, it gains Shield equal to the hits it has taken.",
   "after": "Each time it is hit, it gains 1 Shield.",
-  "why": "clause amount (Maks's (b))"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Nautilus",
@@ -77,7 +77,7 @@
   "lang": "en",
   "before": "Each time it is hit, it gains Shield equal to the hits it and its allies have taken.",
   "after": "Each time it is hit, it gains 2 Shield.",
-  "why": "clause amount (Maks's (b))"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Nautilus",
@@ -85,7 +85,7 @@
   "lang": "ru",
   "before": "Каждый раз, когда его бьют, получает Щит, равный числу полученных ударов.",
   "after": "Каждый раз, когда его бьют, получает 1 Щит.",
-  "why": "clause amount (Maks's (b))"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Nautilus",
@@ -93,7 +93,7 @@
   "lang": "ru",
   "before": "Каждый раз, когда его бьют, получает Щит, равный числу ударов по нему и его союзникам.",
   "after": "Каждый раз, когда его бьют, получает 2 Щита.",
-  "why": "clause amount (Maks's (b))"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Raven",
@@ -212,32 +212,32 @@
   "what": "sleeping",
   "lang": "en",
   "before": "On the third turn, becomes a Butterfly (2/6) that strikes every enemy for its power each turn.",
-  "after": "At the start of turn 3, it becomes a Butterfly (2/6) that strikes every enemy for its power at each turn start.",
-  "why": "one reading"
+  "after": "At the start of turn 3, it becomes a Butterfly (2/4) that strikes every enemy for its power at each turn start.",
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Chrysalis",
   "what": "awoken",
   "lang": "en",
   "before": "On the third turn, becomes a Monarch (2/6) that strikes every enemy and gives every ally 1 Strength each turn.",
-  "after": "At the start of turn 3, it becomes a Monarch (2/6) that, at each turn start, strikes every enemy and gives every ally 1 Strength.",
-  "why": "one reading"
+  "after": "At the start of turn 3, it becomes a Monarch (2/4) that, at each turn start, strikes every enemy and gives every ally 1 Strength.",
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Chrysalis",
   "what": "sleeping",
   "lang": "ru",
   "before": "На третьем ходу превращается в Бабочку (2/6), которая каждый ход бьёт всех врагов на свою АТК.",
-  "after": "В начале 3-го хода превращается в Бабочку (2/6), которая в начале каждого хода бьёт всех врагов на свою АТК.",
-  "why": "one reading"
+  "after": "В начале 3-го хода превращается в Бабочку (2/4), которая в начале каждого хода бьёт всех врагов на свою АТК.",
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Chrysalis",
   "what": "awoken",
   "lang": "ru",
   "before": "На третьем ходу превращается в Монарха (2/6), который каждый ход бьёт всех врагов и даёт всем союзникам 1 Силу.",
-  "after": "В начале 3-го хода превращается в Монарха (2/6), который в начале каждого хода бьёт всех врагов и даёт всем союзникам 1 Силу.",
-  "why": "one reading"
+  "after": "В начале 3-го хода превращается в Монарха (2/4), который в начале каждого хода бьёт всех врагов и даёт всем союзникам 1 Силу.",
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Understudy",
@@ -277,7 +277,7 @@
   "lang": "en",
   "before": "At each turn start, hits the enemy in front for its power plus 1 per fallen ally.",
   "after": "At each turn start, hits the enemy in front for 1 per fallen ally.",
-  "why": "clause amount (Maks's (b))"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Gravedigger",
@@ -285,7 +285,7 @@
   "lang": "en",
   "before": "At each turn start, hits every enemy for its power plus 1 per fallen ally.",
   "after": "At each turn start, hits every enemy for 1 per fallen ally.",
-  "why": "clause amount (Maks's (b))"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Gravedigger",
@@ -293,7 +293,7 @@
   "lang": "ru",
   "before": "В начале каждого хода бьёт переднего врага на свою АТК плюс 1 за каждого павшего союзника.",
   "after": "В начале каждого хода бьёт переднего врага на 1 за каждого павшего союзника.",
-  "why": "clause amount (Maks's (b))"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Gravedigger",
@@ -301,39 +301,39 @@
   "lang": "ru",
   "before": "В начале каждого хода бьёт всех врагов на свою АТК плюс 1 за каждого павшего союзника.",
   "after": "В начале каждого хода бьёт всех врагов на 1 за каждого павшего союзника.",
-  "why": "clause amount (Maks's (b))"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Conductor",
   "what": "sleeping",
   "lang": "en",
   "before": "Every second turn, its neighbours act again.",
-  "after": "At the start of turns 2, 4, 6…, its neighbours act again.",
-  "why": "one reading"
+  "after": "At the start of turns 3, 6, 9…, its neighbours act again.",
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Conductor",
   "what": "awoken",
   "lang": "en",
   "before": "Every second turn, its neighbours act again and gain 1 Strength.",
-  "after": "At the start of turns 2, 4, 6…, its neighbours act again and gain 1 Strength.",
-  "why": "one reading"
+  "after": "At the start of turns 3, 6, 9…, its neighbours act again and gain 1 Strength.",
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Conductor",
   "what": "sleeping",
   "lang": "ru",
   "before": "Каждый второй ход его соседи действуют ещё раз.",
-  "after": "В начале 2-го, 4-го, 6-го… хода его соседи действуют ещё раз.",
-  "why": "one reading"
+  "after": "В начале 3-го, 6-го, 9-го… хода его соседи действуют ещё раз.",
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Conductor",
   "what": "awoken",
   "lang": "ru",
   "before": "Каждый второй ход его соседи действуют ещё раз и получают 1 Силу.",
-  "after": "В начале 2-го, 4-го, 6-го… хода его соседи действуют ещё раз и получают 1 Силу.",
-  "why": "one reading"
+  "after": "В начале 3-го, 6-го, 9-го… хода его соседи действуют ещё раз и получают 1 Силу.",
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Coin Thief",
@@ -341,7 +341,7 @@
   "lang": "en",
   "before": "At each turn start, flips a coin: on heads, it robs a random enemy for double its power.",
   "after": "At each turn start, 50% chance: it robs a random enemy for its power.",
-  "why": "coin → chance; smaller clause (b)"
+  "why": "coin → chance; clause amount (Maks's (b))"
  },
  {
   "unit": "Coin Thief",
@@ -349,7 +349,7 @@
   "lang": "en",
   "before": "At each turn start, flips a loaded coin (heads 3 times in 4): on heads, it robs a random enemy for double its power.",
   "after": "At each turn start, 75% chance: it robs a random enemy for its power.",
-  "why": "coin → chance; smaller clause (b)"
+  "why": "coin → chance; clause amount (Maks's (b))"
  },
  {
   "unit": "Coin Thief",
@@ -357,7 +357,7 @@
   "lang": "ru",
   "before": "В начале каждого хода бросает монету: на орле грабит случайного врага на двойную АТК.",
   "after": "В начале каждого хода с вероятностью 50% грабит случайного врага на свою АТК.",
-  "why": "coin → chance; smaller clause (b)"
+  "why": "coin → chance; clause amount (Maks's (b))"
  },
  {
   "unit": "Coin Thief",
@@ -365,7 +365,7 @@
   "lang": "ru",
   "before": "В начале каждого хода бросает краплёную монету (орёл 3 раза из 4): на орле грабит случайного врага на двойную АТК.",
   "after": "В начале каждого хода с вероятностью 75% грабит случайного врага на свою АТК.",
-  "why": "coin → chance; smaller clause (b)"
+  "why": "coin → chance; clause amount (Maks's (b))"
  },
  {
   "unit": "Lantern",
@@ -436,32 +436,32 @@
   "what": "sleeping",
   "lang": "en",
   "before": "When the first ally falls, it grows into a Dire Wolf (3/8) that gains 1 Strength at each turn end.",
-  "after": "The first time an ally falls in a battle, it grows into a Dire Wolf (4/10) that gains 1 Strength at each turn end.",
-  "why": "clause amount (Maks's (b))"
+  "after": "The first time an ally falls in a battle, it grows into a Dire Wolf (4/10) that gains 2 Strength at each turn end.",
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Wolf Pup",
   "what": "awoken",
   "lang": "en",
   "before": "When the first ally falls, it grows into a Dire Wolf (4/10) that gains 1 Strength at each turn end.",
-  "after": "The first time an ally falls in a battle, it grows into a Dire Wolf (5/12) that gains 1 Strength at each turn end.",
-  "why": "clause amount (Maks's (b))"
+  "after": "The first time an ally falls in a battle, it grows into a Dire Wolf (5/12) that gains 2 Strength at each turn end.",
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Wolf Pup",
   "what": "sleeping",
   "lang": "ru",
   "before": "Когда падает первый союзник, вырастает в Лютоволка (3/8), который в конце каждого хода получает 1 Силу.",
-  "after": "Когда в бою впервые падает союзник, вырастает в Лютоволка (4/10), который в конце каждого хода получает 1 Силу.",
-  "why": "clause amount (Maks's (b))"
+  "after": "Когда в бою впервые падает союзник, вырастает в Лютоволка (4/10), который в конце каждого хода получает 2 Силы.",
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Wolf Pup",
   "what": "awoken",
   "lang": "ru",
   "before": "Когда падает первый союзник, вырастает в Лютоволка (4/10), который в конце каждого хода получает 1 Силу.",
-  "after": "Когда в бою впервые падает союзник, вырастает в Лютоволка (5/12), который в конце каждого хода получает 1 Силу.",
-  "why": "clause amount (Maks's (b))"
+  "after": "Когда в бою впервые падает союзник, вырастает в Лютоволка (5/12), который в конце каждого хода получает 2 Силы.",
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "War Horn",
@@ -469,7 +469,7 @@
   "lang": "en",
   "before": "At each turn start, with 2 or fewer allies standing, it gives every ally 1 Strength.",
   "after": "At each turn start, with 3 or fewer allies standing, it gives every ally 1 Strength.",
-  "why": "clause amount (Maks's (b))"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "War Horn",
@@ -477,7 +477,7 @@
   "lang": "en",
   "before": "At each turn start, with 2 or fewer allies standing, it gives every ally 1 Strength and 1 Shield.",
   "after": "At each turn start, with 3 or fewer allies standing, it gives every ally 1 Strength and 1 Shield.",
-  "why": "clause amount (Maks's (b))"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "War Horn",
@@ -485,7 +485,7 @@
   "lang": "ru",
   "before": "В начале каждого хода, если союзников осталось 2 или меньше, даёт всем союзникам 1 Силу.",
   "after": "В начале каждого хода, если союзников осталось 3 или меньше, даёт всем союзникам 1 Силу.",
-  "why": "clause amount (Maks's (b))"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "War Horn",
@@ -493,7 +493,7 @@
   "lang": "ru",
   "before": "В начале каждого хода, если союзников осталось 2 или меньше, даёт всем союзникам 1 Силу и 1 Щит.",
   "after": "В начале каждого хода, если союзников осталось 3 или меньше, даёт всем союзникам 1 Силу и 1 Щит.",
-  "why": "clause amount (Maks's (b))"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Hexer",
@@ -501,7 +501,7 @@
   "lang": "en",
   "before": "At battle start, silences the enemy at the back: it loses its rule and statuses.",
   "after": "At the start of turn 2, silences the enemy at the back: it loses its rule and statuses.",
-  "why": "clause amount (Maks's (b))"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Hexer",
@@ -509,7 +509,7 @@
   "lang": "en",
   "before": "At battle start, silences the enemies at the back and at the front: they lose their rules and statuses.",
   "after": "At the start of turn 2, silences the enemies at the back and at the front: they lose their rules and statuses.",
-  "why": "clause amount (Maks's (b))"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Hexer",
@@ -517,7 +517,7 @@
   "lang": "ru",
   "before": "В начале боя заглушает заднего врага: тот теряет правило и статусы.",
   "after": "В начале 2-го хода заглушает заднего врага: тот теряет правило и статусы.",
-  "why": "clause amount (Maks's (b))"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Hexer",
@@ -525,39 +525,39 @@
   "lang": "ru",
   "before": "В начале боя заглушает заднего и переднего врага: они теряют правила и статусы.",
   "after": "В начале 2-го хода заглушает заднего и переднего врага: они теряют правила и статусы.",
-  "why": "clause amount (Maks's (b))"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Fortune Teller",
   "what": "sleeping",
   "lang": "en",
   "before": "At battle start, flips a coin: heads, every ally gains 2 Strength; tails, every ally gains 2 Shield.",
-  "after": "At battle start, 50% chance: every ally gains 2 Strength; otherwise every ally gains 2 Shield.",
-  "why": "coin → chance"
+  "after": "At battle start, 50% chance: every ally gains 1 Strength; otherwise every ally gains 1 Shield.",
+  "why": "coin → chance; clause amount (Maks's (b))"
  },
  {
   "unit": "Fortune Teller",
   "what": "awoken",
   "lang": "en",
   "before": "At battle start, flips a coin: heads, every ally gains 3 Strength; tails, every ally gains 3 Shield.",
-  "after": "At battle start, 50% chance: every ally gains 3 Strength; otherwise every ally gains 3 Shield.",
-  "why": "coin → chance"
+  "after": "At battle start, 50% chance: every ally gains 2 Strength; otherwise every ally gains 2 Shield.",
+  "why": "coin → chance; clause amount (Maks's (b))"
  },
  {
   "unit": "Fortune Teller",
   "what": "sleeping",
   "lang": "ru",
   "before": "В начале боя бросает монету: орёл — все союзники получают 2 Силы, решка — 2 Щита.",
-  "after": "В начале боя с вероятностью 50% все союзники получают 2 Силы, иначе — 2 Щита.",
-  "why": "coin → chance"
+  "after": "В начале боя с вероятностью 50% все союзники получают 1 Силу, иначе — 1 Щит.",
+  "why": "coin → chance; clause amount (Maks's (b))"
  },
  {
   "unit": "Fortune Teller",
   "what": "awoken",
   "lang": "ru",
   "before": "В начале боя бросает монету: орёл — все союзники получают 3 Силы, решка — 3 Щита.",
-  "after": "В начале боя с вероятностью 50% все союзники получают 3 Силы, иначе — 3 Щита.",
-  "why": "coin → chance"
+  "after": "В начале боя с вероятностью 50% все союзники получают 2 Силы, иначе — 2 Щита.",
+  "why": "coin → chance; clause amount (Maks's (b))"
  },
  {
   "unit": "Aegis",
@@ -693,15 +693,15 @@
   "lang": "en",
   "before": "From the third turn on, at each turn start, it curses the enemy in front: −1 power.",
   "after": "At the start of turn 3 and every turn after, it curses the enemy in front: −1 power.",
-  "why": "one reading"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Oracle",
   "what": "awoken",
   "lang": "en",
   "before": "From the third turn on, at each turn start, it curses every enemy: −1 power.",
-  "after": "At the start of turn 3 and every turn after, it curses every enemy: −1 power.",
-  "why": "one reading"
+  "after": "At the start of turn 3 and every turn after, it curses the enemies at the front and at the back: −1 power.",
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Oracle",
@@ -709,15 +709,15 @@
   "lang": "ru",
   "before": "С третьего хода, в начале каждого хода, проклинает переднего врага: −1 АТК.",
   "after": "В начале 3-го хода и каждого следующего проклинает переднего врага: −1 АТК.",
-  "why": "one reading"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Oracle",
   "what": "awoken",
   "lang": "ru",
   "before": "С третьего хода, в начале каждого хода, проклинает всех врагов: −1 АТК.",
-  "after": "В начале 3-го хода и каждого следующего проклинает всех врагов: −1 АТК.",
-  "why": "one reading"
+  "after": "В начале 3-го хода и каждого следующего проклинает переднего и заднего врага: −1 АТК.",
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Hourglass",
@@ -733,7 +733,7 @@
   "lang": "en",
   "before": "Every strike is a coin: double or nothing.",
   "after": "Every strike is a gamble: double or nothing.",
-  "why": "coin → chance"
+  "why": "coin → chance; one reading"
  },
  {
   "unit": "Metronome",
@@ -757,15 +757,15 @@
   "lang": "en",
   "before": "Hits the front enemy harder for every fallen ally.",
   "after": "Hits the front enemy for every fallen ally.",
-  "why": "clause amount (Maks's (b))"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Conductor",
   "what": "archetype",
   "lang": "en",
   "before": "Every second turn, its neighbours act again.",
-  "after": "On every even turn, its neighbours act again.",
-  "why": "one reading"
+  "after": "On turns 3, 6, 9…, its neighbours act again.",
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Coin Thief",
@@ -773,7 +773,7 @@
   "lang": "en",
   "before": "Each turn, a coin decides whether a random enemy gets robbed hard.",
   "after": "Each turn, an even chance to rob a random enemy.",
-  "why": "coin → chance; smaller clause (b)"
+  "why": "coin → chance; clause amount (Maks's (b))"
  },
  {
   "unit": "Echo Bell",
@@ -789,7 +789,7 @@
   "lang": "en",
   "before": "Silences the enemy at the back before the fight begins.",
   "after": "On turn 2, silences the enemy at the back.",
-  "why": "clause amount (Maks's (b))"
+  "why": "clause amount (Maks's (b)); one reading"
  },
  {
   "unit": "Fortune Teller",
@@ -797,7 +797,7 @@
   "lang": "en",
   "before": "One coin at the start: the whole line strikes harder or stands sturdier.",
   "after": "At the start, an even chance: the whole line strikes harder, or else stands sturdier.",
-  "why": "coin → chance"
+  "why": "coin → chance; clause amount (Maks's (b))"
  },
  {
   "unit": "Hydra",
