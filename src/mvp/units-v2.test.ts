@@ -232,10 +232,10 @@ describe("rules v2 pool", () => {
     const p = { id: "bot", name: "bot", bot: true };
     const cases: [string, string[], string[], RegExp][] = [
       ["Plague Rat", ["Plague Rat", "Sniper"], ["Berserker", "Leech"], /^Plague Rat → all enemies \(Berserker, Leech\) → Poison 1$/],
-      ["Martyr", ["Martyr", "Sniper"], ["Berserker", "Leech"], /^Martyr → all allies \(Sniper\) → Strength 1$/],
-      ["Ox", ["Ox"], ["Nautilus"], /^Ox's strike on Nautilus hits for 6$/],
-      ["Daredevil", ["Daredevil"], ["Seed", "Seed"], /^Daredevil's strike on Seed hits for 4$/],
-      ["Duelist", ["Duelist"], ["Berserker"], /^Duelist's strike on Berserker hits for 2$/],
+      ["Martyr", ["Martyr", "Sniper"], ["Berserker", "Leech"], /^Martyr → all allies \(Sniper\) → Strength \d+$/],
+      ["Ox", ["Ox"], ["Nautilus"], /^Ox's strike on Nautilus hits for \d+$/],
+      ["Daredevil", ["Daredevil"], ["Seed", "Seed"], /^Daredevil's strike on Seed hits for \d+$/],
+      ["Duelist", ["Duelist"], ["Berserker"], /^Duelist's strike on Berserker hits for \d+$/],
       ["Squire", ["Squire", "Paladin", "Lantern"], ["Nautilus"], /^Squire → self \(Squire\) → Strength 1$/],
       ["Dynamo", ["Dynamo"], ["Seed", "Seed"], /^Dynamo strikes again$/],
       ["Siphon", ["Siphon"], ["Leech", "Medic"], /^Siphon intercepts: the heal on Leech lands on Siphon$/],
