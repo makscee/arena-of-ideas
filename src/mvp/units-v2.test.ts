@@ -180,7 +180,7 @@ describe("rules v2 pool", () => {
     expect(say("Drummer", "sleeping", "en")).toMatch(/^Ally strikes: gain 1 Charge, and if it has 3\+ Charge, 1 Strength to every ally behind; otherwise, nothing, /);
     expect(say("Raven", "sleeping", "en")).toBe("Ally dies: remember the rule of that unit, then perform the oldest remembered rule once and forget it.");
     expect(say("Raven", "awoken", "en")).toMatch(/Turn start: perform every remembered rule\.$/);
-    expect(say("Chrysalis", "sleeping", "en")).toBe("Turn start, on turn 3: become Butterfly (2/4). Butterfly: Turn start: PWR damage to all enemies.");
+    expect(say("Chrysalis", "sleeping", "en")).toBe("Turn start, on turn 3: become Butterfly (2/3). Butterfly: Turn start: PWR damage to all enemies.");
     // every form that gives or starts with a status carrying a rule, or
     // becomes a unit with a rule, says more than its own clause
     for (const u of content.units) for (const form of ["sleeping", "awoken"] as const) {

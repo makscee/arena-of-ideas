@@ -70,7 +70,7 @@ const pwrOfHolder = { kind: "stat" as const, stat: "pwr" as const, of: "holder" 
 const butterfly = (awoken: boolean) => ({
   name: awoken ? "Monarch" : "Butterfly",
   names: { ru: awoken ? { name: "Монарх", acc: "Монарха" } : { name: "Бабочка", acc: "Бабочку" } },
-  base: { hp: 4, pwr: 2 }, // #1047 pass 2: 4 HP, was 6
+  base: { hp: 3, pwr: 2 }, // #1063 gate pass: 3 HP (was 4; #1047 pass 2: 4, was 6)
   triggers: [{ kind: "trigger" as const, on: { on: "TurnStart" as const } }],
   selectors: [{ kind: "allEnemies" as const }],
   abilities: ["Smite"],

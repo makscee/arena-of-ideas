@@ -157,10 +157,10 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "Первый за ход удар по союзнику принимает на себя и даёт этому союзнику 1 Щит.",
   ],
   Chrysalis: () => [
-    "At the start of turn 3, it becomes a Butterfly (2/4) that strikes every enemy for its power at each turn start.",
-    "At the start of turn 3, it becomes a Monarch (2/4) that, at each turn start, strikes every enemy and gives every ally 1 Strength.",
-    "В начале 3-го хода превращается в Бабочку (2/4), которая в начале каждого хода бьёт всех врагов на свою АТК.",
-    "В начале 3-го хода превращается в Монарха (2/4), который в начале каждого хода бьёт всех врагов и даёт всем союзникам 1 Силу.",
+    "At the start of turn 3, it becomes a Butterfly (2/3) that strikes every enemy for its power at each turn start.",
+    "At the start of turn 3, it becomes a Monarch (2/3) that, at each turn start, strikes every enemy and gives every ally 1 Strength.",
+    "В начале 3-го хода превращается в Бабочку (2/3), которая в начале каждого хода бьёт всех врагов на свою АТК.",
+    "В начале 3-го хода превращается в Монарха (2/3), который в начале каждого хода бьёт всех врагов и даёт всем союзникам 1 Силу.",
   ],
   Trickster: () => [
     "At battle start, it swaps rules with the enemy in front of it.",
