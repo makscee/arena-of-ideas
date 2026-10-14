@@ -117,6 +117,21 @@ async function fullRun(lang) {
       await press("1");
       if (await tid("gift-title").isVisible().catch(() => false)) await press("Escape");
       await settle();
+      // A full board can't take the gift: sell a bench unit by keys (Tab, Enter, S), then open the gift and pick.
+      if (await tid("gift-banner").count()) {
+        const benched = await page.locator('[data-testid^="bench-"].card.you').count();
+        if (benched && (await tabTo("bench-0"))) {
+          await press("Enter");
+          await press("s");
+          await settle();
+          if (await tabTo("gift-open")) {
+            await press("Enter");
+            await tid("gift-title").waitFor({ timeout: 3_000 }).catch(() => fail("Enter on the gift banner didn't open the gift"));
+            await press("1");
+            await settle();
+          }
+        }
+      }
     };
     await gift();
     // Buy with the number keys, as long as the gold lasts.
@@ -214,7 +229,7 @@ async function fullRun(lang) {
     await tid("battle-end").waitFor({ timeout: 10_000 }).catch(async () => {
       await page.screenshot({ path: `${out}/stuck-${lang}.png` });
       fail(`Space didn't fight in round ${round + 1}: focus on ${await k.active()}, fight ${(await tid("fight").isDisabled()) ? "disabled" : "enabled"}, gold ${await tid("gold").textContent()}, sheet ${await tid("overlay").count()}`);
-      throw new Error("stuck");
+      throw new Error(`stuck: ${errors.at(-1)}`);
     });
     // The battle's keys: Space pauses, → steps, ← steps back, R replays; the Skip button by Tab.
     if (!battleChecked) {
@@ -409,7 +424,7 @@ async function rings(lang) {
   for (const theme of ["plum", "brass", "felt"]) {
     for (const scene of ["shop-r3", "codex-units", "settings"]) {
       const k = await open(lang, `ring ${theme} ${scene}`, { theme });
-      await k.goto(`#scene=${scene}&lang=${lang}`);
+      await k.goto(`?theme=${theme}#scene=${scene}&lang=${lang}`);
       await k.page.waitForTimeout(1500);
       const on = await k.page.evaluate(() => document.documentElement.dataset.theme);
       if (on !== theme) k.fail(`the page shows the ${on} palette, not ${theme}`);
