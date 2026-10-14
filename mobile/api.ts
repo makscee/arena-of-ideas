@@ -34,6 +34,7 @@ import {
   type WriteIdeaRequest,
 } from "../src/mvp/contract";
 import { uiLang } from "./lang";
+import { addCardAbilities } from "./ui/card";
 import type { SceneBuilt } from "../server/src/mvp/scenes";
 import type { ForgeSlot, ForgeView, RunForge } from "../src/mvp/codex";
 import type { ForgeView as CodexOverview } from "../src/mvp/forge-view";
@@ -117,6 +118,12 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
   const json = (await res.json().catch(() => ({ error: res.statusText }))) as T & { error?: string };
   if (!res.ok) throw new ApiError(res.status, json.error ?? `HTTP ${res.status}`);
   return json;
+}
+
+/** A run's fused units carry their design's own abilities (#1065): the cards learn them. */
+function learnFusions(run: RunView): RunView {
+  for (const u of [...run.line, ...(run.bench ?? [])]) if (u.fusion?.abilities) addCardAbilities(u.fusion.abilities);
+  return run;
 }
 
 export const api = {
@@ -226,12 +233,18 @@ export const api = {
   content: () => call<MvpContent>("GET", "/content"),
   home: () => call<HomeView>("GET", "/home"),
   startRun: () => call<RunView>("POST", "/runs"),
-  run: (id: string) => call<RunView>("GET", `/runs/${id}`),
+  run: async (id: string) => learnFusions(await call<RunView>("GET", `/runs/${id}`)),
   decide: (id: string, d: Decision) => call<DecisionResponse>("POST", `/runs/${id}/decisions`, d),
   /** What a shop decision would do, without doing it (the awakening and fusion result cards). */
   preview: (id: string, d: Decision) => call<DecisionResponse>("POST", `/runs/${id}/preview`, d),
   /** Rules v2's forge (#1049): every pair the run can fuse now, in its Codex state, and the offers that bring a designed one within reach; a 404 while the Codex is off. */
-  forge: (id: string) => call<RunForge>("GET", `/runs/${id}/forge`),
+  forge: async (id: string) => {
+    const f = await call<RunForge>("GET", `/runs/${id}/forge`);
+    // a designed fusion's own abilities (#1065), so its card reads its rule, not an id
+    for (const p of f.pairs) for (const d of [...(p.candidates ?? []), ...(p.design ? [p.design] : [])]) if (d.abilities) addCardAbilities(d.abilities);
+    for (const o of f.offers) if (o.design?.abilities) addCardAbilities(o.design.abilities);
+    return f;
+  },
   /** A wish on an unforged pair: it goes on tonight's list. */
   /** The Codex screens' view (#1051): units, stored pairs, the feed, the Dictionary; a 404 while the Codex is off. */
   codex: () => call<CodexOverview>("GET", "/codex"),

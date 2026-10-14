@@ -19,7 +19,7 @@ export const DESIGNER_RULES = [
   "Use the shape of both parents: a counter from one, a flip from the other. Two different pairs must not come out looking alike.",
   "Add one element neither parent has (Déjà Vu's 'one turn later', Grave Tree's inherited rule).",
   "Three candidates lean differently: lean A (toward the first parent), lean B (toward the second), and twist (reads as a third creature).",
-  "Output is the v2 schema only. No stats: the fusion has the stronger parent's HP and power, as the game's fuse gives it; numbers inside the rule are a first guess the quick tune rescales.",
+  "Output is the v2 schema only. No stats: the fusion has the parents' summed HP and power; numbers inside the rule are a first guess the quick tune rescales.",
   // the units rethink (#1063): one shared vocabulary, one strong reading (#1065)
   "Speak the shared vocabulary only: the statuses Strength, Vitality, Curse, Poison, Shield, Freeze, Blessing and the Charge counter, plus the turn number. Coin no status, counter or resource of your own, no coins or gold, and no hidden concept a card can't show. The rule has one strong reading: one idea, said once.",
 ];

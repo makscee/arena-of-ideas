@@ -17,11 +17,10 @@
 //                    breakers sits in band; breakers only under 50 ghosts.
 //   store            three candidates per pair, as `ready to claim`.
 //
-// No numbers come from a model: stats are the game's fuse (fusedBase), the rule's cost
+// No numbers come from a model: stats are the parents' sum (fusedBase), the rule's cost
 // is what the quick tune measured.
 
 import { battle } from "../../../src/battle.js";
-import { MVP_RULES } from "../../../src/mvp/contract.js";
 import type { DescribeSegment, Lang } from "../../../src/describe.js";
 import { formSegments } from "../../../src/mvp/form-text.js";
 import type { AbilityDef, AbilityRegistry, Amount, BattleEvent, Effect, StatusDef, StatusRegistry, UnitDef } from "../../../src/types.js";
@@ -207,12 +206,9 @@ export interface Candidate {
   wordRequest?: { word: string; meaning: string };
 }
 
-/** A fusion's stats as the game's fuse gives them (src/mvp/forms.ts): the
- * stronger parent's PWR and HP, each plus one copy's growth (#1065; the batch
- * used to sum them, which no fused unit ever has). */
+/** A fusion's stats as the game's fuse gives them: the parents' sum. */
 export function fusedBase(a: Parent, b: Parent): { hp: number; pwr: number } {
-  const g = MVP_RULES.copyGrowth;
-  return { hp: Math.max(a.def.base.hp, b.def.base.hp) + g.hp, pwr: Math.max(a.def.base.pwr, b.def.base.pwr) + g.pwr };
+  return { hp: a.def.base.hp + b.def.base.hp, pwr: a.def.base.pwr + b.def.base.pwr };
 }
 
 /** The draft's own ids (name = key, as the validator wants). An id the
