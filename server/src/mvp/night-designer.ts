@@ -10,7 +10,8 @@ import { join } from "node:path";
 import { DejaVu, FIXTURE_ABILITIES, FIXTURE_STATUSES, GraveTree } from "../../../src/words/fixtures.js";
 import { MACROS } from "../../../src/words/macros.js";
 import { callClaude } from "./idea-reader.js";
-import { type DesignDraft, type Designer, LEANS, type Naming, type Parent } from "./night-batch.js";
+import { V2_SAY } from "../../../src/mvp/units-v2-say.js";
+import { type DesignDraft, type Designer, LEANS, type Naming, type Parent, type Say } from "./night-batch.js";
 
 const ROOT = join(import.meta.dirname, "../../..");
 
@@ -105,6 +106,26 @@ export function namePrompt(a: Parent, b: Parent, d: DesignDraft, taken: string[]
 const PAIR = { type: "object", properties: { en: { type: "string" }, ru: { type: "string" } }, required: ["en", "ru"] };
 export const NAME_SCHEMA = { type: "object", properties: { name: PAIR, flavour: PAIR }, required: ["name", "flavour"] };
 
+/** The card sentence's writer (#1122): the units' style (units-v2-say.ts). */
+export function saySystem(): string {
+  const examples = ["Drummer", "Battery", "Priest", "Executioner"].flatMap((n) => {
+    const s = V2_SAY[n]?.();
+    return s ? [`- ${n}: "${s[1]}" / "${s[3]}"`] : [];
+  });
+  return [
+    "You write the card sentence of a fused unit in Arena of Ideas, an auto-battler: the rule as one plain sentence a person would say, in English and in Russian (written natively, not word for word).",
+    "One strong reading: say each thing once, in the order it happens. Name the statuses as the rule does (Strength, Vitality, Curse, Poison, Shield, Freeze, Blessing, Charge). Use exactly the rule's numbers, and no number it doesn't have. Never write \"otherwise, nothing\", engine ids, or a sentence that starts with a number or a status name.",
+    "Charge reads as on the units: \"it gains 1 Charge. At 3 Charge, it spends them and …\".",
+    "The units' sentences, for the style:",
+    ...examples,
+  ].join("\n");
+}
+
+export function sayPrompt(a: Parent, b: Parent, d: DesignDraft, rule: Say, fix?: string[]): string {
+  const again = fix?.length ? `\nYour last sentence didn't match the rule: ${fix.join("; ")}. Write it again.` : "";
+  return `Parents: ${a.id} and ${b.id}. The designer meant: ${d.intent}\nThe rule as the engine reads it (exact):\nEN: ${rule.en}\nRU: ${rule.ru}${again}`;
+}
+
 export interface ClaudeDesignerOptions {
   model: string;
   namerModel: string;
@@ -127,6 +148,9 @@ export function claudeDesigner(o: ClaudeDesignerOptions): Designer {
       if (!out?.name?.en || !out?.name?.ru) throw new Error("claude -p gave no name");
       return out;
     },
+    async say(a, b, d, rule, fix) {
+      return (await callClaude({ model: o.namerModel, bin: o.bin, timeoutMs: o.timeoutMs }, saySystem(), sayPrompt(a, b, d, rule, fix), PAIR)) as Say;
+    },
   };
 }
 
@@ -146,6 +170,11 @@ export function fakeDesigner(): Designer {
     },
     async name(a, b, d) {
       return { name: { en: `${a.id}${b.id} ${d.lean}`, ru: `${a.id}${b.id} ${d.lean}` }, flavour: { en: "A test fusion.", ru: "Пробное слияние." } };
+    },
+    async say(_a, _b, d, rule) {
+      // the fake's Hit: "When … : 2 damage to the front enemy" said plainly
+      const n = rule.en.match(/\d+/)?.[0] ?? "";
+      return { en: `It hits the enemy in front for ${n} (${d.lean}).`, ru: `Бьёт переднего врага на ${n} (${d.lean}).` };
     },
   };
 }

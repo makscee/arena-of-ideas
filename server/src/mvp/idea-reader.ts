@@ -95,7 +95,118 @@ const STOP = new Set([
   "который", "которая", "которое", "которые", "которого", "того", "кого", "кто", "что", "его", "её", "ему", "она", "они", "оно", "них", "это", "этот", "эта", "эти", "когда", "каждый", "каждого", "всех", "всем",
   "враг", "врага", "врагу", "врагов", "врагам", "союзник", "союзника", "союзников", "союзникам", "юнит", "или", "если", "как", "так", "для", "при",
 ]);
-const FAKE_EMOJI = ["🦔", "🌀", "🪶", "🔮", "🧩", "🪵", "🐚", "🕯️"];
+/** #1122: the fake's archetype icon pictures the idea's subject ("Lantern
+ * Keeper" got a shell, a candle and a hedgehog). A word stem (EN or RU; "$"
+ * ends a short one, which then takes only an ending: -s/-es, or a short Russian case ending) → its emoji. */
+const ICONS: [string, string[]][] = [
+  ["🏮", ["lantern", "lamp", "фонар", "лампа", "лампы", "лампу"]],
+  ["🕯️", ["candle", "wick", "свеч", "фитил"]],
+  ["🔥", ["fire", "flame", "blaze", "ember", "burn", "огон", "огн", "плам", "пожар"]],
+  ["❄️", ["frost", "ice$", "snow", "winter", "freez", "мороз", "лёд", "лед", "ледян", "снег", "снеж", "зим"]],
+  ["⚡", ["lightning", "thunder", "storm", "spark", "молни", "гром", "гроз", "искр"]],
+  ["💧", ["water", "rain", "drop", "вод", "дожд", "капл"]],
+  ["🌊", ["wave", "sea$", "ocean", "tide", "волн", "мор", "океан", "прилив"]],
+  ["🌪️", ["wind", "gale", "ветер", "ветр", "вихр"]],
+  ["🌙", ["moon", "night", "лун", "ноч"]],
+  ["☀️", ["sun$", "dawn", "солнц", "рассвет"]],
+  ["⭐", ["star$", "звезд", "звёзд"]],
+  ["🌑", ["shadow", "dark", "тен", "тьм", "мрак"]],
+  ["🐺", ["wolf", "wolves", "волк", "волч"]],
+  ["🦊", ["fox", "лис$"]],
+  ["🐻", ["bear$", "медвед"]],
+  ["🐍", ["snake", "serpent", "viper", "змей", "змея", "змеи", "гадюк"]],
+  ["🕷️", ["spider", "паук"]],
+  ["🦇", ["bat$", "vampire", "летуч", "вампир"]],
+  ["🐀", ["rat$", "mouse", "mice", "крыс", "мыш"]],
+  ["🐈", ["cat$", "kitten", "кот", "кошк"]],
+  ["🐕", ["dog$", "hound", "пёс", "пес", "собак", "гончая"]],
+  ["🦅", ["eagle", "hawk", "falcon", "орёл", "орел", "орл", "ястреб", "сокол"]],
+  ["🐦‍⬛", ["raven", "crow", "ворон"]],
+  ["🦉", ["owl$", "сова", "совы", "сову"]],
+  ["🐉", ["dragon", "wyrm", "дракон"]],
+  ["🦂", ["scorpion", "скорпион"]],
+  ["🐝", ["bee$", "wasp", "hive", "пчел", "пчёл", "улей", "ульи"]],
+  ["🐢", ["turtle", "tortoise", "черепах"]],
+  ["🦔", ["hedgehog", "porcupine", "ёж$", "еж$", "дикобраз"]],
+  ["🐚", ["shell", "snail", "nautilus", "ракушк", "раковин", "улитк", "наутилус"]],
+  ["🐙", ["octopus", "kraken", "tentacle", "осьминог", "кракен", "щупальц"]],
+  ["🐟", ["fish", "рыб"]],
+  ["🦈", ["shark", "акул"]],
+  ["🐸", ["frog", "toad", "лягушк", "жаб"]],
+  ["🐗", ["boar", "кабан", "вепр"]],
+  ["🦁", ["lion", "лев$", "льв"]],
+  ["🐂", ["bull$", "ox$", "бык"]],
+  ["🐎", ["horse", "steed", "конь", "лошад"]],
+  ["🌱", ["seed", "sprout", "семя", "семен", "росток", "ростк"]],
+  ["🌳", ["tree", "oak$", "forest", "wood$", "дерев", "дуб", "лес"]],
+  ["🌿", ["herb", "vine", "leaf", "leaves", "трав", "лоз", "лист"]],
+  ["🍄", ["mushroom", "fung", "spore", "гриб"]],
+  ["🌹", ["rose$", "flower", "bloom", "thorn", "роз", "цвет", "шип"]],
+  ["🪨", ["stone", "rock", "boulder", "камен", "камн", "скал", "валун"]],
+  ["⛰️", ["mountain", "hill", "гор$", "гора", "горы", "холм"]],
+  ["💎", ["crystal", "gem$", "diamond", "кристалл", "самоцвет", "алмаз"]],
+  ["🪙", ["coin", "gold", "treasure", "монет", "золот", "клад", "сокровищ"]],
+  ["🛡️", ["shield", "knight", "guard", "paladin", "щит", "рыцар", "страж", "паладин"]],
+  ["⚔️", ["sword", "blade", "warrior", "fighter", "soldier", "меч$", "воин", "боец", "солдат"]],
+  ["🏹", ["bow$", "archer", "arrow", "hunter", "лук$", "лучник", "стрел", "охотник"]],
+  ["🪓", ["axe$", "топор"]],
+  ["🔨", ["hammer", "smith", "forge", "молот", "кузнец", "кузниц"]],
+  ["🗡️", ["dagger", "assassin", "thief", "rogue", "кинжал", "убийц", "вор", "разбойник"]],
+  ["🧙", ["wizard", "mage", "sorcer", "warlock", "волшебник", "маг$", "колдун", "чародей"]],
+  ["🧹", ["witch", "ведьм"]],
+  ["🔮", ["oracle", "seer", "prophet", "fortune", "оракул", "провидец", "пророк", "гадалк"]],
+  ["🙏", ["priest", "monk", "cleric", "saint", "pray", "жрец", "монах", "священник", "святой", "молитв"]],
+  ["😇", ["angel", "ангел"]],
+  ["😈", ["demon", "devil", "fiend", "imp$", "демон", "дьявол", "бес$", "чёрт", "черт"]],
+  ["👻", ["ghost", "spirit", "phantom", "wraith", "призрак", "дух", "фантом"]],
+  ["💀", ["skull", "skeleton", "bone", "череп", "скелет", "кост"]],
+  ["🧟", ["zombie", "undead", "corpse", "ghoul", "зомби", "мертвец", "труп", "упыр"]],
+  ["⚰️", ["grave", "tomb", "coffin", "necromanc", "могил", "гроб", "некромант"]],
+  ["🩺", ["medic", "doctor", "healer", "nurse", "врач", "лекар", "целител", "медик"]],
+  ["🧪", ["alchemist", "potion", "poison", "venom", "toxic", "алхимик", "зель", "яд", "отрав"]],
+  ["📖", ["book", "scholar", "librar", "scroll", "книг", "учён", "учен", "библиотек", "свиток"]],
+  ["🥁", ["drum", "барабан"]],
+  ["🎻", ["bard", "music", "song", "violin", "бард", "музык", "песн", "скрипк"]],
+  ["🎲", ["dice", "gambl", "luck", "chance", "игрок", "азарт", "удач"]],
+  ["🪞", ["mirror", "reflect", "зеркал", "отраж"]],
+  ["🧲", ["magnet", "магнит"]],
+  ["🔋", ["battery", "charge", "батаре", "заряд"]],
+  ["⏳", ["hourglass", "clock$", "time$", "песочн", "час$", "часы"]],
+  ["🔔", ["bell", "колокол"]],
+  ["🗝️", ["key$", "keys$", "lock$", "ключ", "замок", "замк"]],
+  ["👑", ["king", "queen", "crown", "royal", "король", "королев", "корон", "царь", "цариц"]],
+  ["🏰", ["castle", "fortress", "tower", "wall$", "крепост", "башн", "стена", "стены"]],
+  ["🤖", ["robot", "golem", "machine", "construct", "робот", "голем", "машин"]],
+  ["⚙️", ["gear", "clockwork", "шестерн", "механизм"]],
+  ["🧊", ["cube", "куб$"]],
+  ["🩸", ["blood", "bleed", "кров"]],
+  ["❤️", ["heart", "love", "сердц", "любов"]],
+  ["🪶", ["feather", "bird", "wing", "перо", "перь", "птиц", "крыл"]],
+  ["🐛", ["worm", "bug$", "insect", "beetle", "червь", "черв", "жук", "насеком"]],
+  ["🌋", ["volcano", "lava", "magma", "вулкан", "лав", "магм"]],
+  ["🍺", ["beer", "tavern", "drunk", "пив", "таверн", "пьян"]],
+];
+/** The icon when the idea's words match nothing: one for all three, never a random animal. */
+export const NEUTRAL_ICON = "✨";
+const ICON_RE: [string, RegExp][] = ICONS.map(([emoji, stems]) => [
+  emoji,
+  new RegExp(`(?<![\\p{L}])(?:${stems.map((s) => (s.endsWith("$") ? `${s.slice(0, -1)}(?:e?s|а|я|и|ы|у|ю|е|ом|ем|ов|ей)?(?![\\p{L}])` : s)).join("|")})`, "iu"),
+]);
+
+/** The emoji that pictures an idea: the first word of its subject (ideaSubject)
+ * that names something in ICONS, then the first such word of the whole text,
+ * else NEUTRAL_ICON. */
+export function ideaIcon(text: string, subject = ideaSubject(text)): string {
+  for (const source of [subject, text]) {
+    let best: { at: number; emoji: string } | undefined;
+    for (const [emoji, re] of ICON_RE) {
+      const m = re.exec(source);
+      if (m && (!best || m.index < best.at)) best = { at: m.index, emoji };
+    }
+    if (best) return best.emoji;
+  }
+  return NEUTRAL_ICON;
+}
 /** The fake's words by side: harm goes to enemies, help to allies, and
  * Awoken adds one more of the same side. */
 const FAKE_SIDES = [
@@ -182,7 +293,7 @@ export function fakeIdeaReader(): IdeaReader {
       const r = (ruWord ? subject : w.split(" ").map(cyrillic).join(" ")).slice(0, 20).trim();
       const W = w.split(" ").map(cap).join(" ");
       const R = r.split(" ").map(cap).join(" ");
-      const h = hashOf(text);
+      const emoji = ideaIcon(text, subject);
       const names = opts.problems ? [`${W} Prime`, `Grand ${W}`, `${W}kin`] : [W, W.includes(" ") ? `Young ${W}` : `${W}ling`, `Old ${W}`];
       const lines = opts.problems
         ? [`A ${w} that came back for more.`, `A grand ${w} with a long reach.`, `A young ${w} learning the ropes.`]
@@ -193,7 +304,7 @@ export function fakeIdeaReader(): IdeaReader {
         : [`${R} со своей хитростью.`, `Маленький ${r}, что дорастает до дела.`, `Старый ${r}, на кого опирается команда.`];
       const options = names
         .slice(0, opts.want)
-        .map((name, i) => ({ name, emoji: FAKE_EMOJI[(h + i) % FAKE_EMOJI.length]!, line: lines[i]!, ru: { name: ruNames[i]!, line: ruLines[i]! } }));
+        .map((name, i) => ({ name, emoji, line: lines[i]!, ru: { name: ruNames[i]!, line: ruLines[i]! } }));
       return { options, cantExpress: cantExpressOf(text) };
     },
     async readings(text, archetype, opts) {
@@ -337,7 +448,7 @@ export function readerSystemPrompt(units: Row[]): string {
     "The units that exist (name: when · who · does | awoken | archetype line):",
     ...lines,
     "",
-    "An archetype is a name (1 to 3 plain English words, a capital first, no emoji, not one of the names above), one emoji, and a line: one English sentence of at most 15 words, a capital first and a full stop at the end, in the style of the lines above, about what the unit does in the game.",
+    "An archetype is a name (1 to 3 plain English words, a capital first, no emoji, not one of the names above), one emoji that pictures the idea's own subject (a lantern for a lantern keeper, a wolf for a wolf; when nothing in the idea is a thing you can picture, one fitting symbol, never an unrelated animal or object), and a line: one English sentence of at most 15 words, a capital first and a full stop at the end, in the style of the lines above, about what the unit does in the game.",
     "Every archetype also has `ru`: the same name and line in Russian, written as a Russian player would say them (not letter by letter): the name 1 to 3 Russian words in Cyrillic, a capital first, at most 24 characters; the line one sentence, a full stop at the end.",
     "If part of the idea needs something the game has no words for (for example stealing gold, moving units, money), still make what you can, and list that part in cantExpress: `part` quoted exactly from the idea, in the idea's own language, `word` the missing game word in 1 to 3 English words.",
     "When readings use a nearby game word for something the player meant that the game has no exact word for (for example random for \"the weakest enemy\"), list it in nearMiss: `part` quoted exactly from the idea, in the idea's own language, `meant` what the player meant in 1 to 4 words of the idea's language, `used` the game word you used instead.",

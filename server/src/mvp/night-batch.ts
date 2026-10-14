@@ -154,6 +154,67 @@ export interface Designer {
   design(a: Parent, b: Parent): Promise<DesignDraft[]>;
   /** `taken`: names the pair's earlier candidates got (each name is unique within the pair). */
   name(a: Parent, b: Parent, d: DesignDraft, taken: string[]): Promise<Naming>;
+  /** The card's sentence (#1122): one plain sentence a person wrote, EN and
+   * RU, for the compiled and tuned rule (`rule`, the composer's text). `fix`:
+   * why the last try didn't match. Without it the card reads the composer. */
+  say?(a: Parent, b: Parent, d: DesignDraft, rule: Say, fix?: string[]): Promise<Say>;
+}
+
+export interface Say {
+  en: string;
+  ru: string;
+}
+
+/** The shared vocabulary a sentence must name when the rule does (#1063). */
+export const SAY_TERMS: { en: string; ru: string }[] = [
+  { en: "Strength", ru: "Сил" },
+  { en: "Vitality", ru: "Живучест" },
+  { en: "Curse", ru: "Проклят" },
+  { en: "Poison", ru: "Яд" },
+  { en: "Shield", ru: "Щит" },
+  { en: "Freeze", ru: "Замороз" },
+  { en: "Blessing", ru: "Благослов" },
+  { en: "Charge", ru: "Заряд" },
+];
+
+const numbers = (t: string): string[] => t.match(/\d+/g) ?? [];
+
+/** Why a written sentence doesn't match the rule it says (#1122); [] when it
+ * does. Checked: both languages written; every number it says is one of the
+ * rule's; every shared status the rule names, it names too; no machine
+ * leftovers ("otherwise, nothing", ids, a bare number first). */
+export function sayIssues(say: Say | undefined, rule: Say): string[] {
+  if (!say?.en?.trim() || !say?.ru?.trim()) return ["write both the English and the Russian sentence"];
+  const out: string[] = [];
+  if (!/[\u0400-\u04FF]/.test(say.ru)) out.push("the Russian sentence isn't in Russian");
+  for (const [lang, mine, theirs] of [["English", say.en, rule.en], ["Russian", say.ru, rule.ru]] as const) {
+    const allowed = new Set(numbers(theirs));
+    const extra = numbers(mine).filter((n) => !allowed.has(n));
+    if (extra.length) out.push(`the ${lang} sentence says ${extra.join(", ")}, which the rule doesn't (its numbers: ${[...allowed].join(", ") || "none"})`);
+    if (/^\s*\d/.test(mine)) out.push(`the ${lang} sentence starts with a number`);
+  }
+  for (const t of SAY_TERMS) {
+    if (new RegExp(`\\b${t.en}\\b`).test(rule.en) && !new RegExp(`\\b${t.en}\\b`, "i").test(say.en)) out.push(`the rule gives ${t.en}; the English sentence must name it`);
+    if (rule.ru.includes(t.ru) && !say.ru.toLowerCase().includes(t.ru.toLowerCase())) out.push(`the rule gives ${t.en}; the Russian sentence must name it (${t.ru}…)`);
+  }
+  if (/otherwise,? nothing|иначе ничего/i.test(`${say.en} ${say.ru}`)) out.push("never say \"otherwise, nothing\"");
+  if (/\b[A-Za-z][a-z]+[A-Z][A-Za-z]*\b/.test(say.en)) out.push("the English sentence has an engine id in it");
+  return out;
+}
+
+/** The designer's sentence for a compiled rule, checked; one retry with the
+ * reasons, then none (the card falls back to the composer's text). */
+export async function writeSay(designer: Designer, a: Parent, b: Parent, d: DesignDraft, rule: Say, log: (line: string) => void = () => {}): Promise<Say | undefined> {
+  if (!designer.say) return undefined;
+  let fix: string[] | undefined;
+  for (let i = 0; i < 2; i++) {
+    const say = await designer.say(a, b, d, rule, fix).catch((e: Error): Say | undefined => (log(`say: ${e.message.slice(0, 200)}`), undefined));
+    const issues = sayIssues(say, rule);
+    if (say && issues.length === 0) return { en: say.en.trim(), ru: say.ru.trim() };
+    fix = issues;
+  }
+  log(`say: no matching sentence (${(fix ?? []).join("; ")}): the card reads the composer`);
+  return undefined;
 }
 
 // ---------- compile, check, tune ----------
@@ -200,6 +261,8 @@ export interface Candidate {
   flavour: { en: string; ru: string };
   /** The rule's sentence, rendered from the compiled rule, not from the model. */
   text: { en: string; ru: string };
+  /** The written sentence (#1122), checked against `text` by sayIssues. */
+  say?: Say;
   unit: UnitDef;
   abilities: AbilityRegistry;
   statuses: StatusRegistry;
@@ -467,6 +530,7 @@ export function foreignUnits(texts: readonly string[], pair: readonly [string, s
 }
 
 async function designPair(pair: ListedPair, a: Parent, b: Parent, o: BatchOptions): Promise<Candidate[]> {
+  const log = o.log ?? (() => {});
   const drafts = (await o.designer.design(a, b)).slice(0, 3);
   // named one after another, so the namer sees the names the pair already has
   const namings: Naming[] = [];
@@ -492,6 +556,8 @@ async function designPair(pair: ListedPair, a: Parent, b: Parent, o: BatchOption
       const text = { en: ruleText(tuned.compiled, "en"), ru: ruleText(tuned.compiled, "ru") };
       // in band, or as close as the tune's scales get: out of band is stored with its why, not claimable
       const state = tuned.check.inBand ? "ready" : "rejected";
+      // the card's sentence, written for the tuned numbers (#1122)
+      const say = state === "ready" ? await writeSay(o.designer, a, b, d, text, (l) => log(`${pair.key} ${naming.name.en}: ${l}`)) : undefined;
       const why = !tuned.check.terminates ? `doesn't terminate (${tuned.check.capped} capped, ${tuned.check.timeUp} time-up of ${tuned.check.games})` : `out of band: wins ${Math.round(tuned.check.score * 100)}% at best (band ${BAND.low * 100}-${BAND.high * 100}%)`;
       return {
         ...base,
@@ -500,6 +566,7 @@ async function designPair(pair: ListedPair, a: Parent, b: Parent, o: BatchOption
         abilities: tuned.compiled.abilities,
         statuses: tuned.compiled.statuses,
         text,
+        ...(say ? { say } : {}),
         check: tuned.check,
         state,
         ...(state === "rejected" ? { why } : {}),
