@@ -111,10 +111,10 @@ describe("a rule on a counter status reads on the unit's card", () => {
   it("Hourglass: the grain and, at 3 grains, the ally behind acts again", () => {
     const carries = (Hourglass.statuses ?? []).map((s) => s.status);
     expect(formText(form(Hourglass), FIXTURE_ABILITIES, "en", FIXTURE_STATUSES, carries)).toBe(
-      "Turn end: 1 Grains to self. Turn end, if it has 3+ Grains: the ally behind acts again, and spend 3 Grains.",
+      "Turn end: gain 1 Grains. Turn end, if it has 3+ Grains: the ally behind acts again, and spend 3 Grains.",
     );
     expect(formText(form(Hourglass), FIXTURE_ABILITIES, "ru", FIXTURE_STATUSES, carries)).toBe(
-      "Конец хода: 1 Песчинка себе. Конец хода, если у него 3 Песчинки или больше: заставить союзника позади действовать ещё раз, и потратить 3 Песчинки.",
+      "Конец хода: получить 1 Песчинку. Конец хода, если у него 3 Песчинки или больше: заставить союзника позади действовать ещё раз, и потратить 3 Песчинки.",
     );
   });
   it("Raven: the memory it starts with", () => {

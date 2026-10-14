@@ -16,8 +16,8 @@
 // The awoken knob: the meta plays every unit at 3 copies, awoken, so each
 // round also measures what Awoken adds to the unit's best team (that team
 // with the unit asleep, tune.ts's measureTeam); a unit whose Awoken adds
-// under MARGIN gains +2 HP when it awakens (up to +12), then +1 PWR (up to
-// +3, units that strike). After the full meta check the same step runs again
+// under MARGIN gains +2 HP when it awakens (up to +4), then +1 PWR (up to
+// +1, units that strike). After the full meta check the same step runs again
 // on the final field until every margin clears.
 //
 // Writes src/mvp/units-v2-numbers.ts (the numbers ROWS_V2 plays with) and
@@ -31,6 +31,10 @@ import { ROWS_V2, type V2Row } from "../src/mvp/units-v2.js";
 import { contentOf } from "../server/src/mvp/content.js";
 import { measureTeam, slugOf, TUNE_DEFAULT } from "../src/mvp/tune.js";
 
+/** The awoken knob's step and cap: HP first, then PWR for units that strike.
+ * At most +4 HP / +1 PWR (#1047); an awoken form earns the rest by its upgraded clause. */
+const AWOKEN = { hp: 4, pwr: 1 };
+
 const arg = (name: string, dflt: number) => {
   const i = process.argv.indexOf(name);
   return i < 0 ? dflt : Number(process.argv[i + 1]);
@@ -42,8 +46,10 @@ const SEEDS = arg("--seeds", 3);
 const BAND = 0.08;
 /** Far out: HP moves by 2. */
 const FAR = 0.16;
-const PWR = { min: 1, max: 8 };
-const HP = { min: 2, max: 24 };
+/** Sleeping numbers stay in the old pool's range (main's units: HP 4-12,
+ * PWR 1-4; Maks's note on batch 1, #1047: awoken Medic had 33 HP). */
+const PWR = { min: 1, max: 5 };
+const HP = { min: 4, max: 12 };
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const median = (xs: number[]) => {
@@ -72,11 +78,15 @@ function measureChild(rs: V2Row[], seed: number): Promise<Measured> {
   });
 }
 
-let rows: V2Row[] = ROWS_V2.map((r) => ({ ...r, awoken: r.awoken ?? { pwr: 0, hp: 0 } }));
+const clamp = (x: number, b: { min: number; max: number }) => Math.max(b.min, Math.min(b.max, x));
+/** The pool's numbers, clamped into today's bounds and the awoken cap (a
+ * unit with no strike keeps PWR 0). */
+let rows: V2Row[] = ROWS_V2.map((r) => {
+  const a = r.awoken ?? { pwr: 0, hp: 0 };
+  return { ...r, pwr: r.pwr > 0 ? clamp(r.pwr, PWR) : 0, hp: clamp(r.hp, HP), awoken: { pwr: Math.min(a.pwr, AWOKEN.pwr), hp: Math.min(a.hp, AWOKEN.hp) } };
+});
 const t0 = Date.now();
 const rounds: { round: number; median: number; inBand: number; scores: Record<string, number>; moves: string[]; healthy: boolean }[] = [];
-/** The awoken knob's step and cap: HP first, then PWR for units that strike. */
-const AWOKEN = { hp: 12, pwr: 3 };
 /** Awoken must add at least this much to its team's field score. */
 const MARGIN = 0.02;
 const bonusUp = (row: V2Row): V2Row => {

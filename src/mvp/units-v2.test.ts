@@ -33,6 +33,16 @@ describe("rules v2 pool", () => {
     expect(Object.keys(content.statuses)).toEqual(expect.arrayContaining(["Grains", "Sands", "Memory", "Memories", "Shield", "Strength"]));
   });
 
+  it("numbers stay on the old pool's scale (#1047): sleeping HP 4-12, PWR at most 5, awoken at most +4 HP / +1 PWR", () => {
+    for (const u of content.units) {
+      expect(u.base.hp, u.name).toBeGreaterThanOrEqual(4);
+      expect(u.base.hp, u.name).toBeLessThanOrEqual(12);
+      expect(u.base.pwr, u.name).toBeLessThanOrEqual(5);
+      expect(u.awokenBonus?.hp ?? 0, u.name).toBeLessThanOrEqual(4);
+      expect(u.awokenBonus?.pwr ?? 0, u.name).toBeLessThanOrEqual(1);
+    }
+  });
+
   it("every card sentence reads like a person wrote it (#1047): its own, EN and RU, never starting with a bare number or a status name", () => {
     const statusNames = Object.values(content.statuses).flatMap((d) => [d.name, ...(d.names ? [d.names.en, d.names.ru.name] : [])]);
     for (const u of content.units) {
@@ -101,7 +111,7 @@ describe("rules v2 pool", () => {
       const ru = say(u.name, form, "ru");
       expect(ru.match(/[A-Za-z]+/g) ?? [], `${u.name} ${form}: ${ru}`).toEqual([]);
     }
-    expect(say("Hourglass", "sleeping", "ru")).toMatch(/^Конец хода: 1 Песчинка себе\./);
+    expect(say("Hourglass", "sleeping", "ru")).toMatch(/^Конец хода: получить 1 Песчинку\./);
     expect(say("Seed", "sleeping", "ru")).toContain("превратиться в Дерево (0/8)");
     expect(say("Chrysalis", "sleeping", "ru")).toContain("превратиться в Бабочку");
     expect(say("Chrysalis", "awoken", "ru")).toContain("превратиться в Монарха");
@@ -110,11 +120,11 @@ describe("rules v2 pool", () => {
   });
 
   it("a unit's sentence says the rules on its counters, the statuses it starts with and the units it becomes", () => {
-    expect(say("Hourglass", "sleeping", "en")).toBe("Turn end: 1 Grains to self. Turn end, if it has 3+ Grains: the ally behind acts again, and spend 3 Grains.");
+    expect(say("Hourglass", "sleeping", "en")).toBe("Turn end: gain 1 Grains. Turn end, if it has 3+ Grains: the ally behind acts again, and spend 3 Grains.");
     expect(say("Hourglass", "sleeping", "ru")).toBe(
-      "Конец хода: 1 Песчинка себе. Конец хода, если у него 3 Песчинки или больше: заставить союзника позади действовать ещё раз, и потратить 3 Песчинки.",
+      "Конец хода: получить 1 Песчинку. Конец хода, если у него 3 Песчинки или больше: заставить союзника позади действовать ещё раз, и потратить 3 Песчинки.",
     );
-    expect(say("Drummer", "sleeping", "en")).toBe("Ally strikes: 1 Beats to self. Turn end, if it has 3+ Beats: 1 Strength to every ally behind, and spend 3 Beats.");
+    expect(say("Drummer", "sleeping", "en")).toBe("Ally strikes: gain 1 Beats. Turn end, if it has 3+ Beats: give every ally behind 1 Strength, and spend 3 Beats.");
     expect(say("Raven", "sleeping", "en")).toBe("Ally dies: remember the rule of that unit. Turn start: perform a remembered rule once.");
     expect(say("Raven", "awoken", "en")).toMatch(/Turn start: perform every remembered rule\.$/);
     expect(say("Seed", "awoken", "en")).toBe(`Battle start: in 2 turns: become Tree (0/${8 + V2_NUMBERS["Seed"]!.awoken!.hp}). Tree: Turn start: 1 Strength to the ally behind, and 1 Shield to its neighbours.`);
