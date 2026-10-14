@@ -265,7 +265,7 @@ export const SCENES: Scene[] = [
   },
 
   { id: "forge-unforged", group: "Awaken & fuse", title: "The forge: not forged yet (Wish)", look: "Rules v2 (#1049): a pair with no designs yet: 'not forged yet', today's wishes, Wish", desktop: true, build: forge("unforged") },
-  { id: "forge-ready", group: "Awaken & fuse", title: "The forge: ready to claim", look: "Rules v2 (#1049): three sealed designs as cards with flavour; pick one, Claim", desktop: true, build: forge("ready") },
+  { id: "forge-ready", group: "Awaken & fuse", title: "The forge: ready to claim", look: "Rules v2 (#1049, #1120): three sealed designs, a row each: card, rule, flavour; pick one (1–3), Claim", desktop: true, build: forge("ready") },
   { id: "forge-claim", group: "Awaken & fuse", title: "The forge: a claim", look: "Rules v2 (#1049): Claim pressed on the first design: 'You claimed …', the fused unit", desktop: true, build: forge("ready", "forge-claim") },
   { id: "forge-discovered", group: "Awaken & fuse", title: "The forge: discovered", look: "Rules v2 (#1049): the canonical design, 'Discovered by @… · date', Fuse", desktop: true, build: forge("discovered") },
   { id: "fusion-none", group: "Awaken & fuse", title: "Two Awoken, no design: no fuse", look: "Rules v2 (#1049): their pair isn't forged: no ⚗, no glow, no Fuse button, no fuse hint", desktop: true, build: fusionMarks("none") },
