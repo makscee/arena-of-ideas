@@ -1,0 +1,1589 @@
+{
+ "day": "1065",
+ "designer": "claude",
+ "ranAt": "2026-10-14T15:23:58.430Z",
+ "seconds": 54,
+ "parents": {
+  "hourglass": {
+   "emoji": "⏳"
+  },
+  "mirror": {
+   "emoji": "🪞"
+  },
+  "candle": {
+   "emoji": "🕯️"
+  },
+  "gambler": {
+   "emoji": "🎲"
+  },
+  "nautilus": {
+   "emoji": "🐚"
+  },
+  "magnet": {
+   "emoji": "🧲"
+  },
+  "raven": {
+   "emoji": "🐦‍⬛"
+  },
+  "seed": {
+   "emoji": "🌱"
+  },
+  "sniper": {
+   "emoji": "🎯"
+  },
+  "medic": {
+   "emoji": "💉"
+  },
+  "leech": {
+   "emoji": "🧛"
+  },
+  "lone-wolf": {
+   "emoji": "🐺"
+  },
+  "drummer": {
+   "emoji": "🥁"
+  },
+  "bodyguard": {
+   "emoji": "🕴️"
+  },
+  "chrysalis": {
+   "emoji": "🐛"
+  },
+  "trickster": {
+   "emoji": "🃏"
+  },
+  "gravedigger": {
+   "emoji": "⚰️"
+  },
+  "conductor": {
+   "emoji": "🎼"
+  },
+  "thornback": {
+   "emoji": "🦔"
+  },
+  "coin-thief": {
+   "emoji": "🪙"
+  },
+  "lantern": {
+   "emoji": "🏮"
+  },
+  "hornet": {
+   "emoji": "🐝"
+  },
+  "prism": {
+   "emoji": "🔮"
+  },
+  "war-horn": {
+   "emoji": "📯"
+  },
+  "vulture": {
+   "emoji": "🦅"
+  },
+  "hexer": {
+   "emoji": "🧿"
+  },
+  "fortune-teller": {
+   "emoji": "🪬"
+  },
+  "aegis": {
+   "emoji": "🛡️"
+  },
+  "gravecaller": {
+   "emoji": "💀"
+  },
+  "hydra": {
+   "emoji": "🐉"
+  },
+  "archmage": {
+   "emoji": "🧙"
+  },
+  "oracle": {
+   "emoji": "👁️"
+  },
+  "berserker": {
+   "emoji": "🪓"
+  },
+  "frostling": {
+   "emoji": "❄️"
+  },
+  "priest": {
+   "emoji": "✨"
+  },
+  "battery": {
+   "emoji": "🔋"
+  },
+  "frost-witch": {
+   "emoji": "🧊"
+  },
+  "bully": {
+   "emoji": "🥊"
+  },
+  "alchemist": {
+   "emoji": "⚗️"
+  },
+  "executioner": {
+   "emoji": "🗡️"
+  }
+ },
+ "results": [
+  {
+   "pair": {
+    "key": "candle+medic",
+    "a": "candle",
+    "b": "medic",
+    "why": "requested"
+   },
+   "candidates": [
+    {
+     "pair": "candle+medic",
+     "lean": "A",
+     "intent": "Once per turn, when another ally would die, it stays at 1 HP, loses 1 power and gains 1 Shield.",
+     "name": {
+      "en": "Wickward",
+      "ru": "Фитилёк"
+     },
+     "flavour": {
+      "en": "Burns lower so the others don't go out.",
+      "ru": "Тускнеет сам, чтобы другие не погасли."
+     },
+     "unit": {
+      "name": "Wickward",
+      "base": {
+       "hp": 27,
+       "pwr": 11
+      },
+      "triggers": [
+       {
+        "kind": "interceptor",
+        "on": {
+         "on": "Death",
+         "unit": "otherAlly"
+        }
+       }
+      ],
+      "condition": {
+       "kind": "oncePerTurn"
+      },
+      "selectors": [
+       {
+        "kind": "eventUnit"
+       }
+      ],
+      "abilities": [
+       "Gutter"
+      ],
+      "also": [
+       {
+        "selectors": [
+         {
+          "kind": "eventUnit"
+         }
+        ],
+        "abilities": [
+         "Guard"
+        ]
+       }
+      ]
+     },
+     "abilities": {
+      "Gutter": {
+       "name": "Gutter",
+       "family": "Shield",
+       "effects": [
+        {
+         "kind": "preventDeath",
+         "at": 1,
+         "cost": {
+          "stat": "pwr",
+          "amount": 1
+         }
+        }
+       ]
+      },
+      "Guard": {
+       "name": "Guard",
+       "family": "Shield",
+       "effects": [
+        {
+         "kind": "applyStatus",
+         "status": "Shield",
+         "stacks": {
+          "kind": "const",
+          "value": 1
+         }
+        }
+       ]
+      }
+     },
+     "statuses": {
+      "Shield": {
+       "name": "Shield",
+       "triggers": [
+        {
+         "kind": "interceptor",
+         "on": {
+          "on": "Hurt",
+          "unit": "holder"
+         }
+        }
+       ],
+       "selectors": [
+        {
+         "kind": "holder"
+        }
+       ],
+       "abilities": [
+        {
+         "effects": [
+          {
+           "kind": "absorbHurt"
+          }
+         ]
+        }
+       ]
+      }
+     },
+     "text": {
+      "en": "Ally would die, once per turn: stays at 1 HP and loses 1 PWR instead, and 1 Shield to it.",
+      "ru": "Перед смертью союзника, раз за ход: вместо смерти остаётся с 1 ОЗ и теряет 1 АТК, и 1 Щит ему."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.47610294117647056,
+      "inBand": true,
+      "scale": 1,
+      "trace": "Wickward intercepts: Mirror survives at 1 HP, loses 1 PWR"
+     },
+     "state": "ready"
+    },
+    {
+     "pair": "candle+medic",
+     "lean": "B",
+     "intent": "When another ally is hurt, heal it by half this unit's power and give it 1 Blessing.",
+     "name": {
+      "en": "Vigil Healer",
+      "ru": "Свечной лекарь"
+     },
+     "flavour": {
+      "en": "It tends every wound by flickering light, and no one is left in the dark.",
+      "ru": "Врачует при трепетном огне — никто не останется во тьме."
+     },
+     "unit": {
+      "name": "Vigil Healer",
+      "base": {
+       "hp": 27,
+       "pwr": 11
+      },
+      "triggers": [
+       {
+        "kind": "trigger",
+        "on": {
+         "on": "Hurt",
+         "unit": "otherAlly"
+        }
+       }
+      ],
+      "selectors": [
+       {
+        "kind": "eventUnit"
+       }
+      ],
+      "abilities": [
+       "SipBless"
+      ]
+     },
+     "abilities": {
+      "SipBless": {
+       "name": "SipBless",
+       "family": "Heal",
+       "effects": [
+        {
+         "kind": "heal",
+         "amount": {
+          "kind": "half",
+          "of": {
+           "kind": "stat",
+           "stat": "pwr",
+           "of": "holder"
+          }
+         }
+        },
+        {
+         "kind": "applyStatus",
+         "status": "Blessing",
+         "stacks": {
+          "kind": "const",
+          "value": 1
+         }
+        }
+       ]
+      }
+     },
+     "statuses": {
+      "Blessing": {
+       "name": "Blessing",
+       "triggers": [
+        {
+         "kind": "interceptor",
+         "on": {
+          "on": "Death",
+          "unit": "holder"
+         }
+        }
+       ],
+       "selectors": [
+        {
+         "kind": "holder"
+        }
+       ],
+       "abilities": [
+        {
+         "effects": [
+          {
+           "kind": "preventDeathHeal",
+           "toHp": {
+            "kind": "stacks"
+           },
+           "removeSelf": true
+          }
+         ]
+        }
+       ]
+      }
+     },
+     "text": {
+      "en": "Ally hit: heal it for half PWR, then 1 Blessing to it.",
+      "ru": "Удар по союзнику: лечение на величину, равную половине АТК ему, затем 1 Благословение ему."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.4898897058823529,
+      "inBand": true,
+      "scale": 1,
+      "trace": "Vigil Healer → it (Oracle) → Blessing 1"
+     },
+     "state": "ready"
+    },
+    {
+     "pair": "candle+medic",
+     "lean": "twist",
+     "intent": "When it is hurt, its neighbours gain 1 Shield and it takes 1 Curse, burning down.",
+     "name": {
+      "en": "Tallow Martyr",
+      "ru": "Свечной Мученик"
+     },
+     "flavour": {
+      "en": "Every wound melts it lower, and lights a ward around its friends.",
+      "ru": "С каждой раной он тает, а друзей окутывает защитой."
+     },
+     "unit": {
+      "name": "Tallow Martyr",
+      "base": {
+       "hp": 27,
+       "pwr": 11
+      },
+      "triggers": [
+       {
+        "kind": "trigger",
+        "on": {
+         "on": "Hurt",
+         "unit": "holder"
+        }
+       }
+      ],
+      "selectors": [
+       {
+        "kind": "neighbours"
+       }
+      ],
+      "abilities": [
+       "Guard"
+      ],
+      "also": [
+       {
+        "selectors": [
+         {
+          "kind": "holder"
+         }
+        ],
+        "abilities": [
+         "Hex"
+        ]
+       }
+      ]
+     },
+     "abilities": {
+      "Guard": {
+       "name": "Guard",
+       "family": "Shield",
+       "effects": [
+        {
+         "kind": "applyStatus",
+         "status": "Shield",
+         "stacks": {
+          "kind": "const",
+          "value": 1
+         }
+        }
+       ]
+      },
+      "Hex": {
+       "name": "Hex",
+       "family": "Control",
+       "effects": [
+        {
+         "kind": "applyStatus",
+         "status": "Curse",
+         "stacks": {
+          "kind": "const",
+          "value": 1
+         }
+        }
+       ]
+      }
+     },
+     "statuses": {
+      "Shield": {
+       "name": "Shield",
+       "triggers": [
+        {
+         "kind": "interceptor",
+         "on": {
+          "on": "Hurt",
+          "unit": "holder"
+         }
+        }
+       ],
+       "selectors": [
+        {
+         "kind": "holder"
+        }
+       ],
+       "abilities": [
+        {
+         "effects": [
+          {
+           "kind": "absorbHurt"
+          }
+         ]
+        }
+       ]
+      },
+      "Curse": {
+       "name": "Curse",
+       "statMods": {
+        "pwr": -1
+       },
+       "abilities": []
+      }
+     },
+     "text": {
+      "en": "Hit: 1 Shield to its neighbours, and 1 Curse to self.",
+      "ru": "Удар: 1 Щит соседям, и 1 Проклятие себе."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.41360294117647056,
+      "inBand": true,
+      "scale": 1,
+      "trace": "Tallow Martyr → its neighbours (Oracle, Tallow Martyr) → Shield 1, Curse 1"
+     },
+     "state": "ready"
+    }
+   ]
+  },
+  {
+   "pair": {
+    "key": "lantern+seed",
+    "a": "lantern",
+    "b": "seed",
+    "why": "requested"
+   },
+   "candidates": [
+    {
+     "pair": "lantern+seed",
+     "lean": "A",
+     "intent": "At the start of each turn, if it hasn't been hurt, it gives its neighbours Shield equal to the turn number.",
+     "name": {
+      "en": "Glowbud",
+      "ru": "Светоросток"
+     },
+     "flavour": {
+      "en": "Unharmed, it blooms brighter each turn and wraps its neighbours in light.",
+      "ru": "Пока цел, с каждым ходом горит ярче и укрывает соседей своим светом."
+     },
+     "unit": {
+      "name": "Glowbud",
+      "base": {
+       "hp": 35,
+       "pwr": 10
+      },
+      "triggers": [
+       {
+        "kind": "trigger",
+        "on": {
+         "on": "TurnStart"
+        }
+       }
+      ],
+      "condition": {
+       "kind": "unhurt"
+      },
+      "selectors": [
+       {
+        "kind": "neighbours"
+       }
+      ],
+      "abilities": [
+       "GuardGrowing"
+      ]
+     },
+     "abilities": {
+      "GuardGrowing": {
+       "name": "GuardGrowing",
+       "family": "Shield",
+       "effects": [
+        {
+         "kind": "applyStatus",
+         "status": "Shield",
+         "stacks": {
+          "kind": "count",
+          "fact": "turn"
+         }
+        }
+       ]
+      }
+     },
+     "statuses": {
+      "Shield": {
+       "name": "Shield",
+       "triggers": [
+        {
+         "kind": "interceptor",
+         "on": {
+          "on": "Hurt",
+          "unit": "holder"
+         }
+        }
+       ],
+       "selectors": [
+        {
+         "kind": "holder"
+        }
+       ],
+       "abilities": [
+        {
+         "effects": [
+          {
+           "kind": "absorbHurt"
+          }
+         ]
+        }
+       ]
+      }
+     },
+     "text": {
+      "en": "Turn start, while at full HP: Shield equal to the turn number to its neighbours.",
+      "ru": "Начало хода, пока ОЗ полные: Щит, равный номеру хода, соседям."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.5707720588235294,
+      "inBand": true,
+      "scale": 1,
+      "trace": "Glowbud (while at full HP) → its neighbours (Oracle) → Shield 1"
+     },
+     "state": "ready"
+    },
+    {
+     "pair": "lantern+seed",
+     "lean": "B",
+     "intent": "From turn 2, at the start of each turn, the ally behind it gains Strength equal to half the HP it is missing.",
+     "name": {
+      "en": "Wickroot",
+      "ru": "Светокорень"
+     },
+     "flavour": {
+      "en": "The more the dark bites its friend, the brighter it grows.",
+      "ru": "Чем сильнее раны друга, тем жарче горит росток за его спиной."
+     },
+     "unit": {
+      "name": "Wickroot",
+      "base": {
+       "hp": 35,
+       "pwr": 10
+      },
+      "triggers": [
+       {
+        "kind": "trigger",
+        "on": {
+         "on": "TurnStart"
+        }
+       }
+      ],
+      "condition": {
+       "kind": "turnAtLeast",
+       "n": 2
+      },
+      "selectors": [
+       {
+        "kind": "allyBehind"
+       }
+      ],
+      "abilities": [
+       "GrowFromWounds"
+      ]
+     },
+     "abilities": {
+      "GrowFromWounds": {
+       "name": "GrowFromWounds",
+       "family": "Control",
+       "effects": [
+        {
+         "kind": "applyStatus",
+         "status": "Strength",
+         "stacks": {
+          "kind": "half",
+          "of": {
+           "kind": "missingHp"
+          }
+         }
+        }
+       ]
+      }
+     },
+     "statuses": {
+      "Strength": {
+       "name": "Strength",
+       "statMods": {
+        "pwr": 1
+       },
+       "abilities": []
+      }
+     },
+     "text": {
+      "en": "Turn start, from turn 2: Strength equal to half its missing HP to the ally behind.",
+      "ru": "Начало хода, начиная с 2-го хода: Сила, равная половине недостающим ОЗ, союзнику позади."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.7481617647058824,
+      "inBand": true,
+      "scale": 1,
+      "trace": "Wickroot (from turn 2) → the ally behind it (Oracle) → Strength 1"
+     },
+     "state": "ready"
+    },
+    {
+     "pair": "lantern+seed",
+     "lean": "twist",
+     "intent": "From turn 2, it gains 1 Charge at the start of each turn, and at 3 Charge it spends them to give its neighbours 3 Blessing.",
+     "name": {
+      "en": "Dawnkeeper",
+      "ru": "Заревик"
+     },
+     "flavour": {
+      "en": "It waits in the dark, growing light, then shares it with everyone nearby.",
+      "ru": "Копит свет в тишине, а потом делится им со всеми рядом."
+     },
+     "unit": {
+      "name": "Dawnkeeper",
+      "base": {
+       "hp": 35,
+       "pwr": 10
+      },
+      "triggers": [
+       {
+        "kind": "trigger",
+        "on": {
+         "on": "TurnStart"
+        }
+       }
+      ],
+      "condition": {
+       "kind": "turnAtLeast",
+       "n": 2
+      },
+      "selectors": [
+       {
+        "kind": "holder"
+       }
+      ],
+      "abilities": [
+       "Spark"
+      ],
+      "also": [
+       {
+        "selectors": [
+         {
+          "kind": "neighbours"
+         }
+        ],
+        "abilities": [
+         "BlessCharged"
+        ]
+       },
+       {
+        "selectors": [
+         {
+          "kind": "holder"
+         }
+        ],
+        "abilities": [
+         "Spend"
+        ]
+       }
+      ]
+     },
+     "abilities": {
+      "Spark": {
+       "name": "Spark",
+       "family": "Arcane",
+       "effects": [
+        {
+         "kind": "applyStatus",
+         "status": "Charge",
+         "stacks": {
+          "kind": "const",
+          "value": 1
+         }
+        }
+       ]
+      },
+      "BlessCharged": {
+       "name": "BlessCharged",
+       "family": "Shield",
+       "effects": [
+        {
+         "kind": "branch",
+         "if": {
+          "kind": "stacksAtLeast",
+          "status": "Charge",
+          "n": 3,
+          "of": "holder"
+         },
+         "then": [
+          {
+           "kind": "applyStatus",
+           "status": "Blessing",
+           "stacks": {
+            "kind": "const",
+            "value": 3
+           }
+          }
+         ],
+         "else": []
+        }
+       ]
+      },
+      "Spend": {
+       "name": "Spend",
+       "family": "Arcane",
+       "effects": [
+        {
+         "kind": "branch",
+         "if": {
+          "kind": "stacksAtLeast",
+          "status": "Charge",
+          "n": 3,
+          "of": "holder"
+         },
+         "then": [
+          {
+           "kind": "consumeStacks",
+           "status": "Charge",
+           "stacks": {
+            "kind": "const",
+            "value": 3
+           }
+          }
+         ],
+         "else": []
+        }
+       ]
+      }
+     },
+     "statuses": {
+      "Charge": {
+       "name": "Charge",
+       "names": {
+        "en": "Charge",
+        "ru": {
+         "name": "Заряд",
+         "acc": "Заряд",
+         "count": [
+          "Заряд",
+          "Заряда",
+          "Зарядов"
+         ]
+        }
+       },
+       "counter": true,
+       "abilities": []
+      },
+      "Blessing": {
+       "name": "Blessing",
+       "triggers": [
+        {
+         "kind": "interceptor",
+         "on": {
+          "on": "Death",
+          "unit": "holder"
+         }
+        }
+       ],
+       "selectors": [
+        {
+         "kind": "holder"
+        }
+       ],
+       "abilities": [
+        {
+         "effects": [
+          {
+           "kind": "preventDeathHeal",
+           "toHp": {
+            "kind": "stacks"
+           },
+           "removeSelf": true
+          }
+         ]
+        }
+       ]
+      }
+     },
+     "text": {
+      "en": "Turn start, from turn 2: gain 1 Charge, and if it has 3+ Charge, 3 Blessing to its neighbours; otherwise, nothing, and if it has 3+ Charge, spend 3 Charge; otherwise, nothing.",
+      "ru": "Начало хода, начиная с 2-го хода: получить 1 Заряд, и если у него 3 Заряда или больше, 3 Благословения соседям; иначе ничего, и если у него 3 Заряда или больше, потратить 3 Заряда; иначе ничего."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.6277573529411765,
+      "inBand": true,
+      "scale": 1,
+      "trace": "Dawnkeeper (from turn 2) → self (Dawnkeeper) → Charge 1"
+     },
+     "state": "ready"
+    }
+   ]
+  },
+  {
+   "pair": {
+    "key": "frostling+sniper",
+    "a": "frostling",
+    "b": "sniper",
+    "why": "requested"
+   },
+   "candidates": [
+    {
+     "pair": "frostling+sniper",
+     "lean": "A",
+     "intent": "Whenever it strikes, the enemy at the back gets 2 Freeze one turn later.",
+     "name": {
+      "en": "Rimeshot",
+      "ru": "Ледострел"
+     },
+     "flavour": {
+      "en": "The frost arrives after the arrow, right where you hid.",
+      "ru": "Холод приходит следом за стрелой — туда, где ты прятался."
+     },
+     "unit": {
+      "name": "Rimeshot",
+      "base": {
+       "hp": 28,
+       "pwr": 8
+      },
+      "triggers": [
+       {
+        "kind": "trigger",
+        "on": {
+         "on": "Strike",
+         "striker": "holder"
+        }
+       }
+      ],
+      "selectors": [
+       {
+        "kind": "lastEnemy"
+       }
+      ],
+      "abilities": [
+       "LateFrost"
+      ]
+     },
+     "abilities": {
+      "LateFrost": {
+       "name": "LateFrost",
+       "family": "Control",
+       "effects": [
+        {
+         "kind": "delay",
+         "turns": 1,
+         "effect": {
+          "kind": "applyStatus",
+          "status": "Freeze",
+          "stacks": {
+           "kind": "const",
+           "value": 2
+          }
+         }
+        }
+       ]
+      }
+     },
+     "statuses": {
+      "Freeze": {
+       "name": "Freeze",
+       "triggers": [
+        {
+         "kind": "interceptor",
+         "on": {
+          "on": "Strike",
+          "striker": "holder"
+         }
+        }
+       ],
+       "selectors": [
+        {
+         "kind": "holder"
+        }
+       ],
+       "abilities": [
+        {
+         "effects": [
+          {
+           "kind": "cancel",
+           "consumeSelf": 1
+          }
+         ]
+        }
+       ]
+      }
+     },
+     "text": {
+      "en": "Strikes: in 1 turn: 2 Freeze to the back enemy.",
+      "ru": "Атака: через 1 ход: 2 Заморозки заднему врагу."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.4411764705882353,
+      "inBand": true,
+      "scale": 1,
+      "trace": "Rimeshot sets a delay on Bully: lands at the end of turn 2"
+     },
+     "state": "ready"
+    },
+    {
+     "pair": "frostling+sniper",
+     "lean": "B",
+     "intent": "At the start of each turn, it hits the enemy at the back for its power, or twice its power if that enemy is Frozen.",
+     "name": {
+      "en": "Glacier Marksman",
+      "ru": "Ледяной стрелок"
+     },
+     "flavour": {
+      "en": "Patient as winter; the frozen never see the second shot.",
+      "ru": "Терпелив, как зима: замёрзшие второго выстрела не видят."
+     },
+     "unit": {
+      "name": "Glacier Marksman",
+      "base": {
+       "hp": 28,
+       "pwr": 8
+      }
+     },
+     "abilities": {},
+     "statuses": {},
+     "text": {
+      "en": "",
+      "ru": ""
+     },
+     "check": null,
+     "state": "rejected",
+     "why": "abilities.Shatter.effects[0].if.statuses[0].status: unknown status \"Freeze\" — registry has no statuses; team[0].recipe[0].effects[0].if.statuses[0].status: unknown status \"Freeze\" — registry has no statuses"
+    },
+    {
+     "pair": "frostling+sniper",
+     "lean": "twist",
+     "intent": "At the start of each turn it gains 1 Charge, and when it has 3 it spends them to give every enemy 1 Freeze.",
+     "name": {
+      "en": "Coldfront Patience",
+      "ru": "Терпеливый Иней"
+     },
+     "flavour": {
+      "en": "It waits, counts to three, and the whole battlefield stiffens.",
+      "ru": "Досчитает до трёх — и всё поле боя покрывается льдом."
+     },
+     "unit": {
+      "name": "Coldfront Patience",
+      "base": {
+       "hp": 28,
+       "pwr": 8
+      },
+      "triggers": [
+       {
+        "kind": "trigger",
+        "on": {
+         "on": "TurnStart"
+        }
+       }
+      ],
+      "selectors": [
+       {
+        "kind": "holder"
+       }
+      ],
+      "abilities": [
+       "Spark"
+      ],
+      "also": [
+       {
+        "selectors": [
+         {
+          "kind": "allEnemies"
+         }
+        ],
+        "abilities": [
+         "FrostVolley"
+        ]
+       },
+       {
+        "selectors": [
+         {
+          "kind": "holder"
+         }
+        ],
+        "abilities": [
+         "Spend"
+        ]
+       }
+      ]
+     },
+     "abilities": {
+      "Spark": {
+       "name": "Spark",
+       "family": "Arcane",
+       "effects": [
+        {
+         "kind": "applyStatus",
+         "status": "Charge",
+         "stacks": {
+          "kind": "const",
+          "value": 1
+         }
+        }
+       ]
+      },
+      "FrostVolley": {
+       "name": "FrostVolley",
+       "family": "Control",
+       "effects": [
+        {
+         "kind": "branch",
+         "if": {
+          "kind": "stacksAtLeast",
+          "status": "Charge",
+          "n": 3,
+          "of": "holder"
+         },
+         "then": [
+          {
+           "kind": "applyStatus",
+           "status": "Freeze",
+           "stacks": {
+            "kind": "const",
+            "value": 1
+           }
+          }
+         ],
+         "else": []
+        }
+       ]
+      },
+      "Spend": {
+       "name": "Spend",
+       "family": "Arcane",
+       "effects": [
+        {
+         "kind": "branch",
+         "if": {
+          "kind": "stacksAtLeast",
+          "status": "Charge",
+          "n": 3,
+          "of": "holder"
+         },
+         "then": [
+          {
+           "kind": "consumeStacks",
+           "status": "Charge",
+           "stacks": {
+            "kind": "const",
+            "value": 3
+           }
+          }
+         ],
+         "else": []
+        }
+       ]
+      }
+     },
+     "statuses": {
+      "Charge": {
+       "name": "Charge",
+       "names": {
+        "en": "Charge",
+        "ru": {
+         "name": "Заряд",
+         "acc": "Заряд",
+         "count": [
+          "Заряд",
+          "Заряда",
+          "Зарядов"
+         ]
+        }
+       },
+       "counter": true,
+       "abilities": []
+      },
+      "Freeze": {
+       "name": "Freeze",
+       "triggers": [
+        {
+         "kind": "interceptor",
+         "on": {
+          "on": "Strike",
+          "striker": "holder"
+         }
+        }
+       ],
+       "selectors": [
+        {
+         "kind": "holder"
+        }
+       ],
+       "abilities": [
+        {
+         "effects": [
+          {
+           "kind": "cancel",
+           "consumeSelf": 1
+          }
+         ]
+        }
+       ]
+      }
+     },
+     "text": {
+      "en": "Turn start: gain 1 Charge, and if it has 3+ Charge, 1 Freeze to all enemies; otherwise, nothing, and if it has 3+ Charge, spend 3 Charge; otherwise, nothing.",
+      "ru": "Начало хода: получить 1 Заряд, и если у него 3 Заряда или больше, 1 Заморозка всем врагам; иначе ничего, и если у него 3 Заряда или больше, потратить 3 Заряда; иначе ничего."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.5643382352941176,
+      "inBand": true,
+      "scale": 1,
+      "trace": "Coldfront Patience → self (Coldfront Patience) → Charge 1"
+     },
+     "state": "ready"
+    }
+   ]
+  },
+  {
+   "pair": {
+    "key": "coin-thief+hexer",
+    "a": "coin-thief",
+    "b": "hexer",
+    "why": "requested"
+   },
+   "candidates": [
+    {
+     "pair": "coin-thief+hexer",
+     "lean": "A",
+     "intent": "At the start of each turn it gains 1 Charge and curses a random enemy; when it reaches 3 Charge, it spends them and silences that enemy instead.",
+     "name": {
+      "en": "Pickpocket Hex",
+      "ru": "Сглаз-карманник"
+     },
+     "flavour": {
+      "en": "It lifts a little luck each turn, then your voice.",
+      "ru": "Каждый ход таскает по крупице удачи, а потом и голос."
+     },
+     "unit": {
+      "name": "Pickpocket Hex",
+      "base": {
+       "hp": 20,
+       "pwr": 5
+      },
+      "triggers": [
+       {
+        "kind": "trigger",
+        "on": {
+         "on": "TurnStart"
+        }
+       }
+      ],
+      "selectors": [
+       {
+        "kind": "holder"
+       }
+      ],
+      "abilities": [
+       "Spark"
+      ],
+      "also": [
+       {
+        "selectors": [
+         {
+          "kind": "randomEnemy"
+         }
+        ],
+        "abilities": [
+         "HexOrHush"
+        ]
+       },
+       {
+        "selectors": [
+         {
+          "kind": "holder"
+         }
+        ],
+        "abilities": [
+         "Spend"
+        ]
+       }
+      ]
+     },
+     "abilities": {
+      "Spark": {
+       "name": "Spark",
+       "family": "Arcane",
+       "effects": [
+        {
+         "kind": "applyStatus",
+         "status": "Charge",
+         "stacks": {
+          "kind": "const",
+          "value": 1
+         }
+        }
+       ]
+      },
+      "HexOrHush": {
+       "name": "HexOrHush",
+       "family": "Control",
+       "effects": [
+        {
+         "kind": "branch",
+         "if": {
+          "kind": "stacksAtLeast",
+          "status": "Charge",
+          "n": 3,
+          "of": "holder"
+         },
+         "then": [
+          {
+           "kind": "silence"
+          }
+         ],
+         "else": [
+          {
+           "kind": "applyStatus",
+           "status": "Curse",
+           "stacks": {
+            "kind": "const",
+            "value": 3
+           }
+          }
+         ]
+        }
+       ]
+      },
+      "Spend": {
+       "name": "Spend",
+       "family": "Arcane",
+       "effects": [
+        {
+         "kind": "branch",
+         "if": {
+          "kind": "stacksAtLeast",
+          "status": "Charge",
+          "n": 3,
+          "of": "holder"
+         },
+         "then": [
+          {
+           "kind": "consumeStacks",
+           "status": "Charge",
+           "stacks": {
+            "kind": "const",
+            "value": 3
+           }
+          }
+         ],
+         "else": []
+        }
+       ]
+      }
+     },
+     "statuses": {
+      "Charge": {
+       "name": "Charge",
+       "names": {
+        "en": "Charge",
+        "ru": {
+         "name": "Заряд",
+         "acc": "Заряд",
+         "count": [
+          "Заряд",
+          "Заряда",
+          "Зарядов"
+         ]
+        }
+       },
+       "counter": true,
+       "abilities": []
+      },
+      "Curse": {
+       "name": "Curse",
+       "statMods": {
+        "pwr": -1
+       },
+       "abilities": []
+      }
+     },
+     "text": {
+      "en": "Turn start: gain 1 Charge, and if it has 3+ Charge, silence random enemy; otherwise, 3 Curse to random enemy, and if it has 3+ Charge, spend 3 Charge; otherwise, nothing.",
+      "ru": "Начало хода: получить 1 Заряд, и если у него 3 Заряда или больше, заглушить случайного врага; иначе 3 Проклятия случайному врагу, и если у него 3 Заряда или больше, потратить 3 Заряда; иначе ничего."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.36213235294117646,
+      "inBand": true,
+      "scale": 3,
+      "trace": "Pickpocket Hex → self (Pickpocket Hex, Mirror) → Charge 1, Curse 3"
+     },
+     "state": "ready"
+    },
+    {
+     "pair": "coin-thief+hexer",
+     "lean": "B",
+     "intent": "On turn 2 it silences the enemy at the back and keeps the front enemy's rule as a second rule of its own.",
+     "name": {
+      "en": "Spellfilch",
+      "ru": "Сглазокрад"
+     },
+     "flavour": {
+      "en": "Hushes the back row, then pockets the front line's secrets.",
+      "ru": "Заткнёт тыл, а правила переднего украдёт себе в карман."
+     },
+     "unit": {
+      "name": "Spellfilch",
+      "base": {
+       "hp": 20,
+       "pwr": 5
+      },
+      "triggers": [
+       {
+        "kind": "trigger",
+        "on": {
+         "on": "TurnStart"
+        }
+       }
+      ],
+      "condition": {
+       "kind": "turnIs",
+       "n": 2
+      },
+      "selectors": [
+       {
+        "kind": "lastEnemy"
+       }
+      ],
+      "abilities": [
+       "Hush2"
+      ],
+      "also": [
+       {
+        "selectors": [
+         {
+          "kind": "frontEnemy"
+         }
+        ],
+        "abilities": [
+         "Pocket"
+        ]
+       }
+      ]
+     },
+     "abilities": {
+      "Hush2": {
+       "name": "Hush2",
+       "family": "Control",
+       "effects": [
+        {
+         "kind": "silence"
+        }
+       ]
+      },
+      "Pocket": {
+       "name": "Pocket",
+       "family": "Arcane",
+       "effects": [
+        {
+         "kind": "keepRule"
+        }
+       ]
+      }
+     },
+     "statuses": {},
+     "text": {
+      "en": "Turn start, on turn 2: silence the back enemy, and keep the rule of front enemy as a second rule of its own.",
+      "ru": "Начало хода, на 2-м ходу: заглушить заднего врага, и оставить себе правило переднего врага как второе правило."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.23897058823529413,
+      "inBand": false,
+      "scale": 1,
+      "trace": "Spellfilch (on turn 2) → the enemy at the back (Bully)"
+     },
+     "state": "rejected",
+     "why": "out of band: wins 24% at best (band 35-75%)"
+    },
+    {
+     "pair": "coin-thief+hexer",
+     "lean": "twist",
+     "intent": "The first time an enemy gains Strength, it silences that enemy and gains 2 Strength itself.",
+     "name": {
+      "en": "Boon Leech",
+      "ru": "Пиявка силы"
+     },
+     "flavour": {
+      "en": "Strength is never given. It's merely borrowed, then hexed away.",
+      "ru": "Силу не дарят — её отнимают и запечатывают заклятием."
+     },
+     "unit": {
+      "name": "Boon Leech",
+      "base": {
+       "hp": 20,
+       "pwr": 5
+      },
+      "triggers": [
+       {
+        "kind": "trigger",
+        "on": {
+         "on": "StatusApplied",
+         "unit": "enemy",
+         "status": "Strength"
+        }
+       }
+      ],
+      "condition": {
+       "kind": "onceHolder"
+      },
+      "selectors": [
+       {
+        "kind": "eventUnit"
+       }
+      ],
+      "abilities": [
+       "Hush2"
+      ],
+      "also": [
+       {
+        "selectors": [
+         {
+          "kind": "holder"
+         }
+        ],
+        "abilities": [
+         "Pilfer"
+        ]
+       }
+      ]
+     },
+     "abilities": {
+      "Hush2": {
+       "name": "Hush2",
+       "family": "Control",
+       "effects": [
+        {
+         "kind": "silence"
+        }
+       ]
+      },
+      "Pilfer": {
+       "name": "Pilfer",
+       "family": "Control",
+       "effects": [
+        {
+         "kind": "applyStatus",
+         "status": "Strength",
+         "stacks": {
+          "kind": "const",
+          "value": 6
+         }
+        }
+       ]
+      }
+     },
+     "statuses": {
+      "Strength": {
+       "name": "Strength",
+       "statMods": {
+        "pwr": 1
+       },
+       "abilities": []
+      }
+     },
+     "text": {
+      "en": "Enemy gets Strength, once per battle: silence it, and 6 Strength to self.",
+      "ru": "Враг получает Силу, раз за бой: заглушить его, и 6 Сил себе."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.3226102941176471,
+      "inBand": false,
+      "scale": 3,
+      "trace": "Boon Leech (once per battle) → it (Mirror, Boon Leech) → Strength 6"
+     },
+     "state": "rejected",
+     "why": "out of band: wins 32% at best (band 35-75%)"
+    }
+   ]
+  }
+ ]
+}
