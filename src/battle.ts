@@ -365,7 +365,7 @@ class Engine {
         if (r.ability.condition && !this.checkCondition(r.ability.condition, holder, { ...draft, id: -1, turn: this.turn, causedBy, source } as BattleEvent, r.ref)) continue;
         handled.add(k);
         if (r.ref.status === undefined) this.chainActed.add(r.holder);
-        const res = this.runInterceptor(stamped, draft, followUps, causedBy, redirected);
+        const res = this.runInterceptor(stamped, draft, followUps, causedBy, source, redirected);
         if (res === "cancel") {
           cancelledBy = stamped.ref;
           break;
@@ -916,6 +916,7 @@ class Engine {
     draft: EventBody,
     followUps: Array<(parentId: number) => void>,
     causedBy: number | null,
+    source: SourceRef,
     redirected: { done: boolean },
   ): "pass" | "cancel" {
     const holder = this.units.get(r.holder);
@@ -934,7 +935,7 @@ class Engine {
       );
     };
 
-    const probe = { ...draft, id: -1, turn: this.turn, causedBy, source: "kernel" } as BattleEvent;
+    const probe = { ...draft, id: -1, turn: this.turn, causedBy, source } as BattleEvent;
     // A branch (rules v2) checks its condition here and stands for the side it picked.
     const expand = (effects: Effect[], ref: AbilityRef): Effect[] =>
       effects.flatMap((e) => (e.kind === "branch" ? expand(this.checkCondition(e.if, holder, probe, ref) ? e.then : e.else, ref) : [e]));
@@ -999,7 +1000,7 @@ class Engine {
             draft,
             eval: (a) => this.evalAmount(a, { holder, ref }),
             select: (s) => {
-              const probe = { ...draft, id: -1, turn: this.turn, causedBy, source: "kernel" } as BattleEvent;
+              const probe = { ...draft, id: -1, turn: this.turn, causedBy, source } as BattleEvent;
               return this.evalSelector(s, holder, probe);
             },
             redirect: (to) => {
@@ -1011,6 +1012,12 @@ class Engine {
               redirected.done = true;
               this.applyEvent({ type: "Redirected", by: ref, original: draft.type, from, to: to.id }, causedBy, "kernel");
               return true;
+            },
+            alsoApply: (unitId, status, stacks) => {
+              followUps.push((parentId) => {
+                const u = this.units.get(unitId);
+                if (u?.alive && stacks > 0) this.proposeStatusApplied(unitId, status, stacks, parentId, ref);
+              });
             },
             survive: (unitId, hp, stat, amount) => {
               followUps.push((parentId) => {

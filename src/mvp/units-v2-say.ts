@@ -182,10 +182,10 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "Каждая его атака отравляет всех врагов.",
   ],
   Prism: () => [
-    "A random hit aimed at it bends onto a random enemy instead.",
-    "A random hit aimed at it bends onto a random enemy instead, and it gains 1 Shield.",
-    "Случайный удар по нему вместо этого уходит в случайного врага.",
-    "Случайный удар по нему вместо этого уходит в случайного врага, и он получает 1 Щит.",
+    "When an enemy gives it Poison, Curse or Freeze, that enemy gets the same amount too.",
+    "When an enemy gives it Poison, Curse or Freeze, it reflects it fully: the enemy gets it and Prism doesn't.",
+    "Когда враг даёт ей Яд, Проклятие или Заморозку, этот враг получает столько же.",
+    "Когда враг даёт ей Яд, Проклятие или Заморозку, она отражает их целиком: враг получает их, а Призма нет.",
   ],
   "Fortune Teller": () => [
     "At battle start, if the enemy has more units than your side, every ally gains 1 Shield; otherwise every ally gains 1 Strength.",

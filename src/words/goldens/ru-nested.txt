@@ -52,6 +52,9 @@ delay strikeAgain
 delay takeRule
   en: Turn start: in 2 turns: take the rule of front enemy and leave it none.
   ru: Начало хода: через 2 хода: забрать правило переднего врага, оставив его без правила.
+delay reflectStatus
+  en: Turn start: in 2 turns: the unit that gave it gets the same amount too.
+  ru: Начало хода: через 2 хода: тому, кто дал тоже получает столько же.
 and(flip, not turnIs)
   en: Turn start, with a 50% chance and unless on turn 2: in 1 turn: 1 damage to front enemy.
   ru: Начало хода, с вероятностью 50% и если не на 2-м ходу: через 1 ход: 1 урон переднему врагу.

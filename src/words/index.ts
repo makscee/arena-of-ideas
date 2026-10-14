@@ -46,13 +46,15 @@ import { outnumbered } from "./outnumbered.js";
 import { targetHas } from "./targetHas.js";
 import { poisonedEnemies } from "./poisonedEnemies.js";
 import { killedByHolder } from "./killedByHolder.js";
+import { applier } from "./applier.js";
+import { reflectStatus } from "./reflectStatus.js";
 import { takeRule } from "./takeRule.js";
 import type { AmountV2, ConditionV2, Effect, EffectV2, PositionSelector } from "../types.js";
 
 export type { EffectWord, InterceptAt, Say, AmountAt, AmountWord, CondAt, ConditionWord, SelectorWord, WordCtx, WordUnit } from "./types.js";
 
 export const SELECTOR_WORDS: Record<PositionSelector["kind"], SelectorWord> = {
-  allyBehind, allyAhead, neighbours, alliesBehind, lastEnemy, randomAlly, eventTarget, poisonedEnemies,
+  allyBehind, allyAhead, neighbours, alliesBehind, lastEnemy, randomAlly, eventTarget, poisonedEnemies, applier,
 };
 
 export const CONDITION_WORDS: Record<ConditionV2["kind"], ConditionWord> = {
@@ -64,7 +66,7 @@ export const AMOUNT_WORDS: Record<AmountV2["kind"], AmountWord> = {
 };
 
 export const EFFECT_WORDS: Record<EffectV2["kind"], EffectWord> = {
-  redirect, preventDeath, replaceAmount, copyRule, actAgain, remember, performRemembered, swapRules, delay, transform, summonWithRule, branch, strikeAgain, takeRule,
+  redirect, preventDeath, replaceAmount, copyRule, actAgain, remember, performRemembered, swapRules, delay, transform, summonWithRule, branch, strikeAgain, takeRule, reflectStatus,
 };
 
 export const effectWord = (kind: string): EffectWord | undefined => (EFFECT_WORDS as Record<string, EffectWord>)[kind];
