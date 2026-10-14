@@ -255,4 +255,25 @@ describe("rules v2 pool", () => {
       expect(lines.some((l) => want.test(l)), `${name}:\n${lines.join("\n")}`).toBe(true);
     }
   });
+  it("batch 3 (#1048): each awoken upgrade fires too", () => {
+    const p = { id: "bot", name: "bot", bot: true };
+    const cases: [string, string[], string[], RegExp][] = [
+      ["Puppeteer", ["Puppeteer"], ["Leech", "Seed"], /^Puppeteer \(once per turn\) → self \(Puppeteer\) → Shield 1$/],
+      ["Squire", ["Squire", "Paladin", "Lantern"], ["Nautilus"], /^Squire → self \(Squire, Paladin\) → Strength 1$/],
+      ["Dynamo", ["Dynamo"], ["Seed", "Seed"], /^Dynamo → self \(Dynamo\) → Charge 1, Strength 1$/],
+      ["Siphon", ["Siphon"], ["Leech", "Medic"], /^Siphon → self \(Siphon\) → Strength 1$/],
+      ["Phoenix", ["Phoenix"], ["Berserker", "Leech"], /^Phoenix \(once per battle\) → .*→ \d+ damage$/],
+      ["Volcano", ["Volcano", "Sniper"], ["Nautilus", "Seed"], /^Volcano → .* → 1 damage, Shield 1$/],
+      ["Witch Doctor", ["Hornet", "Frostling", "Witch Doctor"], ["Seed", "Seed", "Seed"], /^Witch Doctor → .*Shield 1$/],
+      ["Heckler", ["Heckler"], ["Leech", "Seed"], /^Heckler → it \(Leech\) → \d+ damage, Curse 1$/],
+      ["Comet", ["Comet"], ["Seed", "Seed"], /^Comet \(on turns 2, 4, 6…\) → all enemies \(Seed, Seed\) → 2 damage$/],
+    ];
+    for (const [name, A, B, want] of cases) {
+      const a = A.map((n, i) => lineUnitOf(content.units.find((u) => u.name === n)!, `a${i}`, n === name ? 3 : 1));
+      const b = B.map((n, i) => lineUnitOf(content.units.find((u) => u.name === n)!, `b${i}`));
+      const rec = fightLines({ player: p, line: a }, { player: p, line: b }, { battleId: "x", seed: 2, kind: "round", round: 1, runId: null, at: "2026-10-14T00:00:00.000Z", content, rules: MVP_RULES });
+      const lines = traceLines({ teamA: a.map(toBattleDef), teamB: b.map(toBattleDef), seed: 2, statuses: content.statuses, abilities: content.abilities }, rec.log);
+      expect(lines.some((l) => want.test(l)), `${name} awoken:\n${lines.join("\n")}`).toBe(true);
+    }
+  });
 });
