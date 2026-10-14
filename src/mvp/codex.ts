@@ -83,6 +83,29 @@ export interface ForgeSlot extends ForgeView {
   candidates?: FusionDesign[];
 }
 
+/** A shop offer that brings a designed fusion within reach (GET
+ * /runs/:id/forge's `offers`, #1049 reopened): buying `slot` gives a unit
+ * that pairs with the Awoken unit at board slot `partner`, and their pair
+ * has a design (discovered or ready to claim; unforged pairs never show).
+ * `awakens`: buying it makes the third copy, so the fusion is one buy away;
+ * false: you'd still need to awaken it (a quieter mark). */
+export interface ForgeOffer {
+  slot: number;
+  partner: number;
+  a: UnitId;
+  b: UnitId;
+  state: "discovered" | "ready";
+  /** discovered: the canonical design (its name and emoji label the mark). */
+  design?: FusionDesign;
+  awakens: boolean;
+}
+
+/** What the forge of a run returns (GET /runs/:id/forge). */
+export interface RunForge {
+  pairs: ForgeSlot[];
+  offers: ForgeOffer[];
+}
+
 /** The order-free key of a pair: "a+b" with the ids sorted. */
 export function pairKey(x: UnitId, y: UnitId): string {
   const [a, b] = sortPair(x, y);

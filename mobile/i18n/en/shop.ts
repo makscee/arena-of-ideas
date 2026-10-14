@@ -39,6 +39,13 @@ export const shop = {
   "fuse.new": "New fusion",
   "fuse.discovered": "✨ You discovered {name}",
 
+  // Rules v2's fusion marks (#1049 reopened): only a pair with a design.
+  "fuse.mark": "Fuses: {list}",
+  "fuse.toClaim": "a fusion ready to claim",
+  "fuse.offerClaim": "✨ to claim",
+  "fuse.offerNow": "Buy it to awaken it: {pair} → {fusion}.",
+  "fuse.offerNear": "Awaken it to fuse: {pair} → {fusion}.",
+
   // The forge (rules v2's Codex, #1049): a pair's three states.
   "forge.discovered": "The forge · discovered",
   "forge.ready": "The forge · ready to claim",

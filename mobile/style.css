@@ -1815,3 +1815,17 @@ button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padd
   .forge.claim-moment .forge-candidates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 }
 .forge-sealed-words { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* Rules v2's fusion marks (#1049 reopened): only a pair with a design. A board
+ * unit you can fuse now wears ⚗ and a solid glow; an offer that awakens into
+ * such a pair wears a pill naming the fusion; one that would still need
+ * awakening, a quiet ⚗. */
+.card.fuse-ready { outline: 2px solid var(--action); outline-offset: -2px; }
+.card .fuse-mark { position: absolute; top: -7px; right: -5px; width: 18px; height: 18px; display: grid; place-items: center; font-size: 11px; line-height: 1; background: var(--action); color: var(--outline); border: 1.5px solid var(--outline); border-radius: 50%; pointer-events: none; }
+.card .fuse-tag { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); max-width: calc(100% + 6px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; line-height: 12px; padding: 0 4px; background: var(--action); color: var(--outline); border: 1.5px solid var(--outline); border-radius: 7px; pointer-events: none; }
+.card.fuse-offer { outline: 2px solid var(--action); outline-offset: -2px; }
+.card.fuse-near .fuse-tag { left: auto; right: -5px; transform: none; width: 16px; padding: 0; text-align: center; background: var(--face); opacity: 0.85; }
+@media (min-width: 1024px) {
+  #app[data-screen] .card .fuse-mark { width: 24px; height: 24px; font-size: 14px; top: -9px; right: -7px; }
+  #app[data-screen] .card .fuse-tag { font-size: 12px; line-height: 16px; top: -10px; }
+}

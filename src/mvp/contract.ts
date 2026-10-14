@@ -941,7 +941,7 @@ export interface MyIdeasView {
 //   GET  /api/v1/runs/:runId                 → RunView
 //   POST /api/v1/runs/:runId/decisions  Decision → DecisionResponse
 //   POST /api/v1/runs/:runId/preview    Decision → DecisionResponse  (dry run, no writes; 400 for a fight)
-//   GET  /api/v1/runs/:runId/forge      → { pairs: ForgeSlot[] }  (rules v2 Codex, ARENA_CODEX=1; 404 off)
+//   GET  /api/v1/runs/:runId/forge      → RunForge { pairs: ForgeSlot[], offers: ForgeOffer[] }  (rules v2 Codex, ARENA_CODEX=1; 404 off)
 //   GET  /api/v1/codex                 → ForgeView of forge-view.ts  (the Codex screens: units, pairs, feed, Dictionary; #1051)
 //   GET  /api/v1/codex/:a/:b            → ForgeView  (a pair, order-free; candidates sealed)
 //   POST /api/v1/codex/wish             { a, b } → ForgeView  (unforged pairs; one per player, pair and day)
@@ -976,6 +976,7 @@ export interface MyIdeasView {
 //   POST /api/v1/dev/seed-candidate { unit? } → MyIdeasView               (M2-8; the caller's idea in `simulating`: a renamed live unit, `unit`'s or a random one)
 //   POST /api/v1/dev/fake-votes              → CandidateScore[]           (M2-8; 5 fake votes on each candidate, 4 for it)
 //   GET  /api/v1/dev/candidates              → CandidateScore[]           (M2-8; every candidate, qualified ones first, best first)
+//   POST /api/v1/dev/codex-pair { a, b, state? } → ForgeView           (#1049; ARENA_CODEX=1: the pair gets stand-in designs, ready or "discovered")
 //   GET  /api/v1/stats                       → StatsView          (slice 11)
 //   GET  /api/v1/credits                     → CreditsView        (M2-9; authors, NEW, your creator number)
 //   GET  /api/v1/library                     → LibraryView        (M2-9; the units that have left)
