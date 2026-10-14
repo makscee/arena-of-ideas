@@ -2638,7 +2638,8 @@
      "state": "rejected",
      "why": "out of band: wins 92% at best (band 35-75%)"
     }
-   ]
+   ],
+   "topUps": 2
   },
   {
    "pair": {
@@ -3380,6 +3381,123 @@
    "candidates": [
     {
      "pair": "hexer+sniper",
+     "lean": "B",
+     "intent": "At the start of every turn it deals damage equal to its power to the back enemy and the front enemy, and on turn 2 those shots also give each of them 1 Freeze.",
+     "name": {
+      "en": "Frostbolt Hex",
+      "ru": "Ледяной порчелов"
+     },
+     "flavour": {
+      "en": "One curse for the back row, one for the front. Both arrive cold.",
+      "ru": "Одно проклятие в тыл, другое в лоб. Оба приходят с холодом."
+     },
+     "unit": {
+      "name": "Frostbolt Hex",
+      "base": {
+       "hp": 18,
+       "pwr": 5
+      },
+      "triggers": [
+       {
+        "kind": "trigger",
+        "on": {
+         "on": "TurnStart"
+        }
+       }
+      ],
+      "selectors": [
+       {
+        "kind": "lastEnemy"
+       },
+       {
+        "kind": "frontEnemy"
+       }
+      ],
+      "abilities": [
+       "PinningShot"
+      ]
+     },
+     "abilities": {
+      "PinningShot": {
+       "name": "PinningShot",
+       "family": "Strike",
+       "effects": [
+        {
+         "kind": "damage",
+         "amount": {
+          "kind": "stat",
+          "stat": "pwr",
+          "of": "holder"
+         }
+        },
+        {
+         "kind": "branch",
+         "if": {
+          "kind": "turnIs",
+          "n": 2
+         },
+         "then": [
+          {
+           "kind": "applyStatus",
+           "status": "Freeze",
+           "stacks": {
+            "kind": "const",
+            "value": 1
+           }
+          }
+         ],
+         "else": []
+        }
+       ]
+      }
+     },
+     "statuses": {
+      "Freeze": {
+       "name": "Freeze",
+       "triggers": [
+        {
+         "kind": "interceptor",
+         "on": {
+          "on": "Strike",
+          "striker": "holder"
+         }
+        }
+       ],
+       "selectors": [
+        {
+         "kind": "holder"
+        }
+       ],
+       "abilities": [
+        {
+         "effects": [
+          {
+           "kind": "cancel",
+           "consumeSelf": 1
+          }
+         ]
+        }
+       ]
+      }
+     },
+     "text": {
+      "en": "Turn start: PWR damage to the back enemy and front enemy, then on turn 2, 1 Freeze to the back enemy and front enemy; otherwise, nothing.",
+      "ru": "Начало хода: урон, равный АТК, заднему врагу и переднему врагу, затем на 2-м ходу, 1 Заморозка заднему врагу и переднему врагу; иначе ничего."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.45036764705882354,
+      "inBand": true,
+      "scale": 1,
+      "trace": "Frostbolt Hex → the enemy at the back and front enemy (Bully, Oracle) → 5 damage"
+     },
+     "state": "ready"
+    },
+    {
+     "pair": "hexer+sniper",
      "lean": "A",
      "intent": "The first time an enemy gains power, silence it, which also strips the Strength it just gained.",
      "name": {
@@ -3515,76 +3633,9 @@
      },
      "state": "rejected",
      "why": "out of band: wins 22% at best (band 35-75%)"
-    },
-    {
-     "pair": "hexer+sniper",
-     "lean": "twist",
-     "intent": "At the start of turn 2, take the last enemy's rule for itself.",
-     "name": {
-      "en": "Rulebane",
-      "ru": "Законолов"
-     },
-     "flavour": {
-      "en": "It curses the last in line, then keeps their rule as a trophy.",
-      "ru": "Метит последнего в строю и забирает его правило себе."
-     },
-     "unit": {
-      "name": "Rulebane",
-      "base": {
-       "hp": 18,
-       "pwr": 5
-      },
-      "triggers": [
-       {
-        "kind": "trigger",
-        "on": {
-         "on": "TurnStart"
-        }
-       }
-      ],
-      "condition": {
-       "kind": "turnIs",
-       "n": 2
-      },
-      "selectors": [
-       {
-        "kind": "lastEnemy"
-       }
-      ],
-      "abilities": [
-       "Take"
-      ]
-     },
-     "abilities": {
-      "Take": {
-       "name": "Take",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "takeRule"
-        }
-       ]
-      }
-     },
-     "statuses": {},
-     "text": {
-      "en": "Turn start, on turn 2: take the rule of the back enemy and leave it none.",
-      "ru": "Начало хода, на 2-м ходу: забрать правило заднего врага, оставив его без правила."
-     },
-     "check": {
-      "terminates": false,
-      "games": 544,
-      "capped": 2,
-      "timeUp": 0,
-      "score": 0.234375,
-      "inBand": false,
-      "scale": 1,
-      "trace": "Rulebane takes the rule of Bully"
-     },
-     "state": "rejected",
-     "why": "doesn't terminate (2 capped, 0 time-up of 544)"
     }
-   ]
+   ],
+   "topUps": 2
   },
   {
    "pair": {
@@ -3905,6 +3956,75 @@
    "candidates": [
     {
      "pair": "leech+vulture",
+     "lean": "twist",
+     "intent": "Whenever an enemy dies, it feeds the ally behind it, healing that ally equal to its power.",
+     "name": {
+      "en": "Bloodcrow",
+      "ru": "Кровавый ворон"
+     },
+     "flavour": {
+      "en": "Every fallen foe is a meal passed down the line.",
+      "ru": "Каждый павший враг — угощение для своих."
+     },
+     "unit": {
+      "name": "Bloodcrow",
+      "base": {
+       "hp": 31,
+       "pwr": 16
+      },
+      "triggers": [
+       {
+        "kind": "trigger",
+        "on": {
+         "on": "Death",
+         "unit": "enemy"
+        }
+       }
+      ],
+      "selectors": [
+       {
+        "kind": "allyBehind"
+       }
+      ],
+      "abilities": [
+       "Glow"
+      ]
+     },
+     "abilities": {
+      "Glow": {
+       "name": "Glow",
+       "family": "Heal",
+       "effects": [
+        {
+         "kind": "heal",
+         "amount": {
+          "kind": "stat",
+          "stat": "pwr",
+          "of": "holder"
+         }
+        }
+       ]
+      }
+     },
+     "statuses": {},
+     "text": {
+      "en": "Enemy dies: heal the ally behind for PWR.",
+      "ru": "Смерть врага: лечение на АТК союзнику позади."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.7224264705882353,
+      "inBand": true,
+      "scale": 1,
+      "trace": "Bloodcrow → the ally behind it (Mirror) → heal 2"
+     },
+     "state": "ready"
+    },
+    {
+     "pair": "leech+vulture",
      "lean": "A",
      "intent": "Whenever it strikes, it drains the defender: the defender gets 1 Curse, and it heals equal to its power and gains 1 Strength.",
      "name": {
@@ -4111,140 +4231,9 @@
      },
      "state": "rejected",
      "why": "out of band: wins 85% at best (band 35-75%)"
-    },
-    {
-     "pair": "leech+vulture",
-     "lean": "twist",
-     "intent": "Whenever an enemy is healed, it gives that enemy 1 Poison and heals itself equal to its power.",
-     "name": {
-      "en": "Bane Siphon",
-      "ru": "Яд-Кровосос"
-     },
-     "flavour": {
-      "en": "Every mercy toward its prey is poisoned, and the feast is its own.",
-      "ru": "Любое исцеление врага оборачивается ядом, а пир достаётся ему."
-     },
-     "unit": {
-      "name": "Bane Siphon",
-      "base": {
-       "hp": 31,
-       "pwr": 16
-      },
-      "triggers": [
-       {
-        "kind": "trigger",
-        "on": {
-         "on": "Heal",
-         "unit": "enemy"
-        }
-       }
-      ],
-      "selectors": [
-       {
-        "kind": "eventUnit"
-       }
-      ],
-      "abilities": [
-       "Sting"
-      ],
-      "also": [
-       {
-        "selectors": [
-         {
-          "kind": "holder"
-         }
-        ],
-        "abilities": [
-         "Glow"
-        ]
-       }
-      ]
-     },
-     "abilities": {
-      "Sting": {
-       "name": "Sting",
-       "family": "Poison",
-       "effects": [
-        {
-         "kind": "applyStatus",
-         "status": "Poison",
-         "stacks": {
-          "kind": "const",
-          "value": 1
-         }
-        }
-       ]
-      },
-      "Glow": {
-       "name": "Glow",
-       "family": "Heal",
-       "effects": [
-        {
-         "kind": "heal",
-         "amount": {
-          "kind": "stat",
-          "stat": "pwr",
-          "of": "holder"
-         }
-        }
-       ]
-      }
-     },
-     "statuses": {
-      "Poison": {
-       "name": "Poison",
-       "triggers": [
-        {
-         "kind": "trigger",
-         "on": {
-          "on": "TurnEnd"
-         }
-        }
-       ],
-       "selectors": [
-        {
-         "kind": "holder"
-        }
-       ],
-       "abilities": [
-        {
-         "effects": [
-          {
-           "kind": "damage",
-           "amount": {
-            "kind": "stacks"
-           }
-          },
-          {
-           "kind": "consumeStacks",
-           "stacks": {
-            "kind": "const",
-            "value": 1
-           }
-          }
-         ]
-        }
-       ]
-      }
-     },
-     "text": {
-      "en": "Enemy healed: 1 Poison to it, and heal self for PWR.",
-      "ru": "Лечение врага: 1 Яд ему, и лечение на АТК себе."
-     },
-     "check": {
-      "terminates": true,
-      "games": 544,
-      "capped": 0,
-      "timeUp": 0,
-      "score": 0.7582720588235294,
-      "inBand": false,
-      "scale": 1,
-      "trace": "Bane Siphon → it (Hourglass, Bane Siphon) → Poison 1, heal 8"
-     },
-     "state": "rejected",
-     "why": "out of band: wins 76% at best (band 35-75%)"
     }
-   ]
+   ],
+   "topUps": 2
   },
   {
    "pair": {
@@ -4690,7 +4679,8 @@
      "state": "rejected",
      "why": "out of band: wins 77% at best (band 35-75%)"
     }
-   ]
+   ],
+   "topUps": 2
   },
   {
    "pair": {
@@ -5883,7 +5873,8 @@
      "state": "rejected",
      "why": "out of band: wins 77% at best (band 35-75%)"
     }
-   ]
+   ],
+   "topUps": 2
   },
   {
    "pair": {
@@ -8175,180 +8166,6 @@
    "candidates": [
     {
      "pair": "conductor+hourglass",
-     "lean": "A",
-     "intent": "At the start of each turn it gains 1 Charge. At 3 Charge it spends them, and both neighbours act again and gain Strength equal to half the turn number.",
-     "name": {
-      "en": "Tempo Keeper",
-      "ru": "Хранитель такта"
-     },
-     "flavour": {
-      "en": "Every third beat, the whole orchestra plays again — louder.",
-      "ru": "Каждая третья доля — и оркестр играет снова, только громче."
-     },
-     "unit": {
-      "name": "Tempo Keeper",
-      "base": {
-       "hp": 40,
-       "pwr": 16
-      },
-      "triggers": [
-       {
-        "kind": "trigger",
-        "on": {
-         "on": "TurnStart"
-        }
-       }
-      ],
-      "selectors": [
-       {
-        "kind": "holder"
-       }
-      ],
-      "abilities": [
-       "Spark"
-      ],
-      "also": [
-       {
-        "selectors": [
-         {
-          "kind": "neighbours"
-         }
-        ],
-        "abilities": [
-         "CueCharged"
-        ]
-       },
-       {
-        "selectors": [
-         {
-          "kind": "holder"
-         }
-        ],
-        "abilities": [
-         "Spend"
-        ]
-       }
-      ]
-     },
-     "abilities": {
-      "Spark": {
-       "name": "Spark",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "applyStatus",
-         "status": "Charge",
-         "stacks": {
-          "kind": "const",
-          "value": 1
-         }
-        }
-       ]
-      },
-      "CueCharged": {
-       "name": "CueCharged",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "branch",
-         "if": {
-          "kind": "stacksAtLeast",
-          "status": "Charge",
-          "n": 3,
-          "of": "holder"
-         },
-         "then": [
-          {
-           "kind": "actAgain"
-          },
-          {
-           "kind": "applyStatus",
-           "status": "Strength",
-           "stacks": {
-            "kind": "half",
-            "of": {
-             "kind": "count",
-             "fact": "turn"
-            }
-           }
-          }
-         ],
-         "else": []
-        }
-       ]
-      },
-      "Spend": {
-       "name": "Spend",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "branch",
-         "if": {
-          "kind": "stacksAtLeast",
-          "status": "Charge",
-          "n": 3,
-          "of": "holder"
-         },
-         "then": [
-          {
-           "kind": "consumeStacks",
-           "status": "Charge",
-           "stacks": {
-            "kind": "const",
-            "value": 3
-           }
-          }
-         ],
-         "else": []
-        }
-       ]
-      }
-     },
-     "statuses": {
-      "Charge": {
-       "name": "Charge",
-       "names": {
-        "en": "Charge",
-        "ru": {
-         "name": "Заряд",
-         "acc": "Заряд",
-         "count": [
-          "Заряд",
-          "Заряда",
-          "Зарядов"
-         ]
-        }
-       },
-       "counter": true,
-       "abilities": []
-      },
-      "Strength": {
-       "name": "Strength",
-       "statMods": {
-        "pwr": 1
-       },
-       "abilities": []
-      }
-     },
-     "text": {
-      "en": "Turn start: gain 1 Charge, and if it has 3+ Charge, its neighbours act again and Strength equal to half the turn number to its neighbours; otherwise, nothing, and if it has 3+ Charge, spend 3 Charge; otherwise, nothing.",
-      "ru": "Начало хода: получить 1 Заряд, и если у него 3 Заряда или больше, заставить соседей действовать ещё раз и Сила, равная половине номеру хода, соседям; иначе ничего, и если у него 3 Заряда или больше, потратить 3 Заряда; иначе ничего."
-     },
-     "check": {
-      "terminates": true,
-      "games": 544,
-      "capped": 0,
-      "timeUp": 0,
-      "score": 0.8419117647058824,
-      "inBand": false,
-      "scale": 1,
-      "trace": "Tempo Keeper → self (Tempo Keeper) → Charge 1"
-     },
-     "state": "rejected",
-     "why": "out of band: wins 84% at best (band 35-75%)"
-    },
-    {
-     "pair": "conductor+hourglass",
      "lean": "B",
      "intent": "At the end of each turn it gains 1 Charge. At 3 Charge it spends them, and every ally behind it acts again but gets 1 Freeze, paying for the borrowed turn.",
      "name": {
@@ -8539,6 +8356,180 @@
     },
     {
      "pair": "conductor+hourglass",
+     "lean": "A",
+     "intent": "At the start of each turn it gains 1 Charge. At 3 Charge it spends them, and both neighbours act again and gain Strength equal to half the turn number.",
+     "name": {
+      "en": "Tempo Keeper",
+      "ru": "Хранитель такта"
+     },
+     "flavour": {
+      "en": "Every third beat, the whole orchestra plays again — louder.",
+      "ru": "Каждая третья доля — и оркестр играет снова, только громче."
+     },
+     "unit": {
+      "name": "Tempo Keeper",
+      "base": {
+       "hp": 40,
+       "pwr": 16
+      },
+      "triggers": [
+       {
+        "kind": "trigger",
+        "on": {
+         "on": "TurnStart"
+        }
+       }
+      ],
+      "selectors": [
+       {
+        "kind": "holder"
+       }
+      ],
+      "abilities": [
+       "Spark"
+      ],
+      "also": [
+       {
+        "selectors": [
+         {
+          "kind": "neighbours"
+         }
+        ],
+        "abilities": [
+         "CueCharged"
+        ]
+       },
+       {
+        "selectors": [
+         {
+          "kind": "holder"
+         }
+        ],
+        "abilities": [
+         "Spend"
+        ]
+       }
+      ]
+     },
+     "abilities": {
+      "Spark": {
+       "name": "Spark",
+       "family": "Arcane",
+       "effects": [
+        {
+         "kind": "applyStatus",
+         "status": "Charge",
+         "stacks": {
+          "kind": "const",
+          "value": 1
+         }
+        }
+       ]
+      },
+      "CueCharged": {
+       "name": "CueCharged",
+       "family": "Arcane",
+       "effects": [
+        {
+         "kind": "branch",
+         "if": {
+          "kind": "stacksAtLeast",
+          "status": "Charge",
+          "n": 3,
+          "of": "holder"
+         },
+         "then": [
+          {
+           "kind": "actAgain"
+          },
+          {
+           "kind": "applyStatus",
+           "status": "Strength",
+           "stacks": {
+            "kind": "half",
+            "of": {
+             "kind": "count",
+             "fact": "turn"
+            }
+           }
+          }
+         ],
+         "else": []
+        }
+       ]
+      },
+      "Spend": {
+       "name": "Spend",
+       "family": "Arcane",
+       "effects": [
+        {
+         "kind": "branch",
+         "if": {
+          "kind": "stacksAtLeast",
+          "status": "Charge",
+          "n": 3,
+          "of": "holder"
+         },
+         "then": [
+          {
+           "kind": "consumeStacks",
+           "status": "Charge",
+           "stacks": {
+            "kind": "const",
+            "value": 3
+           }
+          }
+         ],
+         "else": []
+        }
+       ]
+      }
+     },
+     "statuses": {
+      "Charge": {
+       "name": "Charge",
+       "names": {
+        "en": "Charge",
+        "ru": {
+         "name": "Заряд",
+         "acc": "Заряд",
+         "count": [
+          "Заряд",
+          "Заряда",
+          "Зарядов"
+         ]
+        }
+       },
+       "counter": true,
+       "abilities": []
+      },
+      "Strength": {
+       "name": "Strength",
+       "statMods": {
+        "pwr": 1
+       },
+       "abilities": []
+      }
+     },
+     "text": {
+      "en": "Turn start: gain 1 Charge, and if it has 3+ Charge, its neighbours act again and Strength equal to half the turn number to its neighbours; otherwise, nothing, and if it has 3+ Charge, spend 3 Charge; otherwise, nothing.",
+      "ru": "Начало хода: получить 1 Заряд, и если у него 3 Заряда или больше, заставить соседей действовать ещё раз и Сила, равная половине номеру хода, соседям; иначе ничего, и если у него 3 Заряда или больше, потратить 3 Заряда; иначе ничего."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.8419117647058824,
+      "inBand": false,
+      "scale": 1,
+      "trace": "Tempo Keeper → self (Tempo Keeper) → Charge 1"
+     },
+     "state": "rejected",
+     "why": "out of band: wins 84% at best (band 35-75%)"
+    },
+    {
+     "pair": "conductor+hourglass",
      "lean": "twist",
      "intent": "Each time the ally at the front acts, it gains 1 Charge. At 3 Charge it spends them, and the ally behind it acts again and gains 1 Strength.",
      "name": {
@@ -8710,7 +8701,8 @@
      "state": "rejected",
      "why": "out of band: wins 81% at best (band 35-75%)"
     }
-   ]
+   ],
+   "topUps": 2
   },
   {
    "pair": {
@@ -8720,35 +8712,6 @@
     "why": "requested"
    },
    "candidates": [
-    {
-     "pair": "mirror+raven",
-     "lean": "A",
-     "intent": "When an enemy dies, this unit takes on that enemy's rule for the rest of the battle and gains Strength equal to its power.",
-     "name": {
-      "en": "Gloom Reflector",
-      "ru": "Вороново зерцало"
-     },
-     "flavour": {
-      "en": "It watches the fallen, and wears their rules like feathers.",
-      "ru": "Всматривается в павших и примеряет их правила, как перья."
-     },
-     "unit": {
-      "name": "Gloom Reflector",
-      "base": {
-       "hp": 28,
-       "pwr": 11
-      }
-     },
-     "abilities": {},
-     "statuses": {},
-     "text": {
-      "en": "",
-      "ru": ""
-     },
-     "check": null,
-     "state": "rejected",
-     "why": "abilities.CopyPower.effects[0].withPower.status: unknown status \"Strength\" — registry has no statuses; team[0].recipe[0].effects[0].withPower.status: unknown status \"Strength\" — registry has no statuses"
-    },
     {
      "pair": "mirror+raven",
      "lean": "B",
@@ -8850,18 +8813,18 @@
     },
     {
      "pair": "mirror+raven",
-     "lean": "twist",
-     "intent": "Each time the front enemy acts, this unit gains 1 Charge; once it holds 3, it remembers that enemy's rule, uses it once and spends the Charge.",
+     "lean": "B",
+     "intent": "Whenever another ally dies, this unit keeps that ally's rule as a second rule and gains Strength equal to its power.",
      "name": {
-      "en": "Mimic Crow",
-      "ru": "Ворон-Подражатель"
+      "en": "Gravemirror",
+      "ru": "Погребальный Омут"
      },
      "flavour": {
-      "en": "It watches three moves, then answers with yours.",
-      "ru": "Три хода он наблюдает, а потом отвечает твоим же приёмом."
+      "en": "It picks the fallen clean and wears their reflection.",
+      "ru": "Обгладывает павших и носит их отражение."
      },
      "unit": {
-      "name": "Mimic Crow",
+      "name": "Gravemirror",
       "base": {
        "hp": 28,
        "pwr": 11
@@ -8870,31 +8833,20 @@
        {
         "kind": "trigger",
         "on": {
-         "on": "Acted",
-         "unit": "enemy",
-         "front": true
+         "on": "Death",
+         "unit": "otherAlly"
         }
        }
       ],
       "selectors": [
        {
-        "kind": "holder"
+        "kind": "eventUnit"
        }
       ],
       "abilities": [
-       "Spark"
+       "Inherit"
       ],
       "also": [
-       {
-        "selectors": [
-         {
-          "kind": "frontEnemy"
-         }
-        ],
-        "abilities": [
-         "RecallCharged"
-        ]
-       },
        {
         "selectors": [
          {
@@ -8902,115 +8854,127 @@
          }
         ],
         "abilities": [
-         "Spend"
+         "TakePower"
         ]
        }
       ]
      },
      "abilities": {
-      "Spark": {
-       "name": "Spark",
+      "Inherit": {
+       "name": "Inherit",
        "family": "Arcane",
+       "effects": [
+        {
+         "kind": "keepRule"
+        }
+       ]
+      },
+      "TakePower": {
+       "name": "TakePower",
+       "family": "Control",
        "effects": [
         {
          "kind": "applyStatus",
-         "status": "Charge",
+         "status": "Strength",
          "stacks": {
-          "kind": "const",
-          "value": 1
+          "kind": "statOf",
+          "stat": "pwr",
+          "of": "eventUnit"
          }
-        }
-       ]
-      },
-      "RecallCharged": {
-       "name": "RecallCharged",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "branch",
-         "if": {
-          "kind": "stacksAtLeast",
-          "status": "Charge",
-          "n": 3,
-          "of": "holder"
-         },
-         "then": [
-          {
-           "kind": "remember"
-          },
-          {
-           "kind": "performRemembered",
-           "mode": "once"
-          }
-         ],
-         "else": []
-        }
-       ]
-      },
-      "Spend": {
-       "name": "Spend",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "branch",
-         "if": {
-          "kind": "stacksAtLeast",
-          "status": "Charge",
-          "n": 3,
-          "of": "holder"
-         },
-         "then": [
-          {
-           "kind": "consumeStacks",
-           "status": "Charge",
-           "stacks": {
-            "kind": "const",
-            "value": 3
-           }
-          }
-         ],
-         "else": []
         }
        ]
       }
      },
      "statuses": {
-      "Charge": {
-       "name": "Charge",
-       "names": {
-        "en": "Charge",
-        "ru": {
-         "name": "Заряд",
-         "acc": "Заряд",
-         "count": [
-          "Заряд",
-          "Заряда",
-          "Зарядов"
-         ]
-        }
+      "Strength": {
+       "name": "Strength",
+       "statMods": {
+        "pwr": 1
        },
-       "counter": true,
        "abilities": []
       }
      },
      "text": {
-      "en": "Front enemy acts: gain 1 Charge, and if it has 3+ Charge, remember the rule of front enemy and perform the oldest remembered rule once and forget it; otherwise, nothing, and if it has 3+ Charge, spend 3 Charge; otherwise, nothing.",
-      "ru": "Передний враг действует: получить 1 Заряд, и если у него 3 Заряда или больше, запомнить правило переднего врага и исполнить самое старое запомненное правило и забыть его; иначе ничего, и если у него 3 Заряда или больше, потратить 3 Заряда; иначе ничего."
+      "en": "Ally dies: keep the rule of that unit as a second rule of its own, and Strength equal to its PWR to self.",
+      "ru": "Смерть союзника: оставить себе его правило как второе правило, и Сила, равная АТК его, себе."
      },
      "check": {
-      "terminates": false,
+      "terminates": true,
       "games": 544,
-      "capped": 4,
+      "capped": 0,
       "timeUp": 0,
-      "score": 0.49264705882352944,
-      "inBand": false,
+      "score": 0.4678308823529412,
+      "inBand": true,
       "scale": 1,
-      "trace": "Mimic Crow → self (Mimic Crow) → Charge 1"
+      "trace": "Gravemirror keeps the rule of Mirror"
      },
-     "state": "rejected",
-     "why": "doesn't terminate (4 capped, 0 time-up of 544)"
+     "state": "ready"
+    },
+    {
+     "pair": "mirror+raven",
+     "lean": "A",
+     "intent": "At battle start, it keeps the rule of the enemy at the back as a second rule of its own for the rest of the battle.",
+     "name": {
+      "en": "Glass Corvid",
+      "ru": "Зеркальный ворон"
+     },
+     "flavour": {
+      "en": "It steals a rule from the back row and wears it like a second feather.",
+      "ru": "Крадёт правило из вражьего тыла и носит его, как второе перо."
+     },
+     "unit": {
+      "name": "Glass Corvid",
+      "base": {
+       "hp": 28,
+       "pwr": 11
+      },
+      "triggers": [
+       {
+        "kind": "trigger",
+        "on": {
+         "on": "BattleStart"
+        }
+       }
+      ],
+      "selectors": [
+       {
+        "kind": "lastEnemy"
+       }
+      ],
+      "abilities": [
+       "KeepBack"
+      ]
+     },
+     "abilities": {
+      "KeepBack": {
+       "name": "KeepBack",
+       "family": "Arcane",
+       "effects": [
+        {
+         "kind": "keepRule"
+        }
+       ]
+      }
+     },
+     "statuses": {},
+     "text": {
+      "en": "Battle start: keep the rule of the back enemy as a second rule of its own.",
+      "ru": "Начало боя: оставить себе правило заднего врага как второе правило."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.6700367647058824,
+      "inBand": true,
+      "scale": 1,
+      "trace": "Glass Corvid keeps the rule of Bully"
+     },
+     "state": "ready"
     }
-   ]
+   ],
+   "topUps": 2
   },
   {
    "pair": {
@@ -9020,125 +8984,6 @@
     "why": "requested"
    },
    "candidates": [
-    {
-     "pair": "gambler+lone-wolf",
-     "lean": "A",
-     "intent": "When it strikes it flips a coin: on heads the hit is doubled and it strikes again, on tails the hit equals its missing HP; when it is its side's last unit it skips the coin and always gets heads.",
-     "name": {
-      "en": "Last Gambit",
-      "ru": "Ва-банк"
-     },
-     "flavour": {
-      "en": "Alone, the coin never lies. Everyone else gets a gamble.",
-      "ru": "Когда за спиной никого, монета всегда ложится орлом."
-     },
-     "unit": {
-      "name": "Last Gambit",
-      "base": {
-       "hp": 36,
-       "pwr": 13
-      },
-      "triggers": [
-       {
-        "kind": "interceptor",
-        "on": {
-         "on": "Strike",
-         "striker": "holder"
-        }
-       }
-      ],
-      "selectors": [
-       {
-        "kind": "holder"
-       }
-      ],
-      "abilities": [
-       "LoadedDice"
-      ]
-     },
-     "abilities": {
-      "LoadedDice": {
-       "name": "LoadedDice",
-       "family": "Strike",
-       "effects": [
-        {
-         "kind": "branch",
-         "if": {
-          "kind": "alliesAlive",
-          "op": "=",
-          "n": 1
-         },
-         "then": [
-          {
-           "kind": "replaceAmount",
-           "amount": {
-            "kind": "twice",
-            "of": {
-             "kind": "stat",
-             "stat": "pwr",
-             "of": "holder"
-            }
-           }
-          },
-          {
-           "kind": "strikeAgain"
-          }
-         ],
-         "else": [
-          {
-           "kind": "branch",
-           "if": {
-            "kind": "flip",
-            "p": 0.5
-           },
-           "then": [
-            {
-             "kind": "replaceAmount",
-             "amount": {
-              "kind": "twice",
-              "of": {
-               "kind": "stat",
-               "stat": "pwr",
-               "of": "holder"
-              }
-             }
-            },
-            {
-             "kind": "strikeAgain"
-            }
-           ],
-           "else": [
-            {
-             "kind": "replaceAmount",
-             "amount": {
-              "kind": "missingHp"
-             }
-            }
-           ]
-          }
-         ]
-        }
-       ]
-      }
-     },
-     "statuses": {},
-     "text": {
-      "en": "Would strike: if exactly 1 ally stands, it becomes twice PWR and it strikes again; otherwise, with a 50% chance, it becomes twice PWR and it strikes again; otherwise, it becomes its missing HP.",
-      "ru": "Перед атакой: если союзников ровно 1, он становится равным удвоенному АТК и он бьёт ещё раз; иначе с вероятностью 50%, он становится равным удвоенному АТК и он бьёт ещё раз; иначе он становится равным недостающим ОЗ."
-     },
-     "check": {
-      "terminates": true,
-      "games": 544,
-      "capped": 0,
-      "timeUp": 0,
-      "score": 0.8832720588235294,
-      "inBand": false,
-      "scale": 1,
-      "trace": "Last Gambit: 50% → nothing"
-     },
-     "state": "rejected",
-     "why": "out of band: wins 88% at best (band 35-75%)"
-    },
     {
      "pair": "gambler+lone-wolf",
      "lean": "B",
@@ -9369,8 +9214,122 @@
       "trace": "Grief Flipper: 50% → double"
      },
      "state": "ready"
+    },
+    {
+     "pair": "gambler+lone-wolf",
+     "lean": "A",
+     "intent": "When it strikes, flip a coin: heads, the hit is doubled and it strikes again; tails, the hit is wasted, unless it is the last ally standing, then it lands normally.",
+     "name": {
+      "en": "Last Chance",
+      "ru": "Ва-банк"
+     },
+     "flavour": {
+      "en": "Heads it doubles down. Tails it folds, unless nobody's left to fold for.",
+      "ru": "Орёл — удваивает ставку. Решка — сброс, если за спиной ещё есть кому стоять."
+     },
+     "unit": {
+      "name": "Last Chance",
+      "base": {
+       "hp": 36,
+       "pwr": 13
+      },
+      "triggers": [
+       {
+        "kind": "interceptor",
+        "on": {
+         "on": "Strike",
+         "striker": "holder"
+        }
+       }
+      ],
+      "selectors": [
+       {
+        "kind": "holder"
+       }
+      ],
+      "abilities": [
+       "LoneGamble"
+      ]
+     },
+     "abilities": {
+      "LoneGamble": {
+       "name": "LoneGamble",
+       "family": "Strike",
+       "effects": [
+        {
+         "kind": "branch",
+         "if": {
+          "kind": "flip",
+          "p": 0.5
+         },
+         "then": [
+          {
+           "kind": "replaceAmount",
+           "amount": {
+            "kind": "twice",
+            "of": {
+             "kind": "stat",
+             "stat": "pwr",
+             "of": "holder"
+            }
+           }
+          },
+          {
+           "kind": "strikeAgain"
+          }
+         ],
+         "else": [
+          {
+           "kind": "branch",
+           "if": {
+            "kind": "alliesAlive",
+            "op": "=",
+            "n": 1
+           },
+           "then": [
+            {
+             "kind": "replaceAmount",
+             "amount": {
+              "kind": "stat",
+              "stat": "pwr",
+              "of": "holder"
+             }
+            }
+           ],
+           "else": [
+            {
+             "kind": "replaceAmount",
+             "amount": {
+              "kind": "const",
+              "value": 1
+             }
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     },
+     "statuses": {},
+     "text": {
+      "en": "Would strike: with a 50% chance, it becomes twice PWR and it strikes again; otherwise, if exactly 1 ally stands, it becomes PWR; otherwise, it becomes 1.",
+      "ru": "Перед атакой: с вероятностью 50%, он становится равным удвоенному АТК и он бьёт ещё раз; иначе если союзников ровно 1, он становится равным АТК; иначе он становится равным 1."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.6838235294117647,
+      "inBand": true,
+      "scale": 1,
+      "trace": "Last Chance: 50% → nothing"
+     },
+     "state": "ready"
     }
-   ]
+   ],
+   "topUps": 2
   },
   {
    "pair": {
@@ -9790,35 +9749,6 @@
    "candidates": [
     {
      "pair": "bully+hornet",
-     "lean": "A",
-     "intent": "When it strikes a poisoned enemy, it strikes that enemy again.",
-     "name": {
-      "en": "Venom Thug",
-      "ru": "Ядовитый громила"
-     },
-     "flavour": {
-      "en": "Poison is just a invitation for a second punch.",
-      "ru": "Яд на враге — повод врезать ещё раз."
-     },
-     "unit": {
-      "name": "Venom Thug",
-      "base": {
-       "hp": 35,
-       "pwr": 14
-      }
-     },
-     "abilities": {},
-     "statuses": {},
-     "text": {
-      "en": "",
-      "ru": ""
-     },
-     "check": null,
-     "state": "rejected",
-     "why": "team[0].recipe[0].condition.statuses[0].status: unknown status \"Poison\" — registry has no statuses"
-    },
-    {
-     "pair": "bully+hornet",
      "lean": "B",
      "intent": "When it strikes, every enemy gains 1 Poison plus as much Poison as it already has.",
      "name": {
@@ -10038,8 +9968,113 @@
       "trace": "Sting Brute → self (Sting Brute) → heal 7"
      },
      "state": "ready"
+    },
+    {
+     "pair": "bully+hornet",
+     "lean": "twist",
+     "intent": "At the end of each turn, every poisoned enemy takes damage equal to its Poison.",
+     "name": {
+      "en": "Festerbrute",
+      "ru": "Гнилобой"
+     },
+     "flavour": {
+      "en": "It never swings twice. The venom keeps counting for it.",
+      "ru": "Он бьёт лишь раз. Дальше яд считает сам."
+     },
+     "unit": {
+      "name": "Festerbrute",
+      "base": {
+       "hp": 35,
+       "pwr": 14
+      },
+      "triggers": [
+       {
+        "kind": "trigger",
+        "on": {
+         "on": "TurnEnd"
+        }
+       }
+      ],
+      "selectors": [
+       {
+        "kind": "poisonedEnemies"
+       }
+      ],
+      "abilities": [
+       "Fester"
+      ]
+     },
+     "abilities": {
+      "Fester": {
+       "name": "Fester",
+       "family": "Poison",
+       "effects": [
+        {
+         "kind": "damage",
+         "amount": {
+          "kind": "stacksOf",
+          "status": "Poison",
+          "of": "target"
+         }
+        }
+       ]
+      }
+     },
+     "statuses": {
+      "Poison": {
+       "name": "Poison",
+       "triggers": [
+        {
+         "kind": "trigger",
+         "on": {
+          "on": "TurnEnd"
+         }
+        }
+       ],
+       "selectors": [
+        {
+         "kind": "holder"
+        }
+       ],
+       "abilities": [
+        {
+         "effects": [
+          {
+           "kind": "damage",
+           "amount": {
+            "kind": "stacks"
+           }
+          },
+          {
+           "kind": "consumeStacks",
+           "stacks": {
+            "kind": "const",
+            "value": 1
+           }
+          }
+         ]
+        }
+       ]
+      }
+     },
+     "text": {
+      "en": "Turn end: damage equal to the target's Poison to every poisoned enemy.",
+      "ru": "Конец хода: урон, равный числу Ядов у цели, всем отравленным врагам."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.7104779411764706,
+      "inBand": true,
+      "scale": 1,
+      "trace": "Festerbrute → every poisoned enemy (Hornet) → 1 damage"
+     },
+     "state": "ready"
     }
-   ]
+   ],
+   "topUps": 2
   },
   {
    "pair": {
@@ -10464,110 +10499,6 @@
    "candidates": [
     {
      "pair": "priest+seed",
-     "lean": "A",
-     "intent": "At the start of every second turn, both neighbours gain Blessing equal to the turn number, so the later the battle runs, the stronger they come back.",
-     "name": {
-      "en": "Grove Oracle",
-      "ru": "Пастырь Рощи"
-     },
-     "flavour": {
-      "en": "Every second dawn, it plants a prayer that grows with the war.",
-      "ru": "Каждый второй рассвет сеет молитву, что растёт вместе с войной."
-     },
-     "unit": {
-      "name": "Grove Oracle",
-      "base": {
-       "hp": 30,
-       "pwr": 5
-      },
-      "triggers": [
-       {
-        "kind": "trigger",
-        "on": {
-         "on": "TurnStart"
-        }
-       }
-      ],
-      "condition": {
-       "kind": "turnEvery",
-       "n": 2
-      },
-      "selectors": [
-       {
-        "kind": "neighbours"
-       }
-      ],
-      "abilities": [
-       "BlessTurn"
-      ]
-     },
-     "abilities": {
-      "BlessTurn": {
-       "name": "BlessTurn",
-       "family": "Shield",
-       "effects": [
-        {
-         "kind": "applyStatus",
-         "status": "Blessing",
-         "stacks": {
-          "kind": "count",
-          "fact": "turn"
-         }
-        }
-       ]
-      }
-     },
-     "statuses": {
-      "Blessing": {
-       "name": "Blessing",
-       "triggers": [
-        {
-         "kind": "interceptor",
-         "on": {
-          "on": "Death",
-          "unit": "holder"
-         }
-        }
-       ],
-       "selectors": [
-        {
-         "kind": "holder"
-        }
-       ],
-       "abilities": [
-        {
-         "effects": [
-          {
-           "kind": "preventDeathHeal",
-           "toHp": {
-            "kind": "stacks"
-           },
-           "removeSelf": true
-          }
-         ]
-        }
-       ]
-      }
-     },
-     "text": {
-      "en": "Turn start, on turns 2, 4, 6…: Blessing equal to the turn number to its neighbours.",
-      "ru": "Начало хода, на 2-м, 4-м, 6-м… ходу: Благословение, равное номеру хода, соседям."
-     },
-     "check": {
-      "terminates": true,
-      "games": 544,
-      "capped": 0,
-      "timeUp": 0,
-      "score": 0.30422794117647056,
-      "inBand": false,
-      "scale": 1,
-      "trace": "Grove Oracle (on turns 2, 4, 6…) → its neighbours (Oracle) → Blessing 2"
-     },
-     "state": "rejected",
-     "why": "out of band: wins 30% at best (band 35-75%)"
-    },
-    {
-     "pair": "priest+seed",
      "lean": "B",
      "intent": "From turn 2 on, at the start of each turn, the ally behind gains 1 Strength and 1 Blessing, so it grows stronger and returns at higher HP the longer it holds on.",
      "name": {
@@ -10686,18 +10617,18 @@
     },
     {
      "pair": "priest+seed",
-     "lean": "twist",
-     "intent": "It starts with 3 Blessing, and whenever an ally loses its Blessing by cheating death, that ally gains Strength equal to the turn number.",
+     "lean": "A",
+     "intent": "At battle start, its neighbours gain Blessing equal to its power, and two turns later that blessing ripens into 2 Strength for them.",
      "name": {
-      "en": "Rebirth Acolyte",
-      "ru": "Служитель Возрождения"
+      "en": "Sower Monk",
+      "ru": "Сеятель"
      },
      "flavour": {
-      "en": "Each time death is cheated, something sacred takes root and grows stronger.",
-      "ru": "Каждый обман смерти пускает священный корень — и сила растёт."
+      "en": "Blessings are planted at dawn and harvested in strength.",
+      "ru": "Благословение посеяно на заре — к жатве оно станет силой."
      },
      "unit": {
-      "name": "Rebirth Acolyte",
+      "name": "Sower Monk",
       "base": {
        "hp": 30,
        "pwr": 5
@@ -10706,38 +10637,43 @@
        {
         "kind": "trigger",
         "on": {
-         "on": "StatusRemoved",
-         "unit": "ally",
-         "status": "Blessing"
+         "on": "BattleStart"
         }
        }
       ],
       "selectors": [
        {
-        "kind": "eventUnit"
+        "kind": "neighbours"
        }
       ],
       "abilities": [
-       "Bloom"
-      ],
-      "statuses": [
-       {
-        "status": "Blessing",
-        "stacks": 3
-       }
+       "BlessRipen"
       ]
      },
      "abilities": {
-      "Bloom": {
-       "name": "Bloom",
-       "family": "Control",
+      "BlessRipen": {
+       "name": "BlessRipen",
+       "family": "Shield",
        "effects": [
         {
          "kind": "applyStatus",
-         "status": "Strength",
+         "status": "Blessing",
          "stacks": {
-          "kind": "count",
-          "fact": "turn"
+          "kind": "stat",
+          "stat": "pwr",
+          "of": "holder"
+         }
+        },
+        {
+         "kind": "delay",
+         "turns": 2,
+         "effect": {
+          "kind": "applyStatus",
+          "status": "Strength",
+          "stacks": {
+           "kind": "const",
+           "value": 2
+          }
          }
         }
        ]
@@ -10783,23 +10719,122 @@
       }
      },
      "text": {
-      "en": "Ally loses Blessing: Strength equal to the turn number to it.",
-      "ru": "Союзник теряет Благословение: Сила, равная номеру хода, ему."
+      "en": "Battle start: Blessing equal to PWR to its neighbours, then in 2 turns: 2 Strength to its neighbours.",
+      "ru": "Начало боя: Благословение, равное АТК, соседям, затем через 2 хода: 2 Силы соседям."
      },
      "check": {
       "terminates": true,
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.31893382352941174,
-      "inBand": false,
+      "score": 0.43106617647058826,
+      "inBand": true,
       "scale": 1,
-      "trace": "Rebirth Acolyte intercepts: Rebirth Acolyte survives at 3 HP"
+      "trace": "Sower Monk → its neighbours (Oracle) → Blessing 5"
      },
-     "state": "rejected",
-     "why": "out of band: wins 32% at best (band 35-75%)"
+     "state": "ready"
+    },
+    {
+     "pair": "priest+seed",
+     "lean": "A",
+     "intent": "At battle start, every ally behind it gains 2 Blessing.",
+     "name": {
+      "en": "Sower of Grace",
+      "ru": "Сеятель Благодати"
+     },
+     "flavour": {
+      "en": "Every prayer takes root in those who follow.",
+      "ru": "Каждая молитва прорастает в тех, кто идёт следом."
+     },
+     "unit": {
+      "name": "Sower of Grace",
+      "base": {
+       "hp": 30,
+       "pwr": 5
+      },
+      "triggers": [
+       {
+        "kind": "trigger",
+        "on": {
+         "on": "BattleStart"
+        }
+       }
+      ],
+      "selectors": [
+       {
+        "kind": "alliesBehind"
+       }
+      ],
+      "abilities": [
+       "BlessRow"
+      ]
+     },
+     "abilities": {
+      "BlessRow": {
+       "name": "BlessRow",
+       "family": "Shield",
+       "effects": [
+        {
+         "kind": "applyStatus",
+         "status": "Blessing",
+         "stacks": {
+          "kind": "const",
+          "value": 2
+         }
+        }
+       ]
+      }
+     },
+     "statuses": {
+      "Blessing": {
+       "name": "Blessing",
+       "triggers": [
+        {
+         "kind": "interceptor",
+         "on": {
+          "on": "Death",
+          "unit": "holder"
+         }
+        }
+       ],
+       "selectors": [
+        {
+         "kind": "holder"
+        }
+       ],
+       "abilities": [
+        {
+         "effects": [
+          {
+           "kind": "preventDeathHeal",
+           "toHp": {
+            "kind": "stacks"
+           },
+           "removeSelf": true
+          }
+         ]
+        }
+       ]
+      }
+     },
+     "text": {
+      "en": "Battle start: 2 Blessing to every ally behind.",
+      "ru": "Начало боя: 2 Благословения всем союзникам позади."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.38419117647058826,
+      "inBand": true,
+      "scale": 1,
+      "trace": "Sower of Grace → every ally behind it (Oracle, War Horn) → Blessing 2"
+     },
+     "state": "ready"
     }
-   ]
+   ],
+   "topUps": 2
   },
   {
    "pair": {
@@ -10809,77 +10844,6 @@
     "why": "requested"
    },
    "candidates": [
-    {
-     "pair": "aegis+thornback",
-     "lean": "A",
-     "intent": "Once per turn, the first hit on it is turned back onto whoever dealt it.",
-     "name": {
-      "en": "Mirrorquill",
-      "ru": "Зеркокол"
-     },
-     "flavour": {
-      "en": "The first blow each turn finds its own way home.",
-      "ru": "Первый удар за ход возвращается к тому, кто его нанёс."
-     },
-     "unit": {
-      "name": "Mirrorquill",
-      "base": {
-       "hp": 28,
-       "pwr": 10
-      },
-      "triggers": [
-       {
-        "kind": "interceptor",
-        "on": {
-         "on": "Hurt",
-         "unit": "holder"
-        }
-       }
-      ],
-      "condition": {
-       "kind": "oncePerTurn"
-      },
-      "selectors": [
-       {
-        "kind": "holder"
-       }
-      ],
-      "abilities": [
-       "Rebound"
-      ]
-     },
-     "abilities": {
-      "Rebound": {
-       "name": "Rebound",
-       "family": "Shield",
-       "effects": [
-        {
-         "kind": "redirect",
-         "to": {
-          "kind": "attacker"
-         }
-        }
-       ]
-      }
-     },
-     "statuses": {},
-     "text": {
-      "en": "Would be hit, once per turn: it lands on the attacker instead.",
-      "ru": "Перед ударом, раз за ход: вместо этого достаётся атакующему."
-     },
-     "check": {
-      "terminates": true,
-      "games": 544,
-      "capped": 0,
-      "timeUp": 0,
-      "score": 0.7555147058823529,
-      "inBand": false,
-      "scale": 1,
-      "trace": "Mirrorquill intercepts: the hit on Mirrorquill lands on Oracle"
-     },
-     "state": "rejected",
-     "why": "out of band: wins 76% at best (band 35-75%)"
-    },
     {
      "pair": "aegis+thornback",
      "lean": "B",
@@ -11112,8 +11076,170 @@
       "trace": "Stormbristle → self (Stormbristle) → Charge 1"
      },
      "state": "ready"
+    },
+    {
+     "pair": "aegis+thornback",
+     "lean": "B",
+     "intent": "Whenever any ally is hurt it gains 1 Charge, and at 3 Charge it spends them to deal its power in damage to that attacker.",
+     "name": {
+      "en": "Spiteguard",
+      "ru": "Колючий Страж"
+     },
+     "flavour": {
+      "en": "Every wound to its friends is a debt it collects with interest.",
+      "ru": "Каждая рана друга — долг, который он взыщет с процентами."
+     },
+     "unit": {
+      "name": "Spiteguard",
+      "base": {
+       "hp": 28,
+       "pwr": 10
+      },
+      "triggers": [
+       {
+        "kind": "trigger",
+        "on": {
+         "on": "Hurt",
+         "unit": "ally"
+        }
+       }
+      ],
+      "selectors": [
+       {
+        "kind": "holder"
+       }
+      ],
+      "abilities": [
+       "Spark"
+      ],
+      "also": [
+       {
+        "selectors": [
+         {
+          "kind": "attacker"
+         }
+        ],
+        "abilities": [
+         "BlastCharged"
+        ]
+       },
+       {
+        "selectors": [
+         {
+          "kind": "holder"
+         }
+        ],
+        "abilities": [
+         "Spend"
+        ]
+       }
+      ]
+     },
+     "abilities": {
+      "Spark": {
+       "name": "Spark",
+       "family": "Arcane",
+       "effects": [
+        {
+         "kind": "applyStatus",
+         "status": "Charge",
+         "stacks": {
+          "kind": "const",
+          "value": 1
+         }
+        }
+       ]
+      },
+      "BlastCharged": {
+       "name": "BlastCharged",
+       "family": "Strike",
+       "effects": [
+        {
+         "kind": "branch",
+         "if": {
+          "kind": "stacksAtLeast",
+          "status": "Charge",
+          "n": 3,
+          "of": "holder"
+         },
+         "then": [
+          {
+           "kind": "damage",
+           "amount": {
+            "kind": "stat",
+            "stat": "pwr",
+            "of": "holder"
+           }
+          }
+         ],
+         "else": []
+        }
+       ]
+      },
+      "Spend": {
+       "name": "Spend",
+       "family": "Arcane",
+       "effects": [
+        {
+         "kind": "branch",
+         "if": {
+          "kind": "stacksAtLeast",
+          "status": "Charge",
+          "n": 3,
+          "of": "holder"
+         },
+         "then": [
+          {
+           "kind": "consumeStacks",
+           "status": "Charge",
+           "stacks": {
+            "kind": "const",
+            "value": 3
+           }
+          }
+         ],
+         "else": []
+        }
+       ]
+      }
+     },
+     "statuses": {
+      "Charge": {
+       "name": "Charge",
+       "names": {
+        "en": "Charge",
+        "ru": {
+         "name": "Заряд",
+         "acc": "Заряд",
+         "count": [
+          "Заряд",
+          "Заряда",
+          "Зарядов"
+         ]
+        }
+       },
+       "counter": true,
+       "abilities": []
+      }
+     },
+     "text": {
+      "en": "Ally hit: gain 1 Charge, and if it has 3+ Charge, PWR damage to the attacker; otherwise, nothing, and if it has 3+ Charge, spend 3 Charge; otherwise, nothing.",
+      "ru": "Удар по союзнику: получить 1 Заряд, и если у него 3 Заряда или больше, урон, равный АТК, атакующему; иначе ничего, и если у него 3 Заряда или больше, потратить 3 Заряда; иначе ничего."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.5257352941176471,
+      "inBand": true,
+      "scale": 1,
+      "trace": "Spiteguard → self (Spiteguard) → Charge 1"
+     },
+     "state": "ready"
     }
-   ]
+   ],
+   "topUps": 2
   },
   {
    "pair": {
@@ -11391,17 +11517,17 @@
     {
      "pair": "archmage+oracle",
      "lean": "twist",
-     "intent": "Whenever an enemy is Cursed it gains 1 Charge; at 3 Charge it Freezes the front and last enemy and spends the Charge.",
+     "intent": "Every third turn, at the start of the turn, it Curses all enemies, and one turn later each of them takes damage equal to its power.",
      "name": {
-      "en": "Rimeweaver",
-      "ru": "Ледопряд"
+      "en": "Dread Prophet",
+      "ru": "Вестник Рока"
      },
      "flavour": {
-      "en": "Every curse is a thread; three make a shroud of ice.",
-      "ru": "Каждое проклятие — нить. Три нити — и ледяной саван готов."
+      "en": "Every third dawn, it names your end, and the end arrives on time.",
+      "ru": "Каждое третье утро он называет твой срок, и срок не заставляет себя ждать."
      },
      "unit": {
-      "name": "Rimeweaver",
+      "name": "Dread Prophet",
       "base": {
        "hp": 22,
        "pwr": 6
@@ -11410,250 +11536,36 @@
        {
         "kind": "trigger",
         "on": {
-         "on": "StatusApplied",
-         "unit": "enemy",
-         "status": "Curse"
-        }
-       }
-      ],
-      "selectors": [
-       {
-        "kind": "holder"
-       }
-      ],
-      "abilities": [
-       "Spark"
-      ],
-      "also": [
-       {
-        "selectors": [
-         {
-          "kind": "frontEnemy"
-         },
-         {
-          "kind": "lastEnemy"
-         }
-        ],
-        "abilities": [
-         "ChillCharged"
-        ]
-       },
-       {
-        "selectors": [
-         {
-          "kind": "holder"
-         }
-        ],
-        "abilities": [
-         "Spend"
-        ]
-       }
-      ]
-     },
-     "abilities": {
-      "Spark": {
-       "name": "Spark",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "applyStatus",
-         "status": "Charge",
-         "stacks": {
-          "kind": "const",
-          "value": 1
-         }
-        }
-       ]
-      },
-      "ChillCharged": {
-       "name": "ChillCharged",
-       "family": "Control",
-       "effects": [
-        {
-         "kind": "branch",
-         "if": {
-          "kind": "stacksAtLeast",
-          "status": "Charge",
-          "n": 3,
-          "of": "holder"
-         },
-         "then": [
-          {
-           "kind": "applyStatus",
-           "status": "Freeze",
-           "stacks": {
-            "kind": "const",
-            "value": 3
-           }
-          }
-         ],
-         "else": []
-        }
-       ]
-      },
-      "Spend": {
-       "name": "Spend",
-       "family": "Arcane",
-       "effects": [
-        {
-         "kind": "branch",
-         "if": {
-          "kind": "stacksAtLeast",
-          "status": "Charge",
-          "n": 3,
-          "of": "holder"
-         },
-         "then": [
-          {
-           "kind": "consumeStacks",
-           "status": "Charge",
-           "stacks": {
-            "kind": "const",
-            "value": 3
-           }
-          }
-         ],
-         "else": []
-        }
-       ]
-      }
-     },
-     "statuses": {
-      "Curse": {
-       "name": "Curse",
-       "statMods": {
-        "pwr": -1
-       },
-       "abilities": []
-      },
-      "Charge": {
-       "name": "Charge",
-       "names": {
-        "en": "Charge",
-        "ru": {
-         "name": "Заряд",
-         "acc": "Заряд",
-         "count": [
-          "Заряд",
-          "Заряда",
-          "Зарядов"
-         ]
-        }
-       },
-       "counter": true,
-       "abilities": []
-      },
-      "Freeze": {
-       "name": "Freeze",
-       "triggers": [
-        {
-         "kind": "interceptor",
-         "on": {
-          "on": "Strike",
-          "striker": "holder"
-         }
-        }
-       ],
-       "selectors": [
-        {
-         "kind": "holder"
-        }
-       ],
-       "abilities": [
-        {
-         "effects": [
-          {
-           "kind": "cancel",
-           "consumeSelf": 1
-          }
-         ]
-        }
-       ]
-      }
-     },
-     "text": {
-      "en": "Enemy gets Curse: gain 1 Charge, and if it has 3+ Charge, 3 Freeze to front enemy and the back enemy; otherwise, nothing, and if it has 3+ Charge, spend 3 Charge; otherwise, nothing.",
-      "ru": "Враг получает Проклятие: получить 1 Заряд, и если у него 3 Заряда или больше, 3 Заморозки переднему врагу и заднему врагу; иначе ничего, и если у него 3 Заряда или больше, потратить 3 Заряда; иначе ничего."
-     },
-     "check": {
-      "terminates": true,
-      "games": 544,
-      "capped": 0,
-      "timeUp": 0,
-      "score": 0.21691176470588236,
-      "inBand": false,
-      "scale": 3,
-      "trace": "Rimeweaver → self (Rimeweaver) → Charge 1"
-     },
-     "state": "rejected",
-     "why": "out of band: wins 22% at best (band 35-75%)"
-    }
-   ]
-  },
-  {
-   "pair": {
-    "key": "executioner+vulture",
-    "a": "executioner",
-    "b": "vulture",
-    "why": "requested"
-   },
-   "candidates": [
-    {
-     "pair": "executioner+vulture",
-     "lean": "A",
-     "intent": "When it kills an enemy, it gains 1 Strength, and a turn later the new front enemy takes damage equal to its power.",
-     "name": {
-      "en": "Carrion Reaper",
-      "ru": "Падальщик-палач"
-     },
-     "flavour": {
-      "en": "Each kill feeds it; the next victim pays the bill.",
-      "ru": "Каждая казнь придаёт сил, и следующий уже в очереди."
-     },
-     "unit": {
-      "name": "Carrion Reaper",
-      "base": {
-       "hp": 31,
-       "pwr": 14
-      },
-      "triggers": [
-       {
-        "kind": "trigger",
-        "on": {
-         "on": "Death",
-         "unit": "enemy"
+         "on": "TurnStart"
         }
        }
       ],
       "condition": {
-       "kind": "killedByHolder"
+       "kind": "turnEvery",
+       "n": 3
       },
       "selectors": [
        {
-        "kind": "frontEnemy"
+        "kind": "allEnemies"
        }
       ],
       "abilities": [
-       "Sentence"
-      ],
-      "also": [
-       {
-        "selectors": [
-         {
-          "kind": "holder"
-         }
-        ],
-        "abilities": [
-         "Rally"
-        ]
-       }
+       "Doom"
       ]
      },
      "abilities": {
-      "Sentence": {
-       "name": "Sentence",
-       "family": "Strike",
+      "Doom": {
+       "name": "Doom",
+       "family": "Control",
        "effects": [
+        {
+         "kind": "applyStatus",
+         "status": "Curse",
+         "stacks": {
+          "kind": "const",
+          "value": 1
+         }
+        },
         {
          "kind": "delay",
          "turns": 1,
@@ -11667,48 +11579,44 @@
          }
         }
        ]
-      },
-      "Rally": {
-       "name": "Rally",
-       "family": "Control",
-       "effects": [
-        {
-         "kind": "applyStatus",
-         "status": "Strength",
-         "stacks": {
-          "kind": "const",
-          "value": 1
-         }
-        }
-       ]
       }
      },
      "statuses": {
-      "Strength": {
-       "name": "Strength",
+      "Curse": {
+       "name": "Curse",
        "statMods": {
-        "pwr": 1
+        "pwr": -1
        },
        "abilities": []
       }
      },
      "text": {
-      "en": "Enemy dies, if its strike made the kill: in 1 turn: PWR damage to front enemy, and 1 Strength to self.",
-      "ru": "Смерть врага, если убила его атака: через 1 ход: урон, равный АТК, переднему врагу, и 1 Сила себе."
+      "en": "Turn start, on turns 3, 6, 9…: 1 Curse to all enemies, then in 1 turn: PWR damage to all enemies.",
+      "ru": "Начало хода, на 3-м, 6-м, 9-м… ходу: 1 Проклятие всем врагам, затем через 1 ход: урон, равный АТК, всем врагам."
      },
      "check": {
       "terminates": true,
       "games": 544,
       "capped": 0,
       "timeUp": 0,
-      "score": 0.7886029411764706,
-      "inBand": false,
+      "score": 0.4099264705882353,
+      "inBand": true,
       "scale": 1,
-      "trace": "Carrion Reaper sets a delay on Nautilus: lands at the end of turn 2"
+      "trace": "Dread Prophet (on turns 3, 6, 9…) → all enemies (Nautilus, Mirror, Bully) → Curse 1"
      },
-     "state": "rejected",
-     "why": "out of band: wins 79% at best (band 35-75%)"
-    },
+     "state": "ready"
+    }
+   ],
+   "topUps": 2
+  },
+  {
+   "pair": {
+    "key": "executioner+vulture",
+    "a": "executioner",
+    "b": "vulture",
+    "why": "requested"
+   },
+   "candidates": [
     {
      "pair": "executioner+vulture",
      "lean": "B",
@@ -11932,8 +11840,139 @@
       "trace": "Bonepicker → self (Bonepicker) → Strength 6"
      },
      "state": "ready"
+    },
+    {
+     "pair": "executioner+vulture",
+     "lean": "B",
+     "intent": "Whenever any unit dies, it gains 1 Charge; at 3 Charge it spends them to gain 2 Strength and heal by its power.",
+     "name": {
+      "en": "Gorecrest",
+      "ru": "Падальщик Казни"
+     },
+     "flavour": {
+      "en": "Every fall feeds it. On the third, it feasts.",
+      "ru": "Каждая смерть — кусок. На третьем он пирует."
+     },
+     "unit": {
+      "name": "Gorecrest",
+      "base": {
+       "hp": 31,
+       "pwr": 14
+      },
+      "triggers": [
+       {
+        "kind": "trigger",
+        "on": {
+         "on": "Death",
+         "unit": "any"
+        }
+       }
+      ],
+      "selectors": [
+       {
+        "kind": "holder"
+       }
+      ],
+      "abilities": [
+       "Carrion Feast"
+      ]
+     },
+     "abilities": {
+      "Carrion Feast": {
+       "name": "Carrion Feast",
+       "family": "Heal",
+       "effects": [
+        {
+         "kind": "applyStatus",
+         "status": "Charge",
+         "stacks": {
+          "kind": "const",
+          "value": 1
+         }
+        },
+        {
+         "kind": "branch",
+         "if": {
+          "kind": "stacksAtLeast",
+          "status": "Charge",
+          "n": 3,
+          "of": "holder"
+         },
+         "then": [
+          {
+           "kind": "consumeStacks",
+           "status": "Charge",
+           "stacks": {
+            "kind": "const",
+            "value": 3
+           }
+          },
+          {
+           "kind": "applyStatus",
+           "status": "Strength",
+           "stacks": {
+            "kind": "const",
+            "value": 2
+           }
+          },
+          {
+           "kind": "heal",
+           "amount": {
+            "kind": "stat",
+            "stat": "pwr",
+            "of": "holder"
+           }
+          }
+         ],
+         "else": []
+        }
+       ]
+      }
+     },
+     "statuses": {
+      "Charge": {
+       "name": "Charge",
+       "names": {
+        "en": "Charge",
+        "ru": {
+         "name": "Заряд",
+         "acc": "Заряд",
+         "count": [
+          "Заряд",
+          "Заряда",
+          "Зарядов"
+         ]
+        }
+       },
+       "counter": true,
+       "abilities": []
+      },
+      "Strength": {
+       "name": "Strength",
+       "statMods": {
+        "pwr": 1
+       },
+       "abilities": []
+      }
+     },
+     "text": {
+      "en": "Any unit dies: gain 1 Charge, then if it has 3+ Charge, spend 3 Charge and 2 Strength to self and heal self for PWR; otherwise, nothing.",
+      "ru": "Смерть любого: получить 1 Заряд, затем если у него 3 Заряда или больше, потратить 3 Заряда и 2 Силы себе и лечение на АТК себе; иначе ничего."
+     },
+     "check": {
+      "terminates": true,
+      "games": 544,
+      "capped": 0,
+      "timeUp": 0,
+      "score": 0.6810661764705882,
+      "inBand": true,
+      "scale": 1,
+      "trace": "Gorecrest → self (Gorecrest) → Charge 1"
+     },
+     "state": "ready"
     }
-   ]
+   ],
+   "topUps": 2
   }
  ]
 }
