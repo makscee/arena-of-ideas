@@ -14,7 +14,9 @@
 # and writes the report into ~/reports/arena-night-<day>.html. The live game
 # stays dark: nothing runs there.
 set -euo pipefail
-export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+# The workshop server runs /opt/homebrew/bin/node (arena-workshop.sh), and better-sqlite3 is built for it:
+# that node must come first, ahead of ~/.local/bin (another node, and claude).
+export PATH="/opt/homebrew/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 DIR="${ARENA_WORKSHOP_DIR:-$HOME/arena-workshop}"
 LABEL=ru.makscee.arena-night
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
@@ -45,7 +47,7 @@ install)
     <string>/bin/bash</string><string>$DIR/scripts/arena-night.sh</string><string>run</string>
   </array>
   <key>EnvironmentVariables</key><dict>
-    <key>PATH</key><string>$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <key>PATH</key><string>/opt/homebrew/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin</string>
     <key>HOME</key><string>$HOME</string>
   </dict>
   <key>StartCalendarInterval</key><dict><key>Hour</key><integer>3</integer><key>Minute</key><integer>30</integer></dict>
