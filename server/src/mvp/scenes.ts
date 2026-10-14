@@ -185,8 +185,13 @@ const forge = (state: PairState, click?: string) => async (rt: MvpRuntime): Prom
 const fusionMarks = (kind: "none" | "now" | "shop") => async (rt: MvpRuntime): Promise<SceneBuilt> => {
   if (!rt.codex) throw new SceneMissing("the fusion-mark scenes need the Codex: start the scenes server with ARENA_CODEX=1");
   const run = await playTo(rt, shopAt(3), "round 3");
-  // Units whose pairs nothing stored yet, so the scene sets each pair's state itself.
-  const units = rt.content.units.filter((u) => u.forms?.awoken);
+  // Units whose pairs nothing stored yet, so the scene sets each pair's state
+  // itself; each scene from its own part of the pool (builds are kept, so
+  // fusion-now must never design fusion-none's pair).
+  const all = rt.content.units.filter((u) => u.forms?.awoken);
+  const part = Math.floor(all.length / 3);
+  const from = { none: 0, now: 1, shop: 2 }[kind] * part;
+  const units = all.slice(from, from + part);
   const free = (x: UnitId, y: UnitId) => pairState(rt.store.codexPair(x, y)) === "unforged";
   const pick: typeof units = [];
   for (const u of units) if (pick.length < 5 && pick.every((v) => free(u.id, v.id))) pick.push(u);
