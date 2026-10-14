@@ -20,6 +20,8 @@ export const DESIGNER_RULES = [
   "Add one element neither parent has (Déjà Vu's 'one turn later', Grave Tree's inherited rule).",
   "Three candidates lean differently: lean A (toward the first parent), lean B (toward the second), and twist (reads as a third creature).",
   "Output is the v2 schema only. No stats: the fusion has the parents' summed HP and power; numbers inside the rule are a first guess the quick tune rescales.",
+  // the units rethink (#1063): one shared vocabulary, one strong reading (#1065)
+  "Speak the shared vocabulary only: the statuses Strength, Vitality, Curse, Poison, Shield, Freeze, Blessing and the Charge counter, plus the turn number. Coin no status, counter or resource of your own, no coins or gold, and no hidden concept a card can't show. The rule has one strong reading: one idea, said once.",
 ];
 
 /** The engine's rule language, read from the source so it never drifts. */
@@ -30,7 +32,14 @@ function language(): string {
   return `${end > 0 ? types.slice(0, end) : types}\n\n// ---- v2 words (src/words/types.ts) ----\n${words}`;
 }
 
-export function designerSystemPrompt(): string {
+/** The registry the designer sees as examples: the §4 fixtures by default,
+ * the live pool's for a run on it (scripts/night-batch.ts --pool v2). */
+export interface DesignerExamples {
+  abilities: Record<string, unknown>;
+  statuses: Record<string, unknown>;
+}
+
+export function designerSystemPrompt(examples?: DesignerExamples): string {
   const macros = Object.values(MACROS).map((m) => `- ${m.name}: ${m.en}`).join("\n");
   return [
     "You design fusions for Arena of Ideas, an auto-battler. A fusion of two units is a third creature with ONE designed rule (When → Who → Does), not a splice of its parents.",
@@ -45,9 +54,9 @@ export function designerSystemPrompt(): string {
     `Composed words you may use as {"kind":"macro","name":…}:\n${macros}`,
     "If the design truly needs a word the language lacks, do not bend it: set `wordRequest` {word, meaning} and still give your best rule without it.",
     "",
-    "Examples (the §4 units' registry and the two written fusions):",
-    `abilities: ${JSON.stringify(FIXTURE_ABILITIES)}`,
-    `statuses: ${JSON.stringify(FIXTURE_STATUSES)}`,
+    examples ? "Examples (the live pool's registry, and the two written fusions):" : "Examples (the §4 units' registry and the two written fusions):",
+    `abilities: ${JSON.stringify(examples?.abilities ?? FIXTURE_ABILITIES)}`,
+    `statuses: ${JSON.stringify(examples?.statuses ?? FIXTURE_STATUSES)}`,
     `Déjà Vu (Hourglass + Mirror): ${JSON.stringify(DejaVu)}`,
     `Grave Tree (Raven + Seed): ${JSON.stringify(GraveTree)}`,
     "",
@@ -101,10 +110,11 @@ export interface ClaudeDesignerOptions {
   namerModel: string;
   bin: string;
   timeoutMs: number;
+  examples?: DesignerExamples;
 }
 
 export function claudeDesigner(o: ClaudeDesignerOptions): Designer {
-  const system = designerSystemPrompt();
+  const system = designerSystemPrompt(o.examples);
   return {
     kind: "claude",
     async design(a, b) {
@@ -140,13 +150,14 @@ export function fakeDesigner(): Designer {
   };
 }
 
-export function designerFromEnv(env: NodeJS.ProcessEnv = process.env): Designer {
+export function designerFromEnv(env: NodeJS.ProcessEnv = process.env, examples?: DesignerExamples): Designer {
   if (env.ARENA_NIGHT_DESIGNER === "claude") {
     return claudeDesigner({
       model: env.ARENA_NIGHT_MODEL || "opus",
       namerModel: env.ARENA_NIGHT_NAMER_MODEL || "sonnet",
       bin: env.ARENA_CLAUDE_BIN || "claude",
       timeoutMs: Number(env.ARENA_NIGHT_TIMEOUT_MS) || 600_000,
+      ...(examples ? { examples } : {}),
     });
   }
   if (env.ARENA_NIGHT_DESIGNER && env.ARENA_NIGHT_DESIGNER !== "fake") throw new Error(`ARENA_NIGHT_DESIGNER is "claude" or "fake", not "${env.ARENA_NIGHT_DESIGNER}"`);

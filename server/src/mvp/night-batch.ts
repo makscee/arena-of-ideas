@@ -17,7 +17,7 @@
 //                    breakers sits in band; breakers only under 50 ghosts.
 //   store            three candidates per pair, as `ready to claim`.
 //
-// No numbers come from a model: stats are the parents' sum, the rule's cost
+// No numbers come from a model: stats are the parents' sum (fusedBase), the rule's cost
 // is what the quick tune measured.
 
 import { battle } from "../../../src/battle.js";
@@ -164,6 +164,9 @@ export interface Field {
   breakers: UnitDef[][];
   abilities: AbilityRegistry;
   statuses: StatusRegistry;
+  /** How many of a ghost line's front units the fusion takes the place of:
+   * 1 by default; 2 as in play, where a fusion uses up two units (#1065). */
+  replaces?: number;
 }
 
 export const BREAKERS_UNDER = 50;
@@ -206,6 +209,11 @@ export interface Candidate {
   wordRequest?: { word: string; meaning: string };
 }
 
+/** A fusion's stats as the game's fuse gives them: the parents' sum. */
+export function fusedBase(a: Parent, b: Parent): { hp: number; pwr: number } {
+  return { hp: a.def.base.hp + b.def.base.hp, pwr: a.def.base.pwr + b.def.base.pwr };
+}
+
 /** The draft's own ids (name = key, as the validator wants). An id the
  * parents or the field already have (Shield, Strength) is the registry's: the
  * draft's redeclaration is dropped, so no "Shield2" reaches the card. Each
@@ -233,12 +241,42 @@ function owned(d: DesignDraft, taken: Set<string>): { rule: DesignDraft["rule"];
   return { rule: walk(d.rule) as DesignDraft["rule"], abilities, statuses };
 }
 
-/** The draft as a unit with the parents' summed stats, or the issues. */
-export function compile(d: DesignDraft, a: Parent, b: Parent, name: string, taken: Set<string>): { ok: Compiled; own: Set<string> } | { issues: string[] } {
+/** The entries of `k` the unit and its own entries reach, through abilities
+ * and statuses (so a shared registry adds only the words the rule uses). */
+function reachedOnly(unit: UnitDef, statuses: StatusRegistry, abilities: AbilityRegistry, own: { abilities: AbilityRegistry; statuses: StatusRegistry }, k: "abilities" | "statuses"): Record<string, never> {
+  const seen = { abilities: new Set<string>(), statuses: new Set<string>() };
+  const visit = (x: unknown): void => {
+    if (Array.isArray(x)) return x.forEach(visit);
+    if (!x || typeof x !== "object") return;
+    for (const [key, v] of Object.entries(x)) {
+      if (key === "status" && typeof v === "string") {
+        if (!seen.statuses.has(v)) {
+          seen.statuses.add(v);
+          visit(statuses[v]);
+        }
+      } else if ((key === "abilities" || key === "does") && Array.isArray(v) && v.every((id) => typeof id === "string")) {
+        for (const id of v as string[])
+          if (!seen.abilities.has(id)) {
+            seen.abilities.add(id);
+            visit(abilities[id]);
+          }
+      } else visit(v);
+    }
+  };
+  visit(unit);
+  visit(own.abilities);
+  visit(own.statuses);
+  const reg = (k === "abilities" ? abilities : statuses) as Record<string, never>;
+  // an unknown id stays unknown, so the validator still names it
+  return Object.fromEntries([...seen[k], ...Object.keys(own[k])].filter((id) => reg[id]).map((id) => [id, reg[id]!]));
+}
+
+/** The draft as a unit with the game's fused stats, or the issues. */
+export function compile(d: DesignDraft, a: Parent, b: Parent, name: string, taken: Set<string>, shared?: Pick<Field, "abilities" | "statuses">): { ok: Compiled; own: Set<string> } | { issues: string[] } {
   const n = owned(d, taken);
   const unit: UnitDef = {
     name,
-    base: { hp: a.def.base.hp + b.def.base.hp, pwr: a.def.base.pwr + b.def.base.pwr },
+    base: fusedBase(a, b),
     ...(n.rule.triggers ? { triggers: n.rule.triggers } : {}),
     ...(n.rule.condition ? { condition: n.rule.condition } : {}),
     ...(n.rule.selectors ? { selectors: n.rule.selectors } : {}),
@@ -246,8 +284,9 @@ export function compile(d: DesignDraft, a: Parent, b: Parent, name: string, take
     ...(n.rule.also?.length ? { also: n.rule.also } : {}),
     ...(n.rule.statuses?.length ? { statuses: n.rule.statuses } : {}),
   };
-  const statuses = { ...a.statuses, ...b.statuses, ...n.statuses };
-  const abilities = { ...a.abilities, ...b.abilities, ...n.abilities };
+  // the pool's shared words (#1065: Strength, Curse, Charge …) under the parents' and its own
+  const statuses = reachedOnly(unit, { ...shared?.statuses, ...a.statuses, ...b.statuses, ...n.statuses }, { ...shared?.abilities, ...a.abilities, ...b.abilities, ...n.abilities }, n, "statuses");
+  const abilities = reachedOnly(unit, { ...shared?.statuses, ...a.statuses, ...b.statuses, ...n.statuses }, { ...shared?.abilities, ...a.abilities, ...b.abilities, ...n.abilities }, n, "abilities");
   // A coined status says itself in EN and RU, or the rule isn't legal (§3 guardrail).
   const unnamed = Object.entries(n.statuses).flatMap(([id, def]) => {
     const why = namesMissing(def);
@@ -288,7 +327,7 @@ export function scaled(c: Compiled, own: Set<string>, scale: number): Compiled {
 
 const ended = (log: readonly BattleEvent[]) => log.find((e) => e.type === "BattleEnd") as Extract<BattleEvent, { type: "BattleEnd" }> | undefined;
 
-/** The fusion leads each ghost line (in place of its front unit) against every
+/** The fusion leads each ghost line (in place of its front unit, or units: Field.replaces) against every
  * other line of the field; the score is its line's share of wins (draws half). */
 export function measureFusion(c: Compiled, field: Field, seeds = 2): CheckResult {
   const opponents = field.ghosts.length < BREAKERS_UNDER ? [...field.ghosts, ...field.breakers] : field.ghosts;
@@ -301,7 +340,7 @@ export function measureFusion(c: Compiled, field: Field, seeds = 2): CheckResult
   let trace: string | undefined;
   const lines = field.ghosts.length ? field.ghosts : [[]];
   for (let i = 0; i < lines.length; i++) {
-    const mine = [c.unit, ...(lines[i] ?? []).slice(1)];
+    const mine = [c.unit, ...(lines[i] ?? []).slice(field.replaces ?? 1)];
     for (let j = 0; j < opponents.length; j++) {
       if (opponents[j] === lines[i]) continue;
       for (let s = 1; s <= seeds; s++) {
@@ -425,10 +464,10 @@ async function designPair(pair: ListedPair, a: Parent, b: Parent, o: BatchOption
     drafts.map(async (d, i): Promise<Candidate> => {
       const naming = namings[i]!;
       const base = { pair: pair.key, lean: d.lean, intent: d.intent ?? "", name: naming.name, flavour: naming.flavour };
-      const empty = { unit: { name: naming.name.en, base: { hp: a.def.base.hp + b.def.base.hp, pwr: a.def.base.pwr + b.def.base.pwr } }, abilities: {}, statuses: {}, text: { en: "", ru: "" }, check: null };
+      const empty = { unit: { name: naming.name.en, base: fusedBase(a, b) }, abilities: {}, statuses: {}, text: { en: "", ru: "" }, check: null };
       if (d.wordRequest?.word) return { ...base, ...empty, state: "word", wordRequest: d.wordRequest, why: `waiting for a new word: ${d.wordRequest.word}` };
       const taken = new Set([...Object.keys(a.abilities), ...Object.keys(b.abilities), ...Object.keys(a.statuses), ...Object.keys(b.statuses), ...Object.keys(o.field.abilities), ...Object.keys(o.field.statuses)]);
-      const c = compile(d, a, b, naming.name.en, taken);
+      const c = compile(d, a, b, naming.name.en, taken, o.field);
       if ("issues" in c) return { ...base, ...empty, state: "rejected", why: c.issues.slice(0, 3).join("; ") };
       const tuned = quickTune(c.ok, c.own, o.field);
       const text = { en: ruleText(tuned.compiled, "en"), ru: ruleText(tuned.compiled, "ru") };

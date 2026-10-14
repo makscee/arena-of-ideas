@@ -1,0 +1,118 @@
+{
+ "reasons": {
+  "coin-thief+priest": "A thief and a priest: taking from the enemy and giving to friends can become one gesture.",
+  "gambler+hourglass": "Chance meets a clock: the time rule can make the gamble certain on schedule.",
+  "mirror+trickster": "Two rule-thieves: the fusion has to steal rules in a way neither parent does.",
+  "berserker+candle": "Both live on missing HP: one refuses to die, the other hits harder the more it bleeds.",
+  "nautilus+thornback": "The armour and the spikes: what a hit gives it and what it gives back.",
+  "magnet+prism": "One pulls the allies' debuffs in, the other throws them back: a full loop.",
+  "gravecaller+raven": "Two death-rules: remembering the fallen and bringing them back.",
+  "chrysalis+seed": "Two slow growers: a timed metamorphosis that can pass to an ally.",
+  "hexer+sniper": "Both reach the enemy's back line: silence and the shot.",
+  "bodyguard+medic": "Protection two ways: take the hit or heal it.",
+  "leech+vulture": "Two feeders: one drinks from strikes, the other from deaths.",
+  "hydra+lone-wolf": "A contradiction: the unit that wants to be alone and the one that becomes many.",
+  "conductor+drummer": "Two rhythm units: ally actions build a beat, and the beat repeats actions.",
+  "bully+frostling": "Freeze sets up the Bully's double hit: a combo inside one unit.",
+  "alchemist+hornet": "A poison engine: one spreads Poison, the other grows it.",
+  "fortune-teller+war-horn": "Both read the board's numbers: who has more units, how few stand.",
+  "aegis+lantern": "Two shields: one cancels the first hit, one works while untouched.",
+  "archmage+battery": "The pool's two Charge builders: the fusion must spend Charge differently from both.",
+  "frost-witch+oracle": "Two timed debuffers: Freeze on turn 2, Curse from turn 3.",
+  "executioner+gravedigger": "Death as fuel: kills and fallen allies both count."
+ },
+ "picks": {
+  "coin-thief+priest": {
+   "name": "Tithe Taker",
+   "why": "One battle-start gesture: bless its neighbours and curse an enemy by the same PWR; the twist cursed itself, lean A was a long Charge rule."
+  },
+  "gambler+hourglass": {
+   "name": "Loaded Hour",
+   "why": "The clock makes the gamble sure on turns 3, 6, 9: both parents show in one sentence; the other two are long Charge rules."
+  },
+  "mirror+trickster": {
+   "name": "Soul Harvester",
+   "why": "A third creature: it keeps the rule of every enemy it sees die; Copycat Jester was almost the Trickster again."
+  },
+  "berserker+candle": {
+   "name": "Last Wick",
+   "why": "Burns down instead of dying and lashes out with its missing HP: both parents in one rule; Waxrager sat at the band's top (75%)."
+  },
+  "nautilus+thornback": {
+   "name": "Spiralthorn",
+   "why": "Shortest and clearest: each hit grows its shell and curses the attacker; Recoil Chambers was a long Charge rule."
+  },
+  "magnet+prism": {
+   "name": "Hexlode",
+   "why": "Takes the allies' debuffs and sends the same back to the giver: the full loop in one reading."
+  },
+  "gravecaller+raven": {
+   "name": "Rookwraith",
+   "why": "The only one in band: keeps the fallen ally's rule, then brings the ally back a turn later."
+  },
+  "chrysalis+seed": {
+   "name": "Dawnshell",
+   "why": "The metamorphosis passes to the ally behind on turn 3: a third creature; the others were a Charge heal and a plain Blessing."
+  },
+  "hexer+sniper": {
+   "name": "Rearguard Thief",
+   "why": "On turn 2 it takes the back enemy's rule and silences it: new, and reads at once; Dooms Marksman was a plain shot."
+  },
+  "bodyguard+medic": {
+   "name": "Aegis Healer",
+   "why": "Heals the hit ally and blesses it so it survives its next death: a protector unlike either parent; Field Sentinel was Bodyguard again."
+  },
+  "leech+vulture": {
+   "name": "Gorecrest",
+   "why": "Every strike takes power from the target and gives it to itself: a drain in one line; Carrion Drinker was only Vulture."
+  },
+  "hydra+lone-wolf": {
+   "name": "Solitary Many",
+   "why": "When it is alone it grows Heads every other turn: the contradiction resolved; Packhydra was the Hydra with fewer heads."
+  },
+  "conductor+drummer": {
+   "name": "Echo Drummer",
+   "why": "Every third ally action plays again: the beat and the repeat in one rule."
+  },
+  "bully+frostling": {
+   "name": "Thaw Collector",
+   "why": "Hits hard when an enemy's Freeze ends: a new moment to act on; Rime Brawler only alternated two statuses."
+  },
+  "alchemist+hornet": {
+   "name": "Venom Distiller",
+   "why": "Turns stacked Poison into a burst each turn end: one strong reading; the twist was a Charge rule."
+  },
+  "fortune-teller+war-horn": {
+   "name": "Last Stand Call",
+   "why": "Rallies when the line runs thin and reads the odds for what it gives; Omen Horn sat near the band's top (72%)."
+  },
+  "aegis+lantern": {
+   "name": "Gleamguard",
+   "why": "While untouched, its shields for the line grow with the turn; Vigil Bulwark was Bodyguard."
+  },
+  "archmage+battery": {
+   "name": "Voltmage",
+   "why": "The hits its allies took become a storm on every enemy: spends Charge unlike either parent."
+  },
+  "frost-witch+oracle": {
+   "name": "Winter Omen",
+   "why": "Curses whoever hits it now and freezes them a turn later: a delay neither parent has."
+  },
+  "executioner+gravedigger": {
+   "name": "Revenant Blade",
+   "why": "Each kill brings a fallen ally back: death as fuel, read in one line."
+  }
+ },
+ "discover": {
+  "conductor+hourglass": "two clocks: on which turns does the fusion act?",
+  "mirror+raven": "two rule-thieves: whose rule does the fusion end up with?",
+  "gambler+lone-wolf": "double strikes: what happens to the gamble?",
+  "medic+nautilus": "healing meets the shell: watch a hit on an ally.",
+  "bully+hornet": "poison and punishment: watch a poisoned enemy.",
+  "gravedigger+hydra": "falling heads: what does each death feed?",
+  "priest+seed": "slow growth and Blessing: watch the ally behind over the turns.",
+  "aegis+thornback": "a wall that bites: watch the first hit each turn.",
+  "archmage+oracle": "Charge and curses: watch from turn 3.",
+  "executioner+vulture": "kills feed it: watch a chain of kills."
+ }
+}
