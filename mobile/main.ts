@@ -26,7 +26,7 @@ import { card, formRich, roman, setCardCredits, unitSheet, type CardUnit } from 
 import { previewName } from "./ui/fusion";
 import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
-import { actionable, app, button, closable, desktopQuery, dismissable, h, isDesktop, keepFocus, keepScreen, keyboardLost, onKeys, overlay, screen, show, who, withKey } from "./ui/dom";
+import { actionable, app, button, closable, desktopQuery, dismissable, h, isDesktop, keepFocus, keepScreen, keyboardLost, onKeys, onRestore, overlay, screen, show, who, withKey } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
 import { telegramSheet } from "./screens/telegram";
 import { emailAttach, emailSignIn, emailSignUp } from "./screens/email";
@@ -699,6 +699,31 @@ async function openForge(tab: ForgeTab = "units"): Promise<void> {
 }
 // Every highlighted term's "Open in Codex" lands on its Keywords row (a scoped trigger's line in it).
 setCodexLink((term, scope) => void openCodex({ tab: "keywords", term, scope }));
+
+/** The browser's Back or Forward onto a screen that is gone (#1146): it is
+ * built again from the server, as its own button would. The run's group is
+ * the run that waits (the shop), else the last one's end. */
+onRestore((group) =>
+  (async () => {
+    try {
+      if (group === "codex") return await openCodex();
+      if (group === "forge") return await openForge();
+      if (group === "ideas") return await ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => (api.forget(), nameScreen()) });
+      if (group === "run") {
+        const id = (await api.home()).activeRunId ?? lastRunId();
+        if (id) {
+          const [run, content] = [await api.run(id), await getContent()];
+          return run.phase === "over" ? runOverScreen(run, content) : shopScreen(run, content);
+        }
+      }
+      return await homeScreen();
+    } catch (e) {
+      // A screen that can't be rebuilt (offline, a gone run): Home is always there.
+      console.warn("restore", group, e);
+      await homeScreen().catch(() => undefined);
+    }
+  })(),
+);
 
 /** The in-run menu (☰ in the HUD, Esc on desktop): Resume, Codex, Rules,
  * Title menu (the run waits on the server; Continue brings it back) and

@@ -23,11 +23,10 @@ describe("backStays", () => {
     expect(backStays({ overlays: 1, screen: "home" })).toBe(true);
     expect(backStays({ overlays: 1, screen: "" })).toBe(true);
   });
-  it("keeps Back in the game where Esc steps back: the shop, a battle, the Codex", () => {
-    for (const screen of ["shop", "battle", "codex", "stats", "over"]) expect(backStays({ overlays: 0, screen })).toBe(true);
+  it("keeps Back in the game in a battle: Back is its Esc", () => {
+    expect(backStays({ overlays: 0, screen: "battle" })).toBe(true);
   });
-  it("lets Back leave from Home and the name form", () => {
-    expect(backStays({ overlays: 0, screen: "home" })).toBe(false);
-    expect(backStays({ overlays: 0, screen: "" })).toBe(false);
+  it("leaves Back to the history on every other screen: it steps to the screen before", () => {
+    for (const screen of ["home", "shop", "codex", "stats", "over", "ideas", "forge", ""]) expect(backStays({ overlays: 0, screen })).toBe(false);
   });
 });

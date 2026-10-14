@@ -395,12 +395,19 @@ try {
       await page.getByTestId("codex-back").click();
       await page.getByTestId("fight").waitFor();
       if ((await page.getByTestId("round").textContent()) !== at) errors.push(`codex from ☰: back in ${await page.getByTestId("round").textContent()}, not ${at}`);
-      // Back (R3-26) is Esc: in the shop it opens the run menu, again resumes;
-      // over the Codex it returns to the shop.
+      // Back and Forward (R3-26, #1146) step through the screens: Back from the
+      // shop is Home (the run waits: Continue), Forward is the same round's shop.
       await back();
-      await page.getByTestId("run-menu").waitFor({ timeout: 3_000 }).catch(() => errors.push("back: Back in the shop didn't open the run menu"));
+      await page.getByTestId("play").waitFor({ timeout: 5_000 }).catch(() => errors.push(`back: Back in the shop didn't reach Home (${page.url()})`));
+      await page.evaluate(() => history.forward());
+      await page.getByTestId("fight").waitFor({ timeout: 5_000 }).catch(() => errors.push("back: Forward from Home didn't return to the shop"));
+      if ((await page.getByTestId("round").textContent().catch(() => "")) !== at) errors.push(`forward: back in ${await page.getByTestId("round").textContent().catch(() => "?")}, not ${at}`);
+      // The menu is a sheet: Back closes it and stays in the shop.
+      await page.getByTestId("menu-open").click();
+      await page.getByTestId("run-menu").waitFor();
       await back();
       await page.getByTestId("run-menu").waitFor({ state: "detached", timeout: 3_000 }).catch(() => errors.push("back: Back didn't close the run menu"));
+      await page.getByTestId("fight").waitFor({ timeout: 3_000 }).catch(() => errors.push("back: Back from the run menu left the shop"));
       await page.getByTestId("menu-open").click();
       await page.getByTestId("menu-codex").click();
       await page.getByTestId("codex-units").waitFor();
