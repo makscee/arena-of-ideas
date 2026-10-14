@@ -170,7 +170,7 @@ for (let round = 1; round <= ROUNDS; round++) {
     return { ...next, pwr, hp };
   });
   rounds.push({ round, median: +mid.toFixed(3), inBand, scores: Object.fromEntries([...scores].map(([k, v]) => [k, +v.toFixed(3)])), moves, healthy: r.healthy });
-  console.error(`round ${round} (${SEEDS} seeds): median ${pct(mid)}, ${inBand}/20 in band, worst ${pct(worst)}, ${moves.length} moves, quick meta ${r.healthy ? "healthy" : "not healthy"}  ${((Date.now() - t0) / 1000).toFixed(0)}s`);
+  console.error(`round ${round} (${SEEDS} seeds): median ${pct(mid)}, ${inBand}/${rows.length} in band, worst ${pct(worst)}, ${moves.length} moves, quick meta ${r.healthy ? "healthy" : "not healthy"}  ${((Date.now() - t0) / 1000).toFixed(0)}s`);
   for (const m of moves) console.error(`  ${m}`);
   if (!moves.length) {
     best = { rows: rows.map((x) => ({ ...x })), inBand, worst, round };
@@ -181,7 +181,7 @@ for (let round = 1; round <= ROUNDS; round++) {
 // (it only grows, and the meta plays every unit awoken).
 const lastAwoken = new Map(rows.map((r) => [r.name, r.awoken]));
 if (best) rows = best.rows.map((r) => ({ ...r, awoken: lastAwoken.get(r.name)! }));
-console.error(best ? `kept round ${best.round}'s numbers (${best.inBand}/20 in band)` : "no rounds: the numbers as they are");
+console.error(best ? `kept round ${best.round}'s numbers (${best.inBand}/${rows.length} in band)` : "no rounds: the numbers as they are");
 
 // The table: each unit's field score and what Awoken adds, averaged over
 // 2×SEEDS quick checks on seeds no round used. One meta check's per-unit
