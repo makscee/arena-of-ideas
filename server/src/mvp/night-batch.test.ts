@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { Candle, FIXTURE_ABILITIES, FIXTURE_STATUSES, Gambler, Hourglass, Mirror, Nautilus } from "../../../src/words/fixtures.js";
 import { plain, rule } from "../../../src/words/examples.js";
 import type { UnitDef } from "../../../src/types.js";
-import { BATCH_MAX, BATCH_MIN, compile, type DesignDraft, type Field, type Parent, pairKey, pickPairs, REDESIGN_AFTER_MS, ruleText, runBatch } from "./night-batch.js";
+import { BATCH_MAX, BATCH_MIN, compile, type DesignDraft, type Field, type Parent, pairKey, pickPairs, REDESIGN_AFTER_MS, ruleText, runBatch, scaled } from "./night-batch.js";
 import { DESIGN_SCHEMA, DESIGNER_RULES, designerSystemPrompt, designPrompt, designerFromEnv, fakeDesigner, namePrompt } from "./night-designer.js";
 import { nightReport } from "./night-report.js";
 
@@ -82,6 +82,37 @@ describe("one pair through the batch", () => {
     expect(twist.wordRequest?.word).toBe("steal");
     expect(twist.why).toMatch(/waiting for a new word: steal/);
   });
+  it("the quick tune scales power, never a counter's spend: at 3+ Glints it spends 3 (#1047, Echo Sands)", () => {
+    const glints = { name: "Glints", counter: true as const, triggers: [{ kind: "trigger" as const, on: { on: "TurnEnd" as const } }], condition: { kind: "stacksAtLeast" as const, status: "Glints", n: 3, of: "holder" as const }, abilities: [{ selectors: [{ kind: "allyBehind" as const }], effects: [{ kind: "applyStatus" as const, status: "Strength", stacks: { kind: "const" as const, value: 2 } }] }, { selectors: [{ kind: "holder" as const }], effects: [{ kind: "consumeStacks" as const, stacks: { kind: "const" as const, value: 3 } }] }] };
+    const c = scaled({ unit: { name: "Echo", base: { hp: 9, pwr: 2 } }, abilities: {}, statuses: { Glints: glints } }, new Set(["Glints"]), 1.6) as { statuses: Record<string, typeof glints> };
+    const out = c.statuses.Glints!;
+    expect(JSON.stringify(out.abilities[0]!.effects)).toContain('"value":3'); // 2 × 1.6, rounded
+    expect(out.abilities[1]!.effects[0]).toEqual({ kind: "consumeStacks", stacks: { kind: "const", value: 3 } });
+  });
+
+  it("a fusion's sentence opens each clause on a verb, never a bare number (#1047)", () => {
+    const glints = { name: "Glints", names: { en: "Glints", ru: { name: "Блики", acc: "Блики", count: ["Блик", "Блика", "Бликов"] as [string, string, string] } }, counter: true as const, triggers: [{ kind: "trigger" as const, on: { on: "TurnEnd" as const } }], condition: { kind: "stacksAtLeast" as const, status: "Glints", n: 3, of: "holder" as const }, abilities: [{ selectors: [{ kind: "allyBehind" as const }], effects: [{ kind: "applyStatus" as const, status: "Strength", stacks: { kind: "const" as const, value: 1 } }] }, { selectors: [{ kind: "holder" as const }], effects: [{ kind: "consumeStacks" as const, stacks: { kind: "const" as const, value: 3 } }] }] };
+    const c = { unit: { name: "Echo", base: { hp: 9, pwr: 2 }, triggers: [{ kind: "trigger" as const, on: { on: "TurnEnd" as const } }], selectors: [{ kind: "holder" as const }], abilities: ["Glint"] }, abilities: { Glint: { name: "Glint", family: "Arcane" as const, effects: [{ kind: "applyStatus" as const, status: "Glints", stacks: { kind: "const" as const, value: 2 } }] } }, statuses: { ...FIXTURE_STATUSES, Glints: glints } };
+    expect(ruleText(c as never, "en")).toBe("Turn end: gain 2 Glints. Turn end, if it has 3+ Glints: give the ally behind 1 Strength, and spend 3 Glints.");
+    expect(ruleText(c as never, "ru")).toBe("Конец хода: получить 2 Блика. Конец хода, если у него 3 Блика или больше: дать союзнику позади 1 Силу, и потратить 3 Блика.");
+  });
+
+  it("a fusion's sentence says the chance and the turns, never a coin or 'every third turn' (Maks, 10-14)", () => {
+    const c = {
+      unit: { name: "Wick", base: { hp: 9, pwr: 2 }, triggers: [{ kind: "interceptor" as const, on: { on: "Death" as const, unit: "otherAlly" as const } }], condition: { kind: "turnEvery" as const, n: 3 }, selectors: [{ kind: "holder" as const }], abilities: ["Toss"] },
+      abilities: { Toss: { name: "Toss", family: "Shield" as const, effects: [{ kind: "branch" as const, if: { kind: "flip" as const, p: 0.5 }, then: [{ kind: "preventDeath" as const, at: 1, cost: { stat: "pwr" as const, amount: 0 } }], else: [{ kind: "preventDeath" as const, at: 1, cost: { stat: "pwr" as const, amount: 2 } }] }] } },
+      statuses: FIXTURE_STATUSES,
+    };
+    const en = ruleText(c as never, "en");
+    const ru = ruleText(c as never, "ru");
+    expect(en).toContain("on turns 3, 6, 9…");
+    expect(en).toContain("with a 50% chance");
+    expect(ru).toContain("на 3-м, 6-м, 9-м… ходу");
+    expect(ru).toContain("с вероятностью 50%");
+    expect(en).not.toMatch(/\b(heads|tails|flips?|coins?)\b|every third/i);
+    expect(ru).not.toMatch(/орёл|орле|решк|монет|каждый 3-й/i);
+  });
+
   it("rejects a rule the engine can't validate", () => {
     const d: DesignDraft = { lean: "A", intent: "nonsense", rule: { triggers: [{ kind: "trigger", on: { on: "TurnStart" } }], selectors: [{ kind: "frontEnemy" }], abilities: ["NoSuch"] }, abilities: {} };
     const c = compile(d, parent(Hourglass), parent(Mirror), "X", new Set());
@@ -111,7 +142,7 @@ describe("one pair through the batch", () => {
     expect("issues" in enOnly && enOnly.issues[0]).toMatch(/names\.ru/);
     const named = compile(wax({ en: "Wax", ru: { name: "Воск", acc: "Воск", count: ["Воск", "Воска", "Воска"] } }), parent(Candle), parent(Mirror), "X", new Set(Object.keys(FIXTURE_STATUSES)));
     expect("ok" in named).toBe(true);
-    if ("ok" in named) expect(ruleText(named.ok, "ru")).toBe("Начало хода: 1 Воск себе.");
+    if ("ok" in named) expect(ruleText(named.ok, "ru")).toBe("Начало хода: получить 1 Воск.");
   });
   it("names a missing parent as the pair's error", async () => {
     const list = pickPairs({ units, now, size: 1, small: true, requests: ["Seed+Raven"] });

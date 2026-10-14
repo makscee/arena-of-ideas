@@ -1145,3 +1145,30 @@ describe("captions in Russian", () => {
     expect(stepsOf(log).map((s) => s.caption)).toEqual(english);
   });
 });
+
+// #1047 (Maks's batch 1 notes): rules v2's events say what they did in the
+// battle log, in RU too, never their event name ("Flipped").
+describe("rules v2 event captions", () => {
+  const ref = { unit: "A1:Gambler", ability: "AllIn" } as never;
+  const at = (body: object, id = 1) => ({ id, turn: 1, causedBy: 0, source: "kernel", ...body }) as BattleEvent;
+  const log = (body: object): BattleEvent[] => [{ id: 0, causedBy: null, source: "kernel", type: "TurnStart", turn: 1 } as unknown as BattleEvent, at(body)];
+  const plainName = (id: string) => id.replace(/^[AB]\d+:/, "");
+  const cases: [object, string, string][] = [
+    [{ type: "Flipped", unit: "A1:Gambler", by: ref, heads: true }, "Gambler flips a coin → heads", "Gambler бросает монету → орёл"],
+    [{ type: "Flipped", unit: "A1:Gambler", by: ref, heads: false }, "Gambler flips a coin → tails", "Gambler бросает монету → решка"],
+    [{ type: "Redirected", by: { unit: "A2:Magnet" }, original: "Hurt", from: "A1:Gambler", to: "A2:Magnet" }, "Magnet → takes the hit meant for Gambler", "Magnet → перехватывает удар (цель: Gambler)"],
+    [{ type: "RuleMod", unit: "A1:Mirror", op: "copyRule", other: "B1:Sniper" }, "Mirror copies the rule of Sniper", "Mirror копирует правило Sniper"],
+    [{ type: "Transformed", unit: "A1:Seed", name: "Tree", hp: 8, pwr: 0 }, "Seed becomes Tree (0/8)", "Seed превращается в Tree (0/8)"],
+  ];
+  for (const [body, en, ruText] of cases)
+    test(`${(body as { type: string }).type}: ${en}`, () => {
+      try {
+        setTraceLang("en");
+        expect(captionOf(log(body), 1, plainName)).toBe(en);
+        setTraceLang("ru");
+        expect(captionOf(log(body), 1, plainName)).toBe(ruText);
+      } finally {
+        setTraceLang("en");
+      }
+    });
+});

@@ -1,6 +1,6 @@
 // Tune the rules v2 pool's numbers (mission #1043, unit batch 1, #1046).
 //
-//   npm run mvp:tune-v2 [-- --rounds N]
+//   npm run mvp:tune-v2 [-- --rounds N --seeds N --checks N]
 //
 // The v2 pool is new, so there are no live units to measure a candidate
 // against (what scripts/tune-unit.ts does for the grid): the batch is tuned
@@ -16,8 +16,8 @@
 // The awoken knob: the meta plays every unit at 3 copies, awoken, so each
 // round also measures what Awoken adds to the unit's best team (that team
 // with the unit asleep, tune.ts's measureTeam); a unit whose Awoken adds
-// under MARGIN gains +2 HP when it awakens (up to +12), then +1 PWR (up to
-// +3, units that strike). After the full meta check the same step runs again
+// under MARGIN gains +2 HP when it awakens (up to +4), then +1 PWR (up to
+// +1, units that strike). After the full meta check the same step runs again
 // on the final field until every margin clears.
 //
 // Writes src/mvp/units-v2-numbers.ts (the numbers ROWS_V2 plays with) and
@@ -31,6 +31,10 @@ import { ROWS_V2, type V2Row } from "../src/mvp/units-v2.js";
 import { contentOf } from "../server/src/mvp/content.js";
 import { measureTeam, slugOf, TUNE_DEFAULT } from "../src/mvp/tune.js";
 
+/** The awoken knob's step and cap: HP first, then PWR for units that strike.
+ * At most +4 HP / +1 PWR (#1047); an awoken form earns the rest by its upgraded clause. */
+const AWOKEN = { hp: 4, pwr: 1 };
+
 const arg = (name: string, dflt: number) => {
   const i = process.argv.indexOf(name);
   return i < 0 ? dflt : Number(process.argv[i + 1]);
@@ -38,12 +42,17 @@ const arg = (name: string, dflt: number) => {
 const ROUNDS = arg("--rounds", 8);
 /** Quick meta checks per round, each on its own seed, run in parallel and averaged. */
 const SEEDS = arg("--seeds", 3);
+/** Quick meta checks the final table averages: the gate reads 12 (the orchestrator, 10-14). */
+const CHECKS = arg("--checks", 12);
 /** Inside the band: within this much of the pool's median field score. */
 const BAND = 0.08;
 /** Far out: HP moves by 2. */
 const FAR = 0.16;
-const PWR = { min: 1, max: 8 };
-const HP = { min: 2, max: 24 };
+/** Sleeping numbers: HP at most 12 (main's units: HP 4-12; Maks's note on
+ * batch 1, #1047: awoken Medic had 33 HP), widened down to HP 2 and PWR 0-6
+ * so the units at the old floor can still move (Maks's (a), 10-14). */
+const PWR = { min: 0, max: 6 };
+const HP = { min: 2, max: 12 };
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const median = (xs: number[]) => {
@@ -72,17 +81,23 @@ function measureChild(rs: V2Row[], seed: number): Promise<Measured> {
   });
 }
 
-let rows: V2Row[] = ROWS_V2.map((r) => ({ ...r, awoken: r.awoken ?? { pwr: 0, hp: 0 } }));
+const clamp = (x: number, b: { min: number; max: number }) => Math.max(b.min, Math.min(b.max, x));
+/** The pool's numbers, clamped into today's bounds and the awoken cap (a
+ * unit with no strike keeps PWR 0). */
+/** Units that strike by design: they keep the PWR knob even at PWR 0. */
+const STRIKES = new Set(ROWS_V2.filter((r) => r.pwr > 0).map((r) => r.name));
+let rows: V2Row[] = ROWS_V2.map((r) => {
+  const a = r.awoken ?? { pwr: 0, hp: 0 };
+  return { ...r, pwr: r.pwr > 0 ? clamp(r.pwr, PWR) : 0, hp: clamp(r.hp, HP), awoken: { pwr: Math.min(a.pwr, AWOKEN.pwr), hp: Math.min(a.hp, AWOKEN.hp) } };
+});
 const t0 = Date.now();
 const rounds: { round: number; median: number; inBand: number; scores: Record<string, number>; moves: string[]; healthy: boolean }[] = [];
-/** The awoken knob's step and cap: HP first, then PWR for units that strike. */
-const AWOKEN = { hp: 12, pwr: 3 };
 /** Awoken must add at least this much to its team's field score. */
 const MARGIN = 0.02;
 const bonusUp = (row: V2Row): V2Row => {
   const a = row.awoken!;
   if (a.hp < AWOKEN.hp) return { ...row, awoken: { ...a, hp: a.hp + 2 } };
-  if (row.pwr > 0 && a.pwr < AWOKEN.pwr) return { ...row, awoken: { ...a, pwr: a.pwr + 1 } };
+  if (STRIKES.has(row.name) && a.pwr < AWOKEN.pwr) return { ...row, awoken: { ...a, pwr: a.pwr + 1 } };
   return row;
 };
 /** The pool with every unit's asleep twin (forms awoken = sleeping, no awoken bonus). */
@@ -110,9 +125,21 @@ if (process.argv.includes("--measure")) {
 }
 
 // Steadier than one step per quick meta: a unit whose last move went the
-// other way holds still one round (no oscillating), and the rows of the
-// round with the most units in band (then the smallest worst miss) are kept.
-let best: { rows: V2Row[]; inBand: number; worst: number; round: number } | null = null;
+// other way holds still one round (no oscillating), and the rows of the round
+// closest to the gate (tune-v2.test.ts: 16 of each batch's 20 in band, none
+// under 33% or over 67%) are kept, then the most in band, then the smallest
+// worst miss.
+const BATCH = 20;
+const GATE = { inBand: 16, min: 0.33, max: 0.67 };
+const gateMisses = (offs: number[], scores: number[]) => {
+  let misses = scores.filter((s) => s < GATE.min || s > GATE.max).length;
+  for (let b = 0; b < offs.length; b += BATCH) {
+    const batch = offs.slice(b, b + BATCH);
+    misses += Math.max(0, Math.min(GATE.inBand, batch.length) - batch.filter((o) => Math.abs(o) <= BAND).length);
+  }
+  return misses;
+};
+let best: { rows: V2Row[]; misses: number; inBand: number; worst: number; round: number } | null = null;
 const lastDir = new Map<string, number>();
 for (let round = 1; round <= ROUNDS; round++) {
   const ms = await Promise.all(Array.from({ length: SEEDS }, (_, k) => measureChild(rows, DEFAULT_SEED + (round - 1) * SEEDS + k)));
@@ -127,7 +154,9 @@ for (let round = 1; round <= ROUNDS; round++) {
   const offs = rows.map((row) => (scores.get(slugOf(row.name)) ?? mid) - mid);
   const inBand = offs.filter((o) => Math.abs(o) <= BAND).length;
   const worst = Math.max(...offs.map(Math.abs));
-  if (!best || inBand > best.inBand || (inBand === best.inBand && worst < best.worst)) best = { rows: rows.map((x) => ({ ...x })), inBand, worst, round };
+  const misses = gateMisses(offs, rows.map((row) => scores.get(slugOf(row.name)) ?? mid));
+  const better = !best || misses < best.misses || (misses === best.misses && (inBand > best.inBand || (inBand === best.inBand && worst < best.worst)));
+  if (better) best = { rows: rows.map((x) => ({ ...x })), misses, inBand, worst, round };
   // the awoken knob: units whose Awoken adds too little to their best team
   const avgMargin = avgOf((m) => m.margins);
   const margins = new Map([...avgMargin].map(([k, v]) => [k, { score: v, sleeping: 0 }]));
@@ -153,17 +182,17 @@ for (let round = 1; round <= ROUNDS; round++) {
     const hp = Math.max(HP.min, Math.min(HP.max, row.hp + d * (far ? 2 : 1)));
     // PWR is the coarse knob (one point moves a unit's every strike): it
     // turns when HP is at its bound, or with HP when the unit is far out.
-    const pwrMoves = row.pwr > 0 && (hp === row.hp || far);
+    const pwrMoves = STRIKES.has(row.name) && (hp === row.hp || far);
     const pwr = pwrMoves ? Math.max(PWR.min, Math.min(PWR.max, row.pwr + d)) : row.pwr;
     if (hp === row.hp && pwr === row.pwr) return next;
     moves.push(`${row.name} ${pct(s)}: ${row.pwr}/${row.hp}→${pwr}/${hp}`);
     return { ...next, pwr, hp };
   });
   rounds.push({ round, median: +mid.toFixed(3), inBand, scores: Object.fromEntries([...scores].map(([k, v]) => [k, +v.toFixed(3)])), moves, healthy: r.healthy });
-  console.error(`round ${round} (${SEEDS} seeds): median ${pct(mid)}, ${inBand}/20 in band, worst ${pct(worst)}, ${moves.length} moves, quick meta ${r.healthy ? "healthy" : "not healthy"}  ${((Date.now() - t0) / 1000).toFixed(0)}s`);
+  console.error(`round ${round} (${SEEDS} seeds): median ${pct(mid)}, ${inBand}/${rows.length} in band, ${misses} short of the gate, worst ${pct(worst)}, ${moves.length} moves, quick meta ${r.healthy ? "healthy" : "not healthy"}  ${((Date.now() - t0) / 1000).toFixed(0)}s`);
   for (const m of moves) console.error(`  ${m}`);
   if (!moves.length) {
-    best = { rows: rows.map((x) => ({ ...x })), inBand, worst, round };
+    best = { rows: rows.map((x) => ({ ...x })), misses, inBand, worst, round };
     break;
   }
 }
@@ -171,10 +200,10 @@ for (let round = 1; round <= ROUNDS; round++) {
 // (it only grows, and the meta plays every unit awoken).
 const lastAwoken = new Map(rows.map((r) => [r.name, r.awoken]));
 if (best) rows = best.rows.map((r) => ({ ...r, awoken: lastAwoken.get(r.name)! }));
-console.error(best ? `kept round ${best.round}'s numbers (${best.inBand}/20 in band)` : "no rounds: the numbers as they are");
+console.error(best ? `kept round ${best.round}'s numbers (${best.inBand}/${rows.length} in band, ${best.misses} short of the gate)` : "no rounds: the numbers as they are");
 
 // The table: each unit's field score and what Awoken adds, averaged over
-// 2×SEEDS quick checks on seeds no round used. One meta check's per-unit
+// CHECKS quick checks on seeds no round used. One meta check's per-unit
 // score swings with its search's luck, and the full check plays a stronger
 // field (its median sits higher), so the band is read on the same steady
 // measure the rounds tune by. A unit whose Awoken still adds too little gets
@@ -185,7 +214,7 @@ const avgOfMs = (ms: Measured[], pick: (m: Measured) => Record<string, number>) 
   return new Map([...sum].map(([k, vs]) => [k, vs.reduce((a, b) => a + b, 0) / vs.length]));
 };
 const steady = async (rs: V2Row[]) => {
-  const ms = await Promise.all(Array.from({ length: 2 * SEEDS }, (_, k) => measureChild(rs, DEFAULT_SEED + 1000 + k)));
+  const ms = await Promise.all(Array.from({ length: CHECKS }, (_, k) => measureChild(rs, DEFAULT_SEED + 1000 + k)));
   return { scores: avgOfMs(ms, (m) => m.scores), margins: avgOfMs(ms, (m) => m.margins) };
 };
 let st = await steady(rows);
@@ -252,11 +281,11 @@ writeFileSync(
   [
     "# Rules v2 pool tune",
     "",
-    `Generated by \`npm run mvp:tune-v2\` (scripts/tune-v2.ts): ${rounds.length} rounds of ${SEEDS} quick meta checks each, averaged (kept round ${best?.round ?? "none"}), then the table from ${2 * SEEDS} more (field score, Awoken adds) and the ${process.argv.includes("--quick") ? "quick" : "full"} meta check (health, share). ${report.seconds}s.`,
+    `Generated by \`npm run mvp:tune-v2\` (scripts/tune-v2.ts): ${rounds.length} rounds of ${SEEDS} quick meta checks each, averaged (kept round ${best?.round ?? "none"}), then the table from ${CHECKS} more (field score, Awoken adds) and the ${process.argv.includes("--quick") ? "quick" : "full"} meta check (health, share). ${report.seconds}s.`,
     "",
     `**Meta ${final.healthy ? "healthy" : "not healthy"}** (${healthChecks.filter((h) => h.healthy).length} of ${healthChecks.length} full checks healthy, seeds ${healthChecks.map((h) => `${h.seed} ${h.healthy ? "✅" : "❌"}`).join(", ")}). The first check: ${Object.values(final.checks).map((c) => `${c.rule} → ${c.value} ${c.pass ? "✅" : "❌"}`).join(" · ")}.`,
     "",
-    `Each unit's best team's field score, averaged over ${2 * SEEDS} quick meta checks; the band is the median ${pct(mid)} ± ${pct(BAND)}. Awoken adds: that team's field score awoken minus with the unit asleep. Share: the unit's share of play in the equilibrium.`,
+    `Each unit's best team's field score, averaged over ${CHECKS} quick meta checks; the band is the median ${pct(mid)} ± ${pct(BAND)}. Awoken adds: that team's field score awoken minus with the unit asleep. Share: the unit's share of play in the equilibrium.`,
     "",
     "| Unit | Tier | PWR/HP | Awoken +PWR/+HP | Field score | Awoken adds | Share | |",
     "|---|---|---|---|---|---|---|---|",

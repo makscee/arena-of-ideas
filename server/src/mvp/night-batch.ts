@@ -268,12 +268,15 @@ export function compile(d: DesignDraft, a: Parent, b: Parent, name: string, take
 }
 
 /** Every `const` amount in the rule's own abilities and statuses, scaled
- * (at least 1). The quick tune's one knob. */
+ * (at least 1). The quick tune's one knob. A counter's spend is left as
+ * designed: it matches the counter's threshold ("at 3+ Glints … spend 3"),
+ * which is rule, not power (#1047: Echo Sands spent 5 at 3+). */
 export function scaled(c: Compiled, own: Set<string>, scale: number): Compiled {
   const walk = (x: unknown): unknown => {
     if (Array.isArray(x)) return x.map(walk);
     if (x && typeof x === "object") {
       const o = x as Record<string, unknown>;
+      if (o.kind === "consumeStacks") return o;
       if (o.kind === "const" && typeof o.value === "number" && Object.keys(o).length === 2) return { kind: "const", value: Math.max(1, Math.round(o.value * scale)) } satisfies Amount;
       return Object.fromEntries(Object.entries(o).map(([k, v]) => [k, walk(v)]));
     }

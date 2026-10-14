@@ -1,27 +1,29 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Sniper","name":"Sniper","hp":22,"pwr":6},{"id":"A2:Metronome","name":"Metronome","hp":6,"pwr":2}],"B":[{"id":"B1:Chrysalis","name":"Chrysalis","hp":3,"pwr":0},{"id":"B2:Conductor","name":"Conductor","hp":2,"pwr":1},{"id":"B3:Mirror","name":"Mirror","hp":19,"pwr":4}]}}
-{"id":1,"turn":0,"causedBy":0,"source":{"unit":"B3:Mirror","ability":0,"when":0},"type":"RuleMod","unit":"B3:Mirror","op":"copyRule","other":"A1:Sniper"}
-{"id":2,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":3,"turn":1,"causedBy":2,"source":{"unit":"A1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"B3:Mirror","amount":6,"hpAfter":13}
-{"id":4,"turn":1,"causedBy":2,"source":{"unit":"A1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"B1:Chrysalis","amount":6,"hpAfter":-3}
-{"id":5,"turn":1,"causedBy":4,"source":"kernel","type":"Death","unit":"B1:Chrysalis"}
-{"id":6,"turn":1,"causedBy":2,"source":{"unit":"B3:Mirror","ability":0,"when":0},"type":"Hurt","unit":"A2:Metronome","amount":4,"hpAfter":2}
-{"id":7,"turn":1,"causedBy":2,"source":{"unit":"B3:Mirror","ability":0,"when":0},"type":"Hurt","unit":"A1:Sniper","amount":4,"hpAfter":18}
-{"id":8,"turn":1,"causedBy":2,"source":"kernel","type":"PairFaced","a":"A1:Sniper","b":"B2:Conductor","first":"B2:Conductor"}
-{"id":9,"turn":1,"causedBy":2,"source":"kernel","type":"Strike","striker":"B2:Conductor","defender":"A1:Sniper"}
-{"id":10,"turn":1,"causedBy":9,"source":"kernel","type":"Hurt","unit":"A1:Sniper","amount":1,"hpAfter":17}
-{"id":11,"turn":1,"causedBy":2,"source":"kernel","type":"Strike","striker":"A1:Sniper","defender":"B2:Conductor"}
-{"id":12,"turn":1,"causedBy":11,"source":"kernel","type":"Hurt","unit":"B2:Conductor","amount":6,"hpAfter":-4}
-{"id":13,"turn":1,"causedBy":12,"source":"kernel","type":"Death","unit":"B2:Conductor"}
-{"id":14,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":15,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":16,"turn":2,"causedBy":15,"source":{"unit":"A1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"B3:Mirror","amount":6,"hpAfter":7}
-{"id":17,"turn":2,"causedBy":15,"source":{"unit":"A1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"B3:Mirror","amount":6,"hpAfter":1}
-{"id":18,"turn":2,"causedBy":15,"source":{"unit":"B3:Mirror","ability":0,"when":0},"type":"Hurt","unit":"A2:Metronome","amount":4,"hpAfter":-2}
-{"id":19,"turn":2,"causedBy":18,"source":"kernel","type":"Death","unit":"A2:Metronome"}
-{"id":20,"turn":2,"causedBy":15,"source":{"unit":"B3:Mirror","ability":0,"when":0},"type":"Hurt","unit":"A1:Sniper","amount":4,"hpAfter":13}
-{"id":21,"turn":2,"causedBy":15,"source":"kernel","type":"PairFaced","a":"A1:Sniper","b":"B3:Mirror","first":"A1:Sniper"}
-{"id":22,"turn":2,"causedBy":15,"source":"kernel","type":"Strike","striker":"A1:Sniper","defender":"B3:Mirror"}
-{"id":23,"turn":2,"causedBy":22,"source":"kernel","type":"Hurt","unit":"B3:Mirror","amount":6,"hpAfter":-5}
-{"id":24,"turn":2,"causedBy":23,"source":"kernel","type":"Death","unit":"B3:Mirror"}
-{"id":25,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":26,"turn":2,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":2}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Sniper","name":"Sniper","hp":10,"pwr":2},{"id":"A2:Metronome","name":"Metronome","hp":5,"pwr":1}],"B":[{"id":"B1:Chrysalis","name":"Chrysalis","hp":2,"pwr":0},{"id":"B2:Conductor","name":"Conductor","hp":8,"pwr":2},{"id":"B3:Coin Thief","name":"Coin Thief","hp":6,"pwr":1}]}}
+{"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":2,"turn":1,"causedBy":1,"source":{"unit":"A1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"B3:Coin Thief","amount":2,"hpAfter":4}
+{"id":3,"turn":1,"causedBy":1,"source":{"unit":"A1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"B1:Chrysalis","amount":2,"hpAfter":0}
+{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"Death","unit":"B1:Chrysalis"}
+{"id":5,"turn":1,"causedBy":1,"source":"kernel","type":"Flipped","unit":"B3:Coin Thief","by":{"unit":"B3:Coin Thief","ability":0,"when":0},"heads":true}
+{"id":6,"turn":1,"causedBy":1,"source":{"unit":"B3:Coin Thief","ability":0,"when":0},"type":"Hurt","unit":"A2:Metronome","amount":1,"hpAfter":4}
+{"id":7,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Sniper","b":"B2:Conductor","first":"B2:Conductor"}
+{"id":8,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B2:Conductor","defender":"A1:Sniper"}
+{"id":9,"turn":1,"causedBy":8,"source":"kernel","type":"Hurt","unit":"A1:Sniper","amount":2,"hpAfter":8}
+{"id":10,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Sniper","defender":"B2:Conductor"}
+{"id":11,"turn":1,"causedBy":10,"source":"kernel","type":"Hurt","unit":"B2:Conductor","amount":2,"hpAfter":6}
+{"id":12,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":13,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":14,"turn":2,"causedBy":13,"source":{"unit":"A1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"B3:Coin Thief","amount":2,"hpAfter":2}
+{"id":15,"turn":2,"causedBy":13,"source":{"unit":"A1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"B2:Conductor","amount":2,"hpAfter":4}
+{"id":16,"turn":2,"causedBy":13,"source":"kernel","type":"Flipped","unit":"B3:Coin Thief","by":{"unit":"B3:Coin Thief","ability":0,"when":0},"heads":false}
+{"id":17,"turn":2,"causedBy":13,"source":"kernel","type":"Strike","striker":"B2:Conductor","defender":"A1:Sniper"}
+{"id":18,"turn":2,"causedBy":17,"source":"kernel","type":"Hurt","unit":"A1:Sniper","amount":2,"hpAfter":6}
+{"id":19,"turn":2,"causedBy":13,"source":"kernel","type":"Strike","striker":"A1:Sniper","defender":"B2:Conductor"}
+{"id":20,"turn":2,"causedBy":19,"source":"kernel","type":"Hurt","unit":"B2:Conductor","amount":2,"hpAfter":2}
+{"id":21,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":22,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":23,"turn":3,"causedBy":22,"source":{"unit":"A1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"B3:Coin Thief","amount":2,"hpAfter":0}
+{"id":24,"turn":3,"causedBy":23,"source":"kernel","type":"Death","unit":"B3:Coin Thief"}
+{"id":25,"turn":3,"causedBy":22,"source":{"unit":"A1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"B2:Conductor","amount":2,"hpAfter":0}
+{"id":26,"turn":3,"causedBy":25,"source":"kernel","type":"Death","unit":"B2:Conductor"}
+{"id":27,"turn":3,"causedBy":22,"source":"kernel","type":"Flipped","unit":"B3:Coin Thief","by":{"unit":"B3:Coin Thief","ability":0,"when":0},"heads":false}
+{"id":28,"turn":3,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":3}

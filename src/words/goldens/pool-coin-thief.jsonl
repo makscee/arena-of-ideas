@@ -1,0 +1,69 @@
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Coin Thief","name":"Coin Thief","hp":6,"pwr":1},{"id":"A2:Hornet","name":"Hornet","hp":11,"pwr":4}],"B":[{"id":"B1:War Horn","name":"War Horn","hp":9,"pwr":4},{"id":"B2:Fortune Teller","name":"Fortune Teller","hp":2,"pwr":0},{"id":"B3:Gravecaller","name":"Gravecaller","hp":9,"pwr":2}]}}
+{"id":1,"turn":0,"causedBy":0,"source":"kernel","type":"Flipped","unit":"B2:Fortune Teller","by":{"unit":"B2:Fortune Teller","ability":0,"when":0},"heads":false}
+{"id":2,"turn":0,"causedBy":0,"source":{"unit":"B2:Fortune Teller","ability":0,"when":0},"type":"StatusApplied","unit":"B1:War Horn","status":"Shield","stacks":1,"total":1}
+{"id":3,"turn":0,"causedBy":0,"source":"kernel","type":"Flipped","unit":"B2:Fortune Teller","by":{"unit":"B2:Fortune Teller","ability":0,"when":0},"heads":true}
+{"id":4,"turn":0,"causedBy":0,"source":{"unit":"B2:Fortune Teller","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Fortune Teller","status":"Strength","stacks":1,"total":1}
+{"id":5,"turn":0,"causedBy":4,"source":"kernel","type":"StatChanged","unit":"B2:Fortune Teller","stat":"pwr","delta":1,"now":1}
+{"id":6,"turn":0,"causedBy":0,"source":"kernel","type":"Flipped","unit":"B2:Fortune Teller","by":{"unit":"B2:Fortune Teller","ability":0,"when":0},"heads":false}
+{"id":7,"turn":0,"causedBy":0,"source":{"unit":"B2:Fortune Teller","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Gravecaller","status":"Shield","stacks":1,"total":1}
+{"id":8,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":9,"turn":1,"causedBy":8,"source":"kernel","type":"Flipped","unit":"A1:Coin Thief","by":{"unit":"A1:Coin Thief","ability":0,"when":0},"heads":false}
+{"id":10,"turn":1,"causedBy":8,"source":{"unit":"B1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B1:War Horn","status":"Strength","stacks":1,"total":1}
+{"id":11,"turn":1,"causedBy":10,"source":"kernel","type":"StatChanged","unit":"B1:War Horn","stat":"pwr","delta":1,"now":5}
+{"id":12,"turn":1,"causedBy":8,"source":{"unit":"B1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Fortune Teller","status":"Strength","stacks":1,"total":2}
+{"id":13,"turn":1,"causedBy":12,"source":"kernel","type":"StatChanged","unit":"B2:Fortune Teller","stat":"pwr","delta":1,"now":2}
+{"id":14,"turn":1,"causedBy":8,"source":{"unit":"B1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Gravecaller","status":"Strength","stacks":1,"total":1}
+{"id":15,"turn":1,"causedBy":14,"source":"kernel","type":"StatChanged","unit":"B3:Gravecaller","stat":"pwr","delta":1,"now":3}
+{"id":16,"turn":1,"causedBy":8,"source":"kernel","type":"PairFaced","a":"A1:Coin Thief","b":"B1:War Horn","first":"A1:Coin Thief"}
+{"id":17,"turn":1,"causedBy":8,"source":"kernel","type":"Strike","striker":"A1:Coin Thief","defender":"B1:War Horn"}
+{"id":18,"turn":1,"causedBy":17,"source":"kernel","type":"Hurt","unit":"B1:War Horn","amount":0,"absorbed":1,"hpAfter":9}
+{"id":19,"turn":1,"causedBy":18,"source":{"unit":"B1:War Horn","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"B1:War Horn","status":"Shield","stacks":1,"remaining":0}
+{"id":20,"turn":1,"causedBy":8,"source":"kernel","type":"Strike","striker":"B1:War Horn","defender":"A1:Coin Thief"}
+{"id":21,"turn":1,"causedBy":20,"source":"kernel","type":"Hurt","unit":"A1:Coin Thief","amount":5,"hpAfter":1}
+{"id":22,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":23,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":24,"turn":2,"causedBy":23,"source":"kernel","type":"Flipped","unit":"A1:Coin Thief","by":{"unit":"A1:Coin Thief","ability":0,"when":0},"heads":false}
+{"id":25,"turn":2,"causedBy":23,"source":{"unit":"B1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B1:War Horn","status":"Strength","stacks":1,"total":2}
+{"id":26,"turn":2,"causedBy":25,"source":"kernel","type":"StatChanged","unit":"B1:War Horn","stat":"pwr","delta":1,"now":6}
+{"id":27,"turn":2,"causedBy":23,"source":{"unit":"B1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Fortune Teller","status":"Strength","stacks":1,"total":3}
+{"id":28,"turn":2,"causedBy":27,"source":"kernel","type":"StatChanged","unit":"B2:Fortune Teller","stat":"pwr","delta":1,"now":3}
+{"id":29,"turn":2,"causedBy":23,"source":{"unit":"B1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Gravecaller","status":"Strength","stacks":1,"total":2}
+{"id":30,"turn":2,"causedBy":29,"source":"kernel","type":"StatChanged","unit":"B3:Gravecaller","stat":"pwr","delta":1,"now":4}
+{"id":31,"turn":2,"causedBy":23,"source":"kernel","type":"Strike","striker":"A1:Coin Thief","defender":"B1:War Horn"}
+{"id":32,"turn":2,"causedBy":31,"source":"kernel","type":"Hurt","unit":"B1:War Horn","amount":1,"hpAfter":8}
+{"id":33,"turn":2,"causedBy":23,"source":"kernel","type":"Strike","striker":"B1:War Horn","defender":"A1:Coin Thief"}
+{"id":34,"turn":2,"causedBy":33,"source":"kernel","type":"Hurt","unit":"A1:Coin Thief","amount":6,"hpAfter":-5}
+{"id":35,"turn":2,"causedBy":34,"source":"kernel","type":"Death","unit":"A1:Coin Thief"}
+{"id":36,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":37,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":38,"turn":3,"causedBy":37,"source":{"unit":"B1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B1:War Horn","status":"Strength","stacks":1,"total":3}
+{"id":39,"turn":3,"causedBy":38,"source":"kernel","type":"StatChanged","unit":"B1:War Horn","stat":"pwr","delta":1,"now":7}
+{"id":40,"turn":3,"causedBy":37,"source":{"unit":"B1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Fortune Teller","status":"Strength","stacks":1,"total":4}
+{"id":41,"turn":3,"causedBy":40,"source":"kernel","type":"StatChanged","unit":"B2:Fortune Teller","stat":"pwr","delta":1,"now":4}
+{"id":42,"turn":3,"causedBy":37,"source":{"unit":"B1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Gravecaller","status":"Strength","stacks":1,"total":3}
+{"id":43,"turn":3,"causedBy":42,"source":"kernel","type":"StatChanged","unit":"B3:Gravecaller","stat":"pwr","delta":1,"now":5}
+{"id":44,"turn":3,"causedBy":37,"source":"kernel","type":"PairFaced","a":"A2:Hornet","b":"B1:War Horn","first":"A2:Hornet"}
+{"id":45,"turn":3,"causedBy":37,"source":"kernel","type":"Strike","striker":"A2:Hornet","defender":"B1:War Horn"}
+{"id":46,"turn":3,"causedBy":45,"source":"kernel","type":"Hurt","unit":"B1:War Horn","amount":4,"hpAfter":4}
+{"id":47,"turn":3,"causedBy":45,"source":{"unit":"A2:Hornet","ability":0,"when":0},"type":"StatusApplied","unit":"B1:War Horn","status":"Poison","stacks":1,"total":1}
+{"id":48,"turn":3,"causedBy":37,"source":"kernel","type":"Strike","striker":"B1:War Horn","defender":"A2:Hornet"}
+{"id":49,"turn":3,"causedBy":48,"source":"kernel","type":"Hurt","unit":"A2:Hornet","amount":7,"hpAfter":4}
+{"id":50,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":51,"turn":3,"causedBy":50,"source":{"unit":"B1:War Horn","status":"Poison","ability":0,"when":0},"type":"Hurt","unit":"B1:War Horn","amount":1,"hpAfter":3}
+{"id":52,"turn":3,"causedBy":50,"source":{"unit":"B1:War Horn","status":"Poison","ability":0,"when":0},"type":"StatusRemoved","unit":"B1:War Horn","status":"Poison","stacks":1,"remaining":0}
+{"id":53,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":54,"turn":4,"causedBy":53,"source":{"unit":"B1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B1:War Horn","status":"Strength","stacks":1,"total":4}
+{"id":55,"turn":4,"causedBy":54,"source":"kernel","type":"StatChanged","unit":"B1:War Horn","stat":"pwr","delta":1,"now":8}
+{"id":56,"turn":4,"causedBy":53,"source":{"unit":"B1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Fortune Teller","status":"Strength","stacks":1,"total":5}
+{"id":57,"turn":4,"causedBy":56,"source":"kernel","type":"StatChanged","unit":"B2:Fortune Teller","stat":"pwr","delta":1,"now":5}
+{"id":58,"turn":4,"causedBy":53,"source":{"unit":"B1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Gravecaller","status":"Strength","stacks":1,"total":4}
+{"id":59,"turn":4,"causedBy":58,"source":"kernel","type":"StatChanged","unit":"B3:Gravecaller","stat":"pwr","delta":1,"now":6}
+{"id":60,"turn":4,"causedBy":53,"source":"kernel","type":"Strike","striker":"A2:Hornet","defender":"B1:War Horn"}
+{"id":61,"turn":4,"causedBy":60,"source":"kernel","type":"Hurt","unit":"B1:War Horn","amount":4,"hpAfter":-1}
+{"id":62,"turn":4,"causedBy":61,"source":"kernel","type":"Death","unit":"B1:War Horn"}
+{"id":63,"turn":4,"causedBy":62,"source":{"unit":"B3:Gravecaller","ability":0,"when":0},"type":"Summon","unit":"B1:War Horn","name":"War Horn","side":"B","hp":9,"pwr":4,"resurrected":true,"atHp":1,"slot":0}
+{"id":64,"turn":4,"causedBy":53,"source":"kernel","type":"Strike","striker":"B1:War Horn","defender":"A2:Hornet"}
+{"id":65,"turn":4,"causedBy":64,"source":"kernel","type":"Hurt","unit":"A2:Hornet","amount":4,"hpAfter":0}
+{"id":66,"turn":4,"causedBy":65,"source":"kernel","type":"Death","unit":"A2:Hornet"}
+{"id":67,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":68,"turn":4,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":4}

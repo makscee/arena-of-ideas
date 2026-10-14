@@ -8,8 +8,9 @@ import { ROWS_V2 } from "./units-v2.js";
 type TuneUnit = { name: string; pwr: number; hp: number; awoken: { pwr: number; hp: number }; fieldScore: number; awokenMargin: number; inBand: boolean };
 const tune = JSON.parse(readFileSync(new URL("../../docs/mvp/tune-v2.json", import.meta.url), "utf8")) as { median: number; band: number; healthy: boolean; units: TuneUnit[] };
 
-describe("rules v2 tune (batch 1)", () => {
-  it("measured the numbers the pool plays", () => {
+describe("rules v2 tune (batches 1 and 2, #1047: tuned all together)", () => {
+  it("measured the numbers the pool plays, every unit of it", () => {
+    expect(tune.units.map((u) => u.name).sort()).toEqual(ROWS_V2.map((r) => r.name).sort());
     for (const u of tune.units) {
       const row = ROWS_V2.find((r) => r.name === u.name)!;
       expect({ name: u.name, pwr: row.pwr, hp: row.hp, awoken: row.awoken }).toEqual({ name: u.name, pwr: u.pwr, hp: u.hp, awoken: u.awoken });
@@ -20,8 +21,11 @@ describe("rules v2 tune (batch 1)", () => {
     expect(tune.units.filter((u) => u.awokenMargin <= 0).map((u) => `${u.name} ${u.awokenMargin}`)).toEqual([]);
   });
   // The orchestrator's ruling (10-14): the bar plus the measure's ±2 noise.
-  it("at least 16 of 20 in band, none under 33% or over 67%", () => {
-    expect(tune.units.filter((u) => u.inBand).length).toBeGreaterThanOrEqual(16);
+  it("at least 16 of 20 in band in each batch, none under 33% or over 67%", () => {
+    for (let b = 0; b < ROWS_V2.length; b += 20) {
+      const batch = new Set(ROWS_V2.slice(b, b + 20).map((r) => r.name));
+      expect(tune.units.filter((u) => batch.has(u.name) && u.inBand).length, `batch ${b / 20 + 1}`).toBeGreaterThanOrEqual(16);
+    }
     expect(tune.units.filter((u) => u.fieldScore < 0.33 || u.fieldScore > 0.67).map((u) => `${u.name} ${u.fieldScore}`)).toEqual([]);
   });
 });

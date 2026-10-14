@@ -14,7 +14,7 @@ import type { UnitForm } from "./contract.js";
  * Vitality to every ally."), unless a Does carries a condition of its own. */
 export function formSegments(form: UnitForm, abilities: AbilityRegistry, lang?: Lang, statuses?: StatusRegistry, carries: readonly string[] = (form.statuses ?? []).map((s) => s.status)): DescribeSegment[] {
   if (form.text) return [{ text: form.text }];
-  return withStatusNames(statuses, () => {
+  return verbFirst(withStatusNames(statuses, () => {
     const out = ruleSegments(form, abilities, lang);
     // A unit it becomes (rules v2: Seed's Tree, Chrysalis's Butterfly) brings
     // a rule of its own: the card says it, named, so the whole unit is read.
@@ -24,7 +24,51 @@ export function formSegments(form: UnitForm, abilities: AbilityRegistry, lang?: 
     // whole rule is said. `carries`: the statuses the unit starts with.
     for (const id of counterRules(form, abilities, statuses ?? {}, carries)) out.push({ text: " " }, ...statusRuleSegments(id, statuses![id]!, lang));
     return out;
-  });
+  }), lang, isV2Statuses(statuses));
+}
+
+const CLAUSE_ENDS = [".", ", ", ", and ", ", then ", ", и ", ", затем "];
+
+/** Rules v2 content: a counter status carries a rule of its own. */
+const isV2Statuses = (statuses?: StatusRegistry): boolean => Object.values(statuses ?? {}).some((d) => d.counter && d.abilities.length > 0);
+
+/** Rules v2 (#1047, Maks's note on batch 1): a clause never opens on a bare
+ * number. "Ally strikes: 1 Beats to self." reads "Ally strikes: gain 1
+ * Beats.", "1 Strength to every ally behind" reads "give every ally behind 1
+ * Strength" (RU "получить 1 Такт", "дать всем союзникам позади 1 Силу").
+ * Only a clause's opening status, and only on v2 content (`on`), so the old
+ * pool's goldens stay. */
+function verbFirst(segs: DescribeSegment[], lang: Lang | undefined, on: boolean): DescribeSegment[] {
+  if (!on) return segs;
+  const ru = lang === "ru";
+  const opens = ru ? [": ", ", и ", ", затем "] : [": ", ", and ", ", then "];
+  const out: DescribeSegment[] = [];
+  for (let i = 0; i < segs.length; i++) {
+    const amount = segs[i]!;
+    const name = segs[i + 2];
+    const to = segs[i + 3];
+    const isStatus = (amount as { amount?: boolean }).amount && amount.term?.startsWith("status:") && /^\d+$/.test(amount.text) && name?.term === amount.term && segs[i + 1]?.text === " ";
+    if (!isStatus || !opens.includes(out[out.length - 1]?.text ?? "") || to?.text !== (ru ? " " : " to ")) {
+      out.push(amount);
+      continue;
+    }
+    let j = i + 4;
+    const target: DescribeSegment[] = [];
+    // the target runs to the clause's end (v2 position selectors carry no term)
+    while (j < segs.length && !CLAUSE_ENDS.includes(segs[j]!.text)) target.push(segs[j++]!);
+    if (!target.length) {
+      out.push(amount);
+      continue;
+    }
+    const n = Number(amount.text);
+    // RU: one of a feminine status reads in the accusative ("1 Силу", "1 Песчинку").
+    const said = ru && n === 1 ? { ...name!, text: name!.text.replace(/а$/, "у").replace(/я$/, "ю") } : name!;
+    const self = target.length === 1 && target[0]!.term === "target:holder";
+    if (self) out.push({ text: ru ? "получить " : "gain " }, amount, { text: " " }, said);
+    else out.push({ text: ru ? "дать " : "give " }, ...target, { text: " " }, amount, { text: " " }, said);
+    i = j - 1;
+  }
+  return out;
 }
 
 /** The form's own rule: its clause, then its "and" clauses. */
@@ -126,3 +170,26 @@ function sumStatuses(effects: Effect[]): Effect[] {
 /** formSegments joined: the form's plain sentence. */
 export const formText = (form: UnitForm, abilities: AbilityRegistry, lang?: Lang, statuses?: StatusRegistry, carries?: readonly string[]): string =>
   formSegments(form, abilities, lang, statuses, carries).map((s) => s.text).join("");
+
+/** The card's sentence (#1047): the form's authored `say` in `lang` when it
+ * has one, else formSegments. The word chain's glossary terms that the
+ * sentence names word for word stay tappable. */
+export function sentenceSegments(form: UnitForm, abilities: AbilityRegistry, lang?: Lang, statuses?: StatusRegistry): DescribeSegment[] {
+  const chain = formSegments(form, abilities, lang, statuses);
+  if (!form.say) return chain;
+  let rest = lang === "ru" ? form.say.ru : form.say.en;
+  const out: DescribeSegment[] = [];
+  for (const term of chain.filter((s) => s.term && s.text.trim())) {
+    const at = rest.indexOf(term.text);
+    if (at < 0) continue;
+    if (at > 0) out.push({ text: rest.slice(0, at) });
+    out.push(term);
+    rest = rest.slice(at + term.text.length);
+  }
+  if (rest) out.push({ text: rest });
+  return out;
+}
+
+/** sentenceSegments joined. */
+export const sentenceText = (form: UnitForm, abilities: AbilityRegistry, lang?: Lang, statuses?: StatusRegistry): string =>
+  sentenceSegments(form, abilities, lang, statuses).map((s) => s.text).join("");

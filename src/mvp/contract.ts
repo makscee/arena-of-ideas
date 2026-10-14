@@ -208,6 +208,10 @@ export interface UnitForm {
   also?: AndClause[];
   /** Optional authored one-liner; clients fall back to describe(). */
   text?: string;
+  /** Rules v2 (#1047): the card sentence a person would say, EN and RU
+   * (units-v2-say.ts). Cards and sheets read it; the word chain (formText)
+   * stays for icons, the glossary and search. A fusion never inherits it. */
+  say?: { en: string; ru: string };
   /** Statuses the unit starts the battle with (rules v2: Raven's Memory
    * counter carries its second rule). */
   statuses?: { status: string; stacks: number }[];

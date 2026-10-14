@@ -44,42 +44,42 @@ delay summonWithRule
   en: Turn start: in 2 turns: summon Sapling (0/4) with the rule of front enemy.
   ru: Начало хода: через 2 хода: призвать Sapling (0/4) с правилом переднего врага.
 delay branch
-  en: Turn start: in 2 turns: on heads, it becomes twice PWR; otherwise, it becomes 0.
-  ru: Начало хода: через 2 хода: если выпал орёл, он становится равным удвоенному АТК; иначе он становится равным 0.
+  en: Turn start: in 2 turns: with a 50% chance, it becomes twice PWR; otherwise, it becomes 0.
+  ru: Начало хода: через 2 хода: с вероятностью 50%, он становится равным удвоенному АТК; иначе он становится равным 0.
 delay strikeAgain
   en: Turn start: in 2 turns: it strikes again.
   ru: Начало хода: через 2 хода: он бьёт ещё раз.
 and(flip, not turnIs)
-  en: Turn start, on heads and unless on turn 2: in 1 turn: 1 damage to front enemy.
-  ru: Начало хода, если выпал орёл и если не на 2-м ходу: через 1 ход: 1 урон переднему врагу.
+  en: Turn start, with a 50% chance and unless on turn 2: in 1 turn: 1 damage to front enemy.
+  ru: Начало хода, с вероятностью 50% и если не на 2-м ходу: через 1 ход: 1 урон переднему врагу.
 and(flip, not turnAtLeast)
-  en: Turn start, on heads and unless from turn 2: in 1 turn: 1 damage to front enemy.
-  ru: Начало хода, если выпал орёл и если не начиная с 2-го хода: через 1 ход: 1 урон переднему врагу.
+  en: Turn start, with a 50% chance and unless from turn 2: in 1 turn: 1 damage to front enemy.
+  ru: Начало хода, с вероятностью 50% и если не начиная с 2-го хода: через 1 ход: 1 урон переднему врагу.
 and(flip, not turnEvery)
-  en: Turn start, on heads and unless every second turn: in 1 turn: 1 damage to front enemy.
-  ru: Начало хода, если выпал орёл и если не каждый 2-й ход: через 1 ход: 1 урон переднему врагу.
+  en: Turn start, with a 50% chance and unless on turns 2, 4, 6…: in 1 turn: 1 damage to front enemy.
+  ru: Начало хода, с вероятностью 50% и если не на 2-м, 4-м, 6-м… ходу: через 1 ход: 1 урон переднему врагу.
 and(flip, not stacksAtLeast)
-  en: Turn start, on heads and unless it has 2+ Strength: in 1 turn: 1 damage to front enemy.
-  ru: Начало хода, если выпал орёл и если не у него 2 Силы или больше: через 1 ход: 1 урон переднему врагу.
+  en: Turn start, with a 50% chance and unless it has 2+ Strength: in 1 turn: 1 damage to front enemy.
+  ru: Начало хода, с вероятностью 50% и если не у него 2 Силы или больше: через 1 ход: 1 урон переднему врагу.
 and(flip, not alliesAlive)
-  en: Turn start, on heads and unless exactly 1 ally stands: in 1 turn: 1 damage to front enemy.
-  ru: Начало хода, если выпал орёл и если не союзников ровно 1: через 1 ход: 1 урон переднему врагу.
+  en: Turn start, with a 50% chance and unless exactly 1 ally stands: in 1 turn: 1 damage to front enemy.
+  ru: Начало хода, с вероятностью 50% и если не союзников ровно 1: через 1 ход: 1 урон переднему врагу.
 and(flip, not enemiesAlive)
-  en: Turn start, on heads and unless at most 1 enemy stands: in 1 turn: 1 damage to front enemy.
-  ru: Начало хода, если выпал орёл и если не врагов не больше 1: через 1 ход: 1 урон переднему врагу.
+  en: Turn start, with a 50% chance and unless at most 1 enemy stands: in 1 turn: 1 damage to front enemy.
+  ru: Начало хода, с вероятностью 50% и если не врагов не больше 1: через 1 ход: 1 урон переднему врагу.
 and(flip, not flip)
-  en: Turn start, on heads and unless on heads: in 1 turn: 1 damage to front enemy.
-  ru: Начало хода, если выпал орёл и если не выпал орёл: через 1 ход: 1 урон переднему врагу.
+  en: Turn start, with a 50% chance and unless with a 50% chance: in 1 turn: 1 damage to front enemy.
+  ru: Начало хода, с вероятностью 50% и если не с вероятностью 50%: через 1 ход: 1 урон переднему врагу.
 and(flip, not onceHolder)
-  en: Turn start, on heads and unless once per battle: in 1 turn: 1 damage to front enemy.
-  ru: Начало хода, если выпал орёл и если не раз за бой: через 1 ход: 1 урон переднему врагу.
+  en: Turn start, with a 50% chance and unless once per battle: in 1 turn: 1 damage to front enemy.
+  ru: Начало хода, с вероятностью 50% и если не раз за бой: через 1 ход: 1 урон переднему врагу.
 and(flip, not oncePerTurn)
-  en: Turn start, on heads and unless once per turn: in 1 turn: 1 damage to front enemy.
-  ru: Начало хода, если выпал орёл и если не раз за ход: через 1 ход: 1 урон переднему врагу.
+  en: Turn start, with a 50% chance and unless once per turn: in 1 turn: 1 damage to front enemy.
+  ru: Начало хода, с вероятностью 50% и если не раз за ход: через 1 ход: 1 урон переднему врагу.
 and(flip, not unhurt)
-  en: Turn start, on heads and unless while unhurt: in 1 turn: 1 damage to front enemy.
-  ru: Начало хода, если выпал орёл и если не пока не ранен: через 1 ход: 1 урон переднему врагу.
+  en: Turn start, with a 50% chance and unless while at full HP: in 1 turn: 1 damage to front enemy.
+  ru: Начало хода, с вероятностью 50% и если не пока ОЗ полные: через 1 ход: 1 урон переднему врагу.
 macro echo
   en: Turn start: echoes front enemy a turn later.
   ru: Начало хода: повторяет переднего врага ходом позже.
-  expanded ru: Начало хода: запомнить правило переднего врага, затем через 1 ход: исполнить одно запомненное правило.
+  expanded ru: Начало хода: запомнить правило переднего врага, затем через 1 ход: исполнить самое старое запомненное правило и забыть его.

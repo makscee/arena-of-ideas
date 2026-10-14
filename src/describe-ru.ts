@@ -285,9 +285,10 @@ function effectSegs(e: Effect, ctx: EffectCtx): DescribeSegment[] {
       return [e0("потратить "), which, e0(" в количестве, равном "), ...amountDat(e.stacks)];
     }
     case "summon": {
-      // Unit names stay as they are (M4-4 translates them).
+      // Unit names stay as they are (M4-4 translates them), unless the body
+      // carries its Russian name (rules v2: Hydra's Head, #1047).
       const unitRun = (side: Side): DescribeSegment => ({
-        text: `${e.unit.name} (${e.unit.base.pwr}/${e.unit.base.hp})`,
+        text: `${e.unit.names?.ru.acc ?? e.unit.name} (${e.unit.base.pwr}/${e.unit.base.hp})`,
         partRef: ref,
         unitRef: e.unit.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
         side,
