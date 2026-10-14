@@ -30,7 +30,9 @@ describe("rules v2 pool", () => {
     expect(content.units).toHaveLength(40);
     expect(new Set(content.units.map((u) => u.tier))).toEqual(new Set([1, 2, 3, 4]));
     expect(contentFormProblems(content)).toEqual([]);
-    expect(Object.keys(content.statuses)).toEqual(expect.arrayContaining(["Grains", "Sands", "Memory", "Memories", "Shield", "Strength"]));
+    expect(Object.keys(content.statuses)).toEqual(expect.arrayContaining(["Charge", "Memories", "Shield", "Strength", "Freeze", "Blessing"]));
+    // #1063: one shared counter, none of the old private ones
+    for (const old of ["Grains", "Sands", "Beats", "Drums", "Mana", "Arcana", "Memory", "Chime"]) expect(content.statuses[old], old).toBeUndefined();
   });
 
   it("numbers stay on the old pool's scale (#1047): sleeping HP 2-12, PWR at most 6, awoken at most +4 HP / +1 PWR", () => {
@@ -88,11 +90,15 @@ describe("rules v2 pool", () => {
         }
   });
 
-  it("the card sentence keeps the word chain's glossary terms it names word for word (Drummer's Strength)", () => {
-    const drummer = content.units.find((u) => u.name === "Drummer")!;
-    const segs = sentenceSegments(drummer.forms.sleeping, content.abilities, "en", content.statuses);
-    expect(segs.map((s) => s.text).join("")).toBe("Each time an ally strikes, it gains 1 beat; at a turn end with 3+ beats, it spends 3 and every ally behind it gains 1 Strength.");
+  it("the card sentence keeps the word chain's glossary terms it names word for word (Vulture's Strength, Drummer's Charge)", () => {
+    const vulture = content.units.find((u) => u.name === "Vulture")!;
+    const segs = sentenceSegments(vulture.forms.sleeping, content.abilities, "en", content.statuses);
+    expect(segs.map((s) => s.text).join("")).toBe("When any unit falls, ally or enemy, it gains 1 Strength.");
     expect(segs.some((s) => s.term && s.text.includes("Strength"))).toBe(true);
+    const drummer = content.units.find((u) => u.name === "Drummer")!;
+    const dsegs = sentenceSegments(drummer.forms.sleeping, content.abilities, "en", content.statuses);
+    expect(dsegs.map((s) => s.text).join("")).toBe("When an ally strikes, it gains 1 Charge. At 3 Charge, it spends them and every ally behind it gains 1 Strength.");
+    expect(dsegs.some((s) => s.term === "status:Charge" && s.text === "Charge")).toBe(true);
   });
 
   it("every unit of the batch fights, sleeping and awoken, and says both forms in EN and RU", () => {
@@ -135,23 +141,21 @@ describe("rules v2 pool", () => {
       const ru = say(u.name, form, "ru");
       expect(ru.match(/[A-Za-z]+/g) ?? [], `${u.name} ${form}: ${ru}`).toEqual([]);
     }
-    expect(say("Hourglass", "sleeping", "ru")).toMatch(/^Конец хода: получить 1 Песчинку\./);
-    expect(say("Seed", "sleeping", "ru")).toContain("превратиться в Дерево (0/8)");
+    expect(say("Hourglass", "sleeping", "ru")).toMatch(/^Конец хода: получить 1 Заряд/);
     expect(say("Chrysalis", "sleeping", "ru")).toContain("превратиться в Бабочку");
     expect(say("Chrysalis", "awoken", "ru")).toContain("превратиться в Монарха");
     expect(say("Raven", "sleeping", "ru")).toContain("запомнить его правило");
+    expect(say("Frostling", "sleeping", "ru")).toContain("1 Заморозку");
     expect(say("Nautilus", "sleeping", "ru")).toContain("получить 1 Щит");
   });
 
   it("a unit's sentence says the rules on its counters, the statuses it starts with and the units it becomes", () => {
-    expect(say("Hourglass", "sleeping", "en")).toBe("Turn end: gain 1 Grains. Turn end, if it has 3+ Grains: the ally behind acts again, and spend 3 Grains.");
-    expect(say("Hourglass", "sleeping", "ru")).toBe(
-      "Конец хода: получить 1 Песчинку. Конец хода, если у него 3 Песчинки или больше: заставить союзника позади действовать ещё раз, и потратить 3 Песчинки.",
-    );
-    expect(say("Drummer", "sleeping", "en")).toBe("Ally strikes: gain 1 Beats. Turn end, if it has 3+ Beats: give every ally behind 1 Strength, and spend 3 Beats.");
-    expect(say("Raven", "sleeping", "en")).toBe("Ally dies: remember the rule of that unit. Turn start: perform the oldest remembered rule once and forget it.");
+    // #1063: the Charge units gain in their Does and spend in their "and" clauses, on one shared counter
+    expect(say("Hourglass", "sleeping", "en")).toMatch(/^Turn end: gain 1 Charge, and if it has 3\+ Charge, the ally behind acts again; otherwise, nothing, and if it has 3\+ Charge, spend 3 Charge; otherwise, nothing\.$/);
+    expect(say("Hourglass", "sleeping", "ru")).toMatch(/^Конец хода: получить 1 Заряд, и если у него 3 Заряда или больше, /);
+    expect(say("Drummer", "sleeping", "en")).toMatch(/^Ally strikes: gain 1 Charge, and if it has 3\+ Charge, 1 Strength to every ally behind; otherwise, nothing, /);
+    expect(say("Raven", "sleeping", "en")).toBe("Ally dies: remember the rule of that unit and perform the oldest remembered rule once and forget it.");
     expect(say("Raven", "awoken", "en")).toMatch(/Turn start: perform every remembered rule\.$/);
-    expect(say("Seed", "awoken", "en")).toBe(`Battle start: in 2 turns: become Tree (0/${8 + V2_NUMBERS["Seed"]!.awoken!.hp}). Tree: Turn start: give the ally behind 1 Strength, and give its neighbours 1 Shield.`);
     expect(say("Chrysalis", "sleeping", "en")).toBe("Turn start, on turn 3: become Butterfly (2/4). Butterfly: Turn start: PWR damage to all enemies.");
     // every form that gives or starts with a status carrying a rule, or
     // becomes a unit with a rule, says more than its own clause
@@ -169,10 +173,10 @@ describe("rules v2 pool", () => {
   });
 
   it("a battle's status chip and log row say a coined status's RU name once the pack is loaded", () => {
-    expect(ruStatusName("Grains")).toBe("Grains");
+    expect(ruStatusName("Charge")).toBe("Charge");
     setKnownStatusNames(content.statuses);
     try {
-      expect(["Grains", "Sands", "Beats", "Drums", "Memory", "Memories"].map(ruStatusName)).toEqual(["Песчинки", "Пески", "Такты", "Барабаны", "Память", "Воспоминания"]);
+      expect(["Charge", "Memories"].map(ruStatusName)).toEqual(["Заряд", "Воспоминания"]);
     } finally {
       setKnownStatusNames(undefined);
     }
