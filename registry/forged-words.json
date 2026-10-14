@@ -3,5 +3,20 @@
     "word": "unhurt",
     "kind": "unhurt",
     "card": 1052
+  },
+  {
+    "word": "outnumbered",
+    "kind": "outnumbered",
+    "card": 1063
+  },
+  {
+    "word": "the target has Poison, Curse or Freeze",
+    "kind": "targetHas",
+    "card": 1063
+  },
+  {
+    "word": "every poisoned enemy",
+    "kind": "poisonedEnemies",
+    "card": 1063
   }
 ]

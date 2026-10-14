@@ -160,7 +160,9 @@ export type ConditionV2 =
   | { kind: "flip"; p: number }
   | { kind: "onceHolder" }
   | { kind: "oncePerTurn" }
-  | { kind: "unhurt" };
+  | { kind: "unhurt" }
+  | { kind: "outnumbered" }
+  | { kind: "targetHas"; statuses: string[] };
 
 export type Condition = ConditionV1 | ConditionV2;
 
@@ -172,7 +174,8 @@ export type PositionSelector =
   | { kind: "alliesBehind" } // every living ally behind the holder, in line order
   | { kind: "lastEnemy" } // the enemy at the back
   | { kind: "randomAlly" } // one seeded draw among the other living allies
-  | { kind: "eventTarget" }; // the unit an event was aimed at (a Strike's defender)
+  | { kind: "eventTarget" } // the unit an event was aimed at (a Strike's defender)
+  | { kind: "poisonedEnemies" };
 
 export type Selector = SelectorV1 | PositionSelector;
 
