@@ -164,6 +164,9 @@ export interface Field {
   breakers: UnitDef[][];
   abilities: AbilityRegistry;
   statuses: StatusRegistry;
+  /** How many of a ghost line's front units the fusion takes the place of:
+   * 1 by default; 2 as in play, where a fusion uses up two units (#1065). */
+  replaces?: number;
 }
 
 export const BREAKERS_UNDER = 50;
@@ -324,7 +327,7 @@ export function scaled(c: Compiled, own: Set<string>, scale: number): Compiled {
 
 const ended = (log: readonly BattleEvent[]) => log.find((e) => e.type === "BattleEnd") as Extract<BattleEvent, { type: "BattleEnd" }> | undefined;
 
-/** The fusion leads each ghost line (in place of its front unit) against every
+/** The fusion leads each ghost line (in place of its front unit, or units: Field.replaces) against every
  * other line of the field; the score is its line's share of wins (draws half). */
 export function measureFusion(c: Compiled, field: Field, seeds = 2): CheckResult {
   const opponents = field.ghosts.length < BREAKERS_UNDER ? [...field.ghosts, ...field.breakers] : field.ghosts;
@@ -337,7 +340,7 @@ export function measureFusion(c: Compiled, field: Field, seeds = 2): CheckResult
   let trace: string | undefined;
   const lines = field.ghosts.length ? field.ghosts : [[]];
   for (let i = 0; i < lines.length; i++) {
-    const mine = [c.unit, ...(lines[i] ?? []).slice(1)];
+    const mine = [c.unit, ...(lines[i] ?? []).slice(field.replaces ?? 1)];
     for (let j = 0; j < opponents.length; j++) {
       if (opponents[j] === lines[i]) continue;
       for (let s = 1; s <= seeds; s++) {

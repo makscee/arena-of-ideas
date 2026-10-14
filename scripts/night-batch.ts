@@ -113,7 +113,8 @@ function v2Field(): Field {
   }
   const by = (id: string) => defs[v2content!.units.findIndex((u) => u.id === id)]!;
   const breakers = [["nautilus", "medic", "archmage", "sniper"].map(by), ["bodyguard", "hornet", "alchemist", "drummer"].map(by)];
-  return { ghosts, breakers, abilities: v2content!.abilities, statuses: v2content!.statuses };
+  // a fusion uses up two units, so it stands in for two of a line's (#1065)
+  return { ghosts, breakers, abilities: v2content!.abilities, statuses: v2content!.statuses, replaces: 2 };
 }
 console.log(`night batch ${day}: ${list.length} pairs (${list.map((p) => `${p.key} ${p.why}`).join(", ")}), designer ${designer.kind}${dbPath ? `, world ${dbPath}` : ""}`);
 const started = Date.now();
