@@ -89,7 +89,8 @@ describe("the sentence reaches the Codex and the cards", () => {
     expect(sentenceText(d.recipe, d.abilities!, "ru", d.statuses)).toBe(good.ru);
   });
   it("without one, the Codex falls back to the composer", () => {
-    const d = designOf({ ...c, say: undefined } as Candidate);
+    const { say: _, ...bare } = c;
+    const d = designOf(bare);
     expect(d.recipe.say).toBeUndefined();
     expect(forgeDesignOf(d, [undefined, undefined], { abilities: {}, statuses: {} }).rule.en).toBe(rule.en);
   });
