@@ -8,6 +8,7 @@
 //   node --import tsx/esm e2e/mvp-own-crown.ts --url http://127.0.0.1:8791/arena
 import { MVP_RULES, type DayView, type DecisionResponse, type HomeView, type MvpContent, type PlayerRef, type RunView } from "../src/mvp/contract.js";
 import { botDecision } from "../server/src/mvp/bots.js";
+import type { RunForge } from "../src/mvp/codex.js";
 
 const args = process.argv.slice(2);
 const i = args.indexOf("--url");
@@ -27,6 +28,19 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
   return json as T;
 }
 
+/** Rules v2 (#1049): with the Codex on, a pair fuses only with a design, so
+ * the bot fuses only a discovered pair of the run's forge (a ready one would
+ * need a claim); the Codex off (a 404), any pair. */
+async function fusable(run: RunView): Promise<((x: { unitId: string }, y: { unitId: string }) => boolean) | undefined> {
+  if (run.phase !== "shop" || [...run.line, ...(run.bench ?? [])].filter((u) => u.kind === "unit" && u.form === "awoken").length < 2) return undefined;
+  const res = await fetch(`${base}/runs/${run.runId}/forge`, { headers: { "X-Arena-Player": player }, signal: AbortSignal.timeout(10_000) });
+  if (res.status === 404) return undefined;
+  const forge = (await res.json()) as RunForge;
+  const key = (a: string, b: string) => [a, b].sort().join("+");
+  const ok = new Set(forge.pairs.filter((p) => p.state === "discovered").map((p) => key(p.a, p.b)));
+  return (x, y) => ok.has(key(x.unitId, y.unitId));
+}
+
 /** Plays `run` with botDecision until it is over, or (with `stopAtCrown`) at the Crown. */
 async function play(run: RunView, content: MvpContent, stopAtCrown: boolean): Promise<RunView> {
   let round = run.round;
@@ -34,7 +48,7 @@ async function play(run: RunView, content: MvpContent, stopAtCrown: boolean): Pr
   for (let guard = 0; run.phase !== "over" && guard < 1000; guard++) {
     if (stopAtCrown && run.phase === "crown") return run;
     if (run.round !== round) [round, rerolled] = [run.round, 0];
-    const d = botDecision(run, content, MVP_RULES, rerolled);
+    const d = botDecision(run, content, MVP_RULES, rerolled, await fusable(run));
     if (d.kind === "reroll") rerolled++;
     run = (await call<DecisionResponse>("POST", `/runs/${run.runId}/decisions`, d)).run;
   }

@@ -15,7 +15,8 @@ import { declineOptions, myIdea, pickArchetype, pickReading } from "./idea-readi
 import { cancelIdea, grantIdea, IdeaRefused, ideasOf, myIdeas, writeIdea } from "./ideas.js";
 import { isAdmin, isJoinCode, JoinRefused, joinOpen, NAME_RE, openJoin, redeemInvite, sessionPlayer } from "./invites.js";
 import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
-import { codexView, forgeOf, wish } from "./codex.js";
+import { codexPair, sortPair } from "../../../src/mvp/codex.js";
+import { codexView, runForge, wish } from "./codex.js";
 import { codexOverview } from "./codex-view.js";
 import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
 import { servedContent } from "./pool.js";
@@ -23,7 +24,7 @@ import { championSvg, shareLang, sharePng, unitSvg } from "./share.js";
 import { statsView } from "./stats.js";
 import { attachEmail, EMAIL_STARTS_PER_ADDRESS_HOUR, EMAIL_STARTS_PER_HOUR, EmailRefused, emailRequired, emailStatus, FakeMailer, startEmailLogin, verifyEmailLogin } from "./email.js";
 import { FakeTelegram, pollTelegramLogin, startTelegramLogin, TELEGRAM_STARTS_PER_HOUR, TelegramRefused } from "./telegram.js";
-import { buildScene, sceneById, SceneMissing, sceneList } from "./scenes.js";
+import { buildScene, sceneById, sceneDesigns, SceneMissing, sceneList } from "./scenes.js";
 import { withSceneFixtures } from "./scene-fixtures.js";
 import { candidateScores, castVote, fakeVotes, nextCard, overnightCheck, seedCandidate, waitingForCheck } from "./votes.js";
 
@@ -331,7 +332,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     const run = store.run(c.req.param("runId"));
     if (!run) return bad(c, 404, "no such run");
     if (playerOf(c)?.id !== run.player.id) return bad(c, 401, "not your run");
-    return c.json({ pairs: forgeOf(rt, run) });
+    return c.json(runForge(rt, run));
   });
   api.get("/codex", (c) => (rt.codex ? c.json(codexOverview(rt, playerOf(c))) : bad(c, 404, "the Codex is off")));
   api.get("/codex/:a/:b", (c) => (rt.codex ? c.json(codexView(rt, c.req.param("a"), c.req.param("b"), playerOf(c))) : bad(c, 404, "the Codex is off")));
@@ -533,6 +534,23 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     }
   });
   api.get("/dev/candidates", (c) => c.json(candidateScores(rt)));
+  // #1049: a pair's Codex state by hand (the scenes' stand-in designs), so an
+  // e2e can fuse under rules v2 before a night batch ran.
+  api.post("/dev/codex-pair", async (c) => {
+    if (!rt.codex) return bad(c, 404, "the Codex is off");
+    const body = (await c.req.json().catch(() => null)) as { a?: unknown; b?: unknown; state?: unknown } | null;
+    const [x, y] = [body?.a, body?.b];
+    const state = body?.state === "discovered" ? "discovered" : "ready";
+    if (typeof x !== "string" || typeof y !== "string" || x === y || !rt.content.units.some((u) => u.id === x) || !rt.content.units.some((u) => u.id === y)) return bad(c, 400, "a and b: two live unit ids");
+    const [a, b] = sortPair(x, y);
+    const at = rt.now().toISOString();
+    rt.store.putCodexPair({ ...codexPair(a, b), candidates: sceneDesigns(rt, a, b), preparedAt: at });
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    // "discovered": claimed by the caller (pick 0).
+    if (state === "discovered") rt.store.claimCodexPair(a, b, { pick: 0, by: p, at });
+    return c.json(codexView(rt, a, b, playerOf(c)));
+  });
 
   const app = new Hono();
   app.route(MVP_API_PREFIX, api);

@@ -21,7 +21,8 @@ import { fixtureBattle } from "./scene-fixtures.js";
 import { contentOf } from "./content.js";
 import { poolBattle, poolBattleId } from "../../../src/mvp/pool-battles.js";
 import { ROWS_V2 } from "../../../src/mvp/units-v2.js";
-import { codexPair, type FusionDesign, type PairState } from "../../../src/mvp/codex.js";
+import { codexPair, pairState, sortPair, type FusionDesign, type PairState } from "../../../src/mvp/codex.js";
+import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { codexForged, forgeOf } from "./codex.js";
 import { claimFixture, forgeFixture, type ClaimView, type ForgeView } from "../../../src/mvp/forge-view.js";
 import { instantTuner, nextCard, overnightCheck, seedCandidate } from "./votes.js";
@@ -153,7 +154,7 @@ async function ideaAtArchetypes(rt: MvpRuntime, text = "A lantern keeper who hea
 
 /** Three designs for a forge scene's pair: the rules of other pool units'
  * Awoken forms, named and flavoured, standing in for a night batch (#1050). */
-function sceneDesigns(rt: MvpRuntime, a: UnitId, b: UnitId): FusionDesign[] {
+export function sceneDesigns(rt: MvpRuntime, a: UnitId, b: UnitId): FusionDesign[] {
   const others = rt.content.units.filter((u) => u.id !== a && u.id !== b && u.forms?.awoken);
   const pickOf = (i: number) => structuredClone(others[(i * 7) % others.length]!.forms.awoken);
   return [
@@ -173,6 +174,48 @@ const forge = (state: PairState, click?: string) => async (rt: MvpRuntime): Prom
   if (state !== "unforged") rt.store.putCodexPair({ ...codexPair(slot.a, slot.b), candidates: sceneDesigns(rt, slot.a, slot.b), preparedAt: rt.now().toISOString() });
   if (state === "discovered") rt.store.claimCodexPair(slot.a, slot.b, { pick: 2, by: fixturePlayer(rt), at: rt.now().toISOString() });
   return { player: run.player, entry: { screen: "shop", runId: run.runId, forge: [slot.first, slot.second], ...(click ? { click } : {}) } };
+};
+
+/** The shop's fusion marks (#1049 reopened, cases 1–4), on a board set by
+ * hand so each shows on its own: `none`, two Awoken whose pair has no design
+ * (no mark, no Fuse); `now`, two Awoken of a discovered pair (⚗ on both);
+ * `shop`, an offer whose third copy awakens into a ready pair with your
+ * Awoken unit (its pill), one that would still need awakening into a
+ * discovered pair (a quiet ⚗) and one into an unforged pair (nothing). */
+const fusionMarks = (kind: "none" | "now" | "shop") => async (rt: MvpRuntime): Promise<SceneBuilt> => {
+  if (!rt.codex) throw new SceneMissing("the fusion-mark scenes need the Codex: start the scenes server with ARENA_CODEX=1");
+  const run = await playTo(rt, shopAt(3), "round 3");
+  // Units whose pairs nothing stored yet, so the scene sets each pair's state
+  // itself; each scene from its own part of the pool (builds are kept, so
+  // fusion-now must never design fusion-none's pair).
+  const all = rt.content.units.filter((u) => u.forms?.awoken);
+  const part = Math.floor(all.length / 3);
+  const from = { none: 0, now: 1, shop: 2 }[kind] * part;
+  const units = all.slice(from, from + part);
+  const free = (x: UnitId, y: UnitId) => pairState(rt.store.codexPair(x, y)) === "unforged";
+  const pick: typeof units = [];
+  for (const u of units) if (pick.length < 5 && pick.every((v) => free(u.id, v.id))) pick.push(u);
+  if (pick.length < 5) throw new SceneMissing("five units with no stored pairs");
+  const [a, b, c, d, e] = pick as [typeof units[0], typeof units[0], typeof units[0], typeof units[0], typeof units[0]];
+  const at = rt.now().toISOString();
+  const store = (x: UnitId, y: UnitId, state: PairState) => {
+    if (state === "unforged") return;
+    rt.store.putCodexPair({ ...codexPair(x, y), candidates: sceneDesigns(rt, x, y), preparedAt: at });
+    if (state === "discovered") rt.store.claimCodexPair(...sortPair(x, y), { pick: 2, by: fixturePlayer(rt), at });
+  };
+  const n = rt.rules.copiesToAwaken;
+  const offer = (slot: number, unitId: UnitId) => ({ slot, unitId, tier: 1 as const, cost: rt.rules.unitCost });
+  let s: MvpRunState;
+  if (kind === "shop") {
+    store(a.id, c.id, "ready");
+    store(a.id, d.id, "discovered");
+    s = { ...run, gold: 10, bench: [], line: [lineUnitOf(a, `${run.runId}-a`, n, rt.rules), lineUnitOf(c, `${run.runId}-c`, n - 1, rt.rules), lineUnitOf(b, `${run.runId}-b`, 1, rt.rules)], offers: [offer(0, c.id), offer(1, d.id), offer(2, e.id)] };
+  } else {
+    if (kind === "now") store(a.id, b.id, "discovered");
+    s = { ...run, gold: 10, bench: [], line: [lineUnitOf(a, `${run.runId}-a`, n, rt.rules), lineUnitOf(b, `${run.runId}-b`, n, rt.rules), lineUnitOf(c, `${run.runId}-c`, 1, rt.rules)], offers: [offer(0, d.id), offer(1, e.id), offer(2, c.id)] };
+  }
+  rt.store.putRun(s);
+  return shop(s);
 };
 
 let dayEnded: number | null = null;
@@ -213,7 +256,7 @@ export const SCENES: Scene[] = [
   { id: "awaken", group: "Awaken & fuse", title: "Awaken: the 3rd copy on offer", look: "Buying it awakens the unit: the hint on the offer", desktop: true, build: async (rt) => shop(await playTo(rt, copyOffer(2), "a 3rd copy on offer", 80)) },
   { id: "gift", group: "Awaken & fuse", title: "The awakening gift", look: "The gift's choices after an awakening", desktop: true, build: async (rt) => shop(await playTo(rt, (r) => r.phase === "shop" && !!r.gift, "a gift", 80)) },
   {
-    id: "fuse", group: "Awaken & fuse", title: "Fuse two Awoken", look: "Two Awoken units on the board, ready to fuse", desktop: true,
+    id: "fuse", group: "Awaken & fuse", title: "Two Awoken from play", look: "Two Awoken units reached in play; with the Codex on their pair has no design yet, so no Fuse (fusion-now shows one that fuses)", desktop: true,
     build: async (rt) => shop(await playTo(rt, (r) => r.phase === "shop" && !r.gift && botDecision(r, rt.contentFor(r.contentVersion), rt.rules, 9).kind === "fuse", "two Awoken to fuse", 80)),
   },
 
@@ -221,6 +264,9 @@ export const SCENES: Scene[] = [
   { id: "forge-ready", group: "Awaken & fuse", title: "The forge: ready to claim", look: "Rules v2 (#1049): three sealed designs as cards with flavour; pick one, Claim", desktop: true, build: forge("ready") },
   { id: "forge-claim", group: "Awaken & fuse", title: "The forge: a claim", look: "Rules v2 (#1049): Claim pressed on the first design: 'You claimed …', the fused unit", desktop: true, build: forge("ready", "forge-claim") },
   { id: "forge-discovered", group: "Awaken & fuse", title: "The forge: discovered", look: "Rules v2 (#1049): the canonical design, 'Discovered by @… · date', Fuse", desktop: true, build: forge("discovered") },
+  { id: "fusion-none", group: "Awaken & fuse", title: "Two Awoken, no design: no fuse", look: "Rules v2 (#1049): their pair isn't forged: no ⚗, no glow, no Fuse button, no fuse hint", desktop: true, build: fusionMarks("none") },
+  { id: "fusion-now", group: "Awaken & fuse", title: "A fusion you can make now", look: "Rules v2 (#1049): two Awoken of a discovered pair: ⚗ and a glow on both; Fuse opens the forge", desktop: true, build: fusionMarks("now") },
+  { id: "fusion-shop", group: "Awaken & fuse", title: "A fusion one buy away", look: "Rules v2 (#1049): the first offer's 3rd copy awakens into a pair ready to claim (its pill); the second needs awakening (a quiet ⚗); the third pairs with nothing designed (no mark)", desktop: true, build: fusionMarks("shop") },
   { id: "battle-win", keep: true, group: "Battle", title: "A battle you win", look: "Pacing, the current beam, step numbers and spent cards, the end card", desktop: true, build: battleOf("round", "win") },
   { id: "battle-loss", keep: true, group: "Battle", title: "A battle you lose", look: "The loss end card, hearts lost", desktop: true, build: battleOf("round", "loss") },
   { id: "battle-draw", keep: true, group: "Battle", title: "A draw", look: "The draw end card", desktop: true, build: battleOf("round", "draw") },

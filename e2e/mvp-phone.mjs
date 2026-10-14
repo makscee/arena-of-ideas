@@ -28,7 +28,7 @@ let child = null;
 if (!url) {
   execFileSync("npm", ["run", "-s", "mvp:build"], { stdio: "inherit" });
   const port = await new Promise((r) => { const s = createServer().listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => r(p)); }); });
-  child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1", MVP_DB: ":memory:" }, stdio: ["ignore", "inherit", "inherit"] });
+  child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1", MVP_DB: ":memory:", ARENA_CODEX: "1" }, stdio: ["ignore", "inherit", "inherit"] });
   url = `http://127.0.0.1:${port}/arena/`;
   for (let i = 0; i < 300; i++) { // up to 60 s: m1 and m4 are shared, and under load the server starts slowly
     try { if ((await fetch(url + "api/v1/health")).ok) break; } catch {}
@@ -930,54 +930,45 @@ try {
     await shot("awaken-preview"); await noHScroll("awaken-preview");
     await page.getByTestId("buy").click();
     await chooseGift();
-    await page.getByTestId("hint").filter({ hasText: L("hint.fusePhone") }).waitFor();
     const first = run.line.findIndex((u) => u.form === "awoken");
     const second = run.line.findIndex((u) => u.uid === almost.uid);
+    // Rules v2 (#1049): two Awoken fuse only when their pair has a design.
+    // Fresh, this pair has none: no fuse hint, no ⚗, no Fuse.
+    await page.waitForResponse((r) => /\/forge$/.test(r.url()), { timeout: 15_000 }).catch(() => {});
+    await page.waitForTimeout(300);
+    if ((await page.getByTestId("hint").filter({ hasText: L("hint.fusePhone") }).count()) > 0) errors.push("fusion: the fuse hint shows for a pair with no design");
+    if ((await page.locator('[data-testid^="fuse-mark-"]').count()) > 0) errors.push("fusion: ⚗ on a pair with no design");
+    await page.getByTestId(`line-${first}`).click();
+    if ((await page.getByTestId("fuse").count()) > 0) errors.push("fusion: Fuse on a pair with no design");
+    await shot("shop-no-design"); await noHScroll("shop-no-design");
+    // The pair gets designs (as the night batch would) and this player claims one.
+    await call("POST", "/dev/codex-pair", { a: run.line[first].unitId, b: almost.unitId, state: "discovered" }, fuser.id);
+    await page.reload();
+    await page.getByTestId("play").click();
+    await page.getByTestId("hint").filter({ hasText: L("hint.fusePhone") }).waitFor();
+    for (const i of [first, second]) if ((await page.getByTestId(`fuse-mark-${i}`).count()) !== 1) errors.push(`fusion: no ⚗ on line-${i} of a discovered pair`);
     await page.getByTestId(`line-${first}`).click();
     await shot("shop-fuse-actions"); await noHScroll("shop-fuse-actions");
     await tap44("move buttons beside Fuse", page.locator('[data-testid="move-left"], [data-testid="move-right"]'), "width");
     await page.getByTestId("fuse").click();
     await shot("fuse-pick"); await noHScroll("fuse-pick");
-    // R2-5: both orders are previewed up front; a pair nobody has fused comes
-    // with no name in the response and shows "??? New fusion".
+    // The Fuse opens the forge on the pair (#1049 reopened, case 5): no splice
+    // preview of both orders, no recipe, no Swap.
     const previews = [];
-    const onPreview = async (res) => { if (/\/preview$/.test(res.url())) previews.push({ req: res.request().postDataJSON(), body: await res.text() }); };
+    const onPreview = (res) => { if (/\/preview$/.test(res.url())) previews.push(res.request().postDataJSON()); };
     page.on("response", onPreview);
     await page.getByTestId(`line-${second}`).click();
+    await page.getByTestId("forge-discovered").waitFor();
     await page.getByTestId("preview-confirm").waitFor();
     page.off("response", onPreview);
-    const tapped = previews.find((p) => p.req.first === first && p.req.second === second);
-    const fusedIn = (p) => JSON.parse(p.body).run.line.find((u) => u.kind === "fused");
-    const isNew = tapped && fusedIn(tapped).name === "";
-    if (previews.length !== 2 || !tapped) errors.push(`fusion preview: expected both orders previewed, got ${previews.length}`);
-    const sheetText = await page.getByTestId("overlay").textContent();
-    if (isNew && !(sheetText.includes("???") && (sheetText.includes(L("fuse.new")) || sheetText.includes(L("fusion.newNamedWhenFused"))))) errors.push("fusion preview: a new pair doesn't say '??? New fusion'");
-    if (tapped && !isNew && !sheetText.includes(fusedIn(tapped).name)) errors.push("fusion preview: a known pair doesn't show its name");
-    await shot("fusion-preview"); await noHScroll("fusion-preview");
-    const recipe = await page.getByTestId("fusion-recipe").textContent();
-    await page.getByTestId("preview-swap").click();
-    const swapped = await page.getByTestId("fusion-recipe").textContent();
-    const names = [run.line[first].name, run.line[second].name];
-    if (!(recipe.indexOf(names[0]) < recipe.indexOf(names[1]) && swapped.indexOf(names[1]) < swapped.indexOf(names[0]))) errors.push(`fusion preview: Swap doesn't flip the recipe (${recipe} / ${swapped})`);
-    await shot("fusion-preview-swapped"); await noHScroll("fusion-preview-swapped");
-    await page.getByTestId("preview-swap").click();
+    const orders = new Set(previews.map((p) => `${p.first}>${p.second}`));
+    if (orders.size > 1) errors.push("fusion: the forge previewed both orders (a splice)");
+    if ((await page.getByTestId("fusion-recipe").count()) > 0 || (await page.getByTestId("preview-swap").count()) > 0) errors.push("fusion: the forge shows a splice recipe or Swap");
+    if (/Fusion preview|Предпросмотр слияния/.test(await page.getByTestId("overlay").textContent())) errors.push("fusion: 'Fusion preview' copy in the forge");
+    await shot("fusion-forge"); await noHScroll("fusion-forge");
     await page.getByTestId("preview-confirm").click();
-    // The reveal comes with the fused line (main.ts fuse): for a new pair, and
-    // also for one only bots had made (its name was shown, the credit is now
-    // yours). Either way it is closed before the line is used (R2-17).
     await page.getByTestId("line").locator(".card.fused").waitFor();
-    const revealed = (await page.getByTestId("fusion-reveal").count()) > 0;
-    if (isNew && !revealed) errors.push("fusion reveal: a new pair shows no reveal");
-    if (revealed) {
-      const reveal = await page.getByTestId("fusion-reveal").textContent();
-      const named = reveal.replace(/^.*You discovered /, "");
-      if (!new RegExp(`${pattern(L("fuse.discovered"))}\\S`).test(reveal)) errors.push(`fusion reveal: '${reveal}'`);
-      if (!(await page.getByTestId("overlay").textContent()).includes(L("fusion.discoveredByYou"))) errors.push("fusion reveal: no 'discovered by you'");
-      if (isNew && previews.some((p) => p.body.includes(named))) errors.push(`fusion preview: the response carried the name '${named}' before the fuse`);
-      await shot("fusion-reveal"); await noHScroll("fusion-reveal");
-      await page.getByTestId("sheet-close").click();
-    }
-    console.log(`mvp phone: the fusion was ${isNew ? "new" : "known"}${revealed ? ", revealed" : ""}`);
+    console.log("mvp phone: fused through the forge");
     await shot("fused"); await noHScroll("fused");
     await page.locator(".card.fused").screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-fused-card.png` });
     // The fused card's row lines up: every card in it is one height.

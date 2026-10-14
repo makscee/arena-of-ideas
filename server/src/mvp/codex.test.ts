@@ -6,7 +6,7 @@ import { lineUnitOf } from "../../../src/mvp/forms.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
 import { createMvpApp } from "./app.js";
 import { playBotRun } from "./bots.js";
-import { botForge, codexForged } from "./codex.js";
+import { botForge, codexForged, forgeOffers } from "./codex.js";
 import { mvpContent } from "./content.js";
 import { decide, preview, startRun } from "./runs.js";
 import { mvpRuntime, type MvpDeps } from "./runtime.js";
@@ -193,6 +193,38 @@ describe("the forge in a run", () => {
     const sealed = await (await app.request(`/api/v1/codex/${b!.id}/${a!.id}`)).json();
     expect(sealed).toMatchObject({ state: "ready", sealed: 3 });
     expect(sealed.candidates).toBeUndefined();
+  });
+
+  // #1049 reopened, cases 1, 3 and 4: the shop marks only offers that bring a designed pair within reach.
+  it("marks a shop offer that completes a designed pair, and nothing for an unforged one", async () => {
+    const rt = world();
+    rt.store.addPlayer(maks);
+    const run = startRun(rt, maks);
+    const [a, b, c, d] = rt.content.units;
+    // On the board: a Awoken, b sleeping one copy short, c sleeping with one copy.
+    const s: MvpRunState = {
+      ...run,
+      line: [lineUnitOf(a!, "m-a", 3, rt.rules), lineUnitOf(b!, "m-b", 2, rt.rules), lineUnitOf(c!, "m-c", 1, rt.rules)],
+      bench: [],
+      offers: [0, 1, 2, 3].map((slot) => ({ slot, unitId: [b, c, d, a][slot]!.id, tier: 1 as const, cost: 3 })),
+    };
+    rt.store.putRun(s);
+    // Nothing forged: no marks (case 1).
+    expect(forgeOffers(rt, s)).toEqual([]);
+    rt.store.putCodexPair(ready(rt.content, a!.id, b!.id));
+    rt.store.putCodexPair(ready(rt.content, a!.id, c!.id));
+    rt.store.claimCodexPair(a!.id, c!.id, { pick: 2, by: kim, at: "t" });
+    const offers = forgeOffers(rt, s);
+    // b's third copy awakens it: one buy away, ready to claim (case 3).
+    expect(offers).toContainEqual(expect.objectContaining({ slot: 0, partner: 0, state: "ready", awakens: true }));
+    // c would be its second copy: close, discovered as Twist (case 4).
+    expect(offers).toContainEqual(expect.objectContaining({ slot: 1, partner: 0, state: "discovered", awakens: false, design: expect.objectContaining({ name: "Twist" }) }));
+    // d's pair with a is unforged, and a copy of a is already Awoken: neither shows.
+    expect(offers.map((o) => o.slot).sort()).toEqual([0, 1]);
+    const app = createMvpApp(rt);
+    const forge = await (await app.request(`/api/v1/runs/${s.runId}/forge`, { headers: { "X-Arena-Player": maks.id } })).json();
+    expect(forge.offers).toHaveLength(2);
+    expect(forge.pairs).toEqual([]);
   });
 
   it("lets a bot fuse a ready pair with its chosen design, claiming nothing", () => {
