@@ -11,7 +11,7 @@
 // picks one, and it shows with their name on it.
 import type { Both, ClaimView, ForgeDesign, ForgePair, ForgeUnit, ForgeView, PairState } from "../../src/mvp/forge-view";
 import { currentLang, t } from "../i18n";
-import { button, h, screen, show } from "../ui/dom";
+import { actionable, button, h, isDesktop, keepFocus, onKeys, screen, show, withKey } from "../ui/dom";
 
 export type ForgeTab = "units" | "feed" | "words";
 
@@ -25,6 +25,8 @@ export interface ForgeArgs {
   onWish?: (pair: ForgePair, on: boolean, state: { tab: ForgeTab; unit: string }) => Promise<void> | void;
 }
 
+const TABS: ForgeTab[] = ["units", "feed", "words"];
+const kbd = (k: string) => h("kbd", {}, k);
 const tr = (s: Both): string => (currentLang() === "ru" ? s.ru : s.en);
 const day = (iso: string): string => new Date(iso.length <= 10 ? iso + "T12:00:00Z" : iso).toLocaleDateString(currentLang() === "ru" ? "ru-RU" : "en-GB", { day: "numeric", month: "short" });
 const unitOf = (v: { units: ForgeUnit[] }, id: string): ForgeUnit => v.units.find((u) => u.id === id)!;
@@ -32,7 +34,7 @@ const label = (u: ForgeUnit): string => `${u.emoji} ${tr(u.name)}`;
 const pairLabel = (v: { units: ForgeUnit[] }, [a, b]: [string, string]): string => `${label(unitOf(v, a))} + ${label(unitOf(v, b))}`;
 
 function head(title: string, onBack: () => void): HTMLElement {
-  return h("div", { class: "row forge-head" }, button(t("codex.back"), onBack, "primary", "forge-back"), h("h1", {}, title));
+  return h("div", { class: "row forge-head" }, withKey(button(t("codex.back"), onBack, "primary", "forge-back"), "Esc"), h("h1", {}, title));
 }
 
 /** A unit or a design as one wide card: emoji, name, the rule sentence. */
@@ -47,9 +49,10 @@ export function forgeScreen(a: ForgeArgs): void {
   const tabs = h("div", { class: "tabs", role: "tablist" });
   const body = h("div", { class: "stack forge-body" });
   const tabBtn = (id: ForgeTab, text: string) => {
-    const b = button(text, () => ((tab = id), draw()), tab === id ? "on" : "", `forge-tab-${id}`);
+    const b = button(text, () => ((tab = id), keepFocus(draw)), tab === id ? "on" : "", `forge-tab-${id}`);
     b.setAttribute("role", "tab");
-    return b;
+    b.setAttribute("aria-selected", String(tab === id));
+    return withKey(b, String(TABS.indexOf(id) + 1));
   };
   const draw = (): void => {
     tabs.replaceChildren(tabBtn("units", t("forge.tab.units")), tabBtn("feed", t("forge.tab.feed")), tabBtn("words", t("forge.tab.words")));
@@ -63,7 +66,9 @@ export function forgeScreen(a: ForgeArgs): void {
       "div",
       { class: "forge-picker", "data-testid": "forge-picker" },
       ...v.units.map((x) => {
-        const b = button(x.emoji, () => ((unit = x.id), draw()), x.id === unit ? "on" : "", "forge-pick");
+        const b = button(x.emoji, () => ((unit = x.id), keepFocus(draw)), x.id === unit ? "on" : "", "forge-pick");
+        b.setAttribute("aria-label", tr(x.name));
+        b.setAttribute("aria-pressed", String(x.id === unit));
         b.title = tr(x.name);
         return b;
       }),
@@ -94,7 +99,7 @@ export function forgeScreen(a: ForgeArgs): void {
               if (a.onWish) return void a.onWish(p, true, { tab, unit });
               p.wished = !p.wished;
               p.wishes = n + (p.wished ? 1 : -1);
-              draw();
+              keepFocus(draw);
             }, p.wished ? "forge-wish on" : "forge-wish", "forge-wish");
       return h(
         "div",
@@ -155,8 +160,22 @@ export function forgeScreen(a: ForgeArgs): void {
   ];
 
   draw();
-  show(h("div", { class: "forge stack", "data-testid": "forge" }, head(t("forge.title"), a.onBack), tabs, body));
+  show(h("div", { class: "forge stack", "data-testid": "forge" }, head(t("forge.title"), a.onBack), tabs, body, isDesktop() ? h("div", { class: "dim small forge-keys", "data-testid": "forge-keys" }, kbd("1"), "–", kbd("3"), t("forge.keys.tabs"), kbd("←"), kbd("→"), t("forge.keys.unit"), kbd("Tab"), t("forge.keys.move"), kbd("Enter"), t("forge.keys.press"), kbd("Esc"), t("forge.keys.back")) : null));
   screen("forge");
+  // Keys (#1064): Esc leaves, 1–3 the tabs, ← → the unit whose partners show.
+  onKeys((e) => {
+    if (e.key === "Escape") return a.onBack(), true;
+    const n = Number(e.key);
+    if (n >= 1 && n <= TABS.length) return ((tab = TABS[n - 1]!), keepFocus(draw)), true;
+    if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && tab === "units" && v.units.length > 1) {
+      const i = v.units.findIndex((x) => x.id === unit);
+      unit = v.units[(i + (e.key === "ArrowLeft" ? -1 : 1) + v.units.length) % v.units.length]!.id;
+      draw();
+      document.querySelector<HTMLElement>('[data-testid="forge-picker"] button.on')?.focus({ preventScroll: true });
+      return true;
+    }
+    return false;
+  });
 }
 
 export interface ClaimArgs {
@@ -190,6 +209,7 @@ export function claimScreen(a: ClaimArgs): void {
       el.dataset.testid = "forge-candidate";
       el.style.setProperty("--i", String(i));
       el.classList.add("sealed");
+      actionable(el, tr(d.name));
       el.addEventListener("click", () => {
         chosen = i;
         for (const c of cards) c.classList.toggle("picked", c === el);
@@ -198,8 +218,15 @@ export function claimScreen(a: ClaimArgs): void {
       });
       return el;
     });
-    show(h("div", { class: "forge stack claim-moment", "data-testid": "forge-claim-moment" }, head(t("forge.claimTitle"), a.onDone), h("div", { class: "forge-sub" }, pair), h("div", { class: "dim small" }, t("forge.claimLead", { pair })), h("div", { class: "stack forge-candidates" }, ...cards), confirm));
+    show(h("div", { class: "forge stack claim-moment", "data-testid": "forge-claim-moment" }, head(t("forge.claimTitle"), a.onDone), h("div", { class: "forge-sub" }, pair), h("div", { class: "dim small" }, t("forge.claimLead", { pair })), h("div", { class: "stack forge-candidates" }, ...cards.map((c, i) => (isDesktop() && c.append(h("kbd", { class: "forge-num" }, String(i + 1))), c))), withKey(confirm, "Enter")));
     screen("forge");
+    // Keys (#1064): 1–3 pick a sealed card, Enter claims it (the focused button), Esc leaves.
+    onKeys((e) => {
+      if (e.key === "Escape") return a.onDone(), true;
+      const card = /^[1-9]$/.test(e.key) ? cards[Number(e.key) - 1] : undefined;
+      return card ? (card.click(), card.focus({ preventScroll: true }), true) : false;
+    });
+    cards[0]?.focus({ preventScroll: true });
   };
 
   const done = (i: number): void => {
@@ -216,10 +243,12 @@ export function claimScreen(a: ClaimArgs): void {
         el,
         h("div", { class: "small" }, t("forge.claimedLead", { name: tr(d.name), pair })),
         h("div", { class: "forge-sealed-away" }, ...a.claim.candidates.filter((_, j) => j !== i).map(() => h("div", { class: "forge-card sealed-back" }, "🔒")), h("div", { class: "dim small" }, t("forge.sealedAway"))),
-        button(t("codex.back"), a.onDone, "primary", "forge-done"),
+        withKey(button(t("codex.back"), a.onDone, "primary", "forge-done"), "Enter"),
       ),
     );
     screen("forge");
+    onKeys((e) => (e.key === "Escape" ? (a.onDone(), true) : false));
+    document.querySelector<HTMLElement>('[data-testid="forge-done"]')?.focus({ preventScroll: true });
   };
 
   if (a.picked !== undefined) done(a.picked);

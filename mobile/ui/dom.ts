@@ -28,6 +28,55 @@ export function button(label: string, onClick: () => void, cls = "", testid = ""
   return b;
 }
 
+/** A clickable element that is not a <button> (a card) made reachable by
+ * keyboard (#1064): Tab reaches it, Enter clicks it (the keydown below), and
+ * style.css shows its focus. `label` names it for a screen reader. */
+export function actionable<T extends HTMLElement>(el: T, label = ""): T {
+  el.tabIndex = 0;
+  el.setAttribute("role", "button");
+  if (label) el.setAttribute("aria-label", label);
+  return el;
+}
+
+/** Puts a key on a button, as a keycap after its label, on desktop (the shop's
+ * "Reroll R"): the key is visible where it is used (#1064). */
+export function withKey<T extends HTMLElement>(el: T, key: string): T {
+  if (desktopQuery.matches) el.append(" ", h("kbd", {}, key));
+  return el;
+}
+
+/** Notes which control the keyboard is on (its test id, and its place among
+ * those) and returns a function that puts the focus back on the same one
+ * after a redraw (#1064). */
+export function rememberFocus(): () => void {
+  const a = document.activeElement;
+  const scope: ParentNode = a instanceof HTMLElement ? a.closest(".overlay") ?? app : app;
+  const key = a instanceof HTMLElement && app.contains(a) ? a.dataset.testid ?? "" : "";
+  const same = () => (key ? [...scope.querySelectorAll<HTMLElement>("[data-testid]")].filter((e) => e.dataset.testid === key) : []);
+  const nth = a instanceof HTMLElement ? same().indexOf(a) : -1;
+  return () => {
+    if (nth < 0 || (document.activeElement && document.activeElement !== document.body && app.contains(document.activeElement))) return;
+    const els = same();
+    (els[nth] ?? els[els.length - 1])?.focus({ preventScroll: true });
+  };
+}
+
+/** Runs a redraw and puts the keyboard back on the same control. */
+export function keepFocus(redraw: () => void): void {
+  const back = rememberFocus();
+  redraw();
+  back();
+}
+
+/** A screen restored by keepScreen() or redrawn by show() keeps the keyboard
+ * where it was: the focused control's test id (the shop redraws after every
+ * decision; Tab must not jump back to the top each time). */
+let focusKey = "";
+addEventListener("focusin", (e) => {
+  const el = e.target;
+  focusKey = el instanceof HTMLElement && app.contains(el) && !el.closest(".overlay") ? (el.dataset.testid ?? "") : focusKey;
+});
+
 /** Replaces the screen; null kids are skipped. It forgets the last screen's
  * name (screen()) and keys (onKeys()): a screen that has a desktop layout
  * says so again after show(). */
@@ -39,9 +88,23 @@ export function show(...kids: (Node | null)[]): void {
   delete app.dataset.screen;
   keys = null;
   leaving = null;
+  const had = app.contains(document.activeElement) && document.activeElement !== app ? focusKey : "";
   app.replaceChildren(...kids.filter((k): k is Node => k !== null));
   window.scrollTo(0, 0);
+  if (had) {
+    const again = [...app.querySelectorAll<HTMLElement>("[data-testid]")].find((e) => e.dataset.testid === had && !e.closest(".overlay"));
+    if (again && !(again as HTMLButtonElement).disabled) again.focus({ preventScroll: true });
+  }
+  focusLost = byKey && (document.activeElement === document.body || !app.contains(document.activeElement));
 }
+/** The last input was a key, not the pointer: a focus lost then is the keyboard's. */
+let byKey = false;
+addEventListener("keydown", () => (byKey = true), true);
+addEventListener("pointerdown", () => (byKey = false), true);
+/** The last show() found the control the keyboard was on gone (a confirm
+ * button that did its work): the new screen puts the focus somewhere itself. */
+let focusLost = false;
+export const keyboardLost = (): boolean => focusLost;
 
 /** Keeps the current screen as it is (its nodes, name, keys and scroll, not
  * its sheets) and returns a function that puts it back: the Codex opens over
@@ -192,21 +255,57 @@ new MutationObserver(() => {
   backQueued = true;
   queueMicrotask(() => ((backQueued = false), syncBack()));
 }).observe(app, { childList: true, attributes: true, attributeFilter: ["data-screen"] });
+/** Something Enter presses: a button, a link, or a card made actionable(). */
+const pressable = (t: EventTarget | null): t is HTMLElement => t instanceof HTMLElement && t.matches("button, a[href], [role='button'][tabindex]");
+const native = (el: HTMLElement) => el.matches("button, a[href]");
+const FOCUSABLE = "button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex='-1'])";
+const shown = (el: HTMLElement) => el.getClientRects().length > 0;
+
+// Tab stays inside the top sheet (#1064): the screen under it is not reachable
+// while it is open, and Tab wraps from its last control to its first.
+addEventListener(
+  "keydown",
+  (e) => {
+    if (e.key !== "Tab" || e.ctrlKey || e.metaKey || e.altKey) return;
+    const top = topLayer();
+    if (!top) return;
+    const els = [...top.el.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(shown);
+    e.preventDefault();
+    if (els.length === 0) return;
+    const at = els.indexOf(document.activeElement as HTMLElement);
+    const to = e.shiftKey ? (at <= 0 ? els.length - 1 : at - 1) : at < 0 || at === els.length - 1 ? 0 : at + 1;
+    els[to]!.focus();
+  },
+  { capture: true },
+);
+
 addEventListener("keydown", (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
   if (textField(e.target)) return;
   // M: sound on/off, on every screen (round 3, note 16).
   if (e.key === "m" || e.key === "M") return void (toggleSound(), e.preventDefault());
+  // Enter on a focused button, link or card presses it, before the screen's
+  // own Enter (Continue and the like): the key does what the focus says.
+  if (e.key === "Enter" && pressable(e.target)) {
+    if (!native(e.target)) (e.preventDefault(), e.target.click());
+    return;
+  }
+  // Space on a button reached by Tab presses that button (what the focus ring
+  // says); after a mouse click the focus is not visible, and Space is the
+  // screen's (Fight in the shop).
+  if (e.key === " " && pressable(e.target) && native(e.target) && e.target.matches(":focus-visible")) return;
   // A sheet is open: the screen under it takes no keys.
   if (topLayer()) return;
-  if (keys && keys(e)) e.preventDefault();
+  if (keys && keys(e)) return void e.preventDefault();
+  // Space on a card made actionable() presses it too (a button does by itself).
+  if (e.key === " " && pressable(e.target) && !native(e.target)) return void (e.preventDefault(), e.target.click());
 });
 
 // ---------- overlays ----------
 
 /** The open overlays, bottom first. Each one's `dismiss` is what a tap
  * outside it and Esc do: close it, or for the run menu, Resume. */
-type Layer = { el: HTMLElement; dismiss: () => void };
+type Layer = { el: HTMLElement; dismiss: () => void; restore?: () => void };
 const layers: Layer[] = [];
 /** The top-most overlay still on the screen (show() and keepScreen() drop
  * overlays without closing them: those are forgotten here). */
@@ -229,21 +328,32 @@ export function dismissable(dismiss: ((close: () => void) => void) | null, ...ki
   const back = h("div", { class: "overlay", "data-testid": "overlay" }, sheet);
   const layer: Layer = { el: back, dismiss: () => (dismiss ? dismiss(close) : close()) };
   function close(): void {
+    const wasOn = back.contains(document.activeElement);
     back.remove();
     const i = layers.indexOf(layer);
     if (i >= 0) layers.splice(i, 1);
+    if (wasOn) layer.restore?.();
   }
   back.addEventListener("click", (e) => e.target === back && layer.dismiss());
   topLayer();
   layers.push(layer);
+  // The keyboard goes into the sheet (its primary button, else its first
+  // control) and comes back to what it was on when the sheet closes (#1064).
+  const from = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  const fromKey = from?.dataset.testid ?? "";
   app.append(back);
+  queueMicrotask(() => (sheet.querySelector<HTMLElement>("button.primary:not(:disabled)") ?? sheet.querySelector<HTMLElement>(FOCUSABLE))?.focus({ preventScroll: true }));
+  layer.restore = () => {
+    const to = from?.isConnected ? from : fromKey ? [...app.querySelectorAll<HTMLElement>("[data-testid]")].find((e) => e.dataset.testid === fromKey && !e.closest(".overlay")) : undefined;
+    to?.focus({ preventScroll: true });
+  };
   return close;
 }
 
 /** overlay() with a Close button pinned to the sheet's bottom, for a sheet
  * with nothing else to tap (a unit sheet, the rules, a why-I-lost row). */
 export function closable(...kids: Node[]): () => void {
-  const closeBtn = button(t("common.close"), () => close(), "grow", "sheet-close");
+  const closeBtn = withKey(button(t("common.close"), () => close(), "grow", "sheet-close"), "Esc");
   const close = overlay(...kids, h("div", { class: "row sheet-actions" }, closeBtn));
   return close;
 }

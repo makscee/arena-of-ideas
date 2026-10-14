@@ -37,7 +37,7 @@ import { api } from "../api";
 import { t } from "../i18n";
 import type { Key } from "../i18n/en";
 import { card, creditOf, formRich, liveIdOf, roman, setCardAbilities, summonCard, tierClass, summonSheet, unitSheet, withPip } from "../ui/card";
-import { app, button, closable, h, isDesktop, onKeys, screen, show, who } from "../ui/dom";
+import { actionable, app, button, closable, h, isDesktop, onKeys, rememberFocus, screen, show, who, withKey } from "../ui/dom";
 import { icon } from "../ui/icon";
 import { loadUnitRates, pct } from "../ui/unit-stats";
 import { ideaWhy, proposeScreen } from "./ideas";
@@ -103,7 +103,7 @@ export async function codexScreen(a: {
   const st: CodexState = { ...DEFAULTS, ...a.state };
   cache.state = st;
   const desk = isDesktop();
-  const back = button(t("codex.back"), a.onBack, "primary grow", "codex-back");
+  const back = withKey(button(t("codex.back"), a.onBack, "primary grow", "codex-back"), "Esc");
   const tabs = h("div", { class: "tabs", role: "tablist" });
   const body = h("div", { class: "stack codex-body" });
   const inspector = desk ? h("aside", { class: "codex-insp stack", "data-testid": "inspector" }) : null;
@@ -169,6 +169,7 @@ export async function codexScreen(a: {
   let drawing = 0;
   const draw = async (): Promise<void> => {
     const n = ++drawing;
+    const refocus = rememberFocus();
     tabs.replaceChildren(
       tabBtn("units", t("codex.tab.units")),
       tabBtn("fusions", t("codex.tab.fusions")),
@@ -210,6 +211,7 @@ export async function codexScreen(a: {
     }
     if (n !== drawing || !body.isConnected) return; // redrawn or left meanwhile
     body.replaceChildren(...kids);
+    refocus();
     window.scrollTo(0, y);
     body.style.minHeight = "";
     if (st.tab === "keywords" && st.term) landOn(body, st.term, st.scope);
@@ -227,7 +229,7 @@ export async function codexScreen(a: {
     void draw();
   };
   const tabBtn = (t: CodexTab, label: string) =>
-    button(
+    withKey(button(
       label,
       () => {
         if (t === st.tab) return;
@@ -239,7 +241,7 @@ export async function codexScreen(a: {
       },
       t === st.tab ? "on" : "",
       `codex-tab-${t}`,
-    );
+    ), String(TAB_ORDER.indexOf(t) + 1));
 
   const main = h(
     "div",
@@ -254,7 +256,14 @@ export async function codexScreen(a: {
   show(main, inspector);
   screen("codex");
   // Esc (after a sheet, closed in ui/dom.ts): clears the inspector, then Back.
+  // Keys (#1064): 1–6 the tabs (their number is on them), / the search.
   onKeys((e) => {
+    const tab = /^[1-6]$/.test(e.key) ? TAB_ORDER[Number(e.key) - 1] : undefined;
+    if (tab) return document.querySelector<HTMLElement>(`[data-testid="codex-tab-${tab}"]`)?.click(), true;
+    if (e.key === "/") {
+      const q = document.querySelector<HTMLElement>('[data-testid="codex-search"]');
+      return q ? (q.focus(), true) : false;
+    }
     if (e.key !== "Escape") return false;
     if (inspected) idle();
     else a.onBack();
@@ -262,6 +271,8 @@ export async function codexScreen(a: {
   });
   await draw();
 }
+
+const TAB_ORDER: CodexTab[] = ["units", "fusions", "keywords", "champions", "library", "howto"];
 
 // ---------- units ----------
 
@@ -457,6 +468,7 @@ function fusionsTab(
       ),
       h("span", { class: "num dim" }, `${fused.stats.pwr}/${fused.stats.hp}`),
     );
+    actionable(el);
     el.addEventListener("click", (e) => {
       if ((e.target as HTMLElement).closest("button.t")) return; // a term opens its own rule
       open(unitSheet(fused, content), el);

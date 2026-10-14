@@ -1097,6 +1097,14 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
 @media (min-width: 1280px) {
   #app[data-screen] { --cw: 132px; --gap: 12px; --insp: 380px; }
 }
+/* Keyboard focus (#1064): one ring on everything Tab reaches, in the palette's
+ * action colour (amber in plum, brass and felt) with the outline colour inside,
+ * so it reads on a panel, on the page and on the amber primary button. A
+ * mouse click shows none (:focus-visible). */
+:is(button, a, input, select, textarea, [tabindex]):focus-visible { outline: 3px solid var(--action); outline-offset: 2px; box-shadow: 0 0 0 2px var(--outline); }
+button.primary:focus-visible, button.danger:focus-visible { box-shadow: 0 0 0 2px var(--outline), var(--drop); }
+.card:focus-visible { z-index: 3; }
+[tabindex="-1"]:focus-visible { outline: none; box-shadow: none; }
 /* Highlighted unit text (R2-8, mobile/ui/term.ts): every term is a button that
  * reads as words; a trigger clause is one amber pill. */
 button.t { display: inline; min-height: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; clip-path: none; font: inherit; letter-spacing: inherit; text-transform: none; line-height: inherit; cursor: help; }
@@ -1105,7 +1113,7 @@ button.t { display: inline; min-height: 0; padding: 0; border: 0; border-radius:
  * a second underline of the wrong length (#921). */
 button.t:active:not(:disabled) { translate: none; box-shadow: none; }
 button.t .ic { margin-right: 2px; }
-button.t:focus-visible { outline: 1px solid currentColor; outline-offset: 1px; }
+button.t:focus-visible { outline: 2px solid var(--action); outline-offset: 1px; box-shadow: none; }
 /* skip-ink none: a word ending in a descender ("Blessing", "врагу") kept its
  * underline short of its last letter (#921). */
 .t-status, .t-target, .t-stat, .t-term, .t-condition { text-decoration: underline dotted color-mix(in srgb, currentColor 60%, transparent); text-underline-offset: 3px; text-decoration-skip-ink: none; }

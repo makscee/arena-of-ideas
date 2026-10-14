@@ -194,7 +194,7 @@ export const main = {
   "board.inLine": "В строю, место {n}",
   "board.onBench": "В запасе, место {n} · не бьётся",
   "board.crownFinal": "Твой строй для Короны окончательный.",
-  "board.clickSelect": "Щёлкни, чтобы выбрать: двигать, в запас, слить или продать.",
+  "board.clickSelect": "Щёлкни или нажми Enter, чтобы выбрать: двигать, в запас, слить или продать.",
   "board.offerHead": "Лавка · карта {n} · клавиша {n}",
   "board.buyDesk": "Купить {cost} зол. · {n}",
 } satisfies Record<keyof typeof en, Msg>;

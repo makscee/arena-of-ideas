@@ -47,6 +47,7 @@
     "mvp:redeploy": "scripts/mvp-redeploy.sh",
     "mvp:scenes": "node e2e/scenes.mjs",
     "mvp:fusion-marks": "node e2e/fusion-marks.mjs",
+    "mvp:keyboard": "node e2e/mvp-keyboard.mjs",
     "mvp:scenes-index": "node --import tsx/esm scripts/scenes-index.ts",
     "mvp:lab": "scripts/arena-lab.sh",
     "mvp:workshop": "scripts/arena-workshop.sh",
@@ -57,7 +58,7 @@
     "mvp:batch-report": "node --import tsx/esm scripts/batch-report.ts",
     "mvp:translate": "node --import tsx/esm server/src/mvp/translate-cli.ts",
     "mvp:texts": "node --import tsx/esm scripts/unit-texts.ts",
-    "mvp:check": "npm run -s typecheck && npm test && npm run -s mvp:bot -- --runs 50 && npm run -s mvp:phone && npm run -s mvp:desktop && npm run -s mvp:ideas-phone && npm run -s mvp:terms && npm run -s mvp:scenes && npm run -s mvp:fusion-marks",
+    "mvp:check": "npm run -s typecheck && npm test && npm run -s mvp:bot -- --runs 50 && npm run -s mvp:phone && npm run -s mvp:desktop && npm run -s mvp:ideas-phone && npm run -s mvp:terms && npm run -s mvp:scenes && npm run -s mvp:fusion-marks && npm run -s mvp:keyboard",
     "mvp:night": "node --import tsx/esm scripts/night-batch.ts"
   },
   "devDependencies": {
