@@ -53,23 +53,6 @@ export const FIXTURE_STATUSES: StatusRegistry = {
     selectors: [{ kind: "holder" }],
     abilities: [{ effects: [{ kind: "damage", amount: { kind: "const", value: 1 } }] }],
   },
-  // Raven's second rule: at turn start, perform a remembered rule once (awoken: all).
-  Memory: {
-    name: "Memory",
-    names: { en: "Memory", ru: { name: "Память", acc: "Память", count: ["Память", "Памяти", "Памяти"] } },
-    counter: true,
-    triggers: [{ kind: "trigger", on: { on: "TurnStart" } }],
-    selectors: [{ kind: "holder" }],
-    abilities: [{ effects: [{ kind: "performRemembered", mode: "once" }] }],
-  },
-  Memories: {
-    name: "Memories",
-    names: { en: "Memories", ru: { name: "Воспоминания", acc: "Воспоминания", count: ["Воспоминание", "Воспоминания", "Воспоминаний"] } },
-    counter: true,
-    triggers: [{ kind: "trigger", on: { on: "TurnStart" } }],
-    selectors: [{ kind: "holder" }],
-    abilities: [{ effects: [{ kind: "performRemembered", mode: "all" }] }],
-  },
 };
 
 const c = (value: number) => ({ kind: "const" as const, value });
@@ -103,7 +86,9 @@ export const FIXTURE_ABILITIES: AbilityRegistry = {
   },
   Shell: { name: "Shell", family: "Shield", effects: [{ kind: "applyStatus", status: "Shield", stacks: { kind: "count", fact: "hitsTaken" } }] },
   Pull: { name: "Pull", family: "Control", effects: [{ kind: "redirect", to: { kind: "holder" } }] },
-  Recall: { name: "Recall", family: "Arcane", effects: [{ kind: "remember" }] },
+  // Raven (#1063): uses the fallen ally's rule once, right away; awoken, and keeps it as a second rule of its own
+  Recall: { name: "Recall", family: "Arcane", effects: [{ kind: "remember" }, { kind: "performRemembered", mode: "once" }] },
+  Keep: { name: "Keep", family: "Arcane", effects: [{ kind: "keepRule" }] },
   Sprout: {
     name: "Sprout",
     family: "Summon",
@@ -140,7 +125,7 @@ export const Magnet: UnitDef = {
     { kind: "interceptor", on: { on: "StatusApplied", unit: "otherAlly", aim: "random" } },
   ],
 };
-export const Raven: UnitDef = { ...rule("Raven", 8, 1, { on: "Death", unit: "otherAlly" }, { kind: "eventUnit" }, "Recall"), statuses: [{ status: "Memory", stacks: 1 }] };
+export const Raven: UnitDef = rule("Raven", 8, 1, { on: "Death", unit: "otherAlly" }, { kind: "eventUnit" }, "Recall");
 export const Seed: UnitDef = rule("Seed", 4, 0, { on: "BattleStart" }, { kind: "holder" }, "Sprout");
 export const DejaVu: UnitDef = { ...rule("Déjà Vu", 10, 2, { on: "TurnStart" }, { kind: "frontEnemy" }, "Echo"), triggers: [{ kind: "trigger", on: { on: "Acted", unit: "enemy", front: true } }] };
 export const GraveTree: UnitDef = rule("Grave Tree", 8, 1, { on: "Death", unit: "otherAlly" }, { kind: "eventUnit" }, "Sapling");
@@ -154,7 +139,7 @@ export const CandleAwoken: UnitDef = { ...Candle, also: [{ selectors: [{ kind: "
 export const GamblerAwoken: UnitDef = { ...Gambler, abilities: ["AllInAgain"] };
 export const NautilusAwoken: UnitDef = rule("Nautilus", 10, 1, { on: "Hurt", unit: "holder" }, { kind: "holder" }, "ShellAll");
 export const MagnetAwoken: UnitDef = { ...Magnet, also: [{ selectors: [{ kind: "holder" }], abilities: ["Charge"] }] };
-export const RavenAwoken: UnitDef = { ...Raven, statuses: [{ status: "Memories", stacks: 1 }] };
+export const RavenAwoken: UnitDef = { ...Raven, abilities: ["Recall", "Keep"] };
 export const SeedAwoken: UnitDef = rule("Seed", 4, 0, { on: "BattleStart" }, { kind: "holder" }, "SproutAwoken");
 
 const Hedgehog: UnitDef = rule("Hedgehog", 8, 1, { on: "Hurt", unit: "holder" }, { kind: "frontEnemy" }, "Zap");

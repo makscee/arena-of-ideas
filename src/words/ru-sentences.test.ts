@@ -11,7 +11,7 @@ import { withStatusNames } from "../status-names.js";
 import type { Ability, Condition, Effect, StatusRegistry } from "../types.js";
 import { CONDITION_WORDS, EFFECT_WORDS } from "./index.js";
 import { MACROS } from "./macros.js";
-import { FIXTURE_ABILITIES, FIXTURE_STATUSES, Hourglass, Raven } from "./fixtures.js";
+import { FIXTURE_ABILITIES, FIXTURE_STATUSES, Hourglass, Raven, RavenAwoken } from "./fixtures.js";
 
 /** The first object of `kind` anywhere in a word's example battle. */
 function find(x: unknown, kind: string): any {
@@ -117,9 +117,9 @@ describe("a rule on a counter status reads on the unit's card", () => {
       "Конец хода: получить 1 Песчинку. Конец хода, если у него 3 Песчинки или больше: заставить союзника позади действовать ещё раз, и потратить 3 Песчинки.",
     );
   });
-  it("Raven: the memory it starts with", () => {
-    const carries = (Raven.statuses ?? []).map((s) => s.status);
-    expect(formText(form(Raven), FIXTURE_ABILITIES, "ru", FIXTURE_STATUSES, carries)).toMatch(/Начало хода: исполнить самое старое запомненное правило и забыть его\.$/);
+  it("Raven: no memory list (#1063), the awoken form keeps the rule as a second rule", () => {
+    expect(formText(form(Raven), FIXTURE_ABILITIES, "ru", FIXTURE_STATUSES)).toMatch(/^Смерть союзника: запомнить его правило, затем исполнить самое старое запомненное правило и забыть его\.$/);
+    expect(formText(form(RavenAwoken), FIXTURE_ABILITIES, "ru", FIXTURE_STATUSES)).toMatch(/, затем оставить себе его правило как второе правило\.$/);
   });
   it("a card without the registry reads as before", () => {
     expect(formText(form(Hourglass), FIXTURE_ABILITIES, "en")).toBe("Turn end: 1 Grains to self.");
