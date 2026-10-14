@@ -85,10 +85,22 @@ const clamp = (x: number, b: { min: number; max: number }) => Math.max(b.min, Ma
 /** The pool's numbers, clamped into today's bounds and the awoken cap (a
  * unit with no strike keeps PWR 0). */
 /** Units that strike by design: they keep the PWR knob even at PWR 0. */
-const STRIKES = new Set(ROWS_V2.filter((r) => r.pwr > 0).map((r) => r.name));
+/** The power floor (#1063): a unit whose rule reads its own power (Sniper's
+ * Smite, Medic's Mend, Archmage's Blast…) never goes below PWR 1, else the
+ * tune switches the rule off. */
+const USES_PWR = new Set(
+  ((abilities) =>
+    ROWS_V2.filter((r) => {
+      const names = [r.forms.sleeping, r.forms.awoken].flatMap((f) => [...f.does, ...(f.also ?? []).flatMap((x) => x.does)]).flatMap((d) => d.split(" + "));
+      return names.some((n) => JSON.stringify(abilities[n] ?? null).includes('{"kind":"stat","stat":"pwr","of":"holder"}'));
+    }))(contentOf(ROWS_V2).abilities).map((r) => r.name),
+);
+const pwrMin = (name: string): number => (USES_PWR.has(name) ? Math.max(1, PWR.min) : PWR.min);
+/** Units that strike: PWR moves for them. A unit on the power floor strikes too, even if an earlier tune left it at 0 (#1063: Sniper, Medic, Archmage). */
+const STRIKES = new Set(ROWS_V2.filter((r) => r.pwr > 0 || USES_PWR.has(r.name)).map((r) => r.name));
 let rows: V2Row[] = ROWS_V2.map((r) => {
   const a = r.awoken ?? { pwr: 0, hp: 0 };
-  return { ...r, pwr: r.pwr > 0 ? clamp(r.pwr, PWR) : 0, hp: clamp(r.hp, HP), awoken: { pwr: Math.min(a.pwr, AWOKEN.pwr), hp: Math.min(a.hp, AWOKEN.hp) } };
+  return { ...r, pwr: r.pwr > 0 || USES_PWR.has(r.name) ? clamp(r.pwr, { ...PWR, min: pwrMin(r.name) }) : 0, hp: clamp(r.hp, HP), awoken: { pwr: Math.min(a.pwr, AWOKEN.pwr), hp: Math.min(a.hp, AWOKEN.hp) } };
 });
 const t0 = Date.now();
 const rounds: { round: number; median: number; inBand: number; scores: Record<string, number>; moves: string[]; healthy: boolean }[] = [];
@@ -183,7 +195,7 @@ for (let round = 1; round <= ROUNDS; round++) {
     // PWR is the coarse knob (one point moves a unit's every strike): it
     // turns when HP is at its bound, or with HP when the unit is far out.
     const pwrMoves = STRIKES.has(row.name) && (hp === row.hp || far);
-    const pwr = pwrMoves ? Math.max(PWR.min, Math.min(PWR.max, row.pwr + d)) : row.pwr;
+    const pwr = pwrMoves ? Math.max(pwrMin(row.name), Math.min(PWR.max, row.pwr + d)) : row.pwr;
     if (hp === row.hp && pwr === row.pwr) return next;
     moves.push(`${row.name} ${pct(s)}: ${row.pwr}/${row.hp}→${pwr}/${hp}`);
     return { ...next, pwr, hp };

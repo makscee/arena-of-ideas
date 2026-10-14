@@ -172,7 +172,7 @@ export const FIXTURES: Record<string, { input: BattleInput; trace: string }> = {
   hourglass: { input: fight([Hourglass, Archer(9)], [plain("Brute", 30, 1)]), trace: "Hourglass: Archer acts again" },
   mirror: { input: fight([Mirror], [Hedgehog]), trace: "Mirror copies the rule of Hedgehog" },
   candle: { input: fight([Candle], [plain("Brute", 30, 2)]), trace: "Candle intercepts: Candle survives at 1 HP, loses 1 PWR" },
-  gambler: { input: fight([Gambler], [plain("Brute", 30, 1)]), trace: "Gambler flips: heads" },
+  gambler: { input: fight([Gambler], [plain("Brute", 30, 1)]), trace: "Gambler: 50% → double" },
   nautilus: { input: fight([Nautilus], [plain("Brute", 30, 3)]), trace: "Nautilus → self (Nautilus) → Shield 3" },
   // A randomly aimed shot at Archer lands on Magnet; Brute's front strikes on Archer pass (no Redirected in the golden).
   magnet: { input: fight([Archer(6), Magnet], [Slinger()], SEED_MAGNET), trace: "Magnet intercepts: the hit on Archer lands on Magnet" },

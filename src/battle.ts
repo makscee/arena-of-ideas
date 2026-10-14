@@ -169,6 +169,7 @@ class Engine {
     stat: (u, stat) => this.effStat(u as UnitState, stat),
     missingHp: (u) => Math.max(0, (u as UnitState).damage),
     fact: (fact, holder) => this.battleFact(fact, holder as UnitState),
+    event: (id) => this.log[id],
   };
 
   constructor(input: BattleInput) {
@@ -809,11 +810,25 @@ class Engine {
         for (const x of ok ? e.then : e.else) this.runEffect(x, target, holder, f, aimed);
         return;
       }
+      case "strikeAgain": {
+        // Trigger context (#1063, Executioner): the holder strikes the target
+        // once more, right now; a strike made this way never strikes again.
+        if (!holder.alive || !target.alive || target.side === holder.side) return;
+        this.propose({ type: "Strike", striker: holder.id, defender: target.id, again: true }, f.event.id, f.ref);
+        return;
+      }
       case "copyRule":
         if (!target.alive || target.id === holder.id || target.abilities.length === 0) return;
         holder.abilities = [...target.abilities];
         note("copyRule", target.id);
         if (e.withPower) this.proposeStatusApplied(holder.id, "Strength", this.effStat(target, "pwr"), f.event.id, f.ref);
+        return;
+      case "takeRule":
+        // #1063, Trickster awoken: the target's rule moves to the holder; the target keeps none.
+        if (!target.alive || target.id === holder.id || target.abilities.length === 0) return;
+        holder.abilities = [...target.abilities];
+        target.abilities = [];
+        note("takeRule", target.id);
         return;
       case "swapRules": {
         if (!target.alive || target.id === holder.id) return;

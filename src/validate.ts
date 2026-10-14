@@ -467,6 +467,10 @@ function validateCondition(c: unknown, registry: StatusRegistry, p: string, issu
     case "flip":
       if (typeof c["p"] !== "number" || !(c["p"] > 0 && c["p"] < 1)) issues.push({ path: `${p}.p`, message: "p must be a number between 0 and 1" });
       return;
+    case "targetHas":
+      if (!Array.isArray(c["statuses"]) || c["statuses"].length === 0) issues.push({ path: `${p}.statuses`, message: "statuses must name ≥1 status" });
+      else c["statuses"].forEach((s, i) => checkStatusRef(s, registry, `${p}.statuses[${i}]`, issues));
+      return;
   }
 }
 

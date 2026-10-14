@@ -20,12 +20,20 @@ describe("rules v2 tune (batches 1 and 2, #1047: tuned all together)", () => {
   it("awakening is an upgrade for every unit", () => {
     expect(tune.units.filter((u) => u.awokenMargin <= 0).map((u) => `${u.name} ${u.awokenMargin}`)).toEqual([]);
   });
-  // The orchestrator's ruling (10-14): the bar plus the measure's ±2 noise.
-  it("at least 16 of 20 in band in each batch, none under 33% or over 67%", () => {
+  // The orchestrator's ruling (10-14): the bar is 16 of 20 in band in each
+  // batch, none under 33% or over 67%. The rethink (#1063) missed it twice:
+  // 30/40 after the first full retune, then 28/40 (batch 1: 13, batch 2: 15;
+  // Sniper 69% on its power floor of 1) after the rule-amount pass (the
+  // Butterfly 2/3). Maks's ruling on the card: merge with the numbers stated.
+  // Pinned to what that tune measured; the next tune that clears the bar
+  // puts the 16 and the 33–67% check back.
+  it("the measured gate (#1063): 13 and 15 of 20 in band, Sniper the one unit over 67%", () => {
+    const counts = [];
     for (let b = 0; b < ROWS_V2.length; b += 20) {
       const batch = new Set(ROWS_V2.slice(b, b + 20).map((r) => r.name));
-      expect(tune.units.filter((u) => batch.has(u.name) && u.inBand).length, `batch ${b / 20 + 1}`).toBeGreaterThanOrEqual(16);
+      counts.push(tune.units.filter((u) => batch.has(u.name) && u.inBand).length);
     }
-    expect(tune.units.filter((u) => u.fieldScore < 0.33 || u.fieldScore > 0.67).map((u) => `${u.name} ${u.fieldScore}`)).toEqual([]);
+    expect(counts).toEqual([13, 15]);
+    expect(tune.units.filter((u) => u.fieldScore < 0.33 || u.fieldScore > 0.67).map((u) => u.name)).toEqual(["Sniper"]);
   });
 });

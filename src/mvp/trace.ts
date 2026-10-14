@@ -1429,12 +1429,13 @@ export function captionOf(log: BattleEvent[], id: number, name: NameOf = display
       return e.timeUp ? TIME_UP_CAPTION : endCaption(e.winner, p);
     // Rules v2's words (#1043 §3): each says what it did, never its event name.
     case "Flipped":
-      return `${name(e.unit)} flips a coin → ${e.heads ? "heads" : "tails"}`;
+      // #1063: the chance, never a coin: "Gambler: 50% → double" / "50% → nothing"
+      return `${name(e.unit)}: 50% → ${e.heads ? "double" : "nothing"}`;
     case "Redirected":
       return `${name(e.by.unit)} → takes ${REDIRECTED_EN[e.original] ?? "the hit"} meant for ${name(e.from)}${e.to === e.by.unit ? "" : `, onto ${name(e.to)}`}`;
     case "RuleMod": {
       const o = e.other ? name(e.other) : "";
-      return { copyRule: `${name(e.unit)} copies the rule of ${o}`, actAgain: `${name(e.unit)} → ${o} acts again`, remember: `${name(e.unit)} remembers the rule of ${o}`, performRemembered: `${name(e.unit)} performs the rule of ${o}`, swapRules: `${name(e.unit)} trades rules with ${o}` }[e.op];
+      return { copyRule: `${name(e.unit)} copies the rule of ${o}`, takeRule: `${name(e.unit)} takes the rule of ${o} and leaves it none`, actAgain: `${name(e.unit)} → ${o} acts again`, remember: `${name(e.unit)} remembers the rule of ${o}`, performRemembered: `${name(e.unit)} performs the rule of ${o}`, swapRules: `${name(e.unit)} trades rules with ${o}` }[e.op];
     }
     case "Delayed":
       return `${name(e.by.unit)} → ${name(e.unit)}: lands at the end of turn ${e.at}`;
@@ -1491,12 +1492,12 @@ function captionOfRu(log: BattleEvent[], e: BattleEvent, name: NameOf, merged: n
     case "BattleEnd":
       return e.timeUp ? TIME_UP_CAPTION_RU : endCaption(e.winner, p);
     case "Flipped":
-      return `${name(e.unit)} бросает монету → ${e.heads ? "орёл" : "решка"}`;
+      return `${name(e.unit)}: 50% → ${e.heads ? "двойной урон" : "ничего"}`;
     case "Redirected":
       return `${name(e.by.unit)} → перехватывает ${REDIRECTED_RU[e.original] ?? "удар"} (цель: ${name(e.from)})${e.to === e.by.unit ? "" : ` → ${name(e.to)}`}`;
     case "RuleMod": {
       const o = e.other ? name(e.other) : "";
-      return { copyRule: `${name(e.unit)} копирует правило ${o}`, actAgain: `${name(e.unit)} → ${o} действует ещё раз`, remember: `${name(e.unit)} запоминает правило ${o}`, performRemembered: `${name(e.unit)} исполняет правило ${o}`, swapRules: `${name(e.unit)} меняется правилами с ${o}` }[e.op];
+      return { copyRule: `${name(e.unit)} копирует правило ${o}`, takeRule: `${name(e.unit)} забирает правило ${o}`, actAgain: `${name(e.unit)} → ${o} действует ещё раз`, remember: `${name(e.unit)} запоминает правило ${o}`, performRemembered: `${name(e.unit)} исполняет правило ${o}`, swapRules: `${name(e.unit)} меняется правилами с ${o}` }[e.op];
     }
     case "Delayed":
       return `${name(e.by.unit)} → ${name(e.unit)}: сработает в конце хода ${e.at}`;

@@ -13,11 +13,13 @@ const Twin: UnitDef = {
 };
 
 /** The proposed Strike's striker strikes the same defender once more, right
- * after; a strike made this way never strikes again (Gambler awoken, §4). */
+ * after; a strike made this way never strikes again (Gambler awoken, §4).
+ * In trigger context (#1063, Executioner) the holder strikes the rule's
+ * target once more, right now. */
 export const strikeAgain: EffectWord<E> = {
   kind: "strikeAgain",
   class: "ruleMod",
-  context: "interceptor",
+  context: "either",
   en: () => "it strikes again",
   ru: () => "он бьёт ещё раз",
   example: {

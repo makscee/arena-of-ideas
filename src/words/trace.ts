@@ -19,7 +19,7 @@ export function traceLines(input: BattleInput, log: readonly BattleEvent[]): str
   const firings = new Map<string, { line: number; holder: string; def: UnitDef; targets: string[]; did: string[] }>();
   for (const e of log) {
     if (e.type === "Flipped") {
-      out.push(`${name(e.unit)} flips: ${e.heads ? "heads" : "tails"}`);
+      out.push(`${name(e.unit)}: 50% → ${e.heads ? "double" : "nothing"}`); // #1063: the chance, never a coin
       continue;
     }
     if (e.type === "Redirected") {
@@ -44,7 +44,7 @@ export function traceLines(input: BattleInput, log: readonly BattleEvent[]): str
     }
     if (e.type === "RuleMod") {
       const o = name(e.other ?? "");
-      const said = { copyRule: `${name(e.unit)} copies the rule of ${o}`, actAgain: `${name(e.unit)}: ${o} acts again`, remember: `${name(e.unit)} remembers the rule of ${o}`, performRemembered: `${name(e.unit)} performs the rule of ${o}`, swapRules: `${name(e.unit)} trades rules with ${o}` };
+      const said = { copyRule: `${name(e.unit)} copies the rule of ${o}`, takeRule: `${name(e.unit)} takes the rule of ${o}`, actAgain: `${name(e.unit)}: ${o} acts again`, remember: `${name(e.unit)} remembers the rule of ${o}`, performRemembered: `${name(e.unit)} performs the rule of ${o}`, swapRules: `${name(e.unit)} trades rules with ${o}` };
       out.push(said[e.op]);
       continue;
     }

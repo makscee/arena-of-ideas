@@ -159,9 +159,11 @@ export function formProblems(u: UnitContent, content: Pick<MvpContent, "abilitie
   const { sleeping, awoken } = u.forms ?? ({} as UnitContent["forms"]);
   if (!sleeping || !awoken) return [`${u.id}: needs both a sleeping and an awoken form`];
   if (sleeping.does.length !== 1) out.push(`${u.id}: the sleeping form must Do exactly one thing, got ${sleeping.does.length}`);
-  if (sleeping.also?.length) out.push(`${u.id}: the sleeping form has no "and" clause`);
+  // (#1063: a sleeping form may carry "and" clauses: a Charge unit gains 1
+  // and, at 3, spends it on its clauses; Seed grows and feeds)
   if (awoken.does.length < 1) out.push(`${u.id}: the awoken form must Do something`);
-  if (!same(sleeping.when, awoken.when) || !same(sleeping.condition, awoken.condition)) {
+  // (#1063: the awoken form may ease the condition: Seed wakes from turn 2, not 3)
+  if (!same(sleeping.when, awoken.when)) {
     out.push(`${u.id}: the awoken form must keep the sleeping form's When`);
   }
   // (a rules v2 unit may instead upgrade the status it starts with: Raven's Memory → Memories)

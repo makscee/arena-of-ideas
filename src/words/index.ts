@@ -42,16 +42,21 @@ import { branch } from "./branch.js";
 import { strikeAgain } from "./strikeAgain.js";
 import type { AmountWord, ConditionWord, EffectWord, SelectorWord } from "./types.js";
 import { unhurt } from "./unhurt.js";
+import { outnumbered } from "./outnumbered.js";
+import { targetHas } from "./targetHas.js";
+import { poisonedEnemies } from "./poisonedEnemies.js";
+import { killedByHolder } from "./killedByHolder.js";
+import { takeRule } from "./takeRule.js";
 import type { AmountV2, ConditionV2, Effect, EffectV2, PositionSelector } from "../types.js";
 
 export type { EffectWord, InterceptAt, Say, AmountAt, AmountWord, CondAt, ConditionWord, SelectorWord, WordCtx, WordUnit } from "./types.js";
 
 export const SELECTOR_WORDS: Record<PositionSelector["kind"], SelectorWord> = {
-  allyBehind, allyAhead, neighbours, alliesBehind, lastEnemy, randomAlly, eventTarget,
+  allyBehind, allyAhead, neighbours, alliesBehind, lastEnemy, randomAlly, eventTarget, poisonedEnemies,
 };
 
 export const CONDITION_WORDS: Record<ConditionV2["kind"], ConditionWord> = {
-  and, not, turnIs, turnAtLeast, turnEvery, stacksAtLeast, alliesAlive, enemiesAlive, flip, onceHolder, oncePerTurn, unhurt,
+  and, not, turnIs, turnAtLeast, turnEvery, stacksAtLeast, alliesAlive, enemiesAlive, flip, onceHolder, oncePerTurn, unhurt, outnumbered, targetHas, killedByHolder,
 };
 
 export const AMOUNT_WORDS: Record<AmountV2["kind"], AmountWord> = {
@@ -59,7 +64,7 @@ export const AMOUNT_WORDS: Record<AmountV2["kind"], AmountWord> = {
 };
 
 export const EFFECT_WORDS: Record<EffectV2["kind"], EffectWord> = {
-  redirect, preventDeath, replaceAmount, copyRule, actAgain, remember, performRemembered, swapRules, delay, transform, summonWithRule, branch, strikeAgain,
+  redirect, preventDeath, replaceAmount, copyRule, actAgain, remember, performRemembered, swapRules, delay, transform, summonWithRule, branch, strikeAgain, takeRule,
 };
 
 export const effectWord = (kind: string): EffectWord | undefined => (EFFECT_WORDS as Record<string, EffectWord>)[kind];

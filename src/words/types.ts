@@ -29,6 +29,9 @@ export interface WordCtx {
   missingHp(u: WordUnit): number;
   /** A battle fact the kernel keeps, seen from `holder` (§3.3). */
   fact(fact: import("../types.js").BattleFact, holder: WordUnit): number;
+  /** An event already in the log, by id: a word follows `causedBy` with it
+   * (killedByHolder: Death → Hurt → Strike). */
+  event(id: number): BattleEvent | undefined;
 }
 
 /** A sentence in both languages. RU selectors come in the two cases the

@@ -1,36 +1,19 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Sniper","name":"Sniper","hp":2,"pwr":0},{"id":"A2:Metronome","name":"Metronome","hp":5,"pwr":1}],"B":[{"id":"B1:Chrysalis","name":"Chrysalis","hp":2,"pwr":0},{"id":"B2:Conductor","name":"Conductor","hp":8,"pwr":2},{"id":"B3:Coin Thief","name":"Coin Thief","hp":6,"pwr":1}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Sniper","name":"Sniper","hp":2,"pwr":1},{"id":"A2:Medic","name":"Medic","hp":5,"pwr":1}],"B":[{"id":"B1:Bodyguard","name":"Bodyguard","hp":8,"pwr":5},{"id":"B2:Conductor","name":"Conductor","hp":12,"pwr":5},{"id":"B3:Hexer","name":"Hexer","hp":2,"pwr":0}]}}
 {"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":2,"turn":1,"causedBy":1,"source":{"unit":"A1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"B3:Coin Thief","amount":0,"hpAfter":6}
-{"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"Flipped","unit":"B3:Coin Thief","by":{"unit":"B3:Coin Thief","ability":0,"when":0},"heads":true}
-{"id":4,"turn":1,"causedBy":1,"source":{"unit":"B3:Coin Thief","ability":0,"when":0},"type":"Hurt","unit":"A2:Metronome","amount":1,"hpAfter":4}
-{"id":5,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Sniper","b":"B1:Chrysalis","first":"B1:Chrysalis"}
-{"id":6,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Chrysalis","defender":"A1:Sniper"}
-{"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"Hurt","unit":"A1:Sniper","amount":0,"hpAfter":2}
-{"id":8,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Sniper","defender":"B1:Chrysalis"}
-{"id":9,"turn":1,"causedBy":8,"source":"kernel","type":"Hurt","unit":"B1:Chrysalis","amount":0,"hpAfter":2}
-{"id":10,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":11,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":12,"turn":2,"causedBy":11,"source":{"unit":"A1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"B3:Coin Thief","amount":0,"hpAfter":6}
-{"id":13,"turn":2,"causedBy":11,"source":"kernel","type":"Flipped","unit":"B3:Coin Thief","by":{"unit":"B3:Coin Thief","ability":0,"when":0},"heads":false}
-{"id":14,"turn":2,"causedBy":11,"source":"kernel","type":"Strike","striker":"B1:Chrysalis","defender":"A1:Sniper"}
-{"id":15,"turn":2,"causedBy":14,"source":"kernel","type":"Hurt","unit":"A1:Sniper","amount":0,"hpAfter":2}
-{"id":16,"turn":2,"causedBy":11,"source":"kernel","type":"Strike","striker":"A1:Sniper","defender":"B1:Chrysalis"}
-{"id":17,"turn":2,"causedBy":16,"source":"kernel","type":"Hurt","unit":"B1:Chrysalis","amount":0,"hpAfter":2}
-{"id":18,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":19,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":20,"turn":3,"causedBy":19,"source":{"unit":"A1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"B3:Coin Thief","amount":0,"hpAfter":6}
-{"id":21,"turn":3,"causedBy":19,"source":{"unit":"B1:Chrysalis","ability":0,"when":0},"type":"Transformed","unit":"B1:Chrysalis","name":"Butterfly","hp":4,"pwr":2}
-{"id":22,"turn":3,"causedBy":19,"source":{"unit":"B2:Conductor","ability":0,"when":0},"type":"RuleMod","unit":"B2:Conductor","op":"actAgain","other":"B1:Chrysalis"}
-{"id":23,"turn":3,"causedBy":19,"source":{"unit":"B2:Conductor","ability":0,"when":0},"type":"RuleMod","unit":"B2:Conductor","op":"actAgain","other":"B3:Coin Thief"}
-{"id":24,"turn":3,"causedBy":19,"source":"kernel","type":"Flipped","unit":"B3:Coin Thief","by":{"unit":"B3:Coin Thief","ability":0},"heads":false}
-{"id":25,"turn":3,"causedBy":19,"source":{"unit":"B1:Chrysalis","ability":0},"type":"Hurt","unit":"A1:Sniper","amount":2,"hpAfter":0}
-{"id":26,"turn":3,"causedBy":25,"source":"kernel","type":"Death","unit":"A1:Sniper"}
-{"id":27,"turn":3,"causedBy":19,"source":{"unit":"B1:Chrysalis","ability":0},"type":"Hurt","unit":"A2:Metronome","amount":2,"hpAfter":2}
-{"id":28,"turn":3,"causedBy":19,"source":"kernel","type":"Flipped","unit":"B3:Coin Thief","by":{"unit":"B3:Coin Thief","ability":0,"when":0},"heads":true}
-{"id":29,"turn":3,"causedBy":19,"source":{"unit":"B3:Coin Thief","ability":0,"when":0},"type":"Hurt","unit":"A2:Metronome","amount":1,"hpAfter":1}
-{"id":30,"turn":3,"causedBy":19,"source":"kernel","type":"PairFaced","a":"A2:Metronome","b":"B1:Chrysalis","first":"B1:Chrysalis"}
-{"id":31,"turn":3,"causedBy":19,"source":"kernel","type":"Strike","striker":"B1:Chrysalis","defender":"A2:Metronome"}
-{"id":32,"turn":3,"causedBy":31,"source":"kernel","type":"Hurt","unit":"A2:Metronome","amount":2,"hpAfter":-1}
-{"id":33,"turn":3,"causedBy":32,"source":"kernel","type":"Death","unit":"A2:Metronome"}
-{"id":34,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":35,"turn":3,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":3}
+{"id":2,"turn":1,"causedBy":1,"source":"kernel","type":"Redirected","by":{"unit":"B1:Bodyguard","ability":0,"when":0},"original":"Hurt","from":"B3:Hexer","to":"B1:Bodyguard"}
+{"id":3,"turn":1,"causedBy":1,"source":{"unit":"A1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"B1:Bodyguard","amount":1,"hpAfter":7}
+{"id":4,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Sniper","b":"B1:Bodyguard","first":"B1:Bodyguard"}
+{"id":5,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Bodyguard","defender":"A1:Sniper"}
+{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"A1:Sniper","amount":5,"hpAfter":-3}
+{"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"Death","unit":"A1:Sniper"}
+{"id":8,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":9,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":10,"turn":2,"causedBy":9,"source":{"unit":"B3:Hexer","ability":0,"when":0},"type":"Silenced","unit":"A2:Medic"}
+{"id":11,"turn":2,"causedBy":9,"source":"kernel","type":"PairFaced","a":"A2:Medic","b":"B1:Bodyguard","first":"A2:Medic"}
+{"id":12,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"A2:Medic","defender":"B1:Bodyguard"}
+{"id":13,"turn":2,"causedBy":12,"source":"kernel","type":"Hurt","unit":"B1:Bodyguard","amount":1,"hpAfter":6}
+{"id":14,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"B1:Bodyguard","defender":"A2:Medic"}
+{"id":15,"turn":2,"causedBy":14,"source":"kernel","type":"Hurt","unit":"A2:Medic","amount":5,"hpAfter":0}
+{"id":16,"turn":2,"causedBy":15,"source":"kernel","type":"Death","unit":"A2:Medic"}
+{"id":17,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":18,"turn":2,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":2}

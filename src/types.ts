@@ -160,7 +160,10 @@ export type ConditionV2 =
   | { kind: "flip"; p: number }
   | { kind: "onceHolder" }
   | { kind: "oncePerTurn" }
-  | { kind: "unhurt" };
+  | { kind: "unhurt" }
+  | { kind: "outnumbered" }
+  | { kind: "targetHas"; statuses: string[] }
+  | { kind: "killedByHolder" };
 
 export type Condition = ConditionV1 | ConditionV2;
 
@@ -172,7 +175,8 @@ export type PositionSelector =
   | { kind: "alliesBehind" } // every living ally behind the holder, in line order
   | { kind: "lastEnemy" } // the enemy at the back
   | { kind: "randomAlly" } // one seeded draw among the other living allies
-  | { kind: "eventTarget" }; // the unit an event was aimed at (a Strike's defender)
+  | { kind: "eventTarget" } // the unit an event was aimed at (a Strike's defender)
+  | { kind: "poisonedEnemies" };
 
 export type Selector = SelectorV1 | PositionSelector;
 
@@ -244,7 +248,8 @@ export type EffectV2 =
   | { kind: "branch"; if: Condition; then: Effect[]; else: Effect[] }
   // interceptor: the proposed Strike's striker strikes the same defender again
   // after it; a strike made this way never strikes again (Gambler awoken)
-  | { kind: "strikeAgain" };
+  | { kind: "strikeAgain" }
+  | { kind: "takeRule" };
 
 export type EffectV1 =
   // trigger-context atoms
@@ -355,7 +360,7 @@ export type EventBody =
   // A redirect interceptor (rules v2, §3.4) moved a proposed event from one unit to another.
   | { type: "Redirected"; by: AbilityRef; original: string; from: string; to: string }
   // A rule-modifying effect (rules v2, §3.5) acted: `unit` is the holder, `other` the unit whose rule it took, ran or traded.
-  | { type: "RuleMod"; unit: string; op: "copyRule" | "actAgain" | "remember" | "performRemembered" | "swapRules"; other?: string }
+  | { type: "RuleMod"; unit: string; op: "copyRule" | "takeRule" | "actAgain" | "remember" | "performRemembered" | "swapRules"; other?: string }
   // A delay (rules v2, §3.6) was set on `unit`: its effect lands at the end of turn `at`.
   | { type: "Delayed"; unit: string; by: AbilityRef; at: number }
   // A transform (rules v2, §3.6): `unit` is now `name` with these stats.

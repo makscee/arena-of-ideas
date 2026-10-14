@@ -1,0 +1,99 @@
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Frost Witch","name":"Frost Witch","hp":6,"pwr":1},{"id":"A2:Executioner","name":"Executioner","hp":10,"pwr":3}],"B":[{"id":"B1:Gambler","name":"Gambler","hp":10,"pwr":2},{"id":"B2:Seed","name":"Seed","hp":10,"pwr":0},{"id":"B3:Medic","name":"Medic","hp":5,"pwr":1}]}}
+{"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":2,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Frost Witch","b":"B1:Gambler","first":"B1:Gambler"}
+{"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"Flipped","unit":"B1:Gambler","by":{"unit":"B1:Gambler","ability":0,"when":0},"heads":true}
+{"id":4,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Gambler","defender":"A1:Frost Witch","amount":4}
+{"id":5,"turn":1,"causedBy":4,"source":"kernel","type":"Hurt","unit":"A1:Frost Witch","amount":4,"hpAfter":2}
+{"id":6,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Frost Witch","defender":"B1:Gambler"}
+{"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"Hurt","unit":"B1:Gambler","amount":1,"hpAfter":9}
+{"id":8,"turn":1,"causedBy":7,"source":{"unit":"B3:Medic","ability":0,"when":0},"type":"Heal","unit":"B1:Gambler","amount":1,"hpAfter":10}
+{"id":9,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":10,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":11,"turn":2,"causedBy":10,"source":{"unit":"A1:Frost Witch","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Gambler","status":"Freeze","stacks":1,"total":1}
+{"id":12,"turn":2,"causedBy":10,"source":{"unit":"A1:Frost Witch","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Seed","status":"Freeze","stacks":1,"total":1}
+{"id":13,"turn":2,"causedBy":10,"source":{"unit":"A1:Frost Witch","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Medic","status":"Freeze","stacks":1,"total":1}
+{"id":14,"turn":2,"causedBy":10,"source":"kernel","type":"Flipped","unit":"B1:Gambler","by":{"unit":"B1:Gambler","ability":0,"when":0},"heads":false}
+{"id":15,"turn":2,"causedBy":10,"source":{"unit":"B1:Gambler","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B1:Gambler","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"B1:Gambler"}
+{"id":16,"turn":2,"causedBy":15,"source":{"unit":"B1:Gambler","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"B1:Gambler","status":"Freeze","stacks":1,"remaining":0}
+{"id":17,"turn":2,"causedBy":10,"source":"kernel","type":"Strike","striker":"A1:Frost Witch","defender":"B1:Gambler"}
+{"id":18,"turn":2,"causedBy":17,"source":"kernel","type":"Hurt","unit":"B1:Gambler","amount":1,"hpAfter":9}
+{"id":19,"turn":2,"causedBy":18,"source":{"unit":"B3:Medic","ability":0,"when":0},"type":"Heal","unit":"B1:Gambler","amount":1,"hpAfter":10}
+{"id":20,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":21,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":22,"turn":3,"causedBy":21,"source":{"unit":"B2:Seed","ability":1,"when":0},"type":"StatusApplied","unit":"B3:Medic","status":"Strength","stacks":1,"total":1}
+{"id":23,"turn":3,"causedBy":22,"source":"kernel","type":"StatChanged","unit":"B3:Medic","stat":"pwr","delta":1,"now":2}
+{"id":24,"turn":3,"causedBy":21,"source":"kernel","type":"Flipped","unit":"B1:Gambler","by":{"unit":"B1:Gambler","ability":0,"when":0},"heads":false}
+{"id":25,"turn":3,"causedBy":21,"source":"kernel","type":"Strike","striker":"B1:Gambler","defender":"A1:Frost Witch","amount":0}
+{"id":26,"turn":3,"causedBy":25,"source":"kernel","type":"Hurt","unit":"A1:Frost Witch","amount":0,"hpAfter":2}
+{"id":27,"turn":3,"causedBy":21,"source":"kernel","type":"Strike","striker":"A1:Frost Witch","defender":"B1:Gambler"}
+{"id":28,"turn":3,"causedBy":27,"source":"kernel","type":"Hurt","unit":"B1:Gambler","amount":1,"hpAfter":9}
+{"id":29,"turn":3,"causedBy":28,"source":{"unit":"B3:Medic","ability":0,"when":0},"type":"Heal","unit":"B1:Gambler","amount":1,"hpAfter":10}
+{"id":30,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":31,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":32,"turn":4,"causedBy":31,"source":{"unit":"B2:Seed","ability":1,"when":0},"type":"StatusApplied","unit":"B3:Medic","status":"Strength","stacks":1,"total":2}
+{"id":33,"turn":4,"causedBy":32,"source":"kernel","type":"StatChanged","unit":"B3:Medic","stat":"pwr","delta":1,"now":3}
+{"id":34,"turn":4,"causedBy":31,"source":"kernel","type":"Flipped","unit":"B1:Gambler","by":{"unit":"B1:Gambler","ability":0,"when":0},"heads":false}
+{"id":35,"turn":4,"causedBy":31,"source":"kernel","type":"Strike","striker":"B1:Gambler","defender":"A1:Frost Witch","amount":0}
+{"id":36,"turn":4,"causedBy":35,"source":"kernel","type":"Hurt","unit":"A1:Frost Witch","amount":0,"hpAfter":2}
+{"id":37,"turn":4,"causedBy":31,"source":"kernel","type":"Strike","striker":"A1:Frost Witch","defender":"B1:Gambler"}
+{"id":38,"turn":4,"causedBy":37,"source":"kernel","type":"Hurt","unit":"B1:Gambler","amount":1,"hpAfter":9}
+{"id":39,"turn":4,"causedBy":38,"source":{"unit":"B3:Medic","ability":0,"when":0},"type":"Heal","unit":"B1:Gambler","amount":1,"hpAfter":10}
+{"id":40,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":41,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":42,"turn":5,"causedBy":41,"source":{"unit":"B2:Seed","ability":1,"when":0},"type":"StatusApplied","unit":"B3:Medic","status":"Strength","stacks":1,"total":3}
+{"id":43,"turn":5,"causedBy":42,"source":"kernel","type":"StatChanged","unit":"B3:Medic","stat":"pwr","delta":1,"now":4}
+{"id":44,"turn":5,"causedBy":41,"source":"kernel","type":"Flipped","unit":"B1:Gambler","by":{"unit":"B1:Gambler","ability":0,"when":0},"heads":true}
+{"id":45,"turn":5,"causedBy":41,"source":"kernel","type":"Strike","striker":"B1:Gambler","defender":"A1:Frost Witch","amount":4}
+{"id":46,"turn":5,"causedBy":45,"source":"kernel","type":"Hurt","unit":"A1:Frost Witch","amount":4,"hpAfter":-2}
+{"id":47,"turn":5,"causedBy":46,"source":"kernel","type":"Death","unit":"A1:Frost Witch"}
+{"id":48,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":49,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":50,"turn":6,"causedBy":49,"source":{"unit":"B2:Seed","ability":1,"when":0},"type":"StatusApplied","unit":"B3:Medic","status":"Strength","stacks":1,"total":4}
+{"id":51,"turn":6,"causedBy":50,"source":"kernel","type":"StatChanged","unit":"B3:Medic","stat":"pwr","delta":1,"now":5}
+{"id":52,"turn":6,"causedBy":49,"source":"kernel","type":"PairFaced","a":"A2:Executioner","b":"B1:Gambler","first":"B1:Gambler"}
+{"id":53,"turn":6,"causedBy":49,"source":"kernel","type":"Flipped","unit":"B1:Gambler","by":{"unit":"B1:Gambler","ability":0,"when":0},"heads":false}
+{"id":54,"turn":6,"causedBy":49,"source":"kernel","type":"Strike","striker":"B1:Gambler","defender":"A2:Executioner","amount":0}
+{"id":55,"turn":6,"causedBy":54,"source":"kernel","type":"Hurt","unit":"A2:Executioner","amount":0,"hpAfter":10}
+{"id":56,"turn":6,"causedBy":49,"source":"kernel","type":"Strike","striker":"A2:Executioner","defender":"B1:Gambler"}
+{"id":57,"turn":6,"causedBy":56,"source":"kernel","type":"Hurt","unit":"B1:Gambler","amount":3,"hpAfter":7}
+{"id":58,"turn":6,"causedBy":57,"source":{"unit":"B3:Medic","ability":0,"when":0},"type":"Heal","unit":"B1:Gambler","amount":3,"hpAfter":10}
+{"id":59,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":60,"turn":7,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":61,"turn":7,"causedBy":60,"source":{"unit":"B2:Seed","ability":1,"when":0},"type":"StatusApplied","unit":"B3:Medic","status":"Strength","stacks":1,"total":5}
+{"id":62,"turn":7,"causedBy":61,"source":"kernel","type":"StatChanged","unit":"B3:Medic","stat":"pwr","delta":1,"now":6}
+{"id":63,"turn":7,"causedBy":60,"source":"kernel","type":"Flipped","unit":"B1:Gambler","by":{"unit":"B1:Gambler","ability":0,"when":0},"heads":true}
+{"id":64,"turn":7,"causedBy":60,"source":"kernel","type":"Strike","striker":"B1:Gambler","defender":"A2:Executioner","amount":4}
+{"id":65,"turn":7,"causedBy":64,"source":"kernel","type":"Hurt","unit":"A2:Executioner","amount":4,"hpAfter":6}
+{"id":66,"turn":7,"causedBy":60,"source":"kernel","type":"Strike","striker":"A2:Executioner","defender":"B1:Gambler"}
+{"id":67,"turn":7,"causedBy":66,"source":"kernel","type":"Hurt","unit":"B1:Gambler","amount":3,"hpAfter":7}
+{"id":68,"turn":7,"causedBy":67,"source":{"unit":"B3:Medic","ability":0,"when":0},"type":"Heal","unit":"B1:Gambler","amount":3,"hpAfter":10}
+{"id":69,"turn":7,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":70,"turn":8,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":71,"turn":8,"causedBy":70,"source":{"unit":"B2:Seed","ability":1,"when":0},"type":"StatusApplied","unit":"B3:Medic","status":"Strength","stacks":1,"total":6}
+{"id":72,"turn":8,"causedBy":71,"source":"kernel","type":"StatChanged","unit":"B3:Medic","stat":"pwr","delta":1,"now":7}
+{"id":73,"turn":8,"causedBy":70,"source":"kernel","type":"Flipped","unit":"B1:Gambler","by":{"unit":"B1:Gambler","ability":0,"when":0},"heads":false}
+{"id":74,"turn":8,"causedBy":70,"source":"kernel","type":"Strike","striker":"B1:Gambler","defender":"A2:Executioner","amount":0}
+{"id":75,"turn":8,"causedBy":74,"source":"kernel","type":"Hurt","unit":"A2:Executioner","amount":0,"hpAfter":6}
+{"id":76,"turn":8,"causedBy":70,"source":"kernel","type":"Strike","striker":"A2:Executioner","defender":"B1:Gambler"}
+{"id":77,"turn":8,"causedBy":76,"source":"kernel","type":"Hurt","unit":"B1:Gambler","amount":3,"hpAfter":7}
+{"id":78,"turn":8,"causedBy":77,"source":{"unit":"B3:Medic","ability":0,"when":0},"type":"Heal","unit":"B1:Gambler","amount":3,"hpAfter":10}
+{"id":79,"turn":8,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":80,"turn":9,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":81,"turn":9,"causedBy":80,"source":{"unit":"B2:Seed","ability":1,"when":0},"type":"StatusApplied","unit":"B3:Medic","status":"Strength","stacks":1,"total":7}
+{"id":82,"turn":9,"causedBy":81,"source":"kernel","type":"StatChanged","unit":"B3:Medic","stat":"pwr","delta":1,"now":8}
+{"id":83,"turn":9,"causedBy":80,"source":"kernel","type":"Flipped","unit":"B1:Gambler","by":{"unit":"B1:Gambler","ability":0,"when":0},"heads":true}
+{"id":84,"turn":9,"causedBy":80,"source":"kernel","type":"Strike","striker":"B1:Gambler","defender":"A2:Executioner","amount":4}
+{"id":85,"turn":9,"causedBy":84,"source":"kernel","type":"Hurt","unit":"A2:Executioner","amount":4,"hpAfter":2}
+{"id":86,"turn":9,"causedBy":80,"source":"kernel","type":"Strike","striker":"A2:Executioner","defender":"B1:Gambler"}
+{"id":87,"turn":9,"causedBy":86,"source":"kernel","type":"Hurt","unit":"B1:Gambler","amount":3,"hpAfter":7}
+{"id":88,"turn":9,"causedBy":87,"source":{"unit":"B3:Medic","ability":0,"when":0},"type":"Heal","unit":"B1:Gambler","amount":3,"hpAfter":10}
+{"id":89,"turn":9,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":90,"turn":10,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":91,"turn":10,"causedBy":90,"source":{"unit":"B2:Seed","ability":1,"when":0},"type":"StatusApplied","unit":"B3:Medic","status":"Strength","stacks":1,"total":8}
+{"id":92,"turn":10,"causedBy":91,"source":"kernel","type":"StatChanged","unit":"B3:Medic","stat":"pwr","delta":1,"now":9}
+{"id":93,"turn":10,"causedBy":90,"source":"kernel","type":"Flipped","unit":"B1:Gambler","by":{"unit":"B1:Gambler","ability":0,"when":0},"heads":true}
+{"id":94,"turn":10,"causedBy":90,"source":"kernel","type":"Strike","striker":"B1:Gambler","defender":"A2:Executioner","amount":4}
+{"id":95,"turn":10,"causedBy":94,"source":"kernel","type":"Hurt","unit":"A2:Executioner","amount":4,"hpAfter":-2}
+{"id":96,"turn":10,"causedBy":95,"source":"kernel","type":"Death","unit":"A2:Executioner"}
+{"id":97,"turn":10,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":98,"turn":10,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":10}

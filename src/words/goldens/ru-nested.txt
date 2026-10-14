@@ -49,6 +49,9 @@ delay branch
 delay strikeAgain
   en: Turn start: in 2 turns: it strikes again.
   ru: Начало хода: через 2 хода: он бьёт ещё раз.
+delay takeRule
+  en: Turn start: in 2 turns: take the rule of front enemy and leave it none.
+  ru: Начало хода: через 2 хода: забрать правило переднего врага, оставив его без правила.
 and(flip, not turnIs)
   en: Turn start, with a 50% chance and unless on turn 2: in 1 turn: 1 damage to front enemy.
   ru: Начало хода, с вероятностью 50% и если не на 2-м ходу: через 1 ход: 1 урон переднему врагу.
@@ -79,6 +82,15 @@ and(flip, not oncePerTurn)
 and(flip, not unhurt)
   en: Turn start, with a 50% chance and unless while at full HP: in 1 turn: 1 damage to front enemy.
   ru: Начало хода, с вероятностью 50% и если не пока ОЗ полные: через 1 ход: 1 урон переднему врагу.
+and(flip, not outnumbered)
+  en: Turn start, with a 50% chance and unless the enemy has more units: in 1 turn: 1 damage to front enemy.
+  ru: Начало хода, с вероятностью 50% и если не у врага больше бойцов: через 1 ход: 1 урон переднему врагу.
+and(flip, not targetHas)
+  en: Turn start, with a 50% chance and unless the target has Strength: in 1 turn: 1 damage to front enemy.
+  ru: Начало хода, с вероятностью 50% и если не у цели есть Сила: через 1 ход: 1 урон переднему врагу.
+and(flip, not killedByHolder)
+  en: Turn start, with a 50% chance and unless its strike made the kill: in 1 turn: 1 damage to front enemy.
+  ru: Начало хода, с вероятностью 50% и если не убила его атака: через 1 ход: 1 урон переднему врагу.
 macro echo
   en: Turn start: echoes front enemy a turn later.
   ru: Начало хода: повторяет переднего врага ходом позже.
