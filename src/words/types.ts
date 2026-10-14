@@ -143,3 +143,7 @@ export interface EffectWord<E = any> extends WordMeta {
   en(e: E, say: Say, target: string): string;
   ru(e: E, say: Say, target: string): string;
 }
+
+/** "правило X" in Russian: a pronoun target goes before the noun ("его
+ * правило"), a named one after it ("правило переднего врага"). */
+export const ruRuleOf = (target: string): string => (/^(его|её|их)$/.test(target) ? `${target} правило` : `правило ${target}`);

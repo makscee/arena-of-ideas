@@ -9,7 +9,7 @@ export const actAgain: EffectWord<E> = {
   kind: "actAgain",
   class: "ruleMod",
   context: "trigger",
-  en: (_e, _say, target) => `${target} acts again`,
+  en: (_e, _say, target) => `${target} ${/^(its neighbours|all |both )/.test(target) ? "act" : "acts"} again`,
   ru: (_e, _say, target) => `заставить ${target} действовать ещё раз`,
   example: {
     input: { ...example([rule("Hourglass", 6, 1, { on: "TurnEnd" }, { kind: "allyBehind" }, "Again"), rule("Archer", 4, 1, { on: "TurnEnd" }, { kind: "frontEnemy" }, "Zap")], [plain("Brute", 12, 1)]), abilities: { ...EXAMPLE_ABILITIES, Again: { name: "Again", family: "Arcane", effects: [{ kind: "actAgain" }] } } },

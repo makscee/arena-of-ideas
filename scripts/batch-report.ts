@@ -9,9 +9,8 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { contentOf } from "../server/src/mvp/content.js";
 import { battle } from "../src/battle.js";
-import { describeStatus } from "../src/describe.js";
 import { formSegments } from "../src/mvp/form-text.js";
-import { ROWS_V2, V2_STATUSES } from "../src/mvp/units-v2.js";
+import { ROWS_V2 } from "../src/mvp/units-v2.js";
 import { FIXTURES } from "../src/words/fixtures.js";
 import { traceLines } from "../src/words/trace.js";
 import { slug } from "../src/mvp/units.js";
@@ -26,7 +25,7 @@ const out = (opt("out") ?? "~/reports/arena-batch1.html").replace(/^~/, homedir(
 const base = (opt("base") ?? "https://m1.twin-pogona.ts.net/arena-lab/").replace(/\/?$/, "/");
 const tuned = args.includes("--tuned");
 interface TuneUnit { name: string; fieldScore: number; awokenMargin: number; share: number; inBand: boolean; team: string[] }
-interface TuneReport { median: number; band: number; healthy: boolean; checks: Record<string, { value: number; pass: boolean; rule: string }>; units: TuneUnit[]; rounds: unknown[]; seconds: number }
+interface TuneReport { median: number; band: number; healthy: boolean; checks: Record<string, { value: number; pass: boolean; rule: string }>; units: TuneUnit[]; rounds: unknown[]; seconds: number; healthChecks?: { seed: number; healthy: boolean }[] }
 const TUNE_FILE = "docs/mvp/tune-v2.json";
 const tune: TuneReport | null = tuned && existsSync(TUNE_FILE) ? JSON.parse(readFileSync(TUNE_FILE, "utf8")) : null;
 if (tuned && !tune) throw new Error(`--tuned needs ${TUNE_FILE}: run npm run mvp:tune-v2 first`);
@@ -58,9 +57,6 @@ function poolTrace(name: string, awoken: boolean): string[] {
   return own.length ? own.slice(0, 3) : lines.slice(0, 2);
 }
 
-const statusRule = (form: { statuses?: { status: string }[] }, lang: "en" | "ru") =>
-  (form.statuses ?? []).map((s) => `${s.status}: ${describeStatus(V2_STATUSES[s.status]!, lang)}`);
-
 const cards = ROWS_V2.map((row) => {
   const u = content.units.find((x) => x.id === slug(row.name))!;
   const key = row.name.replace(/[^A-Za-z]/g, "");
@@ -70,14 +66,11 @@ const cards = ROWS_V2.map((row) => {
     const fixture = f === "sleeping" ? fx : `${fx}Awoken`;
     const hasFixture = FIXTURES[fixture] !== undefined;
     const sceneId = hasFixture ? (f === "sleeping" ? `v2-${slug(row.name)}` : `v2-${slug(row.name)}-awoken`) : poolBattleId(row.name, f === "awoken");
-    const extra = statusRule(form, "en").map((l) => `<li class="status">${esc(l)}</li>`).join("");
-    const extraRu = statusRule(form, "ru").map((l) => `<li class="status">${esc(l)}</li>`).join("");
     const tr = (hasFixture ? trace(fixture) : poolTrace(row.name, f === "awoken")).map((l, i) => `<li class="${i === 0 ? "trace main" : "trace"}">${esc(l)}</li>`).join("");
     return `<div class="form">
   <h3>${f === "sleeping" ? "Sleeping · Спящий" : "Awoken · Пробуждённый"}</h3>
-  <p class="en">${esc(text(formSegments(form, content.abilities, "en")))}</p>
-  <p class="ru">${esc(text(formSegments(form, content.abilities, "ru")))}</p>
-  ${extra || extraRu ? `<ul class="statuses">${extra}${extraRu}</ul>` : ""}
+  <p class="en">${esc(text(formSegments(form, content.abilities, "en", content.statuses)))}</p>
+  <p class="ru">${esc(text(formSegments(form, content.abilities, "ru", content.statuses)))}</p>
   ${tr ? `<ul class="traces">${tr}</ul>` : ""}
   <p class="go">Scene: <a href="${esc(scene(sceneId, "en"))}" target="_blank" rel="noopener">EN</a> <a href="${esc(scene(sceneId, "ru"))}" target="_blank" rel="noopener">RU</a> <code>${sceneId}</code></p>
 </div>`;
@@ -107,8 +100,8 @@ header{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.emoji{font-siz
 .note{border-left:4px solid var(--acc);padding:8px 12px;margin:0 0 24px;background:var(--card)}
 </style></head><body>
 <h1>Arena · rules v2 · unit batch 1</h1>
-<p class="sub">Unit batch 1 of 3: the eight units of the design's §4, then twelve more (every shape class and tier), built on branch <code>vb-1046-unit-batch-1</code>. Design: <a href="arena-rules-v2.html">arena-rules-v2.html</a>. Scenes open on the lab.</p>
-${tune ? `<div class="note"><b>Tuned.</b> PWR and HP come from <code>npm run mvp:tune-v2</code>: ${tune.rounds.length} rounds of the quick meta check move each unit toward the pool's median field score (${pct(tune.median)} ± ${pct(tune.band)}), then the full meta check: <b>${tune.healthy ? "healthy" : "not healthy"}</b> (${Object.values(tune.checks).map((c) => `${esc(c.rule)}: ${c.value < 1 && c.value > 0 ? pct(c.value) : c.value} ${c.pass ? "✓" : "✗"}`).join("; ")}). ${tune.units.filter((u) => u.inBand).length} of ${tune.units.length} units in band. Field: the unit's best team's mean score against the meta's teams. Awoken: what three copies add over sleeping, same team.</div>` : ""}
+<p class="sub">Unit batch 1 of 3: the eight units of the design's §4, then twelve more (every shape class and tier), on the mission branch <code>mission-1043-rules-v2</code>. Design: <a href="arena-rules-v2.html">arena-rules-v2.html</a>. Scenes open on the lab.</p>
+${tune ? `<div class="note"><b>Tuned.</b> PWR and HP come from <code>npm run mvp:tune-v2</code>: ${tune.rounds.length} rounds of the quick meta check move each unit toward the pool's median field score (${pct(tune.median)} ± ${pct(tune.band)}), then the full meta check: <b>${tune.healthy ? "healthy" : "not healthy"}</b>${tune.healthChecks ? ` (${tune.healthChecks.filter((h) => h.healthy).length} of ${tune.healthChecks.length} full checks healthy; the first:` : " ("} ${Object.values(tune.checks).map((c) => `${esc(c.rule)}: ${c.value < 1 && c.value > 0 ? pct(c.value) : c.value} ${c.pass ? "✓" : "✗"}`).join("; ")}). ${tune.units.filter((u) => u.inBand).length} of ${tune.units.length} units in band${tune.units.some((u) => !u.inBand) ? `; outside it: ${tune.units.filter((u) => !u.inBand).map((u) => `${esc(u.name)} ${pct(u.fieldScore)}`).join(", ")}` : ""}. Field: the unit's best team's mean score against the meta's teams. Awoken: what three copies add over sleeping, same team.</div>` : ""}
 ${tuned ? "" : `<div class="note"><b>Untuned draft.</b> The numbers are placeholders; the tune and the meta run come next. The eight §4 units have fixture battles with goldens; the twelve have pool battles (the lab's <code>v2-unit-</code> scenes).</div>`}
 ${cards.join("\n")}
 </body></html>

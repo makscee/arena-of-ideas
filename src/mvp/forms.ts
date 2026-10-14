@@ -34,6 +34,11 @@ function grown(base: Stats, extraCopies: number, rules: MvpRules): Stats {
   return { pwr: base.pwr + extraCopies * rules.copyGrowth.pwr, hp: base.hp + extraCopies * rules.copyGrowth.hp };
 }
 
+/** Stats with a unit's awoken bonus added (rules v2's awoken knob). */
+function withBonus(s: Stats, bonus: Stats | undefined): Stats {
+  return bonus ? { pwr: s.pwr + bonus.pwr, hp: s.hp + bonus.hp } : s;
+}
+
 /** A fresh line unit from content with `copies` merged in: stats grown per
  * copy, already awoken at rules.copiesToAwaken copies. */
 export function lineUnitOf(u: UnitContent, uid: string, copies = 1, rules: MvpRules = MVP_RULES): LineUnit {
@@ -47,7 +52,7 @@ export function lineUnitOf(u: UnitContent, uid: string, copies = 1, rules: MvpRu
     emoji: u.emoji,
     copies,
     form,
-    stats: grown(u.base, copies - 1, rules),
+    stats: withBonus(grown(u.base, copies - 1, rules), form === "awoken" ? u.awokenBonus : undefined),
     recipe: structuredClone(u.forms[form]),
   };
 }
@@ -70,6 +75,7 @@ export function addCopy(u: LineUnit, content: MvpContent, rules: MvpRules = MVP_
     const c = content.units.find((x) => x.id === u.unitId);
     if (!c) throw new Error(`unknown unit ${u.unitId}`);
     next.form = "awoken";
+    next.stats = withBonus(next.stats, c.awokenBonus);
     next.recipe = structuredClone(c.forms.awoken);
   }
   return next;

@@ -1,25 +1,39 @@
 {
-  "seconds": 1312,
+  "seconds": 921,
   "band": 0.08,
-  "median": 0.515,
+  "median": 0.544,
   "healthy": true,
   "checks": {
     "teamsInEquilibrium": {
-      "value": 8,
-      "pass": true,
+      "value": 3,
+      "pass": false,
       "rule": "≥5 teams with ≥2% share"
     },
     "largestShare": {
-      "value": 0.212,
-      "pass": true,
+      "value": 0.506,
+      "pass": false,
       "rule": "largest share ≤40%"
     },
     "topTeamsBeaten": {
-      "value": 4,
-      "pass": true,
+      "value": 1,
+      "pass": false,
       "rule": "every top team beaten ≥60% by ≥3 others"
     }
   },
+  "healthChecks": [
+    {
+      "seed": 24301,
+      "healthy": false
+    },
+    {
+      "seed": 24302,
+      "healthy": true
+    },
+    {
+      "seed": 24303,
+      "healthy": true
+    }
+  ],
   "units": [
     {
       "name": "Hourglass",
@@ -27,34 +41,42 @@
       "tier": 2,
       "pwr": 1,
       "hp": 4,
-      "fieldScore": 0.537,
-      "awokenMargin": -0.049,
-      "share": 0.278,
-      "inBand": true,
+      "awoken": {
+        "pwr": 3,
+        "hp": 12
+      },
+      "fieldScore": 0.452,
+      "awokenMargin": 0.031,
+      "share": 0,
+      "inBand": false,
       "team": [
-        "candle",
         "hourglass",
-        "conductor",
-        "sniper",
-        "seed"
+        "mirror",
+        "trickster",
+        "understudy",
+        "sniper"
       ]
     },
     {
       "name": "Mirror",
       "emoji": "🪞",
       "tier": 2,
-      "pwr": 2,
-      "hp": 16,
-      "fieldScore": 0.294,
-      "awokenMargin": -0.005,
-      "share": 0.571,
-      "inBand": false,
+      "pwr": 4,
+      "hp": 19,
+      "awoken": {
+        "pwr": 0,
+        "hp": 2
+      },
+      "fieldScore": 0.547,
+      "awokenMargin": 0.052,
+      "share": 0,
+      "inBand": true,
       "team": [
-        "leech",
-        "candle",
-        "medic",
+        "mirror",
+        "magnet",
         "trickster",
-        "mirror"
+        "sniper",
+        "hourglass"
       ]
     },
     {
@@ -62,35 +84,43 @@
       "emoji": "🕯️",
       "tier": 3,
       "pwr": 6,
-      "hp": 16,
-      "fieldScore": 0.677,
-      "awokenMargin": 0.005,
-      "share": 0.114,
-      "inBand": false,
+      "hp": 15,
+      "awoken": {
+        "pwr": 2,
+        "hp": 10
+      },
+      "fieldScore": 0.61,
+      "awokenMargin": 0.053,
+      "share": 0.027,
+      "inBand": true,
       "team": [
         "candle",
         "conductor",
         "sniper",
-        "mirror",
-        "lone-wolf"
+        "seed",
+        "leech"
       ]
     },
     {
       "name": "Gambler",
       "emoji": "🎲",
       "tier": 1,
-      "pwr": 1,
-      "hp": 3,
-      "fieldScore": 0.013,
-      "awokenMargin": 0,
-      "share": 0.117,
+      "pwr": 2,
+      "hp": 6,
+      "awoken": {
+        "pwr": 2,
+        "hp": 12
+      },
+      "fieldScore": 0.454,
+      "awokenMargin": 0.059,
+      "share": 0,
       "inBand": false,
       "team": [
         "bodyguard",
-        "raven",
-        "gambler",
         "trickster",
-        "understudy"
+        "gambler",
+        "chrysalis",
+        "conductor"
       ]
     },
     {
@@ -99,51 +129,63 @@
       "tier": 1,
       "pwr": 1,
       "hp": 3,
-      "fieldScore": 0.474,
-      "awokenMargin": 0.318,
-      "share": 0.672,
+      "awoken": {
+        "pwr": 0,
+        "hp": 4
+      },
+      "fieldScore": 0.513,
+      "awokenMargin": 0.158,
+      "share": 0.97,
       "inBand": true,
       "team": [
-        "hourglass",
+        "magnet",
+        "raven",
+        "metronome",
         "leech",
-        "candle",
-        "nautilus",
-        "conductor"
+        "nautilus"
       ]
     },
     {
       "name": "Magnet",
       "emoji": "🧲",
       "tier": 3,
-      "pwr": 2,
-      "hp": 16,
-      "fieldScore": 0.274,
-      "awokenMargin": 0,
-      "share": 0,
-      "inBand": false,
+      "pwr": 7,
+      "hp": 24,
+      "awoken": {
+        "pwr": 2,
+        "hp": 8
+      },
+      "fieldScore": 0.5,
+      "awokenMargin": 0.046,
+      "share": 0.506,
+      "inBand": true,
       "team": [
-        "raven",
-        "leech",
         "magnet",
-        "sniper",
-        "gambler"
+        "mirror",
+        "trickster",
+        "medic",
+        "raven"
       ]
     },
     {
       "name": "Raven",
       "emoji": "🐦‍⬛",
       "tier": 4,
-      "pwr": 1,
-      "hp": 9,
-      "fieldScore": 0.793,
-      "awokenMargin": 0,
-      "share": 0.071,
-      "inBand": false,
+      "pwr": 2,
+      "hp": 11,
+      "awoken": {
+        "pwr": 0,
+        "hp": 8
+      },
+      "fieldScore": 0.551,
+      "awokenMargin": 0.058,
+      "share": 0.437,
+      "inBand": true,
       "team": [
-        "understudy",
+        "magnet",
+        "mirror",
+        "trickster",
         "gravedigger",
-        "conductor",
-        "sniper",
         "raven"
       ]
     },
@@ -152,35 +194,43 @@
       "emoji": "🌱",
       "tier": 2,
       "pwr": 0,
-      "hp": 8,
+      "hp": 11,
+      "awoken": {
+        "pwr": 0,
+        "hp": 12
+      },
       "fieldScore": 0.471,
-      "awokenMargin": 0.041,
-      "share": 0.097,
+      "awokenMargin": 0.026,
+      "share": 0,
       "inBand": true,
       "team": [
+        "magnet",
+        "sniper",
+        "metronome",
         "leech",
-        "lone-wolf",
-        "nautilus",
-        "seed",
-        "sniper"
+        "seed"
       ]
     },
     {
       "name": "Sniper",
       "emoji": "🎯",
       "tier": 1,
-      "pwr": 3,
-      "hp": 16,
-      "fieldScore": 0.63,
-      "awokenMargin": -0.065,
-      "share": 0.789,
-      "inBand": false,
+      "pwr": 4,
+      "hp": 14,
+      "awoken": {
+        "pwr": 0,
+        "hp": 4
+      },
+      "fieldScore": 0.605,
+      "awokenMargin": 0.143,
+      "share": 0.533,
+      "inBand": true,
       "team": [
-        "hourglass",
-        "mirror",
-        "nautilus",
-        "gravedigger",
-        "sniper"
+        "magnet",
+        "candle",
+        "conductor",
+        "sniper",
+        "seed"
       ]
     },
     {
@@ -188,17 +238,21 @@
       "emoji": "💉",
       "tier": 1,
       "pwr": 1,
-      "hp": 15,
-      "fieldScore": 0.507,
-      "awokenMargin": 0,
-      "share": 0.409,
+      "hp": 19,
+      "awoken": {
+        "pwr": 1,
+        "hp": 10
+      },
+      "fieldScore": 0.547,
+      "awokenMargin": 0.049,
+      "share": 0,
       "inBand": true,
       "team": [
-        "nautilus",
-        "candle",
-        "chrysalis",
+        "medic",
+        "raven",
         "trickster",
-        "medic"
+        "gravedigger",
+        "magnet"
       ]
     },
     {
@@ -207,34 +261,42 @@
       "tier": 1,
       "pwr": 6,
       "hp": 16,
-      "fieldScore": 0.561,
-      "awokenMargin": -0.014,
-      "share": 0.278,
+      "awoken": {
+        "pwr": 0,
+        "hp": 6
+      },
+      "fieldScore": 0.552,
+      "awokenMargin": 0.104,
+      "share": 0,
       "inBand": true,
       "team": [
-        "leech",
-        "gravedigger",
         "seed",
+        "leech",
         "nautilus",
-        "sniper"
+        "drummer",
+        "magnet"
       ]
     },
     {
       "name": "Metronome",
       "emoji": "🎵",
       "tier": 2,
-      "pwr": 1,
-      "hp": 5,
-      "fieldScore": 0.48,
-      "awokenMargin": -0.011,
-      "share": 0,
+      "pwr": 2,
+      "hp": 6,
+      "awoken": {
+        "pwr": 2,
+        "hp": 10
+      },
+      "fieldScore": 0.541,
+      "awokenMargin": 0.04,
+      "share": 0.437,
       "inBand": true,
       "team": [
         "conductor",
-        "gambler",
+        "metronome",
         "candle",
         "nautilus",
-        "metronome"
+        "understudy"
       ]
     },
     {
@@ -242,17 +304,21 @@
       "emoji": "🐺",
       "tier": 2,
       "pwr": 3,
-      "hp": 6,
-      "fieldScore": 0.395,
-      "awokenMargin": 0,
-      "share": 0,
-      "inBand": false,
+      "hp": 8,
+      "awoken": {
+        "pwr": 2,
+        "hp": 10
+      },
+      "fieldScore": 0.529,
+      "awokenMargin": 0.032,
+      "share": 0.506,
+      "inBand": true,
       "team": [
-        "lone-wolf",
-        "mirror",
+        "magnet",
+        "nautilus",
+        "conductor",
         "sniper",
-        "trickster",
-        "candle"
+        "lone-wolf"
       ]
     },
     {
@@ -261,16 +327,20 @@
       "tier": 2,
       "pwr": 1,
       "hp": 3,
-      "fieldScore": 0.6,
-      "awokenMargin": 0.054,
-      "share": 0,
+      "awoken": {
+        "pwr": 0,
+        "hp": 6
+      },
+      "fieldScore": 0.462,
+      "awokenMargin": 0.027,
+      "share": 0.027,
       "inBand": false,
       "team": [
-        "drummer",
-        "metronome",
-        "leech",
-        "gravedigger",
-        "raven"
+        "candle",
+        "trickster",
+        "nautilus",
+        "sniper",
+        "drummer"
       ]
     },
     {
@@ -278,17 +348,21 @@
       "emoji": "🕴️",
       "tier": 2,
       "pwr": 1,
-      "hp": 8,
-      "fieldScore": 0.408,
-      "awokenMargin": 0.011,
-      "share": 0.114,
-      "inBand": false,
+      "hp": 9,
+      "awoken": {
+        "pwr": 2,
+        "hp": 12
+      },
+      "fieldScore": 0.552,
+      "awokenMargin": 0.033,
+      "share": 0.437,
+      "inBand": true,
       "team": [
         "bodyguard",
-        "mirror",
-        "sniper",
-        "trickster",
-        "raven"
+        "metronome",
+        "nautilus",
+        "raven",
+        "gravedigger"
       ]
     },
     {
@@ -296,17 +370,21 @@
       "emoji": "🐛",
       "tier": 3,
       "pwr": 0,
-      "hp": 4,
-      "fieldScore": 0.535,
-      "awokenMargin": -0.005,
+      "hp": 3,
+      "awoken": {
+        "pwr": 0,
+        "hp": 6
+      },
+      "fieldScore": 0.513,
+      "awokenMargin": 0.101,
       "share": 0,
       "inBand": true,
       "team": [
-        "hourglass",
-        "chrysalis",
+        "candle",
         "nautilus",
-        "mirror",
-        "bodyguard"
+        "seed",
+        "bodyguard",
+        "chrysalis"
       ]
     },
     {
@@ -314,35 +392,43 @@
       "emoji": "🃏",
       "tier": 3,
       "pwr": 2,
-      "hp": 6,
-      "fieldScore": 0.628,
-      "awokenMargin": -0.06,
-      "share": 0.111,
-      "inBand": false,
+      "hp": 7,
+      "awoken": {
+        "pwr": 2,
+        "hp": 12
+      },
+      "fieldScore": 0.605,
+      "awokenMargin": 0.049,
+      "share": 0.027,
+      "inBand": true,
       "team": [
-        "mirror",
-        "leech",
-        "chrysalis",
+        "trickster",
+        "nautilus",
+        "medic",
         "sniper",
-        "trickster"
+        "gravedigger"
       ]
     },
     {
       "name": "Understudy",
       "emoji": "🎭",
       "tier": 3,
-      "pwr": 1,
-      "hp": 13,
-      "fieldScore": 0.468,
-      "awokenMargin": 0,
-      "share": 0.071,
+      "pwr": 2,
+      "hp": 17,
+      "awoken": {
+        "pwr": 2,
+        "hp": 12
+      },
+      "fieldScore": 0.518,
+      "awokenMargin": 0.027,
+      "share": 0,
       "inBand": true,
       "team": [
-        "bodyguard",
+        "magnet",
         "trickster",
-        "nautilus",
-        "metronome",
-        "understudy"
+        "candle",
+        "understudy",
+        "bodyguard"
       ]
     },
     {
@@ -350,17 +436,21 @@
       "emoji": "⚰️",
       "tier": 4,
       "pwr": 1,
-      "hp": 3,
-      "fieldScore": 0.523,
-      "awokenMargin": 0.163,
-      "share": 0.563,
+      "hp": 2,
+      "awoken": {
+        "pwr": 0,
+        "hp": 2
+      },
+      "fieldScore": 0.602,
+      "awokenMargin": 0.197,
+      "share": 0.437,
       "inBand": true,
       "team": [
-        "bodyguard",
+        "lone-wolf",
         "leech",
-        "sniper",
+        "chrysalis",
         "gravedigger",
-        "conductor"
+        "candle"
       ]
     },
     {
@@ -368,510 +458,23 @@
       "emoji": "🎼",
       "tier": 4,
       "pwr": 1,
-      "hp": 3,
-      "fieldScore": 0.747,
-      "awokenMargin": 0.076,
-      "share": 0.594,
-      "inBand": false,
+      "hp": 2,
+      "awoken": {
+        "pwr": 0,
+        "hp": 6
+      },
+      "fieldScore": 0.605,
+      "awokenMargin": 0.13,
+      "share": 0.506,
+      "inBand": true,
       "team": [
-        "medic",
-        "sniper",
+        "leech",
+        "candle",
         "conductor",
         "nautilus",
-        "mirror"
+        "chrysalis"
       ]
     }
   ],
-  "rounds": [
-    {
-      "round": 1,
-      "median": 0.487,
-      "scores": {
-        "hourglass": 0.753,
-        "mirror": 0.344,
-        "candle": 0.318,
-        "gambler": 0.48,
-        "nautilus": 0.858,
-        "magnet": 0.392,
-        "raven": 0.682,
-        "seed": 0.707,
-        "sniper": 0.438,
-        "medic": 0.483,
-        "leech": 0.287,
-        "metronome": 0.233,
-        "lone-wolf": 0.483,
-        "drummer": 0.636,
-        "bodyguard": 0.551,
-        "chrysalis": 0.722,
-        "trickster": 0.773,
-        "understudy": 0.33,
-        "gravedigger": 0.705,
-        "conductor": 0.491
-      },
-      "moves": [
-        "Hourglass 75%: 1/8→1/6",
-        "Mirror 34%: 1/6→1/7",
-        "Candle 32%: 3/3→3/5",
-        "Nautilus 86%: 1/10→1/8",
-        "Magnet 39%: 1/12→1/13",
-        "Raven 68%: 1/8→1/6",
-        "Seed 71%: 0/4→0/3",
-        "Leech 29%: 2/7→2/9",
-        "Metronome 23%: 1/8→1/10",
-        "Drummer 64%: 1/9→1/8",
-        "Chrysalis 72%: 0/7→0/5",
-        "Trickster 77%: 2/8→2/6",
-        "Understudy 33%: 1/8→1/9",
-        "Gravedigger 70%: 2/10→2/8"
-      ],
-      "healthy": false
-    },
-    {
-      "round": 2,
-      "median": 0.484,
-      "scores": {
-        "hourglass": 0.729,
-        "mirror": 0.37,
-        "candle": 0.292,
-        "gambler": 0.286,
-        "nautilus": 0.719,
-        "magnet": 0.406,
-        "raven": 0.516,
-        "seed": 0.677,
-        "sniper": 0.188,
-        "medic": 0.344,
-        "leech": 0.229,
-        "metronome": 0.776,
-        "lone-wolf": 0.708,
-        "drummer": 0.365,
-        "bodyguard": 0.802,
-        "chrysalis": 0.615,
-        "trickster": 0.411,
-        "understudy": 0.599,
-        "gravedigger": 0.573,
-        "conductor": 0.453
-      },
-      "moves": [
-        "Hourglass 73%: 1/6→1/4",
-        "Mirror 37%: 1/7→1/8",
-        "Candle 29%: 3/5→3/7",
-        "Gambler 29%: 2/8→2/10",
-        "Nautilus 72%: 1/8→1/6",
-        "Sniper 19%: 2/6→2/8",
-        "Medic 34%: 1/8→1/9",
-        "Leech 23%: 2/9→2/11",
-        "Metronome 78%: 1/10→1/8",
-        "Lone Wolf 71%: 3/7→3/5",
-        "Drummer 36%: 1/8→1/9",
-        "Bodyguard 80%: 1/11→1/9",
-        "Chrysalis 61%: 0/5→0/4",
-        "Understudy 60%: 1/9→1/8",
-        "Gravedigger 57%: 2/8→2/7"
-      ],
-      "healthy": false
-    },
-    {
-      "round": 3,
-      "median": 0.52,
-      "scores": {
-        "hourglass": 0.607,
-        "mirror": 0.292,
-        "candle": 0.426,
-        "gambler": 0.717,
-        "nautilus": 0.777,
-        "magnet": 0.348,
-        "raven": 0.536,
-        "seed": 0.723,
-        "sniper": 0.498,
-        "medic": 0.449,
-        "leech": 0.386,
-        "metronome": 0.607,
-        "lone-wolf": 0.504,
-        "drummer": 0.554,
-        "bodyguard": 0.623,
-        "chrysalis": 0.266,
-        "trickster": 0.154,
-        "understudy": 0.451,
-        "gravedigger": 0.645,
-        "conductor": 0.616
-      },
-      "moves": [
-        "Hourglass 61%: 1/4→1/3",
-        "Mirror 29%: 1/8→1/10",
-        "Candle 43%: 3/7→3/8",
-        "Gambler 72%: 2/10→2/8",
-        "Nautilus 78%: 1/6→1/4",
-        "Magnet 35%: 1/13→1/15",
-        "Leech 39%: 2/11→2/12",
-        "Metronome 61%: 1/8→1/7",
-        "Bodyguard 62%: 1/9→1/8",
-        "Chrysalis 27%: 0/4→0/6",
-        "Trickster 15%: 2/6→2/8",
-        "Gravedigger 65%: 2/7→2/6",
-        "Conductor 62%: 1/9→1/8"
-      ],
-      "healthy": false
-    },
-    {
-      "round": 4,
-      "median": 0.465,
-      "scores": {
-        "hourglass": 0.668,
-        "mirror": 0.277,
-        "candle": 0.304,
-        "gambler": 0.174,
-        "nautilus": 0.715,
-        "magnet": 0.793,
-        "raven": 0.674,
-        "seed": 0.389,
-        "sniper": 0.353,
-        "medic": 0.44,
-        "leech": 0.245,
-        "metronome": 0.611,
-        "lone-wolf": 0.408,
-        "drummer": 0.489,
-        "bodyguard": 0.283,
-        "chrysalis": 0.408,
-        "trickster": 0.584,
-        "understudy": 0.595,
-        "gravedigger": 0.736,
-        "conductor": 0.592
-      },
-      "moves": [
-        "Mirror 28%: 1/10→1/12",
-        "Candle 30%: 3/8→3/10",
-        "Gambler 17%: 2/8→2/10",
-        "Nautilus 71%: 1/4→1/3",
-        "Magnet 79%: 1/15→1/13",
-        "Raven 67%: 1/6→1/4",
-        "Sniper 35%: 2/8→2/9",
-        "Leech 24%: 2/12→2/14",
-        "Metronome 61%: 1/7→1/6",
-        "Bodyguard 28%: 1/8→1/10",
-        "Trickster 58%: 2/8→2/7",
-        "Understudy 60%: 1/8→1/7",
-        "Gravedigger 74%: 2/6→2/4",
-        "Conductor 59%: 1/8→1/7"
-      ],
-      "healthy": false
-    },
-    {
-      "round": 5,
-      "median": 0.497,
-      "scores": {
-        "hourglass": 0.531,
-        "mirror": 0.63,
-        "candle": 0.315,
-        "gambler": 0.714,
-        "nautilus": 0.536,
-        "magnet": 0.474,
-        "raven": 0.232,
-        "seed": 0.5,
-        "sniper": 0.216,
-        "medic": 0.484,
-        "leech": 0.078,
-        "metronome": 0.495,
-        "lone-wolf": 0.768,
-        "drummer": 0.641,
-        "bodyguard": 0.484,
-        "chrysalis": 0.708,
-        "trickster": 0.409,
-        "understudy": 0.391,
-        "gravedigger": 0.615,
-        "conductor": 0.677
-      },
-      "moves": [
-        "Mirror 63%: 1/12→1/11",
-        "Candle 32%: 3/10→3/12",
-        "Gambler 71%: 2/10→2/8",
-        "Raven 23%: 1/4→1/6",
-        "Sniper 22%: 2/9→2/11",
-        "Leech 8%: 2/14→2/16",
-        "Lone Wolf 77%: 3/5→3/3",
-        "Drummer 64%: 1/9→1/8",
-        "Chrysalis 71%: 0/6→0/4",
-        "Trickster 41%: 2/7→2/8",
-        "Understudy 39%: 1/7→1/8",
-        "Gravedigger 61%: 2/4→2/3",
-        "Conductor 68%: 1/7→1/5"
-      ],
-      "healthy": false
-    },
-    {
-      "round": 6,
-      "median": 0.542,
-      "scores": {
-        "hourglass": 0.604,
-        "mirror": 0.479,
-        "candle": 0.377,
-        "gambler": 0.75,
-        "nautilus": 0.676,
-        "magnet": 0.532,
-        "raven": 0.532,
-        "seed": 0.361,
-        "sniper": 0.632,
-        "medic": 0.324,
-        "leech": 0.37,
-        "metronome": 0.625,
-        "lone-wolf": 0.31,
-        "drummer": 0.551,
-        "bodyguard": 0.532,
-        "chrysalis": 0.567,
-        "trickster": 0.653,
-        "understudy": 0.37,
-        "gravedigger": 0.854,
-        "conductor": 0.676
-      },
-      "moves": [
-        "Candle 38%: 3/12→3/14",
-        "Gambler 75%: 2/8→2/6",
-        "Seed 36%: 0/3→0/5",
-        "Sniper 63%: 2/11→2/10",
-        "Medic 32%: 1/9→1/11",
-        "Leech 37%: 2/16→3/16",
-        "Metronome 63%: 1/6→1/5",
-        "Lone Wolf 31%: 3/3→3/5",
-        "Trickster 65%: 2/8→2/7",
-        "Understudy 37%: 1/8→1/10",
-        "Gravedigger 85%: 2/3→1/3",
-        "Conductor 68%: 1/5→1/4"
-      ],
-      "healthy": false
-    },
-    {
-      "round": 7,
-      "median": 0.56,
-      "scores": {
-        "hourglass": 0.621,
-        "mirror": 0.185,
-        "candle": 0.313,
-        "gambler": 0.604,
-        "nautilus": 0.792,
-        "magnet": 0.463,
-        "raven": 0.688,
-        "seed": 0.396,
-        "sniper": 0.433,
-        "medic": 0.542,
-        "leech": 0.35,
-        "metronome": 0.558,
-        "lone-wolf": 0.392,
-        "drummer": 0.733,
-        "bodyguard": 0.5,
-        "chrysalis": 0.563,
-        "trickster": 0.64,
-        "understudy": 0.825,
-        "gravedigger": 0.713,
-        "conductor": 0.675
-      },
-      "moves": [
-        "Mirror 19%: 1/11→1/13",
-        "Candle 31%: 3/14→3/16",
-        "Magnet 46%: 1/13→1/14",
-        "Raven 69%: 1/6→1/5",
-        "Seed 40%: 0/5→0/7",
-        "Sniper 43%: 2/10→2/11",
-        "Leech 35%: 3/16→4/16",
-        "Lone Wolf 39%: 3/5→3/7",
-        "Drummer 73%: 1/8→1/6",
-        "Understudy 83%: 1/10→1/8",
-        "Conductor 68%: 1/4→1/3"
-      ],
-      "healthy": false
-    },
-    {
-      "round": 8,
-      "median": 0.563,
-      "scores": {
-        "hourglass": 0.795,
-        "mirror": 0.483,
-        "candle": 0.142,
-        "gambler": 0.773,
-        "nautilus": 0.656,
-        "magnet": 0.358,
-        "raven": 0.307,
-        "seed": 0.585,
-        "sniper": 0.301,
-        "medic": 0.403,
-        "leech": 0.67,
-        "metronome": 0.54,
-        "lone-wolf": 0.67,
-        "drummer": 0.875,
-        "bodyguard": 0.455,
-        "chrysalis": 0.585,
-        "trickster": 0.233,
-        "understudy": 0.423,
-        "gravedigger": 0.611,
-        "conductor": 0.702
-      },
-      "moves": [
-        "Candle 14%: 3/16→4/16",
-        "Gambler 77%: 2/6→2/4",
-        "Magnet 36%: 1/14→1/16",
-        "Raven 31%: 1/5→1/7",
-        "Sniper 30%: 2/11→2/13",
-        "Medic 40%: 1/11→1/12",
-        "Leech 67%: 4/16→4/15",
-        "Lone Wolf 67%: 3/7→3/6",
-        "Drummer 88%: 1/6→1/4",
-        "Bodyguard 45%: 1/10→1/11",
-        "Trickster 23%: 2/7→2/9",
-        "Understudy 42%: 1/8→1/9"
-      ],
-      "healthy": false
-    },
-    {
-      "round": 9,
-      "median": 0.597,
-      "scores": {
-        "hourglass": 0.722,
-        "mirror": 0.329,
-        "candle": 0.324,
-        "gambler": 0.616,
-        "nautilus": 0.657,
-        "magnet": 0.44,
-        "raven": 0.438,
-        "seed": 0.713,
-        "sniper": 0.368,
-        "medic": 0.352,
-        "leech": 0.5,
-        "metronome": 0.618,
-        "lone-wolf": 0.75,
-        "drummer": 0.66,
-        "bodyguard": 0.56,
-        "chrysalis": 0.688,
-        "trickster": 0.579,
-        "understudy": 0.481,
-        "gravedigger": 0.697,
-        "conductor": 0.738
-      },
-      "moves": [
-        "Mirror 33%: 1/13→1/15",
-        "Candle 32%: 4/16→5/16",
-        "Magnet 44%: 1/16→2/16",
-        "Raven 44%: 1/7→1/8",
-        "Seed 71%: 0/7→0/6",
-        "Sniper 37%: 2/13→2/15",
-        "Medic 35%: 1/12→1/14",
-        "Leech 50%: 4/15→4/16",
-        "Lone Wolf 75%: 3/6→3/5",
-        "Chrysalis 69%: 0/4→0/3",
-        "Understudy 48%: 1/9→1/10"
-      ],
-      "healthy": false
-    },
-    {
-      "round": 10,
-      "median": 0.596,
-      "scores": {
-        "hourglass": 0.389,
-        "mirror": 0.44,
-        "candle": 0.206,
-        "gambler": 0.669,
-        "nautilus": 0.678,
-        "magnet": 0.611,
-        "raven": 0.604,
-        "seed": 0.525,
-        "sniper": 0.419,
-        "medic": 0.637,
-        "leech": 0.262,
-        "metronome": 0.544,
-        "lone-wolf": 0.718,
-        "drummer": 0.63,
-        "bodyguard": 0.833,
-        "chrysalis": 0.375,
-        "trickster": 0.734,
-        "understudy": 0.227,
-        "gravedigger": 0.588,
-        "conductor": 0.676
-      },
-      "moves": [
-        "Hourglass 39%: 1/3→1/5",
-        "Mirror 44%: 1/15→1/16",
-        "Candle 21%: 5/16→6/16",
-        "Sniper 42%: 2/15→2/16",
-        "Leech 26%: 4/16→5/16",
-        "Lone Wolf 72%: 3/5→3/4",
-        "Bodyguard 83%: 1/11→1/9",
-        "Chrysalis 38%: 0/3→0/5",
-        "Trickster 73%: 2/9→2/8",
-        "Understudy 23%: 1/10→1/12"
-      ],
-      "healthy": false
-    },
-    {
-      "round": 11,
-      "median": 0.498,
-      "scores": {
-        "hourglass": 0.631,
-        "mirror": 0.259,
-        "candle": 0.33,
-        "gambler": 0.591,
-        "nautilus": 0.592,
-        "magnet": 0.494,
-        "raven": 0.355,
-        "seed": 0.45,
-        "sniper": 0.55,
-        "medic": 0.381,
-        "leech": 0.248,
-        "metronome": 0.503,
-        "lone-wolf": 0.45,
-        "drummer": 0.622,
-        "bodyguard": 0.406,
-        "chrysalis": 0.616,
-        "trickster": 0.675,
-        "understudy": 0.653,
-        "gravedigger": 0.619,
-        "conductor": 0.486
-      },
-      "moves": [
-        "Hourglass 63%: 1/5→1/4",
-        "Mirror 26%: 1/16→2/16",
-        "Gambler 59%: 2/4→2/3",
-        "Raven 35%: 1/8→1/9",
-        "Medic 38%: 1/14→1/15",
-        "Leech 25%: 5/16→6/16",
-        "Drummer 62%: 1/4→1/3",
-        "Bodyguard 41%: 1/9→1/10",
-        "Chrysalis 62%: 0/5→0/4",
-        "Trickster 68%: 2/8→2/6",
-        "Understudy 65%: 1/12→1/11"
-      ],
-      "healthy": false
-    },
-    {
-      "round": 12,
-      "median": 0.53,
-      "scores": {
-        "hourglass": 0.597,
-        "mirror": 0.508,
-        "candle": 0.329,
-        "gambler": 0.649,
-        "nautilus": 0.694,
-        "magnet": 0.573,
-        "raven": 0.528,
-        "seed": 0.327,
-        "sniper": 0.363,
-        "medic": 0.532,
-        "leech": 0.464,
-        "metronome": 0.575,
-        "lone-wolf": 0.339,
-        "drummer": 0.504,
-        "bodyguard": 0.732,
-        "chrysalis": 0.544,
-        "trickster": 0.488,
-        "understudy": 0.323,
-        "gravedigger": 0.655,
-        "conductor": 0.698
-      },
-      "moves": [
-        "Gambler 65%: 2/3→1/3",
-        "Seed 33%: 0/6→0/8",
-        "Sniper 36%: 2/16→3/16",
-        "Lone Wolf 34%: 3/4→3/6",
-        "Bodyguard 73%: 1/10→1/8",
-        "Understudy 32%: 1/11→1/13"
-      ],
-      "healthy": false
-    }
-  ]
+  "rounds": []
 }

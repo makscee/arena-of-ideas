@@ -7,6 +7,7 @@ import { api } from "./api";
 import { openSummon, setCardAbilities, setCardCredits, summonById } from "./ui/card";
 import { setUnitRefs } from "./ui/term";
 import { rulesLang } from "./lang";
+import { setKnownStatusNames } from "../src/status-names";
 import { localContent, setFusionTexts } from "./unit-names";
 
 /** How often, at most, a screen's getContent() asks /health for the version. */
@@ -20,6 +21,7 @@ const load = (): Promise<MvpContent> =>
     checkedAt = Date.now();
     const c = localContent(raw); // M4-4: Russian names and lines on a Russian page
     setCardAbilities(c.abilities); // cards draw their When · Who · Does icons from it
+    setKnownStatusNames(c.statuses); // a coined status's RU name in the battle's chips and log ("Песчинки ×1")
     // "Imp (1/2)" in a unit's text opens the Imp's card (R3-5).
     setUnitRefs({
       emoji: (id) => summonById(c, id)?.emoji,

@@ -12,7 +12,7 @@
 
 import { amountWord, conditionWord, effectWord, isV2Effect, selectorWord } from "./words/index.js";
 import { macro } from "./words/macros.js";
-import { statusRu, type Forms } from "./status-names.js";
+import { ruEqualTo, statusRu, type Forms } from "./status-names.js";
 import type { Ability, Amount, Condition, Effect, EventPattern, EventPatternV1, Selector, SelectorV1, StatusDef, UnitFilter, When } from "./types.js";
 import type { DescribeOpts, DescribeSegment, PartRef, Side } from "./describe.js";
 import type { TermId } from "./glossary.js";
@@ -275,7 +275,7 @@ function effectSegs(e: Effect, ctx: EffectCtx): DescribeSegment[] {
         ? [eT("лечение"), e0(" на "), { ...eT(String(e.amount.value)), amount: true }, e0(" "), ...dat]
         : [eT("лечение"), e0(" на "), ...amountAcc(e.amount), e0(" "), ...dat];
     case "applyStatus":
-      return [statusSeg(e.status, statusRu(e.status).name), e0(", равная "), ...amountDat(e.stacks), e0(", "), ...dat];
+      return [statusSeg(e.status, statusRu(e.status).name), e0(`, ${ruEqualTo(e.status)} `), ...amountDat(e.stacks), e0(", "), ...dat];
     case "consumeStacks": {
       if (e.stacks.kind === "const")
         return e.status !== undefined

@@ -12,7 +12,7 @@ delay applyStatus
   ru: Начало хода: через 2 хода: 1 Песчинка переднему врагу.
 delay applyStatus
   en: Turn start: in 2 turns: Shield equal to its Grains to front enemy.
-  ru: Начало хода: через 2 хода: Щит, равная числу Песчинок у себя, переднему врагу.
+  ru: Начало хода: через 2 хода: Щит, равный числу Песчинок у себя, переднему врагу.
 delay redirect
   en: Turn start: in 2 turns: it lands on self instead.
   ru: Начало хода: через 2 хода: вместо этого достаётся себе.

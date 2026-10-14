@@ -10,7 +10,7 @@ export const transform: EffectWord<E> = {
   class: "timing",
   context: "trigger",
   en: (e, _say, target) => `${target === "self" ? "become" : `${target} becomes`} ${e.into.name} (${e.into.base.pwr}/${e.into.base.hp})`,
-  ru: (e, _say, target) => `${target === "себя" ? "превратиться" : `превратить ${target}`} в ${e.into.name} (${e.into.base.pwr}/${e.into.base.hp})`,
+  ru: (e, _say, target) => `${target === "себя" ? "превратиться" : `превратить ${target}`} в ${e.into.names?.ru.acc ?? e.into.name} (${e.into.base.pwr}/${e.into.base.hp})`,
   example: {
     input: { ...example([rule("Seed", 4, 0, { on: "BattleStart" }, { kind: "holder" }, "Sprout"), plain("Archer", 4, 1)], [plain("Brute", 14, 1)]), abilities: { ...EXAMPLE_ABILITIES, Sprout: { name: "Sprout", family: "Summon", effects: [{ kind: "delay", turns: 2, effect: { kind: "transform", into: { name: "Tree", base: { hp: 8, pwr: 0 }, triggers: [{ kind: "trigger", on: { on: "TurnStart" } }], selectors: [{ kind: "allyBehind" }], abilities: ["Empower"] } } }] } } },
     trace: "Seed becomes Tree (0/4)",

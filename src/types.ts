@@ -16,6 +16,9 @@ export interface UnitDef {
   /** Player-facing authorship snapshot for governed content. The battle kernel
    * ignores it; it travels by value so cards can credit the entity itself. */
   _creator?: string;
+  /** A unit a word makes (a transform's body): its Russian name, as a label
+   * and in the accusative ("превратиться в Бабочку"). Display only. */
+  names?: { ru: { name: string; acc: string } };
   base: Stats;
   level?: number;
   /** Canonical v2 behavior recipe: Trigger is when. */
