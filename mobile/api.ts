@@ -202,6 +202,8 @@ export const api = {
   /** M4-6 dev (ARENA_TELEGRAM_FAKE=1): the fake bot's user presses Start,
    * then taps Yes (or No: `decline`). */
   devTelegramAccept: (code: string, decline = false) => call<{ reply: string }>("POST", "/dev/telegram/accept", { code, ...(decline ? { decline } : {}) }),
+  /** #1065 dev: your run at the moment before discovering a+b. */
+  checkpoint: (a: string, b: string) => call<{ runId: string }>("POST", "/dev/checkpoint", { a, b }),
   /** #1026: builds a test scene on a scenes server; this tab becomes its player (in memory, ./scene.ts). */
   async scene(id: string): Promise<SceneBuilt> {
     const built = await call<SceneBuilt>("POST", `/dev/scenes/${encodeURIComponent(id)}`);

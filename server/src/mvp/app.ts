@@ -3,6 +3,7 @@
 // the runtime (./runtime.ts): the run engine (./runs.ts), the day (./day.ts),
 // the stats (./stats.ts), ideas (./ideas.ts) and the store. A slice fills in those modules, not
 // these routes.
+import { checkpointRun } from "./checkpoint.js";
 import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
@@ -550,6 +551,15 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     // "discovered": claimed by the caller (pick 0).
     if (state === "discovered") rt.store.claimCodexPair(a, b, { pick: 0, by: p, at });
     return c.json(codexView(rt, a, b, playerOf(c)));
+  });
+
+  // #1065: the caller's run at the moment before discovering a+b (./checkpoint.ts).
+  api.post("/dev/checkpoint", async (c) => {
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    const body = (await c.req.json().catch(() => null)) as { a?: unknown; b?: unknown } | null;
+    const run = typeof body?.a === "string" && typeof body?.b === "string" ? checkpointRun(rt, p, body.a, body.b) : undefined;
+    return run ? c.json({ runId: run.runId }) : bad(c, 400, "a and b: two live unit ids");
   });
 
   const app = new Hono();

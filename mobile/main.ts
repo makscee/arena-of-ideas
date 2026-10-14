@@ -1940,6 +1940,23 @@ function openBattleLink(id: string): void {
     if (err.textContent) show(h("h1", {}, "Battle " + id), err);
   });
 }
+/** `#checkpoint=a+b` (#1065): a dev world (the workshop, an admin) puts your
+ * run in the shop with Awoken a and b on the line, one Fuse from discovering
+ * them. With `invite=` in the same link it opens once the invite is in. */
+const checkpointPair = new URLSearchParams(location.hash.slice(1)).get("checkpoint");
+function openCheckpoint(pair: string): void {
+  const err = errorLine();
+  void guarded(err, async () => {
+    const [a = "", b = ""] = pair.split("+");
+    const { runId } = await api.checkpoint(a, b);
+    const url = new URL(location.href);
+    url.hash = "";
+    history.replaceState(null, "", url.href.replace(/#$/, ""));
+    shopScreen(await api.run(runId), await getContent());
+  }).then(() => {
+    if (err.textContent) show(h("h1", {}, "Checkpoint " + pair), err, button(t("invite.retry"), () => location.reload(), "primary"));
+  });
+}
 /** `#scene=<id>` (#1026, ./scene.ts): a scenes server builds the fixture
  * (server/src/mvp/scenes.ts) and this opens its screen as its player, who
  * lives in memory only. */
@@ -2003,6 +2020,7 @@ function openInvite(code: string): void {
     }
     await api.redeem(code);
     dropInvite();
+    if (checkpointPair) return openCheckpoint(checkpointPair);
     await homeScreen();
   }).then(() => {
     if (!err.textContent) return;
@@ -2084,6 +2102,7 @@ function switchScreen(code: string, mine: PlayerRef, theirs: PlayerRef): void {
   const go = () => void guarded(errorLine(), async () => {
     await api.redeem(code);
     dropInvite();
+    if (checkpointPair) return openCheckpoint(checkpointPair);
     await homeScreen();
   });
   show(
@@ -2102,7 +2121,7 @@ initSound();
 // fragment, which reloads nothing: start over so the link opens.
 addEventListener("hashchange", () => {
   const hash = new URLSearchParams(location.hash.slice(1));
-  if (hash.has("invite") || hash.has("join") || hash.has("battle") || hash.has("scene")) location.reload();
+  if (hash.has("invite") || hash.has("join") || hash.has("battle") || hash.has("scene") || hash.has("checkpoint")) location.reload();
 });
 
 if (sceneId) {
@@ -2121,6 +2140,8 @@ function boot(): void {
     openInvite(inviteCode);
   } else if (joinCode) {
     openJoinLink(joinCode);
+  } else if (checkpointPair && api.player) {
+    openCheckpoint(checkpointPair);
   } else if (api.player) {
     const err = errorLine();
     void guarded(err, async () => {
