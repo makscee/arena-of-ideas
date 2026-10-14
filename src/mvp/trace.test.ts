@@ -1151,7 +1151,7 @@ describe("captions in Russian", () => {
 describe("rules v2 event captions", () => {
   const ref = { unit: "A1:Gambler", ability: "AllIn" } as never;
   const at = (body: object, id = 1) => ({ id, turn: 1, causedBy: 0, source: "kernel", ...body }) as BattleEvent;
-  const log = (body: object): BattleEvent[] => [{ id: 0, turn: 1, causedBy: null, source: "kernel", type: "TurnStart", turn: 1 } as unknown as BattleEvent, at(body)];
+  const log = (body: object): BattleEvent[] => [{ id: 0, causedBy: null, source: "kernel", type: "TurnStart", turn: 1 } as unknown as BattleEvent, at(body)];
   const plainName = (id: string) => id.replace(/^[AB]\d+:/, "");
   const cases: [object, string, string][] = [
     [{ type: "Flipped", unit: "A1:Gambler", by: ref, heads: true }, "Gambler flips a coin → heads", "Gambler бросает монету → орёл"],
