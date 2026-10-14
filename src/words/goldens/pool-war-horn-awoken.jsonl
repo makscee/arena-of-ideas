@@ -1,0 +1,34 @@
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:War Horn","name":"War Horn","hp":20,"pwr":8},{"id":"A2:Hexer","name":"Hexer","hp":4,"pwr":1}],"B":[{"id":"B1:Jester","name":"Jester","hp":5,"pwr":2},{"id":"B2:Berserker","name":"Berserker","hp":6,"pwr":2},{"id":"B3:Mirror","name":"Mirror","hp":7,"pwr":4}]}}
+{"id":1,"turn":0,"causedBy":0,"source":{"unit":"A2:Hexer","ability":0,"when":0},"type":"Silenced","unit":"B3:Mirror"}
+{"id":2,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":3,"turn":1,"causedBy":2,"source":{"unit":"A1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"A1:War Horn","status":"Strength","stacks":1,"total":1}
+{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"StatChanged","unit":"A1:War Horn","stat":"pwr","delta":1,"now":9}
+{"id":5,"turn":1,"causedBy":2,"source":{"unit":"A1:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Hexer","status":"Strength","stacks":1,"total":1}
+{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"StatChanged","unit":"A2:Hexer","stat":"pwr","delta":1,"now":2}
+{"id":7,"turn":1,"causedBy":2,"source":{"unit":"A1:War Horn","ability":1,"when":0},"type":"StatusApplied","unit":"A1:War Horn","status":"Shield","stacks":1,"total":1}
+{"id":8,"turn":1,"causedBy":2,"source":{"unit":"A1:War Horn","ability":1,"when":0},"type":"StatusApplied","unit":"A2:Hexer","status":"Shield","stacks":1,"total":1}
+{"id":9,"turn":1,"causedBy":2,"source":"kernel","type":"PairFaced","a":"A1:War Horn","b":"B1:Jester","first":"B1:Jester"}
+{"id":10,"turn":1,"causedBy":2,"source":"kernel","type":"Strike","striker":"B1:Jester","defender":"A1:War Horn"}
+{"id":11,"turn":1,"causedBy":10,"source":"kernel","type":"Hurt","unit":"A1:War Horn","amount":1,"absorbed":1,"hpAfter":19}
+{"id":12,"turn":1,"causedBy":11,"source":{"unit":"A1:War Horn","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:War Horn","status":"Shield","stacks":1,"remaining":0}
+{"id":13,"turn":1,"causedBy":2,"source":"kernel","type":"Strike","striker":"A1:War Horn","defender":"B1:Jester"}
+{"id":14,"turn":1,"causedBy":13,"source":"kernel","type":"Hurt","unit":"B1:Jester","amount":9,"hpAfter":-4}
+{"id":15,"turn":1,"causedBy":14,"source":"kernel","type":"Death","unit":"B1:Jester"}
+{"id":16,"turn":1,"causedBy":14,"source":{"unit":"B1:Jester","ability":0,"when":0},"type":"RuleMod","unit":"B1:Jester","op":"swapRules","other":"A1:War Horn"}
+{"id":17,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":18,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":19,"turn":2,"causedBy":18,"source":"kernel","type":"PairFaced","a":"A1:War Horn","b":"B2:Berserker","first":"A1:War Horn"}
+{"id":20,"turn":2,"causedBy":18,"source":"kernel","type":"Strike","striker":"A1:War Horn","defender":"B2:Berserker"}
+{"id":21,"turn":2,"causedBy":20,"source":"kernel","type":"Hurt","unit":"B2:Berserker","amount":9,"hpAfter":-3}
+{"id":22,"turn":2,"causedBy":21,"source":"kernel","type":"Death","unit":"B2:Berserker"}
+{"id":23,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":24,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":25,"turn":3,"causedBy":24,"source":"kernel","type":"PairFaced","a":"A1:War Horn","b":"B3:Mirror","first":"B3:Mirror"}
+{"id":26,"turn":3,"causedBy":24,"source":"kernel","type":"Strike","striker":"B3:Mirror","defender":"A1:War Horn"}
+{"id":27,"turn":3,"causedBy":26,"source":"kernel","type":"Hurt","unit":"A1:War Horn","amount":4,"hpAfter":15}
+{"id":28,"turn":3,"causedBy":27,"source":{"unit":"A1:War Horn","ability":0,"when":0},"type":"RuleMod","unit":"A1:War Horn","op":"swapRules","other":"B3:Mirror"}
+{"id":29,"turn":3,"causedBy":24,"source":"kernel","type":"Strike","striker":"A1:War Horn","defender":"B3:Mirror"}
+{"id":30,"turn":3,"causedBy":29,"source":"kernel","type":"Hurt","unit":"B3:Mirror","amount":9,"hpAfter":-2}
+{"id":31,"turn":3,"causedBy":30,"source":"kernel","type":"Death","unit":"B3:Mirror"}
+{"id":32,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":33,"turn":3,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":3}

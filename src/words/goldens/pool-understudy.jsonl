@@ -1,32 +1,60 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Understudy","name":"Understudy","hp":17,"pwr":2},{"id":"A2:Hourglass","name":"Hourglass","hp":4,"pwr":1}],"B":[{"id":"B1:Nautilus","name":"Nautilus","hp":3,"pwr":1},{"id":"B2:Sniper","name":"Sniper","hp":14,"pwr":4},{"id":"B3:Leech","name":"Leech","hp":16,"pwr":6}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Understudy","name":"Understudy","hp":12,"pwr":5},{"id":"A2:Thornback","name":"Thornback","hp":12,"pwr":3}],"B":[{"id":"B1:Hornet","name":"Hornet","hp":9,"pwr":3},{"id":"B2:War Horn","name":"War Horn","hp":12,"pwr":5},{"id":"B3:Vulture","name":"Vulture","hp":8,"pwr":3}]}}
 {"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":2,"turn":1,"causedBy":1,"source":{"unit":"B2:Sniper","ability":0,"when":0},"type":"Hurt","unit":"A2:Hourglass","amount":4,"hpAfter":0}
-{"id":3,"turn":1,"causedBy":2,"source":"kernel","type":"Death","unit":"A2:Hourglass"}
-{"id":4,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Understudy","b":"B1:Nautilus","first":"B1:Nautilus"}
-{"id":5,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Nautilus","defender":"A1:Understudy"}
-{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"A1:Understudy","amount":1,"hpAfter":16}
-{"id":7,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Understudy","defender":"B1:Nautilus"}
-{"id":8,"turn":1,"causedBy":7,"source":"kernel","type":"Hurt","unit":"B1:Nautilus","amount":2,"hpAfter":1}
-{"id":9,"turn":1,"causedBy":8,"source":{"unit":"B1:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Nautilus","status":"Shield","stacks":1,"total":1}
-{"id":10,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":2,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Understudy","b":"B1:Hornet","first":"B1:Hornet"}
+{"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Hornet","defender":"A1:Understudy"}
+{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"Hurt","unit":"A1:Understudy","amount":3,"hpAfter":9}
+{"id":5,"turn":1,"causedBy":3,"source":{"unit":"B1:Hornet","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Understudy","status":"Poison","stacks":1,"total":1}
+{"id":6,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Understudy","defender":"B1:Hornet"}
+{"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"Hurt","unit":"B1:Hornet","amount":5,"hpAfter":4}
+{"id":8,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":9,"turn":1,"causedBy":8,"source":{"unit":"A1:Understudy","status":"Poison","ability":0,"when":0},"type":"Hurt","unit":"A1:Understudy","amount":1,"hpAfter":8}
+{"id":10,"turn":1,"causedBy":8,"source":{"unit":"A1:Understudy","status":"Poison","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:Understudy","status":"Poison","stacks":1,"remaining":0}
 {"id":11,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":12,"turn":2,"causedBy":11,"source":{"unit":"B2:Sniper","ability":0,"when":0},"type":"Hurt","unit":"A1:Understudy","amount":4,"hpAfter":12}
-{"id":13,"turn":2,"causedBy":11,"source":"kernel","type":"Strike","striker":"B1:Nautilus","defender":"A1:Understudy"}
-{"id":14,"turn":2,"causedBy":13,"source":"kernel","type":"Hurt","unit":"A1:Understudy","amount":1,"hpAfter":11}
-{"id":15,"turn":2,"causedBy":11,"source":"kernel","type":"Strike","striker":"A1:Understudy","defender":"B1:Nautilus"}
-{"id":16,"turn":2,"causedBy":15,"source":"kernel","type":"Hurt","unit":"B1:Nautilus","amount":1,"absorbed":1,"hpAfter":0}
-{"id":17,"turn":2,"causedBy":16,"source":{"unit":"B1:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"B1:Nautilus","status":"Shield","stacks":1,"remaining":0}
-{"id":18,"turn":2,"causedBy":17,"source":"kernel","type":"Death","unit":"B1:Nautilus"}
-{"id":19,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":20,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":21,"turn":3,"causedBy":20,"source":{"unit":"B2:Sniper","ability":0,"when":0},"type":"Hurt","unit":"A1:Understudy","amount":4,"hpAfter":7}
-{"id":22,"turn":3,"causedBy":20,"source":"kernel","type":"PairFaced","a":"A1:Understudy","b":"B2:Sniper","first":"A1:Understudy"}
-{"id":23,"turn":3,"causedBy":20,"source":"kernel","type":"Strike","striker":"A1:Understudy","defender":"B2:Sniper"}
-{"id":24,"turn":3,"causedBy":23,"source":"kernel","type":"Hurt","unit":"B2:Sniper","amount":2,"hpAfter":12}
-{"id":25,"turn":3,"causedBy":20,"source":"kernel","type":"Strike","striker":"B2:Sniper","defender":"A1:Understudy"}
-{"id":26,"turn":3,"causedBy":25,"source":"kernel","type":"Hurt","unit":"A1:Understudy","amount":4,"hpAfter":3}
-{"id":27,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":28,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":29,"turn":4,"causedBy":28,"source":{"unit":"B2:Sniper","ability":0,"when":0},"type":"Hurt","unit":"A1:Understudy","amount":4,"hpAfter":-1}
-{"id":30,"turn":4,"causedBy":29,"source":"kernel","type":"Death","unit":"A1:Understudy"}
-{"id":31,"turn":4,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":4}
+{"id":12,"turn":2,"causedBy":11,"source":"kernel","type":"Strike","striker":"B1:Hornet","defender":"A1:Understudy"}
+{"id":13,"turn":2,"causedBy":12,"source":"kernel","type":"Hurt","unit":"A1:Understudy","amount":3,"hpAfter":5}
+{"id":14,"turn":2,"causedBy":12,"source":{"unit":"B1:Hornet","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Understudy","status":"Poison","stacks":1,"total":1}
+{"id":15,"turn":2,"causedBy":11,"source":"kernel","type":"Strike","striker":"A1:Understudy","defender":"B1:Hornet"}
+{"id":16,"turn":2,"causedBy":15,"source":"kernel","type":"Hurt","unit":"B1:Hornet","amount":5,"hpAfter":-1}
+{"id":17,"turn":2,"causedBy":16,"source":"kernel","type":"Death","unit":"B1:Hornet"}
+{"id":18,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":19,"turn":2,"causedBy":18,"source":{"unit":"A1:Understudy","status":"Poison","ability":0,"when":0},"type":"Hurt","unit":"A1:Understudy","amount":1,"hpAfter":4}
+{"id":20,"turn":2,"causedBy":18,"source":{"unit":"A1:Understudy","status":"Poison","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:Understudy","status":"Poison","stacks":1,"remaining":0}
+{"id":21,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":22,"turn":3,"causedBy":21,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B2:War Horn","status":"Strength","stacks":1,"total":1}
+{"id":23,"turn":3,"causedBy":22,"source":"kernel","type":"StatChanged","unit":"B2:War Horn","stat":"pwr","delta":1,"now":6}
+{"id":24,"turn":3,"causedBy":21,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Vulture","status":"Strength","stacks":1,"total":1}
+{"id":25,"turn":3,"causedBy":24,"source":"kernel","type":"StatChanged","unit":"B3:Vulture","stat":"pwr","delta":1,"now":4}
+{"id":26,"turn":3,"causedBy":21,"source":"kernel","type":"PairFaced","a":"A1:Understudy","b":"B2:War Horn","first":"A1:Understudy"}
+{"id":27,"turn":3,"causedBy":21,"source":"kernel","type":"Strike","striker":"A1:Understudy","defender":"B2:War Horn"}
+{"id":28,"turn":3,"causedBy":27,"source":"kernel","type":"Hurt","unit":"B2:War Horn","amount":5,"hpAfter":7}
+{"id":29,"turn":3,"causedBy":21,"source":"kernel","type":"Strike","striker":"B2:War Horn","defender":"A1:Understudy"}
+{"id":30,"turn":3,"causedBy":29,"source":"kernel","type":"Hurt","unit":"A1:Understudy","amount":6,"hpAfter":-2}
+{"id":31,"turn":3,"causedBy":30,"source":"kernel","type":"Death","unit":"A1:Understudy"}
+{"id":32,"turn":3,"causedBy":31,"source":{"unit":"B3:Vulture","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Vulture","status":"Strength","stacks":1,"total":2}
+{"id":33,"turn":3,"causedBy":32,"source":"kernel","type":"StatChanged","unit":"B3:Vulture","stat":"pwr","delta":1,"now":5}
+{"id":34,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":35,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":36,"turn":4,"causedBy":35,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B2:War Horn","status":"Strength","stacks":1,"total":2}
+{"id":37,"turn":4,"causedBy":36,"source":"kernel","type":"StatChanged","unit":"B2:War Horn","stat":"pwr","delta":1,"now":7}
+{"id":38,"turn":4,"causedBy":35,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Vulture","status":"Strength","stacks":1,"total":3}
+{"id":39,"turn":4,"causedBy":38,"source":"kernel","type":"StatChanged","unit":"B3:Vulture","stat":"pwr","delta":1,"now":6}
+{"id":40,"turn":4,"causedBy":35,"source":"kernel","type":"PairFaced","a":"A2:Thornback","b":"B2:War Horn","first":"B2:War Horn"}
+{"id":41,"turn":4,"causedBy":35,"source":"kernel","type":"Strike","striker":"B2:War Horn","defender":"A2:Thornback"}
+{"id":42,"turn":4,"causedBy":41,"source":"kernel","type":"Hurt","unit":"A2:Thornback","amount":7,"hpAfter":5}
+{"id":43,"turn":4,"causedBy":42,"source":{"unit":"A2:Thornback","ability":0,"when":0},"type":"Hurt","unit":"B2:War Horn","amount":1,"hpAfter":6}
+{"id":44,"turn":4,"causedBy":35,"source":"kernel","type":"Strike","striker":"A2:Thornback","defender":"B2:War Horn"}
+{"id":45,"turn":4,"causedBy":44,"source":"kernel","type":"Hurt","unit":"B2:War Horn","amount":3,"hpAfter":3}
+{"id":46,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":47,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":48,"turn":5,"causedBy":47,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B2:War Horn","status":"Strength","stacks":1,"total":3}
+{"id":49,"turn":5,"causedBy":48,"source":"kernel","type":"StatChanged","unit":"B2:War Horn","stat":"pwr","delta":1,"now":8}
+{"id":50,"turn":5,"causedBy":47,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Vulture","status":"Strength","stacks":1,"total":4}
+{"id":51,"turn":5,"causedBy":50,"source":"kernel","type":"StatChanged","unit":"B3:Vulture","stat":"pwr","delta":1,"now":7}
+{"id":52,"turn":5,"causedBy":47,"source":"kernel","type":"Strike","striker":"B2:War Horn","defender":"A2:Thornback"}
+{"id":53,"turn":5,"causedBy":52,"source":"kernel","type":"Hurt","unit":"A2:Thornback","amount":8,"hpAfter":-3}
+{"id":54,"turn":5,"causedBy":53,"source":"kernel","type":"Death","unit":"A2:Thornback"}
+{"id":55,"turn":5,"causedBy":53,"source":{"unit":"A2:Thornback","ability":0,"when":0},"type":"Hurt","unit":"B2:War Horn","amount":1,"hpAfter":2}
+{"id":56,"turn":5,"causedBy":54,"source":{"unit":"B3:Vulture","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Vulture","status":"Strength","stacks":1,"total":5}
+{"id":57,"turn":5,"causedBy":56,"source":"kernel","type":"StatChanged","unit":"B3:Vulture","stat":"pwr","delta":1,"now":8}
+{"id":58,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":59,"turn":5,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":5}

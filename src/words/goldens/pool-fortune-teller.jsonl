@@ -1,0 +1,43 @@
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Fortune Teller","name":"Fortune Teller","hp":4,"pwr":1},{"id":"A2:Jester","name":"Jester","hp":5,"pwr":2}],"B":[{"id":"B1:Berserker","name":"Berserker","hp":6,"pwr":2},{"id":"B2:Gambler","name":"Gambler","hp":6,"pwr":2},{"id":"B3:Magnet","name":"Magnet","hp":12,"pwr":5}]}}
+{"id":1,"turn":0,"causedBy":0,"source":"kernel","type":"Flipped","unit":"A1:Fortune Teller","by":{"unit":"A1:Fortune Teller","ability":0,"when":0},"heads":false}
+{"id":2,"turn":0,"causedBy":0,"source":{"unit":"A1:Fortune Teller","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Fortune Teller","status":"Shield","stacks":2,"total":2}
+{"id":3,"turn":0,"causedBy":0,"source":"kernel","type":"Flipped","unit":"A1:Fortune Teller","by":{"unit":"A1:Fortune Teller","ability":0,"when":0},"heads":true}
+{"id":4,"turn":0,"causedBy":0,"source":{"unit":"A1:Fortune Teller","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Jester","status":"Strength","stacks":2,"total":2}
+{"id":5,"turn":0,"causedBy":4,"source":"kernel","type":"StatChanged","unit":"A2:Jester","stat":"pwr","delta":2,"now":4}
+{"id":6,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"PairFaced","a":"A1:Fortune Teller","b":"B1:Berserker","first":"B1:Berserker"}
+{"id":8,"turn":1,"causedBy":6,"source":"kernel","type":"Strike","striker":"B1:Berserker","defender":"A1:Fortune Teller","amount":2}
+{"id":9,"turn":1,"causedBy":8,"source":"kernel","type":"Hurt","unit":"A1:Fortune Teller","amount":0,"absorbed":2,"hpAfter":4}
+{"id":10,"turn":1,"causedBy":9,"source":{"unit":"A1:Fortune Teller","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:Fortune Teller","status":"Shield","stacks":2,"remaining":0}
+{"id":11,"turn":1,"causedBy":6,"source":"kernel","type":"Strike","striker":"A1:Fortune Teller","defender":"B1:Berserker"}
+{"id":12,"turn":1,"causedBy":11,"source":"kernel","type":"Hurt","unit":"B1:Berserker","amount":1,"hpAfter":5}
+{"id":13,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":14,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":15,"turn":2,"causedBy":14,"source":"kernel","type":"Strike","striker":"B1:Berserker","defender":"A1:Fortune Teller","amount":3}
+{"id":16,"turn":2,"causedBy":15,"source":"kernel","type":"Hurt","unit":"A1:Fortune Teller","amount":3,"hpAfter":1}
+{"id":17,"turn":2,"causedBy":14,"source":"kernel","type":"Strike","striker":"A1:Fortune Teller","defender":"B1:Berserker"}
+{"id":18,"turn":2,"causedBy":17,"source":"kernel","type":"Hurt","unit":"B1:Berserker","amount":1,"hpAfter":4}
+{"id":19,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":20,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":21,"turn":3,"causedBy":20,"source":"kernel","type":"Strike","striker":"B1:Berserker","defender":"A1:Fortune Teller","amount":4}
+{"id":22,"turn":3,"causedBy":21,"source":"kernel","type":"Hurt","unit":"A1:Fortune Teller","amount":4,"hpAfter":-3}
+{"id":23,"turn":3,"causedBy":22,"source":"kernel","type":"Death","unit":"A1:Fortune Teller"}
+{"id":24,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":25,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":26,"turn":4,"causedBy":25,"source":"kernel","type":"PairFaced","a":"A2:Jester","b":"B1:Berserker","first":"B1:Berserker"}
+{"id":27,"turn":4,"causedBy":25,"source":"kernel","type":"Strike","striker":"B1:Berserker","defender":"A2:Jester","amount":4}
+{"id":28,"turn":4,"causedBy":27,"source":"kernel","type":"Hurt","unit":"A2:Jester","amount":4,"hpAfter":1}
+{"id":29,"turn":4,"causedBy":28,"source":{"unit":"A2:Jester","ability":0,"when":0},"type":"RuleMod","unit":"A2:Jester","op":"swapRules","other":"B1:Berserker"}
+{"id":30,"turn":4,"causedBy":25,"source":"kernel","type":"Strike","striker":"A2:Jester","defender":"B1:Berserker","amount":8}
+{"id":31,"turn":4,"causedBy":30,"source":"kernel","type":"Hurt","unit":"B1:Berserker","amount":8,"hpAfter":-4}
+{"id":32,"turn":4,"causedBy":31,"source":"kernel","type":"Death","unit":"B1:Berserker"}
+{"id":33,"turn":4,"causedBy":31,"source":{"unit":"B1:Berserker","ability":0,"when":0},"type":"RuleMod","unit":"B1:Berserker","op":"swapRules","other":"A2:Jester"}
+{"id":34,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":35,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":36,"turn":5,"causedBy":35,"source":"kernel","type":"PairFaced","a":"A2:Jester","b":"B2:Gambler","first":"B2:Gambler"}
+{"id":37,"turn":5,"causedBy":35,"source":"kernel","type":"Flipped","unit":"B2:Gambler","by":{"unit":"B2:Gambler","ability":0,"when":0},"heads":true}
+{"id":38,"turn":5,"causedBy":35,"source":"kernel","type":"Strike","striker":"B2:Gambler","defender":"A2:Jester","amount":4}
+{"id":39,"turn":5,"causedBy":38,"source":"kernel","type":"Hurt","unit":"A2:Jester","amount":4,"hpAfter":-3}
+{"id":40,"turn":5,"causedBy":39,"source":"kernel","type":"Death","unit":"A2:Jester"}
+{"id":41,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":42,"turn":5,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":5}

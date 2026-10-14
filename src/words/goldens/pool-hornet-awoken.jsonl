@@ -1,0 +1,42 @@
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Hornet","name":"Hornet","hp":17,"pwr":6},{"id":"A2:Wolf Pup","name":"Wolf Pup","hp":11,"pwr":4}],"B":[{"id":"B1:Hexer","name":"Hexer","hp":4,"pwr":1},{"id":"B2:Jester","name":"Jester","hp":5,"pwr":2},{"id":"B3:Archmage","name":"Archmage","hp":9,"pwr":2}]}}
+{"id":1,"turn":0,"causedBy":0,"source":{"unit":"B1:Hexer","ability":0,"when":0},"type":"Silenced","unit":"A2:Wolf Pup"}
+{"id":2,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":3,"turn":1,"causedBy":2,"source":"kernel","type":"PairFaced","a":"A1:Hornet","b":"B1:Hexer","first":"B1:Hexer"}
+{"id":4,"turn":1,"causedBy":2,"source":"kernel","type":"Strike","striker":"B1:Hexer","defender":"A1:Hornet"}
+{"id":5,"turn":1,"causedBy":4,"source":"kernel","type":"Hurt","unit":"A1:Hornet","amount":1,"hpAfter":16}
+{"id":6,"turn":1,"causedBy":2,"source":"kernel","type":"Strike","striker":"A1:Hornet","defender":"B1:Hexer"}
+{"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"Hurt","unit":"B1:Hexer","amount":6,"hpAfter":-2}
+{"id":8,"turn":1,"causedBy":7,"source":"kernel","type":"Death","unit":"B1:Hexer"}
+{"id":9,"turn":1,"causedBy":6,"source":{"unit":"A1:Hornet","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Jester","status":"Poison","stacks":1,"total":1}
+{"id":10,"turn":1,"causedBy":6,"source":{"unit":"A1:Hornet","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Archmage","status":"Poison","stacks":1,"total":1}
+{"id":11,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":12,"turn":1,"causedBy":11,"source":{"unit":"B2:Jester","status":"Poison","ability":0,"when":0},"type":"Hurt","unit":"B2:Jester","amount":1,"hpAfter":4}
+{"id":13,"turn":1,"causedBy":11,"source":{"unit":"B2:Jester","status":"Poison","ability":0,"when":0},"type":"StatusRemoved","unit":"B2:Jester","status":"Poison","stacks":1,"remaining":0}
+{"id":14,"turn":1,"causedBy":11,"source":{"unit":"B3:Archmage","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Archmage","status":"Mana","stacks":1,"total":1}
+{"id":15,"turn":1,"causedBy":11,"source":{"unit":"B3:Archmage","status":"Poison","ability":0,"when":0},"type":"Hurt","unit":"B3:Archmage","amount":1,"hpAfter":8}
+{"id":16,"turn":1,"causedBy":11,"source":{"unit":"B3:Archmage","status":"Poison","ability":0,"when":0},"type":"StatusRemoved","unit":"B3:Archmage","status":"Poison","stacks":1,"remaining":0}
+{"id":17,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":18,"turn":2,"causedBy":17,"source":"kernel","type":"PairFaced","a":"A1:Hornet","b":"B2:Jester","first":"A1:Hornet"}
+{"id":19,"turn":2,"causedBy":17,"source":"kernel","type":"Strike","striker":"A1:Hornet","defender":"B2:Jester"}
+{"id":20,"turn":2,"causedBy":19,"source":"kernel","type":"Hurt","unit":"B2:Jester","amount":6,"hpAfter":-2}
+{"id":21,"turn":2,"causedBy":20,"source":"kernel","type":"Death","unit":"B2:Jester"}
+{"id":22,"turn":2,"causedBy":19,"source":{"unit":"A1:Hornet","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Archmage","status":"Poison","stacks":1,"total":1}
+{"id":23,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":24,"turn":2,"causedBy":23,"source":{"unit":"B3:Archmage","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Archmage","status":"Mana","stacks":1,"total":2}
+{"id":25,"turn":2,"causedBy":23,"source":{"unit":"B3:Archmage","status":"Poison","ability":0,"when":0},"type":"Hurt","unit":"B3:Archmage","amount":1,"hpAfter":7}
+{"id":26,"turn":2,"causedBy":23,"source":{"unit":"B3:Archmage","status":"Poison","ability":0,"when":0},"type":"StatusRemoved","unit":"B3:Archmage","status":"Poison","stacks":1,"remaining":0}
+{"id":27,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":28,"turn":3,"causedBy":27,"source":"kernel","type":"PairFaced","a":"A1:Hornet","b":"B3:Archmage","first":"B3:Archmage"}
+{"id":29,"turn":3,"causedBy":27,"source":"kernel","type":"Strike","striker":"B3:Archmage","defender":"A1:Hornet"}
+{"id":30,"turn":3,"causedBy":29,"source":"kernel","type":"Hurt","unit":"A1:Hornet","amount":2,"hpAfter":14}
+{"id":31,"turn":3,"causedBy":27,"source":"kernel","type":"Strike","striker":"A1:Hornet","defender":"B3:Archmage"}
+{"id":32,"turn":3,"causedBy":31,"source":"kernel","type":"Hurt","unit":"B3:Archmage","amount":6,"hpAfter":1}
+{"id":33,"turn":3,"causedBy":31,"source":{"unit":"A1:Hornet","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Archmage","status":"Poison","stacks":1,"total":1}
+{"id":34,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":35,"turn":3,"causedBy":34,"source":{"unit":"B3:Archmage","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Archmage","status":"Mana","stacks":1,"total":3}
+{"id":36,"turn":3,"causedBy":34,"source":{"unit":"B3:Archmage","status":"Mana","ability":0,"when":0},"type":"Hurt","unit":"A1:Hornet","amount":2,"hpAfter":12}
+{"id":37,"turn":3,"causedBy":34,"source":{"unit":"B3:Archmage","status":"Mana","ability":0,"when":0},"type":"Hurt","unit":"A2:Wolf Pup","amount":2,"hpAfter":9}
+{"id":38,"turn":3,"causedBy":34,"source":{"unit":"B3:Archmage","status":"Mana","ability":1,"when":0},"type":"StatusRemoved","unit":"B3:Archmage","status":"Mana","stacks":3,"remaining":0}
+{"id":39,"turn":3,"causedBy":34,"source":{"unit":"B3:Archmage","status":"Poison","ability":0,"when":0},"type":"Hurt","unit":"B3:Archmage","amount":1,"hpAfter":0}
+{"id":40,"turn":3,"causedBy":39,"source":"kernel","type":"Death","unit":"B3:Archmage"}
+{"id":41,"turn":3,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":3}

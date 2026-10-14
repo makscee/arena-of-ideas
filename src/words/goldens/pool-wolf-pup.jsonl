@@ -1,0 +1,100 @@
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Wolf Pup","name":"Wolf Pup","hp":11,"pwr":4},{"id":"A2:Vulture","name":"Vulture","hp":8,"pwr":3}],"B":[{"id":"B1:Gravecaller","name":"Gravecaller","hp":12,"pwr":2},{"id":"B2:Oracle","name":"Oracle","hp":4,"pwr":1},{"id":"B3:Hourglass","name":"Hourglass","hp":8,"pwr":2}]}}
+{"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":2,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Wolf Pup","b":"B1:Gravecaller","first":"B1:Gravecaller"}
+{"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Gravecaller","defender":"A1:Wolf Pup"}
+{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"Hurt","unit":"A1:Wolf Pup","amount":2,"hpAfter":9}
+{"id":5,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Wolf Pup","defender":"B1:Gravecaller"}
+{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"B1:Gravecaller","amount":4,"hpAfter":8}
+{"id":7,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":8,"turn":1,"causedBy":7,"source":{"unit":"B3:Hourglass","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Hourglass","status":"Grains","stacks":1,"total":1}
+{"id":9,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":10,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"B1:Gravecaller","defender":"A1:Wolf Pup"}
+{"id":11,"turn":2,"causedBy":10,"source":"kernel","type":"Hurt","unit":"A1:Wolf Pup","amount":2,"hpAfter":7}
+{"id":12,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"A1:Wolf Pup","defender":"B1:Gravecaller"}
+{"id":13,"turn":2,"causedBy":12,"source":"kernel","type":"Hurt","unit":"B1:Gravecaller","amount":4,"hpAfter":4}
+{"id":14,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":15,"turn":2,"causedBy":14,"source":{"unit":"B3:Hourglass","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Hourglass","status":"Grains","stacks":1,"total":2}
+{"id":16,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":17,"turn":3,"causedBy":16,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Wolf Pup","status":"Curse","stacks":1,"total":1}
+{"id":18,"turn":3,"causedBy":17,"source":"kernel","type":"StatChanged","unit":"A1:Wolf Pup","stat":"pwr","delta":-1,"now":3}
+{"id":19,"turn":3,"causedBy":16,"source":"kernel","type":"Strike","striker":"B1:Gravecaller","defender":"A1:Wolf Pup"}
+{"id":20,"turn":3,"causedBy":19,"source":"kernel","type":"Hurt","unit":"A1:Wolf Pup","amount":2,"hpAfter":5}
+{"id":21,"turn":3,"causedBy":16,"source":"kernel","type":"Strike","striker":"A1:Wolf Pup","defender":"B1:Gravecaller"}
+{"id":22,"turn":3,"causedBy":21,"source":"kernel","type":"Hurt","unit":"B1:Gravecaller","amount":3,"hpAfter":1}
+{"id":23,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":24,"turn":3,"causedBy":23,"source":{"unit":"B3:Hourglass","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Hourglass","status":"Grains","stacks":1,"total":3}
+{"id":25,"turn":3,"causedBy":23,"source":{"unit":"B3:Hourglass","status":"Grains","ability":1,"when":0},"type":"StatusRemoved","unit":"B3:Hourglass","status":"Grains","stacks":3,"remaining":0}
+{"id":26,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":27,"turn":4,"causedBy":26,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Wolf Pup","status":"Curse","stacks":1,"total":2}
+{"id":28,"turn":4,"causedBy":27,"source":"kernel","type":"StatChanged","unit":"A1:Wolf Pup","stat":"pwr","delta":-1,"now":2}
+{"id":29,"turn":4,"causedBy":26,"source":"kernel","type":"Strike","striker":"B1:Gravecaller","defender":"A1:Wolf Pup"}
+{"id":30,"turn":4,"causedBy":29,"source":"kernel","type":"Hurt","unit":"A1:Wolf Pup","amount":2,"hpAfter":3}
+{"id":31,"turn":4,"causedBy":26,"source":"kernel","type":"Strike","striker":"A1:Wolf Pup","defender":"B1:Gravecaller"}
+{"id":32,"turn":4,"causedBy":31,"source":"kernel","type":"Hurt","unit":"B1:Gravecaller","amount":2,"hpAfter":-1}
+{"id":33,"turn":4,"causedBy":32,"source":"kernel","type":"Death","unit":"B1:Gravecaller"}
+{"id":34,"turn":4,"causedBy":33,"source":{"unit":"A2:Vulture","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Vulture","status":"Strength","stacks":1,"total":1}
+{"id":35,"turn":4,"causedBy":34,"source":"kernel","type":"StatChanged","unit":"A2:Vulture","stat":"pwr","delta":1,"now":4}
+{"id":36,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":37,"turn":4,"causedBy":36,"source":{"unit":"B3:Hourglass","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Hourglass","status":"Grains","stacks":1,"total":1}
+{"id":38,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":39,"turn":5,"causedBy":38,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Wolf Pup","status":"Curse","stacks":1,"total":3}
+{"id":40,"turn":5,"causedBy":39,"source":"kernel","type":"StatChanged","unit":"A1:Wolf Pup","stat":"pwr","delta":-1,"now":1}
+{"id":41,"turn":5,"causedBy":38,"source":"kernel","type":"PairFaced","a":"A1:Wolf Pup","b":"B2:Oracle","first":"A1:Wolf Pup"}
+{"id":42,"turn":5,"causedBy":38,"source":"kernel","type":"Strike","striker":"A1:Wolf Pup","defender":"B2:Oracle"}
+{"id":43,"turn":5,"causedBy":42,"source":"kernel","type":"Hurt","unit":"B2:Oracle","amount":1,"hpAfter":3}
+{"id":44,"turn":5,"causedBy":38,"source":"kernel","type":"Strike","striker":"B2:Oracle","defender":"A1:Wolf Pup"}
+{"id":45,"turn":5,"causedBy":44,"source":"kernel","type":"Hurt","unit":"A1:Wolf Pup","amount":1,"hpAfter":2}
+{"id":46,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":47,"turn":5,"causedBy":46,"source":{"unit":"B3:Hourglass","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Hourglass","status":"Grains","stacks":1,"total":2}
+{"id":48,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":49,"turn":6,"causedBy":48,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Wolf Pup","status":"Curse","stacks":1,"total":4}
+{"id":50,"turn":6,"causedBy":49,"source":"kernel","type":"StatChanged","unit":"A1:Wolf Pup","stat":"pwr","delta":-1,"now":0}
+{"id":51,"turn":6,"causedBy":48,"source":"kernel","type":"Strike","striker":"A1:Wolf Pup","defender":"B2:Oracle"}
+{"id":52,"turn":6,"causedBy":51,"source":"kernel","type":"Hurt","unit":"B2:Oracle","amount":0,"hpAfter":3}
+{"id":53,"turn":6,"causedBy":48,"source":"kernel","type":"Strike","striker":"B2:Oracle","defender":"A1:Wolf Pup"}
+{"id":54,"turn":6,"causedBy":53,"source":"kernel","type":"Hurt","unit":"A1:Wolf Pup","amount":1,"hpAfter":1}
+{"id":55,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":56,"turn":6,"causedBy":55,"source":{"unit":"B3:Hourglass","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Hourglass","status":"Grains","stacks":1,"total":3}
+{"id":57,"turn":6,"causedBy":55,"source":{"unit":"B3:Hourglass","status":"Grains","ability":1,"when":0},"type":"StatusRemoved","unit":"B3:Hourglass","status":"Grains","stacks":3,"remaining":0}
+{"id":58,"turn":7,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":59,"turn":7,"causedBy":58,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Wolf Pup","status":"Curse","stacks":1,"total":5}
+{"id":60,"turn":7,"causedBy":59,"source":"kernel","type":"StatChanged","unit":"A1:Wolf Pup","stat":"pwr","delta":-1,"now":0}
+{"id":61,"turn":7,"causedBy":58,"source":"kernel","type":"Strike","striker":"A1:Wolf Pup","defender":"B2:Oracle"}
+{"id":62,"turn":7,"causedBy":61,"source":"kernel","type":"Hurt","unit":"B2:Oracle","amount":0,"hpAfter":3}
+{"id":63,"turn":7,"causedBy":58,"source":"kernel","type":"Strike","striker":"B2:Oracle","defender":"A1:Wolf Pup"}
+{"id":64,"turn":7,"causedBy":63,"source":"kernel","type":"Hurt","unit":"A1:Wolf Pup","amount":1,"hpAfter":0}
+{"id":65,"turn":7,"causedBy":64,"source":"kernel","type":"Death","unit":"A1:Wolf Pup"}
+{"id":66,"turn":7,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":67,"turn":7,"causedBy":66,"source":{"unit":"B3:Hourglass","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Hourglass","status":"Grains","stacks":1,"total":1}
+{"id":68,"turn":8,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":69,"turn":8,"causedBy":68,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Vulture","status":"Curse","stacks":1,"total":1}
+{"id":70,"turn":8,"causedBy":69,"source":"kernel","type":"StatChanged","unit":"A2:Vulture","stat":"pwr","delta":-1,"now":3}
+{"id":71,"turn":8,"causedBy":68,"source":"kernel","type":"PairFaced","a":"A2:Vulture","b":"B2:Oracle","first":"B2:Oracle"}
+{"id":72,"turn":8,"causedBy":68,"source":"kernel","type":"Strike","striker":"B2:Oracle","defender":"A2:Vulture"}
+{"id":73,"turn":8,"causedBy":72,"source":"kernel","type":"Hurt","unit":"A2:Vulture","amount":1,"hpAfter":7}
+{"id":74,"turn":8,"causedBy":68,"source":"kernel","type":"Strike","striker":"A2:Vulture","defender":"B2:Oracle"}
+{"id":75,"turn":8,"causedBy":74,"source":"kernel","type":"Hurt","unit":"B2:Oracle","amount":3,"hpAfter":0}
+{"id":76,"turn":8,"causedBy":75,"source":"kernel","type":"Death","unit":"B2:Oracle"}
+{"id":77,"turn":8,"causedBy":76,"source":{"unit":"A2:Vulture","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Vulture","status":"Strength","stacks":1,"total":2}
+{"id":78,"turn":8,"causedBy":77,"source":"kernel","type":"StatChanged","unit":"A2:Vulture","stat":"pwr","delta":1,"now":4}
+{"id":79,"turn":8,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":80,"turn":8,"causedBy":79,"source":{"unit":"B3:Hourglass","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Hourglass","status":"Grains","stacks":1,"total":2}
+{"id":81,"turn":9,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":82,"turn":9,"causedBy":81,"source":"kernel","type":"PairFaced","a":"A2:Vulture","b":"B3:Hourglass","first":"B3:Hourglass"}
+{"id":83,"turn":9,"causedBy":81,"source":"kernel","type":"Strike","striker":"B3:Hourglass","defender":"A2:Vulture"}
+{"id":84,"turn":9,"causedBy":83,"source":"kernel","type":"Hurt","unit":"A2:Vulture","amount":2,"hpAfter":5}
+{"id":85,"turn":9,"causedBy":81,"source":"kernel","type":"Strike","striker":"A2:Vulture","defender":"B3:Hourglass"}
+{"id":86,"turn":9,"causedBy":85,"source":"kernel","type":"Hurt","unit":"B3:Hourglass","amount":4,"hpAfter":4}
+{"id":87,"turn":9,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":88,"turn":9,"causedBy":87,"source":{"unit":"B3:Hourglass","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Hourglass","status":"Grains","stacks":1,"total":3}
+{"id":89,"turn":9,"causedBy":87,"source":{"unit":"B3:Hourglass","status":"Grains","ability":1,"when":0},"type":"StatusRemoved","unit":"B3:Hourglass","status":"Grains","stacks":3,"remaining":0}
+{"id":90,"turn":10,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":91,"turn":10,"causedBy":90,"source":"kernel","type":"Strike","striker":"B3:Hourglass","defender":"A2:Vulture"}
+{"id":92,"turn":10,"causedBy":91,"source":"kernel","type":"Hurt","unit":"A2:Vulture","amount":2,"hpAfter":3}
+{"id":93,"turn":10,"causedBy":90,"source":"kernel","type":"Strike","striker":"A2:Vulture","defender":"B3:Hourglass"}
+{"id":94,"turn":10,"causedBy":93,"source":"kernel","type":"Hurt","unit":"B3:Hourglass","amount":4,"hpAfter":0}
+{"id":95,"turn":10,"causedBy":94,"source":"kernel","type":"Death","unit":"B3:Hourglass"}
+{"id":96,"turn":10,"causedBy":95,"source":{"unit":"A2:Vulture","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Vulture","status":"Strength","stacks":1,"total":3}
+{"id":97,"turn":10,"causedBy":96,"source":"kernel","type":"StatChanged","unit":"A2:Vulture","stat":"pwr","delta":1,"now":5}
+{"id":98,"turn":10,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":99,"turn":10,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":10}

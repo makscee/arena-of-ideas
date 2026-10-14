@@ -1,26 +1,31 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Mirror","name":"Mirror","hp":25,"pwr":6},{"id":"A2:Nautilus","name":"Nautilus","hp":3,"pwr":1}],"B":[{"id":"B1:Sniper","name":"Sniper","hp":14,"pwr":4},{"id":"B2:Lone Wolf","name":"Lone Wolf","hp":8,"pwr":3},{"id":"B3:Bodyguard","name":"Bodyguard","hp":9,"pwr":1}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Mirror","name":"Mirror","hp":13,"pwr":6},{"id":"A2:Nautilus","name":"Nautilus","hp":4,"pwr":1}],"B":[{"id":"B1:Sniper","name":"Sniper","hp":6,"pwr":2},{"id":"B2:Lone Wolf","name":"Lone Wolf","hp":12,"pwr":5},{"id":"B3:Bodyguard","name":"Bodyguard","hp":11,"pwr":4}]}}
 {"id":1,"turn":0,"causedBy":0,"source":{"unit":"A1:Mirror","ability":0,"when":0},"type":"RuleMod","unit":"A1:Mirror","op":"copyRule","other":"B1:Sniper"}
-{"id":2,"turn":0,"causedBy":0,"source":{"unit":"A1:Mirror","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Mirror","status":"Strength","stacks":4,"total":4}
-{"id":3,"turn":0,"causedBy":2,"source":"kernel","type":"StatChanged","unit":"A1:Mirror","stat":"pwr","delta":4,"now":10}
+{"id":2,"turn":0,"causedBy":0,"source":{"unit":"A1:Mirror","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Mirror","status":"Strength","stacks":2,"total":2}
+{"id":3,"turn":0,"causedBy":2,"source":"kernel","type":"StatChanged","unit":"A1:Mirror","stat":"pwr","delta":2,"now":8}
 {"id":4,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":5,"turn":1,"causedBy":4,"source":{"unit":"A1:Mirror","ability":0,"when":0},"type":"Hurt","unit":"B3:Bodyguard","amount":10,"hpAfter":-1}
-{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Death","unit":"B3:Bodyguard"}
-{"id":7,"turn":1,"causedBy":4,"source":{"unit":"B1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"A2:Nautilus","amount":4,"hpAfter":-1}
-{"id":8,"turn":1,"causedBy":7,"source":"kernel","type":"Death","unit":"A2:Nautilus"}
-{"id":9,"turn":1,"causedBy":4,"source":"kernel","type":"PairFaced","a":"A1:Mirror","b":"B1:Sniper","first":"B1:Sniper"}
-{"id":10,"turn":1,"causedBy":4,"source":"kernel","type":"Strike","striker":"B1:Sniper","defender":"A1:Mirror"}
-{"id":11,"turn":1,"causedBy":10,"source":"kernel","type":"Hurt","unit":"A1:Mirror","amount":4,"hpAfter":21}
-{"id":12,"turn":1,"causedBy":4,"source":"kernel","type":"Strike","striker":"A1:Mirror","defender":"B1:Sniper"}
-{"id":13,"turn":1,"causedBy":12,"source":"kernel","type":"Hurt","unit":"B1:Sniper","amount":10,"hpAfter":4}
-{"id":14,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":15,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":16,"turn":2,"causedBy":15,"source":{"unit":"A1:Mirror","ability":0,"when":0},"type":"Hurt","unit":"B2:Lone Wolf","amount":10,"hpAfter":-2}
-{"id":17,"turn":2,"causedBy":16,"source":"kernel","type":"Death","unit":"B2:Lone Wolf"}
-{"id":18,"turn":2,"causedBy":15,"source":{"unit":"B1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"A1:Mirror","amount":4,"hpAfter":17}
-{"id":19,"turn":2,"causedBy":15,"source":"kernel","type":"Strike","striker":"B1:Sniper","defender":"A1:Mirror"}
-{"id":20,"turn":2,"causedBy":19,"source":"kernel","type":"Hurt","unit":"A1:Mirror","amount":4,"hpAfter":13}
-{"id":21,"turn":2,"causedBy":15,"source":"kernel","type":"Strike","striker":"A1:Mirror","defender":"B1:Sniper"}
-{"id":22,"turn":2,"causedBy":21,"source":"kernel","type":"Hurt","unit":"B1:Sniper","amount":10,"hpAfter":-6}
-{"id":23,"turn":2,"causedBy":22,"source":"kernel","type":"Death","unit":"B1:Sniper"}
-{"id":24,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":25,"turn":2,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":2}
+{"id":5,"turn":1,"causedBy":4,"source":{"unit":"A1:Mirror","ability":0,"when":0},"type":"Hurt","unit":"B3:Bodyguard","amount":8,"hpAfter":3}
+{"id":6,"turn":1,"causedBy":4,"source":{"unit":"B1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"A2:Nautilus","amount":2,"hpAfter":2}
+{"id":7,"turn":1,"causedBy":6,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":1,"total":1}
+{"id":8,"turn":1,"causedBy":4,"source":"kernel","type":"PairFaced","a":"A1:Mirror","b":"B1:Sniper","first":"B1:Sniper"}
+{"id":9,"turn":1,"causedBy":4,"source":"kernel","type":"Strike","striker":"B1:Sniper","defender":"A1:Mirror"}
+{"id":10,"turn":1,"causedBy":9,"source":"kernel","type":"Hurt","unit":"A1:Mirror","amount":2,"hpAfter":11}
+{"id":11,"turn":1,"causedBy":4,"source":"kernel","type":"Strike","striker":"A1:Mirror","defender":"B1:Sniper"}
+{"id":12,"turn":1,"causedBy":11,"source":"kernel","type":"Redirected","by":{"unit":"B3:Bodyguard","ability":0,"when":0},"original":"Hurt","from":"B1:Sniper","to":"B3:Bodyguard"}
+{"id":13,"turn":1,"causedBy":11,"source":"kernel","type":"Hurt","unit":"B3:Bodyguard","amount":8,"hpAfter":-5}
+{"id":14,"turn":1,"causedBy":13,"source":"kernel","type":"Death","unit":"B3:Bodyguard"}
+{"id":15,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":16,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":17,"turn":2,"causedBy":16,"source":{"unit":"A1:Mirror","ability":0,"when":0},"type":"Hurt","unit":"B2:Lone Wolf","amount":8,"hpAfter":4}
+{"id":18,"turn":2,"causedBy":16,"source":{"unit":"B1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"A2:Nautilus","amount":1,"absorbed":1,"hpAfter":1}
+{"id":19,"turn":2,"causedBy":18,"source":{"unit":"A2:Nautilus","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Nautilus","status":"Shield","stacks":1,"remaining":0}
+{"id":20,"turn":2,"causedBy":18,"source":{"unit":"A2:Nautilus","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Nautilus","status":"Shield","stacks":2,"total":2}
+{"id":21,"turn":2,"causedBy":16,"source":"kernel","type":"Strike","striker":"B1:Sniper","defender":"A1:Mirror"}
+{"id":22,"turn":2,"causedBy":21,"source":"kernel","type":"Hurt","unit":"A1:Mirror","amount":2,"hpAfter":9}
+{"id":23,"turn":2,"causedBy":16,"source":"kernel","type":"Strike","striker":"A1:Mirror","defender":"B1:Sniper"}
+{"id":24,"turn":2,"causedBy":23,"source":"kernel","type":"Hurt","unit":"B1:Sniper","amount":8,"hpAfter":-2}
+{"id":25,"turn":2,"causedBy":24,"source":"kernel","type":"Death","unit":"B1:Sniper"}
+{"id":26,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":27,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":28,"turn":3,"causedBy":27,"source":{"unit":"A1:Mirror","ability":0,"when":0},"type":"Hurt","unit":"B2:Lone Wolf","amount":8,"hpAfter":-4}
+{"id":29,"turn":3,"causedBy":28,"source":"kernel","type":"Death","unit":"B2:Lone Wolf"}
+{"id":30,"turn":3,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":3}
