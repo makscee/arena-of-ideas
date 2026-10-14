@@ -156,7 +156,11 @@ async function ideaAtArchetypes(rt: MvpRuntime, text = "A lantern keeper who hea
  * Awoken forms, named and flavoured, standing in for a night batch (#1050). */
 export function sceneDesigns(rt: MvpRuntime, a: UnitId, b: UnitId): FusionDesign[] {
   const others = rt.content.units.filter((u) => u.id !== a && u.id !== b && u.forms?.awoken);
-  const pickOf = (i: number) => structuredClone(others[(i * 7) % others.length]!.forms.awoken);
+  // without the unit's own `say`: it names that unit (#1120: "Hollow Echo" read as Prism)
+  const pickOf = (i: number) => {
+    const { say: _, ...form } = structuredClone(others[(i * 7) % others.length]!.forms.awoken);
+    return form;
+  };
   return [
     { name: "Ember Warden", emoji: "🔥", lean: "a", recipe: pickOf(1), flavour: "Leans toward the first: it keeps the fire.", texts: { ru: { name: "Страж углей", flavour: "Ближе к первому: хранит огонь." } } },
     { name: "Tide Caller", emoji: "🌊", lean: "b", recipe: pickOf(2), flavour: "Leans toward the second: it calls the water.", texts: { ru: { name: "Зовущий прилив", flavour: "Ближе ко второму: зовёт воду." } } },

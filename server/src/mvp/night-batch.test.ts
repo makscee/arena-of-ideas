@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { Candle, FIXTURE_ABILITIES, FIXTURE_STATUSES, Gambler, Hourglass, Mirror, Nautilus } from "../../../src/words/fixtures.js";
 import { plain, rule } from "../../../src/words/examples.js";
 import type { UnitDef } from "../../../src/types.js";
-import { BATCH_MAX, BATCH_MIN, compile, type DesignDraft, type Field, type Parent, pairKey, pickPairs, REDESIGN_AFTER_MS, ruleText, runBatch, scaled } from "./night-batch.js";
+import { BATCH_MAX, BATCH_MIN, compile, type DesignDraft, foreignUnits, type Field, type Parent, pairKey, pickPairs, REDESIGN_AFTER_MS, ruleText, runBatch, scaled } from "./night-batch.js";
 import { DESIGN_SCHEMA, DESIGNER_RULES, designerSystemPrompt, designPrompt, designerFromEnv, fakeDesigner, namePrompt } from "./night-designer.js";
 import { nightReport } from "./night-report.js";
 
@@ -71,6 +71,22 @@ describe("one pair through the batch", () => {
     const [r] = await runBatch(list, { designer: same, field, parents: { Hourglass: parent(Hourglass), Mirror: parent(Mirror) } });
     expect(seen).toEqual([[], ["Echo"], ["Echo", "Echo B"]]);
     expect(r!.candidates.map((c) => c.name.en)).toEqual(["Echo", "Echo B", "Echo twist"]);
+  });
+  it("rejects a design whose texts name a unit outside its pair, and keeps one naming its own (#1120)", async () => {
+    const designer = fakeDesigner();
+    const texts = [
+      { name: { en: "Spite Mirror", ru: "Зеркало мести" }, flavour: { en: "", ru: "" } },
+      { name: { en: "Glass Hour", ru: "Стеклянный час" }, flavour: { en: "Raven taught it patience.", ru: "" } },
+      { name: { en: "Mirror Sand", ru: "Зеркальный песок" }, flavour: { en: "An Hourglass that reflects; a candle burns nearby.", ru: "" } },
+    ];
+    let n = 0;
+    const naming = { ...designer, name: async () => texts[n++]! };
+    const list = pickPairs({ units, now, size: 1, small: true, requests: ["Hourglass+Nautilus"] });
+    const parents = { Hourglass: parent(Hourglass), Nautilus: parent(Nautilus), Mirror: parent(Mirror), Candle: parent(Candle), Raven: parent({ ...plain("Raven", 8, 1) }) };
+    const [r] = await runBatch(list, { designer: naming, field, parents });
+    expect(r!.candidates.map((c) => c.state === "rejected" && c.why?.startsWith("names a unit") ? c.why : "ok")).toEqual(["names a unit outside its pair: Mirror", "names a unit outside its pair: Raven", "names a unit outside its pair: Mirror"]);
+    expect(foreignUnits(["An Hourglass that reflects; a candle burns nearby."], ["Hourglass", "Nautilus"], parents)).toEqual([]);
+    expect(foreignUnits(["Hourglasses everywhere"], ["Mirror", "Nautilus"], parents)).toEqual([]);
   });
   it("stores a design that needs a missing word as a word request, not a bent rule", async () => {
     const designer = fakeDesigner();

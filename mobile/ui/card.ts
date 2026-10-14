@@ -11,7 +11,7 @@ import { cardIcons, type Pip } from "../../src/mvp/card-icons";
 import { sentenceSegments, sentenceText } from "../../src/mvp/form-text";
 import { MVP_RULES, type BattleUnit, type UnitCredit, type VersionCredit, type LineUnit, type MvpContent, type SummonContent, type UnitContent, type UnitForm } from "../../src/mvp/contract";
 import { summonId } from "../../src/describe";
-import type { AbilityRegistry, Stats } from "../../src/types";
+import type { AbilityRegistry, Stats, StatusRegistry } from "../../src/types";
 import { t } from "../i18n";
 import { actionable, closable, h, who } from "./dom";
 import { discoveredLine } from "./fusion";
@@ -162,9 +162,17 @@ let abilities: AbilityRegistry = {};
 export function setCardAbilities(a: AbilityRegistry): void {
   abilities = a;
 }
-/** Adds abilities the content lacks (a vote card's candidate, M2-8). */
-export function addCardAbilities(a: AbilityRegistry): void {
+/** Adds abilities the content lacks (a vote card's candidate, M2-8; a
+ * designed fusion's own, #1065). Sheets read them too (#1120: a sealed
+ * design's "Keep" and "Inherit" showed as raw ids). */
+let learned: { abilities: AbilityRegistry; statuses: StatusRegistry } = { abilities: {}, statuses: {} };
+export function addCardAbilities(a: AbilityRegistry, s: StatusRegistry = {}): void {
   abilities = { ...abilities, ...a };
+  learned = { abilities: { ...learned.abilities, ...a }, statuses: { ...learned.statuses, ...s } };
+}
+/** The content's registries with what the cards learned under them. */
+export function known(content: Pick<MvpContent, "abilities" | "statuses">): { abilities: AbilityRegistry; statuses: StatusRegistry } {
+  return { abilities: { ...learned.abilities, ...content.abilities }, statuses: { ...learned.statuses, ...content.statuses } };
 }
 
 /** Icons past these counts fold into "+" (phone) or "+n" (desktop; "+n" past
@@ -208,12 +216,14 @@ export function iconKey(form: UnitForm | undefined): HTMLElement | null {
 /** A form as one line of text: its authored text, else described from the
  * content's abilities (When → Who → Does, each Does in order). */
 export function formText(form: UnitForm, content: MvpContent): string {
-  return sentenceText(form, content.abilities, rulesLangOpt(), content.statuses);
+  const k = known(content);
+  return sentenceText(form, k.abilities, rulesLangOpt(), k.statuses);
 }
 
 /** A form as highlighted text (R2-8): its terms tinted, iconed and tappable. */
 export function formRich(form: UnitForm, content: MvpContent): Node[] {
-  return richText(sentenceSegments(form, content.abilities, rulesLangOpt(), content.statuses));
+  const k = known(content);
+  return richText(sentenceSegments(form, k.abilities, rulesLangOpt(), k.statuses));
 }
 
 /** Everything about one unit: exact numbers and the form it has now. A
@@ -274,8 +284,9 @@ export function unitSheet(
   }
   if (sleeping && c && now) {
     const left = Math.max(1, MVP_RULES.copiesToAwaken - copies);
-    const sleepPieces = sentenceSegments(now, content.abilities, rulesLangOpt(), content.statuses);
-    const awokePieces = sentenceSegments(c.forms.awoken, content.abilities, rulesLangOpt(), content.statuses);
+    const k = known(content);
+    const sleepPieces = sentenceSegments(now, k.abilities, rulesLangOpt(), k.statuses);
+    const awokePieces = sentenceSegments(c.forms.awoken, k.abilities, rulesLangOpt(), k.statuses);
     // Short enough for one line in the 1024px inspector (R2-17).
     const see = opts.candidate ? t("card.seeAwoken") : t("card.awokenIn", { n: left });
     const back = t("card.backToSleeping");
