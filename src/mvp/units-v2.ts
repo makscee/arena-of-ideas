@@ -301,8 +301,8 @@ const Squire = sleeping(trig({ on: "StatusApplied", unit: "otherAlly", status: "
 const Dynamo = sleeping(trig({ on: "Strike", striker: "holder" }), me, "Spark", { also: [{ who: [{ kind: "eventTarget" }], does: ["AgainCharged"] }, { who: me, does: ["Spend"] }] });
 const Avenger = sleeping(trig({ on: "Death", unit: "otherAlly" }), [{ kind: "frontEnemy" }], "Avenge");
 const Siphon = sleeping(intercept({ on: "Heal", unit: "enemy" }), me, "Steal");
-// no random target (#1063's rule): a comet falls on every enemy, on turns 3, 6, 9…
-const Comet = sleeping(trig({ on: "TurnStart" }), [{ kind: "allEnemies" }], "Comet", { condition: { kind: "turnEvery", n: 3 } });
+// no random target (#1063's rule): a comet falls on every enemy, on turns 4, 8, 12… (#1048: was every 3rd, too strong at 0/2)
+const Comet = sleeping(trig({ on: "TurnStart" }), [{ kind: "allEnemies" }], "Comet", { condition: { kind: "turnEvery", n: 4 } });
 const Reaper = sleeping(trig({ on: "TurnStart" }), [{ kind: "allEnemies" }], "Smite", { condition: { kind: "enemiesAlive", op: "<=", n: 2 } });
 const Heckler = sleeping(trig({ on: "Acted", unit: "enemy", front: true }), [{ kind: "eventUnit" }], "Spine");
 const WitchDoctor = sleeping(
@@ -378,7 +378,7 @@ export const ROWS_V2: V2Row[] = [
   v2("Dynamo",       "⚙️", 2, "counter",     2,  6, "Its own strikes build Charge; at 3, it strikes again.",                 Dynamo,      { also: [{ who: [{ kind: "eventTarget" }], does: ["AgainCharged"] }, { who: me, does: ["RallyCharged"] }, { who: me, does: ["Spend"] }] }),
   v2("Avenger",      "⚔️", 2, "memory",      1,  7, "Answers each fallen ally with that ally's power.",                      Avenger,     { also: [{ who: me, does: ["Rally"] }] }),
   v2("Siphon",       "🌀", 2, "redirect",    1,  7, "Every heal meant for an enemy comes to it instead.",                    Siphon,      { also: [{ who: me, does: ["Rally"] }] }),
-  v2("Comet",        "☄️", 3, "scaling",     1,  7, "Every third turn, falls on the whole enemy line, harder each time.",     Comet,       { condition: { kind: "turnEvery", n: 2 } }),
+  v2("Comet",        "☄️", 3, "scaling",     1,  7, "Every fourth turn, falls on the whole enemy line, harder each time.",     Comet,       { condition: { kind: "turnEvery", n: 3 } }),
   v2("Reaper",       "🌾", 3, "condition",   2,  7, "When the enemy line runs thin, it cuts through all of it.",             Reaper,      { condition: { kind: "enemiesAlive", op: "<=", n: 3 } }),
   v2("Heckler",      "📣", 3, "rule",        1,  7, "Punishes the front enemy every time it uses its rule.",                 Heckler,     { also: [{ who: [{ kind: "eventUnit" }], does: ["Hex"] }] }),
   v2("Witch Doctor", "🪶", 3, "counter",     1,  7, "Each Poison, Curse or Freeze on an enemy builds its Charge; at 3, it heals every ally.", WitchDoctor, { also: [{ who: [{ kind: "allAllies" }], does: ["MendGuardAllCharged"] }, { who: me, does: ["Spend"] }] }),

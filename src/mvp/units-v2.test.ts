@@ -239,7 +239,7 @@ describe("rules v2 pool", () => {
       ["Squire", ["Squire", "Paladin", "Lantern"], ["Nautilus"], /^Squire → self \(Squire\) → Strength 1$/],
       ["Dynamo", ["Dynamo"], ["Seed", "Seed"], /^Dynamo strikes again$/],
       ["Siphon", ["Siphon"], ["Leech", "Medic"], /^Siphon intercepts: the heal on Leech lands on Siphon$/],
-      ["Comet", ["Comet"], ["Seed", "Seed"], /^Comet \(on turns 3, 6, 9…\) → all enemies \(Seed, Seed\) → 3 damage$/],
+      ["Comet", ["Comet"], ["Seed", "Seed"], /^Comet \(on turns 4, 8, 12…\) → all enemies \(Seed, Seed\) → 4 damage$/],
       ["Heckler", ["Heckler"], ["Leech", "Seed"], /^Heckler → it \(Leech\) → \d+ damage$/],
       ["Broodmother", ["Broodmother"], ["Nautilus", "Seed"], /^Broodmother \(on turns 2, 4, 6…\) → self \(Spiderling\)$/],
       ["Dragon", ["Dragon"], ["Nautilus", "Seed"], /^Dragon → all enemies \(Nautilus, Seed\) → \d+ damage/],
@@ -266,7 +266,7 @@ describe("rules v2 pool", () => {
       ["Volcano", ["Volcano", "Sniper"], ["Nautilus", "Seed"], /^Volcano → .* → 1 damage, Shield 1$/],
       ["Witch Doctor", ["Hornet", "Frostling", "Witch Doctor"], ["Seed", "Seed", "Seed"], /^Witch Doctor → .*Shield 1$/],
       ["Heckler", ["Heckler"], ["Leech", "Seed"], /^Heckler → it \(Leech\) → \d+ damage, Curse 1$/],
-      ["Comet", ["Comet"], ["Seed", "Seed"], /^Comet \(on turns 2, 4, 6…\) → all enemies \(Seed, Seed\) → 2 damage$/],
+      ["Comet", ["Comet"], ["Seed", "Seed"], /^Comet \(on turns 3, 6, 9…\) → all enemies \(Seed, Seed\) → 3 damage$/],
     ];
     for (const [name, A, B, want] of cases) {
       const a = A.map((n, i) => lineUnitOf(content.units.find((u) => u.name === n)!, `a${i}`, n === name ? 3 : 1));

@@ -316,10 +316,10 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "Когда враг должен вылечиться, лечение получает Сифон, и он получает 1 Силу.",
   ],
   Comet: () => [
+    "At the start of turns 4, 8, 12…, it hits every enemy for the turn number (4 on turn 4, 8 on turn 8…).",
     "At the start of turns 3, 6, 9…, it hits every enemy for the turn number (3 on turn 3, 6 on turn 6…).",
-    "At the start of turns 2, 4, 6…, it hits every enemy for the turn number (2 on turn 2, 4 on turn 4…).",
+    "В начале 4-го, 8-го, 12-го… хода бьёт всех врагов на номер хода (4 на 4-м ходу, 8 на 8-м…).",
     "В начале 3-го, 6-го, 9-го… хода бьёт всех врагов на номер хода (3 на 3-м ходу, 6 на 6-м…).",
-    "В начале 2-го, 4-го, 6-го… хода бьёт всех врагов на номер хода (2 на 2-м ходу, 4 на 4-м…).",
   ],
   Reaper: () => [
     "At each turn start, if 2 or fewer enemies are left, it hits every enemy for its power.",
