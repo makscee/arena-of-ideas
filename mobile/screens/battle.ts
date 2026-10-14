@@ -1496,6 +1496,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     backBtn.disabled = at < 0;
     fwdBtn.disabled = finished;
     endBtn.disabled = finished;
+    // ⏭ or › pressed by Enter disables itself, and the browser takes the focus
+    // off a disabled button only on its next frame: an Enter before then
+    // pressed the dead button and the end card stayed (#1128). Continue takes it.
+    const f = document.activeElement;
+    if (finished && f instanceof HTMLButtonElement && f.disabled && controls.contains(f)) end.querySelector<HTMLElement>('[data-testid="battle-done"]')?.focus();
   }
 
   /** A beam from the source card to each target of every wave landed so
