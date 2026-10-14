@@ -976,6 +976,7 @@ export interface MyIdeasView {
 //   POST /api/v1/dev/seed-candidate { unit? } → MyIdeasView               (M2-8; the caller's idea in `simulating`: a renamed live unit, `unit`'s or a random one)
 //   POST /api/v1/dev/fake-votes              → CandidateScore[]           (M2-8; 5 fake votes on each candidate, 4 for it)
 //   GET  /api/v1/dev/candidates              → CandidateScore[]           (M2-8; every candidate, qualified ones first, best first)
+//   POST /api/v1/dev/codex-pair { a, b, state? } → ForgeView           (#1049; ARENA_CODEX=1: the pair gets stand-in designs, ready or "discovered")
 //   GET  /api/v1/stats                       → StatsView          (slice 11)
 //   GET  /api/v1/credits                     → CreditsView        (M2-9; authors, NEW, your creator number)
 //   GET  /api/v1/library                     → LibraryView        (M2-9; the units that have left)

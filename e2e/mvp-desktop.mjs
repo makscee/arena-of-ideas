@@ -26,7 +26,7 @@ let child = null;
 if (!url) {
   execFileSync("npm", ["run", "-s", "mvp:build"], { stdio: "inherit" });
   const port = await new Promise((r) => { const s = createServer().listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => r(p)); }); });
-  child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1", MVP_DB: ":memory:" }, stdio: ["ignore", "inherit", "inherit"] });
+  child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1", MVP_DB: ":memory:", ARENA_CODEX: "1" }, stdio: ["ignore", "inherit", "inherit"] });
   url = `http://127.0.0.1:${port}/arena/`;
   for (let i = 0; i < 300; i++) { // up to 60 s: m1 and m4 are shared, and under load the server starts slowly
     try { if ((await fetch(url + "api/v1/health")).ok) break; } catch {}
@@ -455,6 +455,9 @@ try {
     await page.getByTestId("fight").waitFor();
     const almost = run.line.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === 2 && run.offers.some((o) => o.unitId === u.unitId));
     const key = run.offers.findIndex((o) => o.unitId === almost.unitId) + 1;
+    // Rules v2 (#1049): the pair fuses only with a design; give it one (as the
+    // night batch would), claimed by this player.
+    await call("POST", "/dev/codex-pair", { a: run.line.find((u) => u.form === "awoken").unitId, b: almost.unitId, state: "discovered" }, fuser.id);
     // Hovering the offer shows "Awakens!" in the inspector.
     await page.getByTestId(`offer-${run.offers[key - 1].slot}`).hover();
     await page.getByTestId("inspector").getByTestId("buy-preview").waitFor();
@@ -482,11 +485,11 @@ try {
     await page.locator(".card.fusable").first().waitFor();
     await shot("fuse-pick");
     await page.getByTestId(`line-${second}`).click();
-    await page.getByTestId("inspector").getByTestId("fuse-preview").waitFor();
-    await noOverlay("fusion preview");
-    await shot("fusion-preview");
-    // Swap tries the other order in place (R2-5).
-    if (await page.getByTestId("inspector").getByTestId("preview-swap").count()) await page.getByTestId("preview-swap").click();
+    await page.getByTestId("inspector").getByTestId("forge-discovered").waitFor();
+    await noOverlay("fusion forge");
+    // The forge, never a splice preview (#1049 reopened, case 5).
+    if ((await page.getByTestId("inspector").locator('[data-testid="preview-swap"], [data-testid="fusion-recipe"]').count()) > 0) errors.push("fusion: the forge shows a splice recipe or Swap");
+    await shot("fusion-forge");
     await page.getByTestId("preview-confirm").click();
     await page.getByTestId("line").locator(".card.fused").waitFor();
     if (!/\bfuse\b/.test((await page.evaluate(() => window.__sfx ?? [])).slice(-2).join(" "))) errors.push("sound: the fuse made no sound");

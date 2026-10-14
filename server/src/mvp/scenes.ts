@@ -21,7 +21,7 @@ import { fixtureBattle } from "./scene-fixtures.js";
 import { contentOf } from "./content.js";
 import { poolBattle, poolBattleId } from "../../../src/mvp/pool-battles.js";
 import { ROWS_V2 } from "../../../src/mvp/units-v2.js";
-import { codexPair, pairState, type FusionDesign, type PairState } from "../../../src/mvp/codex.js";
+import { codexPair, pairState, sortPair, type FusionDesign, type PairState } from "../../../src/mvp/codex.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { codexForged, forgeOf } from "./codex.js";
 import { claimFixture, forgeFixture, type ClaimView, type ForgeView } from "../../../src/mvp/forge-view.js";
@@ -154,7 +154,7 @@ async function ideaAtArchetypes(rt: MvpRuntime, text = "A lantern keeper who hea
 
 /** Three designs for a forge scene's pair: the rules of other pool units'
  * Awoken forms, named and flavoured, standing in for a night batch (#1050). */
-function sceneDesigns(rt: MvpRuntime, a: UnitId, b: UnitId): FusionDesign[] {
+export function sceneDesigns(rt: MvpRuntime, a: UnitId, b: UnitId): FusionDesign[] {
   const others = rt.content.units.filter((u) => u.id !== a && u.id !== b && u.forms?.awoken);
   const pickOf = (i: number) => structuredClone(others[(i * 7) % others.length]!.forms.awoken);
   return [
@@ -201,7 +201,7 @@ const fusionMarks = (kind: "none" | "now" | "shop") => async (rt: MvpRuntime): P
   const store = (x: UnitId, y: UnitId, state: PairState) => {
     if (state === "unforged") return;
     rt.store.putCodexPair({ ...codexPair(x, y), candidates: sceneDesigns(rt, x, y), preparedAt: at });
-    if (state === "discovered") rt.store.claimCodexPair(x, y, { pick: 2, by: fixturePlayer(rt), at });
+    if (state === "discovered") rt.store.claimCodexPair(...sortPair(x, y), { pick: 2, by: fixturePlayer(rt), at });
   };
   const n = rt.rules.copiesToAwaken;
   const offer = (slot: number, unitId: UnitId) => ({ slot, unitId, tier: 1 as const, cost: rt.rules.unitCost });
