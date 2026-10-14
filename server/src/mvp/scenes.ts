@@ -239,10 +239,14 @@ const v2unit = (name: string, awoken: boolean) => (rt: MvpRuntime): SceneBuilt =
   rt.store.putBattle(record);
   return { player, entry: { screen: "battle", battleId: record.battleId } };
 };
+/** The scene group of a pool unit by its batch (20 each, in ROWS_V2 order). */
+const V2_BATCH_GROUP = ["Rules v2 (unit batch 1, #1046)", "Rules v2 (unit batch 2, #1047)", "Rules v2 (unit batch 3, #1048)"];
 const v2unitScenes = (): Scene[] =>
-  ROWS_V2.slice(8).flatMap((row) => [
-    { id: poolBattleId(row.name, false), keep: true, group: "Rules v2 (unit batch 1, #1046)", title: `${row.name} (sleeping) in a pool battle`, look: `${row.shape}, tier ${row.tier}: ${row.archetype}`, desktop: true, build: v2unit(row.name, false) },
-    { id: poolBattleId(row.name, true), keep: true, group: "Rules v2 (unit batch 1, #1046)", title: `${row.name} (awoken) in a pool battle`, look: `the awoken upgrade of one clause, see the report page`, desktop: true, build: v2unit(row.name, true) },
+  // every unit, the §4 eight too: their word fixtures (v2-<slug>) keep the
+  // designs of §4, the pool battle shows the unit as it plays now (#1048)
+  ROWS_V2.flatMap((row, i) => [
+    { id: poolBattleId(row.name, false), keep: true, group: V2_BATCH_GROUP[Math.floor(i / 20)]!, title: `${row.name} (sleeping) in a pool battle`, look: `${row.shape}, tier ${row.tier}: ${row.archetype}`, desktop: true, build: v2unit(row.name, false) },
+    { id: poolBattleId(row.name, true), keep: true, group: V2_BATCH_GROUP[Math.floor(i / 20)]!, title: `${row.name} (awoken) in a pool battle`, look: `the awoken upgrade of one clause, see the report page`, desktop: true, build: v2unit(row.name, true) },
   ]);
 
 export const SCENES: Scene[] = [

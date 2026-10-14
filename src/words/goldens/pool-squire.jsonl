@@ -1,0 +1,54 @@
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Squire","name":"Squire","hp":8,"pwr":1},{"id":"A2:Siphon","name":"Siphon","hp":10,"pwr":2}],"B":[{"id":"B1:Witch Doctor","name":"Witch Doctor","hp":9,"pwr":2},{"id":"B2:Puppeteer","name":"Puppeteer","hp":3,"pwr":0},{"id":"B3:Volcano","name":"Volcano","hp":7,"pwr":1}]}}
+{"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":2,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Squire","b":"B1:Witch Doctor","first":"B1:Witch Doctor"}
+{"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Witch Doctor","defender":"A1:Squire"}
+{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"Hurt","unit":"A1:Squire","amount":2,"hpAfter":6}
+{"id":5,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Squire","defender":"B1:Witch Doctor"}
+{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"B1:Witch Doctor","amount":1,"hpAfter":8}
+{"id":7,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":8,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":9,"turn":2,"causedBy":8,"source":{"unit":"B3:Volcano","ability":0,"when":0},"type":"Hurt","unit":"A1:Squire","amount":1,"hpAfter":5}
+{"id":10,"turn":2,"causedBy":8,"source":{"unit":"B3:Volcano","ability":0,"when":0},"type":"Hurt","unit":"A2:Siphon","amount":1,"hpAfter":9}
+{"id":11,"turn":2,"causedBy":8,"source":{"unit":"B3:Volcano","ability":1,"when":0},"type":"Hurt","unit":"B1:Witch Doctor","amount":1,"hpAfter":7}
+{"id":12,"turn":2,"causedBy":8,"source":{"unit":"B3:Volcano","ability":1,"when":0},"type":"Hurt","unit":"B2:Puppeteer","amount":1,"hpAfter":2}
+{"id":13,"turn":2,"causedBy":8,"source":{"unit":"B3:Volcano","ability":1,"when":0},"type":"Hurt","unit":"B3:Volcano","amount":1,"hpAfter":6}
+{"id":14,"turn":2,"causedBy":8,"source":"kernel","type":"Strike","striker":"B1:Witch Doctor","defender":"A1:Squire"}
+{"id":15,"turn":2,"causedBy":14,"source":"kernel","type":"Hurt","unit":"A1:Squire","amount":2,"hpAfter":3}
+{"id":16,"turn":2,"causedBy":8,"source":"kernel","type":"Redirected","by":{"unit":"B2:Puppeteer","ability":0,"when":0},"original":"Strike","from":"B1:Witch Doctor","to":"A2:Siphon"}
+{"id":17,"turn":2,"causedBy":8,"source":"kernel","type":"Strike","striker":"A1:Squire","defender":"A2:Siphon"}
+{"id":18,"turn":2,"causedBy":17,"source":"kernel","type":"Hurt","unit":"A2:Siphon","amount":1,"hpAfter":8}
+{"id":19,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":20,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":21,"turn":3,"causedBy":20,"source":"kernel","type":"Strike","striker":"B1:Witch Doctor","defender":"A1:Squire"}
+{"id":22,"turn":3,"causedBy":21,"source":"kernel","type":"Hurt","unit":"A1:Squire","amount":2,"hpAfter":1}
+{"id":23,"turn":3,"causedBy":20,"source":"kernel","type":"Strike","striker":"A1:Squire","defender":"B1:Witch Doctor"}
+{"id":24,"turn":3,"causedBy":23,"source":"kernel","type":"Hurt","unit":"B1:Witch Doctor","amount":1,"hpAfter":6}
+{"id":25,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":26,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":27,"turn":4,"causedBy":26,"source":{"unit":"B3:Volcano","ability":0,"when":0},"type":"Hurt","unit":"A1:Squire","amount":1,"hpAfter":0}
+{"id":28,"turn":4,"causedBy":27,"source":"kernel","type":"Death","unit":"A1:Squire"}
+{"id":29,"turn":4,"causedBy":26,"source":{"unit":"B3:Volcano","ability":0,"when":0},"type":"Hurt","unit":"A2:Siphon","amount":1,"hpAfter":7}
+{"id":30,"turn":4,"causedBy":26,"source":{"unit":"B3:Volcano","ability":1,"when":0},"type":"Hurt","unit":"B1:Witch Doctor","amount":1,"hpAfter":5}
+{"id":31,"turn":4,"causedBy":26,"source":{"unit":"B3:Volcano","ability":1,"when":0},"type":"Hurt","unit":"B2:Puppeteer","amount":1,"hpAfter":1}
+{"id":32,"turn":4,"causedBy":26,"source":{"unit":"B3:Volcano","ability":1,"when":0},"type":"Hurt","unit":"B3:Volcano","amount":1,"hpAfter":5}
+{"id":33,"turn":4,"causedBy":26,"source":"kernel","type":"PairFaced","a":"A2:Siphon","b":"B1:Witch Doctor","first":"A2:Siphon"}
+{"id":34,"turn":4,"causedBy":26,"source":"kernel","type":"Redirected","by":{"unit":"B2:Puppeteer","ability":0,"when":0},"original":"Strike","from":"B1:Witch Doctor","to":"A2:Siphon"}
+{"id":35,"turn":4,"causedBy":26,"source":"kernel","type":"Strike","striker":"A2:Siphon","defender":"A2:Siphon"}
+{"id":36,"turn":4,"causedBy":35,"source":"kernel","type":"Hurt","unit":"A2:Siphon","amount":2,"hpAfter":5}
+{"id":37,"turn":4,"causedBy":26,"source":"kernel","type":"Strike","striker":"B1:Witch Doctor","defender":"A2:Siphon"}
+{"id":38,"turn":4,"causedBy":37,"source":"kernel","type":"Hurt","unit":"A2:Siphon","amount":2,"hpAfter":3}
+{"id":39,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":40,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":41,"turn":5,"causedBy":40,"source":"kernel","type":"Strike","striker":"A2:Siphon","defender":"B1:Witch Doctor"}
+{"id":42,"turn":5,"causedBy":41,"source":"kernel","type":"Hurt","unit":"B1:Witch Doctor","amount":2,"hpAfter":3}
+{"id":43,"turn":5,"causedBy":40,"source":"kernel","type":"Strike","striker":"B1:Witch Doctor","defender":"A2:Siphon"}
+{"id":44,"turn":5,"causedBy":43,"source":"kernel","type":"Hurt","unit":"A2:Siphon","amount":2,"hpAfter":1}
+{"id":45,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":46,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":47,"turn":6,"causedBy":46,"source":{"unit":"B3:Volcano","ability":0,"when":0},"type":"Hurt","unit":"A2:Siphon","amount":1,"hpAfter":0}
+{"id":48,"turn":6,"causedBy":47,"source":"kernel","type":"Death","unit":"A2:Siphon"}
+{"id":49,"turn":6,"causedBy":46,"source":{"unit":"B3:Volcano","ability":1,"when":0},"type":"Hurt","unit":"B1:Witch Doctor","amount":1,"hpAfter":2}
+{"id":50,"turn":6,"causedBy":46,"source":{"unit":"B3:Volcano","ability":1,"when":0},"type":"Hurt","unit":"B2:Puppeteer","amount":1,"hpAfter":0}
+{"id":51,"turn":6,"causedBy":50,"source":"kernel","type":"Death","unit":"B2:Puppeteer"}
+{"id":52,"turn":6,"causedBy":46,"source":{"unit":"B3:Volcano","ability":1,"when":0},"type":"Hurt","unit":"B3:Volcano","amount":1,"hpAfter":4}
+{"id":53,"turn":6,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":6}

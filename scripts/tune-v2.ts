@@ -95,7 +95,16 @@ const USES_PWR = new Set(
       return names.some((n) => JSON.stringify(abilities[n] ?? null).includes('{"kind":"stat","stat":"pwr","of":"holder"}'));
     }))(contentOf(ROWS_V2).abilities).map((r) => r.name),
 );
-const pwrMin = (name: string): number => (USES_PWR.has(name) ? Math.max(1, PWR.min) : PWR.min);
+/** A rule that reads half its power (Dragon's Scorch, Martyr's sleeping
+ * Strength, #1048) does nothing at PWR 1: its floor is 2. */
+const USES_HALF_PWR = new Set(
+  ((abilities) =>
+    ROWS_V2.filter((r) => {
+      const names = [r.forms.sleeping, r.forms.awoken].flatMap((f) => [...f.does, ...(f.also ?? []).flatMap((x) => x.does)]).flatMap((d) => d.split(" + "));
+      return names.some((n) => JSON.stringify(abilities[n] ?? null).includes('{"kind":"half","of":{"kind":"stat","stat":"pwr","of":"holder"}}'));
+    }))(contentOf(ROWS_V2).abilities).map((r) => r.name),
+);
+const pwrMin = (name: string): number => (USES_HALF_PWR.has(name) ? Math.max(2, PWR.min) : USES_PWR.has(name) ? Math.max(1, PWR.min) : PWR.min);
 /** Units that strike: PWR moves for them. A unit on the power floor strikes too, even if an earlier tune left it at 0 (#1063: Sniper, Medic, Archmage). */
 const STRIKES = new Set(ROWS_V2.filter((r) => r.pwr > 0 || USES_PWR.has(r.name)).map((r) => r.name));
 let rows: V2Row[] = ROWS_V2.map((r) => {

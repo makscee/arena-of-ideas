@@ -8,7 +8,7 @@ import { ROWS_V2 } from "./units-v2.js";
 type TuneUnit = { name: string; pwr: number; hp: number; awoken: { pwr: number; hp: number }; fieldScore: number; awokenMargin: number; inBand: boolean };
 const tune = JSON.parse(readFileSync(new URL("../../docs/mvp/tune-v2.json", import.meta.url), "utf8")) as { median: number; band: number; healthy: boolean; units: TuneUnit[] };
 
-describe("rules v2 tune (batches 1 and 2, #1047: tuned all together)", () => {
+describe("rules v2 tune (batches 1 to 3, #1048: tuned all together)", () => {
   it("measured the numbers the pool plays, every unit of it", () => {
     expect(tune.units.map((u) => u.name).sort()).toEqual(ROWS_V2.map((r) => r.name).sort());
     for (const u of tune.units) {
@@ -26,14 +26,17 @@ describe("rules v2 tune (batches 1 and 2, #1047: tuned all together)", () => {
   // Sniper 69% on its power floor of 1) after the rule-amount pass (the
   // Butterfly 2/3). Maks's ruling on the card: merge with the numbers stated.
   // Pinned to what that tune measured; the next tune that clears the bar
-  // puts the 16 and the 33–67% check back.
-  it("the measured gate (#1063): 13 and 15 of 20 in band, Sniper the one unit over 67%", () => {
+  // puts the 16 and the 33–67% check back. Batch 3 (#1048): the first tune
+  // kept 40/60, then Comet, Puppeteer and Volcano's amounts were lowered and
+  // the second tune measured 15, 15 and 19 of 20 (Sniper 74% still alone
+  // over 67%); merged with the numbers stated, as ruled.
+  it("the measured gate (#1048): 15, 15 and 19 of 20 in band, Sniper the one unit over 67%", () => {
     const counts = [];
     for (let b = 0; b < ROWS_V2.length; b += 20) {
       const batch = new Set(ROWS_V2.slice(b, b + 20).map((r) => r.name));
       counts.push(tune.units.filter((u) => batch.has(u.name) && u.inBand).length);
     }
-    expect(counts).toEqual([13, 15]);
+    expect(counts).toEqual([15, 15, 19]);
     expect(tune.units.filter((u) => u.fieldScore < 0.33 || u.fieldScore > 0.67).map((u) => u.name)).toEqual(["Sniper"]);
   });
 });

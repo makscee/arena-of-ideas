@@ -1,4 +1,4 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:War Horn","name":"War Horn","hp":19,"pwr":8},{"id":"A2:Fortune Teller","name":"Fortune Teller","hp":2,"pwr":0}],"B":[{"id":"B1:Archmage","name":"Archmage","hp":2,"pwr":1},{"id":"B2:Priest","name":"Priest","hp":4,"pwr":1},{"id":"B3:Frost Witch","name":"Frost Witch","hp":6,"pwr":1}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:War Horn","name":"War Horn","hp":17,"pwr":8},{"id":"A2:Fortune Teller","name":"Fortune Teller","hp":4,"pwr":0}],"B":[{"id":"B1:Archmage","name":"Archmage","hp":2,"pwr":1},{"id":"B2:Priest","name":"Priest","hp":5,"pwr":1},{"id":"B3:Frost Witch","name":"Frost Witch","hp":6,"pwr":1}]}}
 {"id":1,"turn":0,"causedBy":0,"source":{"unit":"A2:Fortune Teller","ability":0,"when":0},"type":"StatusApplied","unit":"A1:War Horn","status":"Shield","stacks":1,"total":1}
 {"id":2,"turn":0,"causedBy":0,"source":{"unit":"A2:Fortune Teller","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Fortune Teller","status":"Shield","stacks":1,"total":1}
 {"id":3,"turn":0,"causedBy":0,"source":{"unit":"B2:Priest","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Archmage","status":"Blessing","stacks":1,"total":1}
@@ -11,7 +11,7 @@
 {"id":10,"turn":1,"causedBy":4,"source":{"unit":"A1:War Horn","ability":1,"when":0},"type":"StatusApplied","unit":"A2:Fortune Teller","status":"Shield","stacks":1,"total":2}
 {"id":11,"turn":1,"causedBy":4,"source":"kernel","type":"PairFaced","a":"A1:War Horn","b":"B1:Archmage","first":"B1:Archmage"}
 {"id":12,"turn":1,"causedBy":4,"source":"kernel","type":"Strike","striker":"B1:Archmage","defender":"A1:War Horn"}
-{"id":13,"turn":1,"causedBy":12,"source":"kernel","type":"Hurt","unit":"A1:War Horn","amount":0,"absorbed":1,"hpAfter":19}
+{"id":13,"turn":1,"causedBy":12,"source":"kernel","type":"Hurt","unit":"A1:War Horn","amount":0,"absorbed":1,"hpAfter":17}
 {"id":14,"turn":1,"causedBy":13,"source":{"unit":"A1:War Horn","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:War Horn","status":"Shield","stacks":1,"remaining":1}
 {"id":15,"turn":1,"causedBy":4,"source":"kernel","type":"Strike","striker":"A1:War Horn","defender":"B1:Archmage"}
 {"id":16,"turn":1,"causedBy":15,"source":"kernel","type":"Hurt","unit":"B1:Archmage","amount":9,"hpAfter":-7}
@@ -30,7 +30,7 @@
 {"id":29,"turn":2,"causedBy":22,"source":{"unit":"B3:Frost Witch","ability":0,"when":0},"type":"StatusApplied","unit":"A1:War Horn","status":"Freeze","stacks":1,"total":1}
 {"id":30,"turn":2,"causedBy":22,"source":{"unit":"B3:Frost Witch","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Fortune Teller","status":"Freeze","stacks":1,"total":1}
 {"id":31,"turn":2,"causedBy":22,"source":"kernel","type":"Strike","striker":"B1:Archmage","defender":"A1:War Horn"}
-{"id":32,"turn":2,"causedBy":31,"source":"kernel","type":"Hurt","unit":"A1:War Horn","amount":0,"absorbed":1,"hpAfter":19}
+{"id":32,"turn":2,"causedBy":31,"source":"kernel","type":"Hurt","unit":"A1:War Horn","amount":0,"absorbed":1,"hpAfter":17}
 {"id":33,"turn":2,"causedBy":32,"source":{"unit":"A1:War Horn","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:War Horn","status":"Shield","stacks":1,"remaining":1}
 {"id":34,"turn":2,"causedBy":22,"source":{"unit":"A1:War Horn","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A1:War Horn","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"A1:War Horn"}
 {"id":35,"turn":2,"causedBy":34,"source":{"unit":"A1:War Horn","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:War Horn","status":"Freeze","stacks":1,"remaining":0}
@@ -44,7 +44,7 @@
 {"id":43,"turn":3,"causedBy":38,"source":{"unit":"A1:War Horn","ability":1,"when":0},"type":"StatusApplied","unit":"A1:War Horn","status":"Shield","stacks":1,"total":2}
 {"id":44,"turn":3,"causedBy":38,"source":{"unit":"A1:War Horn","ability":1,"when":0},"type":"StatusApplied","unit":"A2:Fortune Teller","status":"Shield","stacks":1,"total":4}
 {"id":45,"turn":3,"causedBy":38,"source":"kernel","type":"Strike","striker":"B1:Archmage","defender":"A1:War Horn"}
-{"id":46,"turn":3,"causedBy":45,"source":"kernel","type":"Hurt","unit":"A1:War Horn","amount":0,"absorbed":1,"hpAfter":19}
+{"id":46,"turn":3,"causedBy":45,"source":"kernel","type":"Hurt","unit":"A1:War Horn","amount":0,"absorbed":1,"hpAfter":17}
 {"id":47,"turn":3,"causedBy":46,"source":{"unit":"A1:War Horn","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:War Horn","status":"Shield","stacks":1,"remaining":1}
 {"id":48,"turn":3,"causedBy":38,"source":"kernel","type":"Strike","striker":"A1:War Horn","defender":"B1:Archmage"}
 {"id":49,"turn":3,"causedBy":48,"source":"kernel","type":"Hurt","unit":"B1:Archmage","amount":11,"hpAfter":-10}
@@ -59,7 +59,7 @@
 {"id":58,"turn":4,"causedBy":52,"source":{"unit":"A1:War Horn","ability":1,"when":0},"type":"StatusApplied","unit":"A2:Fortune Teller","status":"Shield","stacks":1,"total":5}
 {"id":59,"turn":4,"causedBy":52,"source":"kernel","type":"PairFaced","a":"A1:War Horn","b":"B2:Priest","first":"A1:War Horn"}
 {"id":60,"turn":4,"causedBy":52,"source":"kernel","type":"Strike","striker":"A1:War Horn","defender":"B2:Priest"}
-{"id":61,"turn":4,"causedBy":60,"source":"kernel","type":"Hurt","unit":"B2:Priest","amount":12,"hpAfter":-8}
+{"id":61,"turn":4,"causedBy":60,"source":"kernel","type":"Hurt","unit":"B2:Priest","amount":12,"hpAfter":-7}
 {"id":62,"turn":4,"causedBy":61,"source":"kernel","type":"Death","unit":"B2:Priest"}
 {"id":63,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":64,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
@@ -71,7 +71,7 @@
 {"id":70,"turn":5,"causedBy":64,"source":{"unit":"A1:War Horn","ability":1,"when":0},"type":"StatusApplied","unit":"A2:Fortune Teller","status":"Shield","stacks":1,"total":6}
 {"id":71,"turn":5,"causedBy":64,"source":"kernel","type":"PairFaced","a":"A1:War Horn","b":"B3:Frost Witch","first":"B3:Frost Witch"}
 {"id":72,"turn":5,"causedBy":64,"source":"kernel","type":"Strike","striker":"B3:Frost Witch","defender":"A1:War Horn"}
-{"id":73,"turn":5,"causedBy":72,"source":"kernel","type":"Hurt","unit":"A1:War Horn","amount":0,"absorbed":1,"hpAfter":19}
+{"id":73,"turn":5,"causedBy":72,"source":"kernel","type":"Hurt","unit":"A1:War Horn","amount":0,"absorbed":1,"hpAfter":17}
 {"id":74,"turn":5,"causedBy":73,"source":{"unit":"A1:War Horn","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:War Horn","status":"Shield","stacks":1,"remaining":2}
 {"id":75,"turn":5,"causedBy":64,"source":"kernel","type":"Strike","striker":"A1:War Horn","defender":"B3:Frost Witch"}
 {"id":76,"turn":5,"causedBy":75,"source":"kernel","type":"Hurt","unit":"B3:Frost Witch","amount":13,"hpAfter":-7}

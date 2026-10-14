@@ -1,0 +1,63 @@
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Comet","name":"Comet","hp":4,"pwr":0},{"id":"A2:Witch Doctor","name":"Witch Doctor","hp":9,"pwr":2}],"B":[{"id":"B1:Puppeteer","name":"Puppeteer","hp":3,"pwr":0},{"id":"B2:Mirror","name":"Mirror","hp":7,"pwr":4},{"id":"B3:Gambler","name":"Gambler","hp":9,"pwr":2}]}}
+{"id":1,"turn":0,"causedBy":0,"source":{"unit":"B2:Mirror","ability":0,"when":0},"type":"RuleMod","unit":"B2:Mirror","op":"copyRule","other":"A1:Comet"}
+{"id":2,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":3,"turn":1,"causedBy":2,"source":"kernel","type":"PairFaced","a":"A1:Comet","b":"B1:Puppeteer","first":"B1:Puppeteer"}
+{"id":4,"turn":1,"causedBy":2,"source":"kernel","type":"Strike","striker":"B1:Puppeteer","defender":"A1:Comet"}
+{"id":5,"turn":1,"causedBy":4,"source":"kernel","type":"Hurt","unit":"A1:Comet","amount":0,"hpAfter":4}
+{"id":6,"turn":1,"causedBy":2,"source":"kernel","type":"Strike","striker":"A1:Comet","defender":"B1:Puppeteer"}
+{"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"Hurt","unit":"B1:Puppeteer","amount":0,"hpAfter":3}
+{"id":8,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":9,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":10,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"B1:Puppeteer","defender":"A1:Comet"}
+{"id":11,"turn":2,"causedBy":10,"source":"kernel","type":"Hurt","unit":"A1:Comet","amount":0,"hpAfter":4}
+{"id":12,"turn":2,"causedBy":9,"source":"kernel","type":"Redirected","by":{"unit":"B1:Puppeteer","ability":0,"when":0},"original":"Strike","from":"B1:Puppeteer","to":"A2:Witch Doctor"}
+{"id":13,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"A1:Comet","defender":"A2:Witch Doctor"}
+{"id":14,"turn":2,"causedBy":13,"source":"kernel","type":"Hurt","unit":"A2:Witch Doctor","amount":0,"hpAfter":9}
+{"id":15,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":16,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":17,"turn":3,"causedBy":16,"source":"kernel","type":"Strike","striker":"B1:Puppeteer","defender":"A1:Comet"}
+{"id":18,"turn":3,"causedBy":17,"source":"kernel","type":"Hurt","unit":"A1:Comet","amount":0,"hpAfter":4}
+{"id":19,"turn":3,"causedBy":16,"source":"kernel","type":"Strike","striker":"A1:Comet","defender":"B1:Puppeteer"}
+{"id":20,"turn":3,"causedBy":19,"source":"kernel","type":"Hurt","unit":"B1:Puppeteer","amount":0,"hpAfter":3}
+{"id":21,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":22,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":23,"turn":4,"causedBy":22,"source":{"unit":"A1:Comet","ability":0,"when":0},"type":"Hurt","unit":"B1:Puppeteer","amount":4,"hpAfter":-1}
+{"id":24,"turn":4,"causedBy":23,"source":"kernel","type":"Death","unit":"B1:Puppeteer"}
+{"id":25,"turn":4,"causedBy":22,"source":{"unit":"A1:Comet","ability":0,"when":0},"type":"Hurt","unit":"B2:Mirror","amount":4,"hpAfter":3}
+{"id":26,"turn":4,"causedBy":22,"source":{"unit":"A1:Comet","ability":0,"when":0},"type":"Hurt","unit":"B3:Gambler","amount":4,"hpAfter":5}
+{"id":27,"turn":4,"causedBy":22,"source":{"unit":"B2:Mirror","ability":0,"when":0},"type":"Hurt","unit":"A1:Comet","amount":4,"hpAfter":0}
+{"id":28,"turn":4,"causedBy":27,"source":"kernel","type":"Death","unit":"A1:Comet"}
+{"id":29,"turn":4,"causedBy":22,"source":{"unit":"B2:Mirror","ability":0,"when":0},"type":"Hurt","unit":"A2:Witch Doctor","amount":4,"hpAfter":5}
+{"id":30,"turn":4,"causedBy":22,"source":"kernel","type":"PairFaced","a":"A2:Witch Doctor","b":"B2:Mirror","first":"A2:Witch Doctor"}
+{"id":31,"turn":4,"causedBy":22,"source":"kernel","type":"Strike","striker":"A2:Witch Doctor","defender":"B2:Mirror"}
+{"id":32,"turn":4,"causedBy":31,"source":"kernel","type":"Hurt","unit":"B2:Mirror","amount":2,"hpAfter":1}
+{"id":33,"turn":4,"causedBy":22,"source":"kernel","type":"Strike","striker":"B2:Mirror","defender":"A2:Witch Doctor"}
+{"id":34,"turn":4,"causedBy":33,"source":"kernel","type":"Hurt","unit":"A2:Witch Doctor","amount":4,"hpAfter":1}
+{"id":35,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":36,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":37,"turn":5,"causedBy":36,"source":"kernel","type":"Strike","striker":"A2:Witch Doctor","defender":"B2:Mirror"}
+{"id":38,"turn":5,"causedBy":37,"source":"kernel","type":"Hurt","unit":"B2:Mirror","amount":2,"hpAfter":-1}
+{"id":39,"turn":5,"causedBy":38,"source":"kernel","type":"Death","unit":"B2:Mirror"}
+{"id":40,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":41,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":42,"turn":6,"causedBy":41,"source":"kernel","type":"PairFaced","a":"A2:Witch Doctor","b":"B3:Gambler","first":"B3:Gambler"}
+{"id":43,"turn":6,"causedBy":41,"source":"kernel","type":"Flipped","unit":"B3:Gambler","by":{"unit":"B3:Gambler","ability":0,"when":0},"heads":false}
+{"id":44,"turn":6,"causedBy":41,"source":"kernel","type":"Strike","striker":"B3:Gambler","defender":"A2:Witch Doctor","amount":0}
+{"id":45,"turn":6,"causedBy":44,"source":"kernel","type":"Hurt","unit":"A2:Witch Doctor","amount":0,"hpAfter":1}
+{"id":46,"turn":6,"causedBy":41,"source":"kernel","type":"Strike","striker":"A2:Witch Doctor","defender":"B3:Gambler"}
+{"id":47,"turn":6,"causedBy":46,"source":"kernel","type":"Hurt","unit":"B3:Gambler","amount":2,"hpAfter":3}
+{"id":48,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":49,"turn":7,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":50,"turn":7,"causedBy":49,"source":"kernel","type":"Flipped","unit":"B3:Gambler","by":{"unit":"B3:Gambler","ability":0,"when":0},"heads":false}
+{"id":51,"turn":7,"causedBy":49,"source":"kernel","type":"Strike","striker":"B3:Gambler","defender":"A2:Witch Doctor","amount":0}
+{"id":52,"turn":7,"causedBy":51,"source":"kernel","type":"Hurt","unit":"A2:Witch Doctor","amount":0,"hpAfter":1}
+{"id":53,"turn":7,"causedBy":49,"source":"kernel","type":"Strike","striker":"A2:Witch Doctor","defender":"B3:Gambler"}
+{"id":54,"turn":7,"causedBy":53,"source":"kernel","type":"Hurt","unit":"B3:Gambler","amount":2,"hpAfter":1}
+{"id":55,"turn":7,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":56,"turn":8,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":57,"turn":8,"causedBy":56,"source":"kernel","type":"Flipped","unit":"B3:Gambler","by":{"unit":"B3:Gambler","ability":0,"when":0},"heads":true}
+{"id":58,"turn":8,"causedBy":56,"source":"kernel","type":"Strike","striker":"B3:Gambler","defender":"A2:Witch Doctor","amount":4}
+{"id":59,"turn":8,"causedBy":58,"source":"kernel","type":"Hurt","unit":"A2:Witch Doctor","amount":4,"hpAfter":-3}
+{"id":60,"turn":8,"causedBy":59,"source":"kernel","type":"Death","unit":"A2:Witch Doctor"}
+{"id":61,"turn":8,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":62,"turn":8,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":8}

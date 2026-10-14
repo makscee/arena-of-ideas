@@ -176,7 +176,8 @@ export function formProblems(u: UnitContent, content: Pick<MvpContent, "abilitie
     out.push(`${u.id}: the awoken form must keep the sleeping form's When`);
   }
   // (a rules v2 unit may instead upgrade the statuses it starts with)
-  if (same(sleeping.who, awoken.who) && same(sleeping.does, awoken.does) && !awoken.also?.length && same(sleeping.statuses, awoken.statuses)) {
+  // (#1048: or ease its condition alone: Reaper from 3 enemies left, not 2)
+  if (same(sleeping.who, awoken.who) && same(sleeping.does, awoken.does) && !awoken.also?.length && same(sleeping.statuses, awoken.statuses) && same(sleeping.condition, awoken.condition)) {
     out.push(`${u.id}: the awoken form must upgrade the Who and/or the Does`);
   }
   for (const [key, form] of [["sleeping", sleeping], ["awoken", awoken]] as const) {

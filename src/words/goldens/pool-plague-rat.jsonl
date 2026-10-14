@@ -1,0 +1,32 @@
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Plague Rat","name":"Plague Rat","hp":4,"pwr":1},{"id":"A2:Daredevil","name":"Daredevil","hp":9,"pwr":3}],"B":[{"id":"B1:Dynamo","name":"Dynamo","hp":10,"pwr":3},{"id":"B2:Reaper","name":"Reaper","hp":8,"pwr":2},{"id":"B3:Witch Doctor","name":"Witch Doctor","hp":9,"pwr":2}]}}
+{"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":2,"turn":1,"causedBy":1,"source":{"unit":"B2:Reaper","ability":0,"when":0},"type":"Hurt","unit":"A1:Plague Rat","amount":2,"hpAfter":2}
+{"id":3,"turn":1,"causedBy":1,"source":{"unit":"B2:Reaper","ability":0,"when":0},"type":"Hurt","unit":"A2:Daredevil","amount":2,"hpAfter":7}
+{"id":4,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Plague Rat","b":"B1:Dynamo","first":"B1:Dynamo"}
+{"id":5,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Dynamo","defender":"A1:Plague Rat"}
+{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"A1:Plague Rat","amount":3,"hpAfter":-1}
+{"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"Death","unit":"A1:Plague Rat"}
+{"id":8,"turn":1,"causedBy":5,"source":{"unit":"B1:Dynamo","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Dynamo","status":"Charge","stacks":1,"total":1}
+{"id":9,"turn":1,"causedBy":7,"source":{"unit":"A1:Plague Rat","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Dynamo","status":"Poison","stacks":1,"total":1}
+{"id":10,"turn":1,"causedBy":7,"source":{"unit":"A1:Plague Rat","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Reaper","status":"Poison","stacks":1,"total":1}
+{"id":11,"turn":1,"causedBy":7,"source":{"unit":"A1:Plague Rat","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Witch Doctor","status":"Poison","stacks":1,"total":1}
+{"id":12,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":13,"turn":1,"causedBy":12,"source":{"unit":"B1:Dynamo","status":"Poison","ability":0,"when":0},"type":"Hurt","unit":"B1:Dynamo","amount":1,"hpAfter":9}
+{"id":14,"turn":1,"causedBy":12,"source":{"unit":"B1:Dynamo","status":"Poison","ability":0,"when":0},"type":"StatusRemoved","unit":"B1:Dynamo","status":"Poison","stacks":1,"remaining":0}
+{"id":15,"turn":1,"causedBy":12,"source":{"unit":"B2:Reaper","status":"Poison","ability":0,"when":0},"type":"Hurt","unit":"B2:Reaper","amount":1,"hpAfter":7}
+{"id":16,"turn":1,"causedBy":12,"source":{"unit":"B2:Reaper","status":"Poison","ability":0,"when":0},"type":"StatusRemoved","unit":"B2:Reaper","status":"Poison","stacks":1,"remaining":0}
+{"id":17,"turn":1,"causedBy":12,"source":{"unit":"B3:Witch Doctor","status":"Poison","ability":0,"when":0},"type":"Hurt","unit":"B3:Witch Doctor","amount":1,"hpAfter":8}
+{"id":18,"turn":1,"causedBy":12,"source":{"unit":"B3:Witch Doctor","status":"Poison","ability":0,"when":0},"type":"StatusRemoved","unit":"B3:Witch Doctor","status":"Poison","stacks":1,"remaining":0}
+{"id":19,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":20,"turn":2,"causedBy":19,"source":{"unit":"B2:Reaper","ability":0,"when":0},"type":"Hurt","unit":"A2:Daredevil","amount":2,"hpAfter":5}
+{"id":21,"turn":2,"causedBy":19,"source":"kernel","type":"PairFaced","a":"A2:Daredevil","b":"B1:Dynamo","first":"A2:Daredevil"}
+{"id":22,"turn":2,"causedBy":19,"source":"kernel","type":"Strike","striker":"A2:Daredevil","defender":"B1:Dynamo"}
+{"id":23,"turn":2,"causedBy":22,"source":"kernel","type":"Hurt","unit":"B1:Dynamo","amount":3,"hpAfter":6}
+{"id":24,"turn":2,"causedBy":19,"source":"kernel","type":"Strike","striker":"B1:Dynamo","defender":"A2:Daredevil"}
+{"id":25,"turn":2,"causedBy":24,"source":"kernel","type":"Hurt","unit":"A2:Daredevil","amount":3,"hpAfter":2}
+{"id":26,"turn":2,"causedBy":24,"source":{"unit":"B1:Dynamo","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Dynamo","status":"Charge","stacks":1,"total":2}
+{"id":27,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":28,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":29,"turn":3,"causedBy":28,"source":{"unit":"B2:Reaper","ability":0,"when":0},"type":"Hurt","unit":"A2:Daredevil","amount":2,"hpAfter":0}
+{"id":30,"turn":3,"causedBy":29,"source":"kernel","type":"Death","unit":"A2:Daredevil"}
+{"id":31,"turn":3,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":3}
