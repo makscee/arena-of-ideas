@@ -1,80 +1,84 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Hexer","name":"Hexer","hp":11,"pwr":3},{"id":"A2:Gravecaller","name":"Gravecaller","hp":9,"pwr":2}],"B":[{"id":"B1:Berserker","name":"Berserker","hp":8,"pwr":2},{"id":"B2:Frost Witch","name":"Frost Witch","hp":7,"pwr":1},{"id":"B3:Mirror","name":"Mirror","hp":8,"pwr":4}]}}
-{"id":1,"turn":0,"causedBy":0,"source":{"unit":"B3:Mirror","ability":0,"when":0},"type":"RuleMod","unit":"B3:Mirror","op":"copyRule","other":"A1:Hexer"}
-{"id":2,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":3,"turn":1,"causedBy":2,"source":"kernel","type":"PairFaced","a":"A1:Hexer","b":"B1:Berserker","first":"B1:Berserker"}
-{"id":4,"turn":1,"causedBy":2,"source":"kernel","type":"Strike","striker":"B1:Berserker","defender":"A1:Hexer","amount":2}
-{"id":5,"turn":1,"causedBy":4,"source":"kernel","type":"Hurt","unit":"A1:Hexer","amount":2,"hpAfter":9}
-{"id":6,"turn":1,"causedBy":2,"source":"kernel","type":"Strike","striker":"A1:Hexer","defender":"B1:Berserker"}
-{"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"Hurt","unit":"B1:Berserker","amount":3,"hpAfter":5}
-{"id":8,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":9,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":10,"turn":2,"causedBy":9,"source":{"unit":"A1:Hexer","ability":0,"when":0},"type":"Silenced","unit":"B3:Mirror"}
-{"id":11,"turn":2,"causedBy":9,"source":{"unit":"A1:Hexer","ability":0,"when":0},"type":"Silenced","unit":"B1:Berserker"}
-{"id":12,"turn":2,"causedBy":9,"source":{"unit":"B2:Frost Witch","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Hexer","status":"Freeze","stacks":1,"total":1}
-{"id":13,"turn":2,"causedBy":9,"source":{"unit":"B2:Frost Witch","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Gravecaller","status":"Freeze","stacks":1,"total":1}
-{"id":14,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"B1:Berserker","defender":"A1:Hexer"}
-{"id":15,"turn":2,"causedBy":14,"source":"kernel","type":"Hurt","unit":"A1:Hexer","amount":2,"hpAfter":7}
-{"id":16,"turn":2,"causedBy":9,"source":{"unit":"A1:Hexer","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A1:Hexer","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"A1:Hexer"}
-{"id":17,"turn":2,"causedBy":16,"source":{"unit":"A1:Hexer","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:Hexer","status":"Freeze","stacks":1,"remaining":0}
-{"id":18,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":19,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":20,"turn":3,"causedBy":19,"source":"kernel","type":"Strike","striker":"B1:Berserker","defender":"A1:Hexer"}
-{"id":21,"turn":3,"causedBy":20,"source":"kernel","type":"Hurt","unit":"A1:Hexer","amount":2,"hpAfter":5}
-{"id":22,"turn":3,"causedBy":19,"source":"kernel","type":"Strike","striker":"A1:Hexer","defender":"B1:Berserker"}
-{"id":23,"turn":3,"causedBy":22,"source":"kernel","type":"Hurt","unit":"B1:Berserker","amount":3,"hpAfter":2}
-{"id":24,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":25,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":26,"turn":4,"causedBy":25,"source":"kernel","type":"Strike","striker":"B1:Berserker","defender":"A1:Hexer"}
-{"id":27,"turn":4,"causedBy":26,"source":"kernel","type":"Hurt","unit":"A1:Hexer","amount":2,"hpAfter":3}
-{"id":28,"turn":4,"causedBy":25,"source":"kernel","type":"Strike","striker":"A1:Hexer","defender":"B1:Berserker"}
-{"id":29,"turn":4,"causedBy":28,"source":"kernel","type":"Hurt","unit":"B1:Berserker","amount":3,"hpAfter":-1}
-{"id":30,"turn":4,"causedBy":29,"source":"kernel","type":"Death","unit":"B1:Berserker"}
-{"id":31,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":32,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":33,"turn":5,"causedBy":32,"source":"kernel","type":"PairFaced","a":"A1:Hexer","b":"B2:Frost Witch","first":"A1:Hexer"}
-{"id":34,"turn":5,"causedBy":32,"source":"kernel","type":"Strike","striker":"A1:Hexer","defender":"B2:Frost Witch"}
-{"id":35,"turn":5,"causedBy":34,"source":"kernel","type":"Hurt","unit":"B2:Frost Witch","amount":3,"hpAfter":4}
-{"id":36,"turn":5,"causedBy":32,"source":"kernel","type":"Strike","striker":"B2:Frost Witch","defender":"A1:Hexer"}
-{"id":37,"turn":5,"causedBy":36,"source":"kernel","type":"Hurt","unit":"A1:Hexer","amount":1,"hpAfter":2}
-{"id":38,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":39,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":40,"turn":6,"causedBy":39,"source":"kernel","type":"Strike","striker":"A1:Hexer","defender":"B2:Frost Witch"}
-{"id":41,"turn":6,"causedBy":40,"source":"kernel","type":"Hurt","unit":"B2:Frost Witch","amount":3,"hpAfter":1}
-{"id":42,"turn":6,"causedBy":39,"source":"kernel","type":"Strike","striker":"B2:Frost Witch","defender":"A1:Hexer"}
-{"id":43,"turn":6,"causedBy":42,"source":"kernel","type":"Hurt","unit":"A1:Hexer","amount":1,"hpAfter":1}
-{"id":44,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":45,"turn":7,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":46,"turn":7,"causedBy":45,"source":"kernel","type":"Strike","striker":"A1:Hexer","defender":"B2:Frost Witch"}
-{"id":47,"turn":7,"causedBy":46,"source":"kernel","type":"Hurt","unit":"B2:Frost Witch","amount":3,"hpAfter":-2}
-{"id":48,"turn":7,"causedBy":47,"source":"kernel","type":"Death","unit":"B2:Frost Witch"}
-{"id":49,"turn":7,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":50,"turn":8,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":51,"turn":8,"causedBy":50,"source":"kernel","type":"PairFaced","a":"A1:Hexer","b":"B3:Mirror","first":"B3:Mirror"}
-{"id":52,"turn":8,"causedBy":50,"source":"kernel","type":"Strike","striker":"B3:Mirror","defender":"A1:Hexer"}
-{"id":53,"turn":8,"causedBy":52,"source":"kernel","type":"Hurt","unit":"A1:Hexer","amount":4,"hpAfter":-3}
-{"id":54,"turn":8,"causedBy":53,"source":"kernel","type":"Death","unit":"A1:Hexer"}
-{"id":55,"turn":8,"causedBy":54,"source":{"unit":"A2:Gravecaller","ability":0,"when":0},"type":"Summon","unit":"A1:Hexer","name":"Hexer","side":"A","hp":11,"pwr":3,"resurrected":true,"atHp":1,"slot":0}
-{"id":56,"turn":8,"causedBy":50,"source":"kernel","type":"Strike","striker":"A1:Hexer","defender":"B3:Mirror"}
-{"id":57,"turn":8,"causedBy":56,"source":"kernel","type":"Hurt","unit":"B3:Mirror","amount":3,"hpAfter":5}
-{"id":58,"turn":8,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":59,"turn":9,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":60,"turn":9,"causedBy":59,"source":"kernel","type":"Strike","striker":"B3:Mirror","defender":"A1:Hexer"}
-{"id":61,"turn":9,"causedBy":60,"source":"kernel","type":"Hurt","unit":"A1:Hexer","amount":4,"hpAfter":-3}
-{"id":62,"turn":9,"causedBy":61,"source":"kernel","type":"Death","unit":"A1:Hexer"}
-{"id":63,"turn":9,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":64,"turn":10,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":65,"turn":10,"causedBy":64,"source":"kernel","type":"PairFaced","a":"A2:Gravecaller","b":"B3:Mirror","first":"B3:Mirror"}
-{"id":66,"turn":10,"causedBy":64,"source":"kernel","type":"Strike","striker":"B3:Mirror","defender":"A2:Gravecaller"}
-{"id":67,"turn":10,"causedBy":66,"source":"kernel","type":"Hurt","unit":"A2:Gravecaller","amount":4,"hpAfter":5}
-{"id":68,"turn":10,"causedBy":64,"source":{"unit":"A2:Gravecaller","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A2:Gravecaller","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"A2:Gravecaller"}
-{"id":69,"turn":10,"causedBy":68,"source":{"unit":"A2:Gravecaller","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Gravecaller","status":"Freeze","stacks":1,"remaining":0}
-{"id":70,"turn":10,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":71,"turn":10,"causedBy":70,"source":"kernel","type":"Fatigue","amount":1}
-{"id":72,"turn":10,"causedBy":71,"source":"kernel","type":"Hurt","unit":"A2:Gravecaller","amount":1,"hpAfter":4}
-{"id":73,"turn":10,"causedBy":71,"source":"kernel","type":"Hurt","unit":"B3:Mirror","amount":1,"hpAfter":4}
-{"id":74,"turn":11,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":75,"turn":11,"causedBy":74,"source":"kernel","type":"Strike","striker":"B3:Mirror","defender":"A2:Gravecaller"}
-{"id":76,"turn":11,"causedBy":75,"source":"kernel","type":"Hurt","unit":"A2:Gravecaller","amount":4,"hpAfter":0}
-{"id":77,"turn":11,"causedBy":76,"source":"kernel","type":"Death","unit":"A2:Gravecaller"}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Hexer","name":"Hexer","hp":11,"pwr":3},{"id":"A2:Gravecaller","name":"Gravecaller","hp":9,"pwr":2}],"B":[{"id":"B1:Berserker","name":"Berserker","hp":8,"pwr":2},{"id":"B2:Frost Witch","name":"Frost Witch","hp":7,"pwr":1},{"id":"B3:Alchemist","name":"Alchemist","hp":7,"pwr":1}]}}
+{"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":2,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Hexer","b":"B1:Berserker","first":"B1:Berserker"}
+{"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Berserker","defender":"A1:Hexer","amount":2}
+{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"Hurt","unit":"A1:Hexer","amount":2,"hpAfter":9}
+{"id":5,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Hexer","defender":"B1:Berserker"}
+{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"B1:Berserker","amount":3,"hpAfter":5}
+{"id":7,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":8,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":9,"turn":2,"causedBy":8,"source":{"unit":"A1:Hexer","ability":0,"when":0},"type":"Silenced","unit":"B3:Alchemist"}
+{"id":10,"turn":2,"causedBy":8,"source":{"unit":"A1:Hexer","ability":0,"when":0},"type":"Silenced","unit":"B1:Berserker"}
+{"id":11,"turn":2,"causedBy":8,"source":{"unit":"B2:Frost Witch","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Hexer","status":"Freeze","stacks":1,"total":1}
+{"id":12,"turn":2,"causedBy":8,"source":{"unit":"B2:Frost Witch","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Gravecaller","status":"Freeze","stacks":1,"total":1}
+{"id":13,"turn":2,"causedBy":8,"source":"kernel","type":"Strike","striker":"B1:Berserker","defender":"A1:Hexer"}
+{"id":14,"turn":2,"causedBy":13,"source":"kernel","type":"Hurt","unit":"A1:Hexer","amount":2,"hpAfter":7}
+{"id":15,"turn":2,"causedBy":8,"source":{"unit":"A1:Hexer","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A1:Hexer","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"A1:Hexer"}
+{"id":16,"turn":2,"causedBy":15,"source":{"unit":"A1:Hexer","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:Hexer","status":"Freeze","stacks":1,"remaining":0}
+{"id":17,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":18,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":19,"turn":3,"causedBy":18,"source":"kernel","type":"Strike","striker":"B1:Berserker","defender":"A1:Hexer"}
+{"id":20,"turn":3,"causedBy":19,"source":"kernel","type":"Hurt","unit":"A1:Hexer","amount":2,"hpAfter":5}
+{"id":21,"turn":3,"causedBy":18,"source":"kernel","type":"Strike","striker":"A1:Hexer","defender":"B1:Berserker"}
+{"id":22,"turn":3,"causedBy":21,"source":"kernel","type":"Hurt","unit":"B1:Berserker","amount":3,"hpAfter":2}
+{"id":23,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":24,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":25,"turn":4,"causedBy":24,"source":"kernel","type":"Strike","striker":"B1:Berserker","defender":"A1:Hexer"}
+{"id":26,"turn":4,"causedBy":25,"source":"kernel","type":"Hurt","unit":"A1:Hexer","amount":2,"hpAfter":3}
+{"id":27,"turn":4,"causedBy":24,"source":"kernel","type":"Strike","striker":"A1:Hexer","defender":"B1:Berserker"}
+{"id":28,"turn":4,"causedBy":27,"source":"kernel","type":"Hurt","unit":"B1:Berserker","amount":3,"hpAfter":-1}
+{"id":29,"turn":4,"causedBy":28,"source":"kernel","type":"Death","unit":"B1:Berserker"}
+{"id":30,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":31,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":32,"turn":5,"causedBy":31,"source":"kernel","type":"PairFaced","a":"A1:Hexer","b":"B2:Frost Witch","first":"A1:Hexer"}
+{"id":33,"turn":5,"causedBy":31,"source":"kernel","type":"Strike","striker":"A1:Hexer","defender":"B2:Frost Witch"}
+{"id":34,"turn":5,"causedBy":33,"source":"kernel","type":"Hurt","unit":"B2:Frost Witch","amount":3,"hpAfter":4}
+{"id":35,"turn":5,"causedBy":31,"source":"kernel","type":"Strike","striker":"B2:Frost Witch","defender":"A1:Hexer"}
+{"id":36,"turn":5,"causedBy":35,"source":"kernel","type":"Hurt","unit":"A1:Hexer","amount":1,"hpAfter":2}
+{"id":37,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":38,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":39,"turn":6,"causedBy":38,"source":"kernel","type":"Strike","striker":"A1:Hexer","defender":"B2:Frost Witch"}
+{"id":40,"turn":6,"causedBy":39,"source":"kernel","type":"Hurt","unit":"B2:Frost Witch","amount":3,"hpAfter":1}
+{"id":41,"turn":6,"causedBy":38,"source":"kernel","type":"Strike","striker":"B2:Frost Witch","defender":"A1:Hexer"}
+{"id":42,"turn":6,"causedBy":41,"source":"kernel","type":"Hurt","unit":"A1:Hexer","amount":1,"hpAfter":1}
+{"id":43,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":44,"turn":7,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":45,"turn":7,"causedBy":44,"source":"kernel","type":"Strike","striker":"A1:Hexer","defender":"B2:Frost Witch"}
+{"id":46,"turn":7,"causedBy":45,"source":"kernel","type":"Hurt","unit":"B2:Frost Witch","amount":3,"hpAfter":-2}
+{"id":47,"turn":7,"causedBy":46,"source":"kernel","type":"Death","unit":"B2:Frost Witch"}
+{"id":48,"turn":7,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":49,"turn":8,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":50,"turn":8,"causedBy":49,"source":"kernel","type":"PairFaced","a":"A1:Hexer","b":"B3:Alchemist","first":"B3:Alchemist"}
+{"id":51,"turn":8,"causedBy":49,"source":"kernel","type":"Strike","striker":"B3:Alchemist","defender":"A1:Hexer"}
+{"id":52,"turn":8,"causedBy":51,"source":"kernel","type":"Hurt","unit":"A1:Hexer","amount":1,"hpAfter":0}
+{"id":53,"turn":8,"causedBy":52,"source":"kernel","type":"Death","unit":"A1:Hexer"}
+{"id":54,"turn":8,"causedBy":53,"source":{"unit":"A2:Gravecaller","ability":0,"when":0},"type":"Summon","unit":"A1:Hexer","name":"Hexer","side":"A","hp":11,"pwr":3,"resurrected":true,"atHp":1,"slot":0}
+{"id":55,"turn":8,"causedBy":49,"source":"kernel","type":"Strike","striker":"A1:Hexer","defender":"B3:Alchemist"}
+{"id":56,"turn":8,"causedBy":55,"source":"kernel","type":"Hurt","unit":"B3:Alchemist","amount":3,"hpAfter":4}
+{"id":57,"turn":8,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":58,"turn":9,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":59,"turn":9,"causedBy":58,"source":"kernel","type":"Strike","striker":"B3:Alchemist","defender":"A1:Hexer"}
+{"id":60,"turn":9,"causedBy":59,"source":"kernel","type":"Hurt","unit":"A1:Hexer","amount":1,"hpAfter":0}
+{"id":61,"turn":9,"causedBy":60,"source":"kernel","type":"Death","unit":"A1:Hexer"}
+{"id":62,"turn":9,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":63,"turn":10,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":64,"turn":10,"causedBy":63,"source":"kernel","type":"PairFaced","a":"A2:Gravecaller","b":"B3:Alchemist","first":"B3:Alchemist"}
+{"id":65,"turn":10,"causedBy":63,"source":"kernel","type":"Strike","striker":"B3:Alchemist","defender":"A2:Gravecaller"}
+{"id":66,"turn":10,"causedBy":65,"source":"kernel","type":"Hurt","unit":"A2:Gravecaller","amount":1,"hpAfter":8}
+{"id":67,"turn":10,"causedBy":63,"source":{"unit":"A2:Gravecaller","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A2:Gravecaller","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"A2:Gravecaller"}
+{"id":68,"turn":10,"causedBy":67,"source":{"unit":"A2:Gravecaller","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Gravecaller","status":"Freeze","stacks":1,"remaining":0}
+{"id":69,"turn":10,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":70,"turn":10,"causedBy":69,"source":"kernel","type":"Fatigue","amount":1}
+{"id":71,"turn":10,"causedBy":70,"source":"kernel","type":"Hurt","unit":"A2:Gravecaller","amount":1,"hpAfter":7}
+{"id":72,"turn":10,"causedBy":70,"source":"kernel","type":"Hurt","unit":"B3:Alchemist","amount":1,"hpAfter":3}
+{"id":73,"turn":11,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":74,"turn":11,"causedBy":73,"source":"kernel","type":"Strike","striker":"B3:Alchemist","defender":"A2:Gravecaller"}
+{"id":75,"turn":11,"causedBy":74,"source":"kernel","type":"Hurt","unit":"A2:Gravecaller","amount":1,"hpAfter":6}
+{"id":76,"turn":11,"causedBy":73,"source":"kernel","type":"Strike","striker":"A2:Gravecaller","defender":"B3:Alchemist"}
+{"id":77,"turn":11,"causedBy":76,"source":"kernel","type":"Hurt","unit":"B3:Alchemist","amount":2,"hpAfter":1}
 {"id":78,"turn":11,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":79,"turn":11,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":11}
+{"id":79,"turn":11,"causedBy":78,"source":"kernel","type":"Fatigue","amount":2}
+{"id":80,"turn":11,"causedBy":79,"source":"kernel","type":"Hurt","unit":"A2:Gravecaller","amount":2,"hpAfter":4}
+{"id":81,"turn":11,"causedBy":79,"source":"kernel","type":"Hurt","unit":"B3:Alchemist","amount":2,"hpAfter":-1}
+{"id":82,"turn":11,"causedBy":81,"source":"kernel","type":"Death","unit":"B3:Alchemist"}
+{"id":83,"turn":11,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":11}

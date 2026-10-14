@@ -188,10 +188,10 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "Случайный удар по нему вместо этого уходит в случайного врага, и он получает 1 Щит.",
   ],
   "Fortune Teller": () => [
-    "At battle start, 50% chance: every ally gains 1 Strength; otherwise every ally gains 1 Shield.",
-    "At battle start, 50% chance: every ally gains 2 Strength; otherwise every ally gains 2 Shield.",
-    "В начале боя с вероятностью 50% все союзники получают 1 Силу, иначе — 1 Щит.",
-    "В начале боя с вероятностью 50% все союзники получают 2 Силы, иначе — 2 Щита.",
+    "At battle start, if the enemy has more units than your side, every ally gains 1 Shield; otherwise every ally gains 1 Strength.",
+    "At battle start, if the enemy has more units than your side, every ally gains 2 Shield; otherwise every ally gains 2 Strength.",
+    "В начале боя, если у врага больше бойцов, чем у вас, все союзники получают 1 Щит; иначе все союзники получают 1 Силу.",
+    "В начале боя, если у врага больше бойцов, чем у вас, все союзники получают 2 Щита; иначе все союзники получают 2 Силы.",
   ],
   Aegis: () => [
     "The first hit on it each turn deals nothing.",
@@ -235,5 +235,23 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "At the start of turn 2, every enemy gets 1 Freeze, and the enemy in front gets 1 more.",
     "В начале 2-го хода все враги получают 1 Заморозку.",
     "В начале 2-го хода все враги получают 1 Заморозку, а передний враг — ещё 1.",
+  ],
+  Bully: () => [
+    "Its strikes deal double to an enemy that has Poison, Curse or Freeze.",
+    "Its strikes deal double to an enemy that has Poison, Curse or Freeze, and each such strike heals it by its power.",
+    "Его атаки наносят двойной урон врагу с Ядом, Проклятием или Заморозкой.",
+    "Его атаки наносят двойной урон врагу с Ядом, Проклятием или Заморозкой, и каждая такая атака лечит его на его силу.",
+  ],
+  Alchemist: () => [
+    "At each turn end, every enemy that has Poison gets 1 more Poison.",
+    "At each turn end, every enemy that has Poison gets 2 more Poison.",
+    "В конце каждого хода каждый враг с Ядом получает ещё 1 Яд.",
+    "В конце каждого хода каждый враг с Ядом получает ещё 2 Яда.",
+  ],
+  Executioner: () => [
+    "When its strike kills an enemy, it strikes again.",
+    "When its strike kills an enemy, it strikes again and gains 1 Strength.",
+    "Когда его атака убивает врага, он бьёт ещё раз.",
+    "Когда его атака убивает врага, он бьёт ещё раз и получает 1 Силу.",
   ],
 };

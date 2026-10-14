@@ -162,7 +162,8 @@ export type ConditionV2 =
   | { kind: "oncePerTurn" }
   | { kind: "unhurt" }
   | { kind: "outnumbered" }
-  | { kind: "targetHas"; statuses: string[] };
+  | { kind: "targetHas"; statuses: string[] }
+  | { kind: "killedByHolder" };
 
 export type Condition = ConditionV1 | ConditionV2;
 

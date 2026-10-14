@@ -1,67 +1,26 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Chrysalis","name":"Chrysalis","hp":2,"pwr":0},{"id":"A2:Thornback","name":"Thornback","hp":7,"pwr":3}],"B":[{"id":"B1:Fortune Teller","name":"Fortune Teller","hp":2,"pwr":0},{"id":"B2:Gravecaller","name":"Gravecaller","hp":9,"pwr":2},{"id":"B3:Archmage","name":"Archmage","hp":2,"pwr":0}]}}
-{"id":1,"turn":0,"causedBy":0,"source":"kernel","type":"Flipped","unit":"B1:Fortune Teller","by":{"unit":"B1:Fortune Teller","ability":0,"when":0},"heads":false}
-{"id":2,"turn":0,"causedBy":0,"source":{"unit":"B1:Fortune Teller","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Fortune Teller","status":"Shield","stacks":1,"total":1}
-{"id":3,"turn":0,"causedBy":0,"source":"kernel","type":"Flipped","unit":"B1:Fortune Teller","by":{"unit":"B1:Fortune Teller","ability":0,"when":0},"heads":true}
-{"id":4,"turn":0,"causedBy":0,"source":{"unit":"B1:Fortune Teller","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Gravecaller","status":"Strength","stacks":1,"total":1}
-{"id":5,"turn":0,"causedBy":4,"source":"kernel","type":"StatChanged","unit":"B2:Gravecaller","stat":"pwr","delta":1,"now":3}
-{"id":6,"turn":0,"causedBy":0,"source":"kernel","type":"Flipped","unit":"B1:Fortune Teller","by":{"unit":"B1:Fortune Teller","ability":0,"when":0},"heads":false}
-{"id":7,"turn":0,"causedBy":0,"source":{"unit":"B1:Fortune Teller","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Archmage","status":"Shield","stacks":1,"total":1}
-{"id":8,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":9,"turn":1,"causedBy":8,"source":"kernel","type":"PairFaced","a":"A1:Chrysalis","b":"B1:Fortune Teller","first":"B1:Fortune Teller"}
-{"id":10,"turn":1,"causedBy":8,"source":"kernel","type":"Strike","striker":"B1:Fortune Teller","defender":"A1:Chrysalis"}
-{"id":11,"turn":1,"causedBy":10,"source":"kernel","type":"Hurt","unit":"A1:Chrysalis","amount":0,"hpAfter":2}
-{"id":12,"turn":1,"causedBy":8,"source":"kernel","type":"Strike","striker":"A1:Chrysalis","defender":"B1:Fortune Teller"}
-{"id":13,"turn":1,"causedBy":12,"source":"kernel","type":"Hurt","unit":"B1:Fortune Teller","amount":0,"hpAfter":2}
-{"id":14,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":15,"turn":1,"causedBy":14,"source":{"unit":"B3:Archmage","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Archmage","status":"Charge","stacks":1,"total":1}
-{"id":16,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":17,"turn":2,"causedBy":16,"source":"kernel","type":"Strike","striker":"B1:Fortune Teller","defender":"A1:Chrysalis"}
-{"id":18,"turn":2,"causedBy":17,"source":"kernel","type":"Hurt","unit":"A1:Chrysalis","amount":0,"hpAfter":2}
-{"id":19,"turn":2,"causedBy":16,"source":"kernel","type":"Strike","striker":"A1:Chrysalis","defender":"B1:Fortune Teller"}
-{"id":20,"turn":2,"causedBy":19,"source":"kernel","type":"Hurt","unit":"B1:Fortune Teller","amount":0,"hpAfter":2}
-{"id":21,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":22,"turn":2,"causedBy":21,"source":{"unit":"B3:Archmage","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Archmage","status":"Charge","stacks":1,"total":2}
-{"id":23,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":24,"turn":3,"causedBy":23,"source":{"unit":"A1:Chrysalis","ability":0,"when":0},"type":"Transformed","unit":"A1:Chrysalis","name":"Butterfly","hp":4,"pwr":2}
-{"id":25,"turn":3,"causedBy":23,"source":"kernel","type":"Strike","striker":"B1:Fortune Teller","defender":"A1:Chrysalis"}
-{"id":26,"turn":3,"causedBy":25,"source":"kernel","type":"Hurt","unit":"A1:Chrysalis","amount":0,"hpAfter":4}
-{"id":27,"turn":3,"causedBy":23,"source":"kernel","type":"Strike","striker":"A1:Chrysalis","defender":"B1:Fortune Teller"}
-{"id":28,"turn":3,"causedBy":27,"source":"kernel","type":"Hurt","unit":"B1:Fortune Teller","amount":1,"absorbed":1,"hpAfter":1}
-{"id":29,"turn":3,"causedBy":28,"source":{"unit":"B1:Fortune Teller","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"B1:Fortune Teller","status":"Shield","stacks":1,"remaining":0}
-{"id":30,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":31,"turn":3,"causedBy":30,"source":{"unit":"B3:Archmage","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Archmage","status":"Charge","stacks":1,"total":3}
-{"id":32,"turn":3,"causedBy":30,"source":{"unit":"B3:Archmage","ability":1,"when":0},"type":"Hurt","unit":"A1:Chrysalis","amount":0,"hpAfter":4}
-{"id":33,"turn":3,"causedBy":30,"source":{"unit":"B3:Archmage","ability":1,"when":0},"type":"Hurt","unit":"A2:Thornback","amount":0,"hpAfter":7}
-{"id":34,"turn":3,"causedBy":30,"source":{"unit":"B3:Archmage","ability":2,"when":0},"type":"StatusRemoved","unit":"B3:Archmage","status":"Charge","stacks":3,"remaining":0}
-{"id":35,"turn":3,"causedBy":33,"source":{"unit":"A2:Thornback","ability":0,"when":0},"type":"Hurt","unit":"B3:Archmage","amount":0,"absorbed":1,"hpAfter":2}
-{"id":36,"turn":3,"causedBy":35,"source":{"unit":"B3:Archmage","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"B3:Archmage","status":"Shield","stacks":1,"remaining":0}
-{"id":37,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":38,"turn":4,"causedBy":37,"source":{"unit":"A1:Chrysalis","ability":0,"when":0},"type":"Hurt","unit":"B1:Fortune Teller","amount":2,"hpAfter":-1}
-{"id":39,"turn":4,"causedBy":38,"source":"kernel","type":"Death","unit":"B1:Fortune Teller"}
-{"id":40,"turn":4,"causedBy":37,"source":{"unit":"A1:Chrysalis","ability":0,"when":0},"type":"Hurt","unit":"B2:Gravecaller","amount":2,"hpAfter":7}
-{"id":41,"turn":4,"causedBy":37,"source":{"unit":"A1:Chrysalis","ability":0,"when":0},"type":"Hurt","unit":"B3:Archmage","amount":2,"hpAfter":0}
-{"id":42,"turn":4,"causedBy":41,"source":"kernel","type":"Death","unit":"B3:Archmage"}
-{"id":43,"turn":4,"causedBy":39,"source":{"unit":"B2:Gravecaller","ability":0,"when":0},"type":"Summon","unit":"B3:Archmage","name":"Archmage","side":"B","hp":2,"pwr":0,"resurrected":true,"atHp":1,"slot":1}
-{"id":44,"turn":4,"causedBy":42,"source":"kernel","type":"ChainBlocked","ability":{"unit":"B2:Gravecaller","ability":0,"when":0},"at":42,"spent":true}
-{"id":45,"turn":4,"causedBy":37,"source":"kernel","type":"PairFaced","a":"A1:Chrysalis","b":"B2:Gravecaller","first":"B2:Gravecaller"}
-{"id":46,"turn":4,"causedBy":37,"source":"kernel","type":"Strike","striker":"B2:Gravecaller","defender":"A1:Chrysalis"}
-{"id":47,"turn":4,"causedBy":46,"source":"kernel","type":"Hurt","unit":"A1:Chrysalis","amount":3,"hpAfter":1}
-{"id":48,"turn":4,"causedBy":37,"source":"kernel","type":"Strike","striker":"A1:Chrysalis","defender":"B2:Gravecaller"}
-{"id":49,"turn":4,"causedBy":48,"source":"kernel","type":"Hurt","unit":"B2:Gravecaller","amount":2,"hpAfter":5}
-{"id":50,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":51,"turn":4,"causedBy":50,"source":{"unit":"B3:Archmage","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Archmage","status":"Charge","stacks":1,"total":1}
-{"id":52,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":53,"turn":5,"causedBy":52,"source":{"unit":"A1:Chrysalis","ability":0,"when":0},"type":"Hurt","unit":"B2:Gravecaller","amount":2,"hpAfter":3}
-{"id":54,"turn":5,"causedBy":52,"source":{"unit":"A1:Chrysalis","ability":0,"when":0},"type":"Hurt","unit":"B3:Archmage","amount":2,"hpAfter":-1}
-{"id":55,"turn":5,"causedBy":54,"source":"kernel","type":"Death","unit":"B3:Archmage"}
-{"id":56,"turn":5,"causedBy":52,"source":"kernel","type":"Strike","striker":"B2:Gravecaller","defender":"A1:Chrysalis"}
-{"id":57,"turn":5,"causedBy":56,"source":"kernel","type":"Hurt","unit":"A1:Chrysalis","amount":3,"hpAfter":-2}
-{"id":58,"turn":5,"causedBy":57,"source":"kernel","type":"Death","unit":"A1:Chrysalis"}
-{"id":59,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":60,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":61,"turn":6,"causedBy":60,"source":"kernel","type":"PairFaced","a":"A2:Thornback","b":"B2:Gravecaller","first":"A2:Thornback"}
-{"id":62,"turn":6,"causedBy":60,"source":"kernel","type":"Strike","striker":"A2:Thornback","defender":"B2:Gravecaller"}
-{"id":63,"turn":6,"causedBy":62,"source":"kernel","type":"Hurt","unit":"B2:Gravecaller","amount":3,"hpAfter":0}
-{"id":64,"turn":6,"causedBy":63,"source":"kernel","type":"Death","unit":"B2:Gravecaller"}
-{"id":65,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":66,"turn":6,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":6}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Chrysalis","name":"Chrysalis","hp":2,"pwr":0},{"id":"A2:Gravedigger","name":"Gravedigger","hp":3,"pwr":2}],"B":[{"id":"B1:Thornback","name":"Thornback","hp":7,"pwr":3},{"id":"B2:Lantern","name":"Lantern","hp":11,"pwr":6},{"id":"B3:Prism","name":"Prism","hp":12,"pwr":6}]}}
+{"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":2,"turn":1,"causedBy":1,"source":{"unit":"A2:Gravedigger","ability":0,"when":0},"type":"Hurt","unit":"B1:Thornback","amount":0,"hpAfter":7}
+{"id":3,"turn":1,"causedBy":1,"source":{"unit":"B2:Lantern","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Thornback","status":"Shield","stacks":1,"total":1}
+{"id":4,"turn":1,"causedBy":2,"source":{"unit":"B1:Thornback","ability":0,"when":0},"type":"Hurt","unit":"A2:Gravedigger","amount":1,"hpAfter":2}
+{"id":5,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Chrysalis","b":"B1:Thornback","first":"A1:Chrysalis"}
+{"id":6,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Chrysalis","defender":"B1:Thornback"}
+{"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"Hurt","unit":"B1:Thornback","amount":0,"hpAfter":7}
+{"id":8,"turn":1,"causedBy":7,"source":{"unit":"B1:Thornback","ability":0,"when":0},"type":"Hurt","unit":"A1:Chrysalis","amount":1,"hpAfter":1}
+{"id":9,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Thornback","defender":"A1:Chrysalis"}
+{"id":10,"turn":1,"causedBy":9,"source":"kernel","type":"Hurt","unit":"A1:Chrysalis","amount":3,"hpAfter":-2}
+{"id":11,"turn":1,"causedBy":10,"source":"kernel","type":"Death","unit":"A1:Chrysalis"}
+{"id":12,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":13,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":14,"turn":2,"causedBy":13,"source":{"unit":"A2:Gravedigger","ability":0,"when":0},"type":"Hurt","unit":"B1:Thornback","amount":0,"absorbed":1,"hpAfter":7}
+{"id":15,"turn":2,"causedBy":14,"source":{"unit":"B1:Thornback","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"B1:Thornback","status":"Shield","stacks":1,"remaining":0}
+{"id":16,"turn":2,"causedBy":13,"source":{"unit":"B2:Lantern","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Thornback","status":"Shield","stacks":1,"total":1}
+{"id":17,"turn":2,"causedBy":14,"source":{"unit":"B1:Thornback","ability":0,"when":0},"type":"Hurt","unit":"A2:Gravedigger","amount":1,"hpAfter":1}
+{"id":18,"turn":2,"causedBy":13,"source":"kernel","type":"PairFaced","a":"A2:Gravedigger","b":"B1:Thornback","first":"A2:Gravedigger"}
+{"id":19,"turn":2,"causedBy":13,"source":"kernel","type":"Strike","striker":"A2:Gravedigger","defender":"B1:Thornback"}
+{"id":20,"turn":2,"causedBy":19,"source":"kernel","type":"Hurt","unit":"B1:Thornback","amount":1,"absorbed":1,"hpAfter":6}
+{"id":21,"turn":2,"causedBy":20,"source":{"unit":"B1:Thornback","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"B1:Thornback","status":"Shield","stacks":1,"remaining":0}
+{"id":22,"turn":2,"causedBy":20,"source":{"unit":"B1:Thornback","ability":0,"when":0},"type":"Hurt","unit":"A2:Gravedigger","amount":1,"hpAfter":0}
+{"id":23,"turn":2,"causedBy":22,"source":"kernel","type":"Death","unit":"A2:Gravedigger"}
+{"id":24,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":25,"turn":2,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":2}

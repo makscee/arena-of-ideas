@@ -79,7 +79,7 @@ describe("rules v2 pool", () => {
         }
     }
     expect(content.units.find((u) => u.name === "Gambler")!.forms.sleeping.say!.en).toContain("50% chance");
-    expect(content.units.find((u) => u.name === "Fortune Teller")!.forms.sleeping.say!.ru).toContain("с вероятностью 50%");
+    expect(content.units.find((u) => u.name === "Gambler")!.forms.sleeping.say!.ru).toContain("с вероятностью 50%");
   });
   it("no log row or caption names a coin either (#1063): Gambler's says 50% → double / nothing", () => {
     const unit = (name: string, copies = 1, uid = name) => lineUnitOf(content.units.find((u) => u.name === name)!, uid, copies);

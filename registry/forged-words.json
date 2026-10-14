@@ -18,5 +18,10 @@
     "word": "every poisoned enemy",
     "kind": "poisonedEnemies",
     "card": 1063
+  },
+  {
+    "word": "the killer is this unit",
+    "kind": "killedByHolder",
+    "card": 1063
   }
 ]

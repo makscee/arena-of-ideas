@@ -137,8 +137,9 @@ export const V2_ABILITIES: AbilityRegistry = {
   Sting: { name: "Sting", family: "Poison", effects: [{ kind: "applyStatus", status: "Poison", stacks: c(1) }] },
   Bounce: { name: "Bounce", family: "Control", effects: [{ kind: "redirect", to: { kind: "randomEnemy" } }] },
   Hush2: { name: "Hush2", family: "Control", effects: [{ kind: "silence" }] },
-  Fortune: { name: "Fortune", family: "Control", effects: [{ kind: "branch", if: { kind: "flip", p: 0.5 }, then: [{ kind: "applyStatus", status: "Strength", stacks: c(1) }], else: [{ kind: "applyStatus", status: "Shield", stacks: c(1) }] }] }, // #1047 pass 2: 1, was 2
-  FortuneAwoken: { name: "FortuneAwoken", family: "Control", effects: [{ kind: "branch", if: { kind: "flip", p: 0.5 }, then: [{ kind: "applyStatus", status: "Strength", stacks: c(2) }], else: [{ kind: "applyStatus", status: "Shield", stacks: c(2) }] }] },
+  // #1063: no coin; outnumbered → Shield, otherwise → Strength
+  Fortune: { name: "Fortune", family: "Control", effects: [{ kind: "branch", if: { kind: "outnumbered" }, then: [{ kind: "applyStatus", status: "Shield", stacks: c(1) }], else: [{ kind: "applyStatus", status: "Strength", stacks: c(1) }] }] },
+  FortuneAwoken: { name: "FortuneAwoken", family: "Control", effects: [{ kind: "branch", if: { kind: "outnumbered" }, then: [{ kind: "applyStatus", status: "Shield", stacks: c(2) }], else: [{ kind: "applyStatus", status: "Strength", stacks: c(2) }] }] },
   Block: { name: "Block", family: "Shield", effects: [{ kind: "cancel" }] },
   Raise: { name: "Raise", family: "Summon", effects: [{ kind: "resurrect", hp: c(1) }] },
   RaiseAwoken: { name: "RaiseAwoken", family: "Summon", effects: [{ kind: "resurrect", hp: pwrOfHolder }] },
@@ -159,6 +160,8 @@ export const V2_ABILITIES: AbilityRegistry = {
   Chill: { name: "Chill", family: "Control", effects: [{ kind: "applyStatus", status: "Freeze", stacks: c(1) }] },
   Chill2: { name: "Chill2", family: "Control", effects: [{ kind: "applyStatus", status: "Freeze", stacks: c(2) }] },
   Bless: { name: "Bless", family: "Shield", effects: [{ kind: "applyStatus", status: "Blessing", stacks: pwrOfHolder }] },
+  Sting2: { name: "Sting2", family: "Poison", effects: [{ kind: "applyStatus", status: "Poison", stacks: c(2) }] },
+  Again: { name: "Again", family: "Strike", effects: [{ kind: "strikeAgain" }] },
 };
 
 type Form = Omit<UnitForm, "who" | "does"> & { who?: UnitForm["who"]; does: string };
@@ -246,6 +249,11 @@ const Frostling = sleeping(trig({ on: "Strike", striker: "holder" }), [{ kind: "
 const Priest = sleeping(trig({ on: "BattleStart" }), [{ kind: "allyAhead" }], "Bless");
 const Battery = sleeping(trig({ on: "Hurt", unit: "otherAlly" }), me, "Spark", { also: [{ who: [{ kind: "allAllies" }], does: ["GuardCharged"] }, { who: me, does: ["Spend"] }] });
 const FrostWitch = sleeping(trig({ on: "TurnStart" }), [{ kind: "allEnemies" }], "Chill", { condition: { kind: "turnIs", n: 2 } });
+const AFFLICTED: UnitForm["condition"] = { kind: "targetHas", statuses: ["Poison", "Curse", "Freeze"] };
+const Bully = sleeping(intercept({ on: "Strike", striker: "holder" }), me, "Fury", { condition: AFFLICTED });
+const Alchemist = sleeping(trig({ on: "TurnEnd" }), [{ kind: "poisonedEnemies" }], "Sting");
+// #1063: "the killer is this unit" is the word killedByHolder; the extra strike lands on the enemy now in front
+const Executioner = sleeping(trig({ on: "Death", unit: "enemy" }), [{ kind: "frontEnemy" }], "Again", { condition: { kind: "killedByHolder" } });
 
 /* eslint-disable prettier/prettier */
 export const ROWS_V2: V2Row[] = [
@@ -277,7 +285,7 @@ export const ROWS_V2: V2Row[] = [
   v2("War Horn",    "📯", 2, "condition",   1,  8, "When the line runs thin, it rallies everyone left.",                    Horn,        { also: [{ who: [{ kind: "allAllies" }], does: ["Guard"] }] }),
   v2("Vulture",     "🦅", 2, "scaling",     2,  7, "Feeds on every unit that falls, friend or foe.",                        Vulture,     { also: [{ who: me, does: ["Glow"] }] }),
   v2("Hexer",       "🧿", 3, "rule",        1,  7, "On turn 2, silences the enemy at the back.",               Hexer,       { who: [{ kind: "lastEnemy" }, { kind: "frontEnemy" }] }),
-  v2("Fortune Teller", "🪬", 3, "swing",    1,  7, "At the start, an even chance: the whole line strikes harder, or else stands sturdier.", Fortune,  { does: "FortuneAwoken" }),
+  v2("Fortune Teller", "🪬", 3, "condition", 1,  7, "At the start, outnumbered: the whole line gains Shield; otherwise Strength.", Fortune,  { does: "FortuneAwoken" }),
   v2("Aegis",       "🛡️", 3, "replacement", 1,  9, "Shrugs off the first hit each turn.",                                   Aegis,       { also: [{ who: [{ kind: "allyBehind" }], does: ["Guard"] }] }),
   v2("Gravecaller", "💀", 3, "memory",      1,  7, "Calls the first fallen ally back to the line.",                         Gravecaller, { does: "RaiseAwoken" }),
   v2("Hydra",       "🐉", 4, "form",        2,  8, "Cut it down and two Heads take its place.",                             Hydra,       { does: "HeadsAwoken" }),
@@ -289,5 +297,8 @@ export const ROWS_V2: V2Row[] = [
   v2("Priest",      "✨", 2, "condition",   2,  7, "Blesses the ally ahead: it survives its death once.",                   Priest,      { who: [{ kind: "neighbours" }] }),
   v2("Battery",     "🔋", 2, "counter",     1,  9, "Hits on allies build its Charge; at 3, every ally gains Shield.",      Battery,     { also: [{ who: [{ kind: "allAllies" }], does: ["GuardMendCharged"] }, { who: me, does: ["Spend"] }] }),
   v2("Frost Witch", "🧊", 3, "condition",   1,  7, "On turn 2, freezes every enemy.",                                       FrostWitch,  { also: [{ who: [{ kind: "frontEnemy" }], does: ["Chill"] }] }),
+  v2("Bully",       "🥊", 2, "condition",   2,  7, "Hits an enemy that has Poison, Curse or Freeze for double.",            Bully,       { also: [{ who: me, does: ["Glow"] }] }),
+  v2("Alchemist",   "⚗️", 3, "scaling",     1,  7, "Each turn end, every poisoned enemy takes 1 more Poison.",              Alchemist,   { does: "Sting2" }),
+  v2("Executioner", "🗡️", 3, "rule",        3,  6, "A kill by its strike earns it another strike.",                         Executioner, { also: [{ who: me, does: ["Rally"] }] }),
 ];
 /* eslint-enable prettier/prettier */
