@@ -15,7 +15,7 @@ import { declineOptions, myIdea, pickArchetype, pickReading } from "./idea-readi
 import { cancelIdea, grantIdea, IdeaRefused, ideasOf, myIdeas, writeIdea } from "./ideas.js";
 import { isAdmin, isJoinCode, JoinRefused, joinOpen, NAME_RE, openJoin, redeemInvite, sessionPlayer } from "./invites.js";
 import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
-import { codexView, forgeOf, wish } from "./codex.js";
+import { codexView, runForge, wish } from "./codex.js";
 import { codexOverview } from "./codex-view.js";
 import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
 import { servedContent } from "./pool.js";
@@ -331,7 +331,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     const run = store.run(c.req.param("runId"));
     if (!run) return bad(c, 404, "no such run");
     if (playerOf(c)?.id !== run.player.id) return bad(c, 401, "not your run");
-    return c.json({ pairs: forgeOf(rt, run) });
+    return c.json(runForge(rt, run));
   });
   api.get("/codex", (c) => (rt.codex ? c.json(codexOverview(rt, playerOf(c))) : bad(c, 404, "the Codex is off")));
   api.get("/codex/:a/:b", (c) => (rt.codex ? c.json(codexView(rt, c.req.param("a"), c.req.param("b"), playerOf(c))) : bad(c, 404, "the Codex is off")));

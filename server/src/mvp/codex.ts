@@ -12,7 +12,7 @@
 // with its state; for a ready pair the run holds, the three designs show, so
 // the claim is a choice. Elsewhere (GET /codex/:a/:b) they stay sealed.
 import { benchSizeOf, boardUnit, type Decision, type FuseContext, type LineUnit, type PlayerRef, type UnitId } from "../../../src/mvp/contract.js";
-import { canonicalDesign, claimCheck, forgeView, pairState, sortPair, type CodexClaim, type ForgeSlot, type ForgeView } from "../../../src/mvp/codex.js";
+import { canonicalDesign, claimCheck, forgeView, pairState, sortPair, type CodexClaim, type ForgeOffer, type ForgeSlot, type ForgeView, type RunForge } from "../../../src/mvp/codex.js";
 import { fuseCheck } from "../../../src/mvp/forms.js";
 import { MvpDecisionError } from "../../../src/mvp/errors.js";
 import { fightLines } from "../../../src/mvp/fight.js";
@@ -74,6 +74,38 @@ export function forgeOf(deps: RunDeps, run: MvpRunState): ForgeSlot[] {
       out.push(slot);
     }
   return out;
+}
+
+/** The shop offers that bring a designed fusion within reach (#1049
+ * reopened): an offer whose unit pairs with an Awoken unit on the board, the
+ * pair discovered or ready to claim. Unforged pairs, a unit already Awoken
+ * (its pairs are on the board already) and fused units never show. */
+export function forgeOffers(deps: RunDeps, run: MvpRunState): ForgeOffer[] {
+  const board: [number, LineUnit][] = [];
+  for (let i = 0; i < run.rules.lineSize + benchSizeOf(run.rules); i++) {
+    const u = boardUnit(run, run.rules, i);
+    if (u) board.push([i, u]);
+  }
+  const out: ForgeOffer[] = [];
+  for (const o of run.offers) {
+    const own = board.find(([, u]) => u.kind === "unit" && u.unitId === o.unitId)?.[1];
+    if (own && own.form === "awoken") continue;
+    const awakens = (own?.copies ?? 0) + 1 >= run.rules.copiesToAwaken;
+    for (const [j, v] of board) {
+      if (v.kind !== "unit" || v.form !== "awoken" || v.unitId === o.unitId) continue;
+      const [a, b] = sortPair(o.unitId, v.unitId);
+      const pair = deps.store.codexPair(a, b);
+      const state = pairState(pair);
+      if (state === "unforged") continue;
+      out.push({ slot: o.slot, partner: j, a, b, state, ...(state === "discovered" ? { design: canonicalDesign(pair)! } : {}), awakens });
+    }
+  }
+  return out;
+}
+
+/** The forge of a run: its fusable pairs and the offers that bring one within reach. */
+export function runForge(deps: RunDeps, run: MvpRunState): RunForge {
+  return { pairs: forgeOf(deps, run), offers: run.phase === "shop" ? forgeOffers(deps, run) : [] };
 }
 
 /** A pair's Codex view for `viewer` today; candidates stay sealed. */

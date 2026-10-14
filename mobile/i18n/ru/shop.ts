@@ -38,6 +38,13 @@ export const shop = {
   "fuse.new": "Новое слияние",
   "fuse.discovered": "✨ Открыто: {name}",
 
+  // Метки слияний правил v2 (#1049): только пара с замыслом.
+  "fuse.mark": "Слияния: {list}",
+  "fuse.toClaim": "слияние, которое можно забрать",
+  "fuse.offerClaim": "✨ забрать",
+  "fuse.offerNow": "Купи — пробудится: {pair} → {fusion}.",
+  "fuse.offerNear": "Пробуди его для слияния: {pair} → {fusion}.",
+
   // Кузня (Кодекс правил v2, #1049): три состояния пары.
   "forge.discovered": "Кузня · открыто",
   "forge.ready": "Кузня · можно забрать",

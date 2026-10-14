@@ -35,7 +35,7 @@ import {
 } from "../src/mvp/contract";
 import { uiLang } from "./lang";
 import type { SceneBuilt } from "../server/src/mvp/scenes";
-import type { ForgeSlot, ForgeView } from "../src/mvp/codex";
+import type { ForgeSlot, ForgeView, RunForge } from "../src/mvp/codex";
 import type { ForgeView as CodexOverview } from "../src/mvp/forge-view";
 
 const BASE = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "") + MVP_API_PREFIX;
@@ -228,8 +228,8 @@ export const api = {
   decide: (id: string, d: Decision) => call<DecisionResponse>("POST", `/runs/${id}/decisions`, d),
   /** What a shop decision would do, without doing it (the awakening and fusion result cards). */
   preview: (id: string, d: Decision) => call<DecisionResponse>("POST", `/runs/${id}/preview`, d),
-  /** Rules v2's forge (#1049): every pair the run can fuse now, in its Codex state; a 404 while the Codex is off. */
-  forge: (id: string) => call<{ pairs: ForgeSlot[] }>("GET", `/runs/${id}/forge`),
+  /** Rules v2's forge (#1049): every pair the run can fuse now, in its Codex state, and the offers that bring a designed one within reach; a 404 while the Codex is off. */
+  forge: (id: string) => call<RunForge>("GET", `/runs/${id}/forge`),
   /** A wish on an unforged pair: it goes on tonight's list. */
   /** The Codex screens' view (#1051): units, stored pairs, the feed, the Dictionary; a 404 while the Codex is off. */
   codex: () => call<CodexOverview>("GET", "/codex"),

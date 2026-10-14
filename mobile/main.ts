@@ -10,7 +10,7 @@ import { sceneId } from "./scene";
 import type { BattleRecord, CandidateScore, DayView, FightResult, HomeView, IdeasView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView, UnitContent } from "../src/mvp/contract";
 import { benchSizeOf, lockedFull, MVP_RULES, offersAt, sellValue } from "../src/mvp/contract";
 import { mergeTarget } from "../src/mvp/forms";
-import type { ForgeSlot, ForgeView } from "../src/mvp/codex";
+import type { ForgeOffer, ForgeSlot, ForgeView, RunForge } from "../src/mvp/codex";
 import { buttonRefusal, plainRefusal } from "./ui/refusal";
 import { ApiError, api, savedPlayer } from "./api";
 import { getContent, unitIn } from "./content";
@@ -840,6 +840,35 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   let hover: At | null = null;
   let chosen: number | null = desk && run.offers[offer] ? offer : null;
   let fuseView: HTMLElement | null = null;
+  // Rules v2 (#1049 reopened): with the Codex on, two Awoken units fuse only
+  // when their pair has a design (discovered or ready to claim). The run's
+  // forge says which board pairs have one and which offers bring one within
+  // reach; until it answers, nothing hints at a fuse. Codex off: v1's rule.
+  let forge: RunForge | null = null;
+  const awokenAt = (slot: number) => {
+    const u = unitAt(slot);
+    return !!u && u.kind === "unit" && u.form === "awoken";
+  };
+  const designedPairs = (slot: number) => (forge?.pairs ?? []).filter((p) => p.state !== "unforged" && (p.first === slot || p.second === slot));
+  const canFuse = (slot: number) => awokenAt(slot) && !run.gift && (codexOn ? designedPairs(slot).length > 0 : awoken >= 2);
+  const fusesWith = (first: number, slot: number) => awokenAt(slot) && (!codexOn || designedPairs(first).some((p) => p.first === slot || p.second === slot));
+  const anyFuse = () => !run.gift && (codexOn ? (forge?.pairs ?? []).some((p) => p.state !== "unforged") : awoken >= 2);
+  /** A designed pair's fusion as a mark says it: its name once discovered, else "ready to claim". */
+  const fusionName = (p: { state: string; design?: { name: string; emoji?: string; texts?: { ru?: { name?: string } } } }) =>
+    p.design ? `${p.design.emoji ?? ""} ${(uiLang() === "ru" ? p.design.texts?.ru?.name : undefined) ?? p.design.name}`.trim() : t("fuse.toClaim");
+  const nameOf = (id: string) => unitOf(id)?.name ?? id;
+  /** The mark on a board unit of a fusion you can make now: ⚗, the fusions in its label. */
+  const fuseMark = (pairs: ForgeSlot[], slot: number) => {
+    const list = pairs.map((p) => `${nameOf(unitAt(p.first === slot ? p.second : p.first)!.unitId)} → ${fusionName(p)}`).join("; ");
+    return h("span", { class: "fuse-mark", "data-testid": `fuse-mark-${slot}`, title: t("fuse.mark", { list }), "aria-label": t("fuse.mark", { list }) }, "⚗");
+  };
+  /** What an offer brings within reach (the shop card's mark and its sheet's line), best first: one buy away before close. */
+  const offerFusions = (slot: number): ForgeOffer[] => (forge?.offers ?? []).filter((f) => f.slot === slot).sort((x, y) => Number(y.awakens) - Number(x.awakens));
+  const offerLine = (f: ForgeOffer) => {
+    const partner = unitAt(f.partner);
+    const pair = `${partner ? `${partner.emoji} ${partner.name}` : "?"} + ${nameOf(f.a === partner?.unitId ? f.b : f.a)}`;
+    return t(f.awakens ? "fuse.offerNow" : "fuse.offerNear", { pair, fusion: fusionName(f) });
+  };
 
   /** Move the unit at board slot `from` to `to` (a reorder), keeping it selected where it lands. */
   const moveTo = (from: number, to: number) => {
@@ -871,14 +900,18 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     if (pick.mode === "picked" && pick.index === slot) c.classList.add("selected");
     if (pick.mode === "fuse") {
       if (pick.first === slot) c.classList.add("selected");
-      else if (u.kind === "unit" && u.form === "awoken") c.classList.add("fusable");
+      else if (fusesWith(pick.first, slot)) c.classList.add("fusable");
       else c.classList.add("muted");
+    } else if (codexOn && !crown && canFuse(slot)) {
+      // A fusion you can make now: both units of a designed pair wear the mark.
+      c.classList.add("fuse-ready");
+      c.append(fuseMark(designedPairs(slot), slot));
     }
     c.addEventListener("click", () => {
       play("click");
       if (pick.mode === "fuse") {
         if (pick.first === slot) pick = { mode: "none" };
-        else if (u.kind === "unit" && u.form === "awoken") return void fusePreview(pick.first, slot);
+        else if (fusesWith(pick.first, slot)) return void fusePreview(pick.first, slot);
         else return;
       } else if (!desk && !crown && pick.mode === "picked" && pick.index >= L && !onBench && run.line.length >= L) {
         // Phone: a bench unit selected and the line full, a tap on a line unit swaps the two.
@@ -953,7 +986,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const word = i < L ? (swaps ? (desk ? t("board.swapBench", { n: B }) : t("board.swap")) : t("board.toBench")) : swaps ? (desk ? t("board.swapBack") : t("board.swap")) : t("board.toLine");
       out.push(button(desk ? `${word} · B` : word, () => moveTo(i, other), "", i < L ? "to-bench" : "to-line"));
     }
-    if (u.kind === "unit" && u.form === "awoken" && awoken >= 2 && !run.gift) out.push(button(desk ? t("board.fuseDesk") : t("board.fuse"), () => ((pick = { mode: "fuse", first: i }), renderLine()), "", "fuse"));
+    if (canFuse(i)) out.push(button(desk ? t("board.fuseDesk") : t("board.fuse"), () => ((pick = { mode: "fuse", first: i }), renderLine()), "", "fuse"));
     const value = sellValue(rules, u);
     out.push(button(desk ? t("board.sellDesk", { n: value }) : t("board.sell", { n: value }), () => void decide({ kind: "sell", index: i }), "danger", "sell"));
     return out;
@@ -1021,7 +1054,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     // Only a unit whose next copy is on offer right now.
     const almost = board.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === rules.copiesToAwaken - 1 && run.offers.some((o) => o.unitId === u.unitId));
     const canBuy = run.offers.some((o) => o.cost <= run.gold);
-    if (awoken >= 2 && !run.gift) return hint(desk ? t("hint.fuseDesk") : t("hint.fusePhone"));
+    if (anyFuse()) return hint(desk ? t("hint.fuseDesk") : t("hint.fusePhone"));
     if (almost && run.offers.some((o) => o.unitId === almost.unitId && o.cost <= run.gold)) return hint(t("hint.oneMore", { name: almost.name }));
     if (run.line.length === 0 && run.bench.length > 0) return hint(t("hint.moveToLine"));
     if (run.line.length === 0 && !canBuy) return hint(t("hint.noGold"));
@@ -1046,13 +1079,14 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const fusePreview = (first: number, second: number) =>
     guarded(err, async () => {
       // Rules v2: with the Codex on, the pair's forge decides (a 404: v1's splice preview).
-      const forge = await api.forge(run.runId).catch((e: unknown) => {
+      // Rules v2 never previews a splice: only a pair the forge lists fuses.
+      const now = await api.forge(run.runId).catch((e: unknown) => {
         if (e instanceof ApiError && e.status === 404) return null;
         throw e;
       });
-      if (forge) {
-        const slot = forge.pairs.find((p) => (p.first === first && p.second === second) || (p.first === second && p.second === first));
-        if (slot) return forgeSheet(slot);
+      if (now) {
+        const slot = now.pairs.find((p) => (p.first === first && p.second === second) || (p.first === second && p.second === first));
+        return slot ? forgeSheet(slot) : undefined;
       }
       const orders = [
         { first, second },
@@ -1265,6 +1299,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const sheet = mine ? unitSheet(mine.next, content, { from: mine.now.stats }) : owned ? unitSheet(owned, content) : u ? unitSheet(u, content) : h("h2", {}, o.unitId);
     // What buying does goes inside the sheet, above its last line (the rates hint).
     if (after) sheet.insertBefore(after, sheet.querySelector('[data-testid="unit-rates"]'));
+    const fusions = offerFusions(o.slot);
+    if (fusions.length) sheet.insertBefore(h("div", { class: "stack offer-fusions", "data-testid": "offer-fusions" }, ...fusions.map((f) => h("div", { class: `small${f.awakens ? "" : " dim"}` }, `⚗ ${offerLine(f)}`))), sheet.querySelector('[data-testid="unit-rates"]'));
     return { sheet, blocked };
   };
   /** The phone's offer sheet: the body in an overlay, with Close and Buy. */
@@ -1307,6 +1343,27 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       return c;
     }),
   );
+  /** Rules v2: an offer that brings a designed fusion within reach wears a
+   * mark naming it: bright when buying it awakens the unit (one buy away),
+   * quiet when it would still need awakening. */
+  const markOffers = () => {
+    for (const o of run.offers) {
+      const f = offerFusions(o.slot)[0];
+      const c = offers.querySelector<HTMLElement>(`[data-testid="offer-${o.slot}"]`);
+      if (!f || !c) continue;
+      c.classList.add(f.awakens ? "fuse-offer" : "fuse-near");
+      c.append(h("div", { class: "fuse-tag", "data-testid": `fuse-offer-${o.slot}`, title: offerLine(f) }, f.awakens ? (f.design ? `⚗ ${fusionName(f)}` : t("fuse.offerClaim")) : "⚗"));
+    }
+  };
+  if (codexOn && !crown)
+    void api.forge(run.runId).then(
+      (f) => {
+        forge = f;
+        markOffers();
+        renderLine();
+      },
+      () => undefined,
+    );
 
   // C-Shop: "Reroll" with its price in a gold chip.
   const reroll = button(t("shop.reroll"), () => void decide({ kind: "reroll" }), "reroll-btn", "reroll");
@@ -1576,7 +1633,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     if (k === "f") {
       const u = unitAt(sel);
       if (pick.mode === "fuse") pick = { mode: "none" };
-      else if (u && u.kind === "unit" && u.form === "awoken" && awoken >= 2 && !run.gift) pick = { mode: "fuse", first: sel };
+      else if (canFuse(sel)) pick = { mode: "fuse", first: sel };
       else return false;
       renderLine();
       return true;

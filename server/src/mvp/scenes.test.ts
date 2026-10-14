@@ -49,4 +49,21 @@ describe("test scenes (#1026)", () => {
     const off = createMvpApp(mvpRuntime({ content: mvpContent(), dev: true, scenes: true }));
     expect((await off.request("/api/v1/dev/scenes/forge-ready", { method: "POST" })).status).not.toBe(200);
   }, 240_000);
+
+  it("set the shop's fusion marks: none, one now, one a buy away (#1049 reopened)", async () => {
+    const app = createMvpApp(mvpRuntime({ content: mvpContent(), dev: true, scenes: true, codex: true }));
+    type Forge = { pairs: { first: number; second: number; state: string }[]; offers: { slot: number; partner: number; state: string; awakens: boolean }[] };
+    const forgeOf = async (id: string) => {
+      const built = (await (await app.request(`/api/v1/dev/scenes/${id}`, { method: "POST" })).json()) as { player: { id: string }; entry: { runId: string } };
+      return (await (await app.request(`/api/v1/runs/${built.entry.runId}/forge`, { headers: { "X-Arena-Player": built.player.id } })).json()) as Forge;
+    };
+    const none = await forgeOf("fusion-none");
+    expect(none.pairs.map((p) => p.state)).toEqual(["unforged"]);
+    expect(none.offers).toEqual([]);
+    const now = await forgeOf("fusion-now");
+    expect(now.pairs).toEqual([expect.objectContaining({ first: 0, second: 1, state: "discovered" })]);
+    const shop = await forgeOf("fusion-shop");
+    expect(shop.pairs).toEqual([]);
+    expect(shop.offers).toEqual([expect.objectContaining({ slot: 0, partner: 0, state: "ready", awakens: true }), expect.objectContaining({ slot: 1, partner: 0, state: "discovered", awakens: false })]);
+  }, 240_000);
 });
