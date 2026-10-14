@@ -135,7 +135,9 @@ export const V2_ABILITIES: AbilityRegistry = {
   Spine: { name: "Spine", family: "Strike", effects: [{ kind: "damage", amount: pwrOfHolder }] },
   Feast: { name: "Feast", family: "Control", effects: [{ kind: "applyStatus", status: "Strength", stacks: c(1) }, { kind: "heal", amount: pwrOfHolder }] },
   Sting: { name: "Sting", family: "Poison", effects: [{ kind: "applyStatus", status: "Poison", stacks: c(1) }] },
-  Bounce: { name: "Bounce", family: "Control", effects: [{ kind: "redirect", to: { kind: "randomEnemy" } }] },
+  // Prism (#1063): a Poison, Curse or Freeze an enemy gives it also lands on that enemy (asleep) or only on it (awoken)
+  Reflect: { name: "Reflect", family: "Control", effects: [{ kind: "reflectStatus", to: { kind: "applier" } }] },
+  ReflectAll: { name: "ReflectAll", family: "Control", effects: [{ kind: "redirect", to: { kind: "applier" } }] },
   Hush2: { name: "Hush2", family: "Control", effects: [{ kind: "silence" }] },
   // #1063: no coin; outnumbered → Shield, otherwise → Strength
   Fortune: { name: "Fortune", family: "Control", effects: [{ kind: "branch", if: { kind: "outnumbered" }, then: [{ kind: "applyStatus", status: "Shield", stacks: c(1) }], else: [{ kind: "applyStatus", status: "Strength", stacks: c(1) }] }] },
@@ -230,7 +232,16 @@ const Thornback = sleeping(trig({ on: "Hurt", unit: "holder" }), [{ kind: "attac
 const CoinThief = sleeping(trig({ on: "TurnStart" }), [{ kind: "randomEnemy" }], "Hex", { also: [{ who: me, does: ["Rally"] }] });
 const Lantern = sleeping(trig({ on: "TurnStart" }), [{ kind: "allyAhead" }], "Guard", { condition: { kind: "unhurt" } });
 const Hornet = sleeping(trig({ on: "Strike", striker: "holder" }), [{ kind: "eventTarget" }], "Sting");
-const Prism = sleeping(intercept({ on: "Hurt", unit: "holder", aim: "random" }), me, "Bounce");
+// #1063: no random hits; the Poison, Curse or Freeze an enemy gives it comes back onto that enemy
+const Prism = sleeping(
+  [
+    { kind: "interceptor", on: { on: "StatusApplied", unit: "holder", status: "Poison" } },
+    { kind: "interceptor", on: { on: "StatusApplied", unit: "holder", status: "Curse" } },
+    { kind: "interceptor", on: { on: "StatusApplied", unit: "holder", status: "Freeze" } },
+  ],
+  [{ kind: "applier" }],
+  "Reflect",
+);
 // #1047: from 3 allies standing (was 2), War Horn sat low at the PWR/HP cap
 const Horn = sleeping(trig({ on: "TurnStart" }), [{ kind: "allAllies" }], "Rally", { condition: { kind: "alliesAlive", op: "<=", n: 3 } });
 // #1063: any unit falling, ally or enemy (takes in Scavenger)
@@ -282,7 +293,7 @@ export const ROWS_V2: V2Row[] = [
   v2("Coin Thief",  "🪙", 1, "swing",       2,  6, "Robs a random enemy of power every turn, and grows on it.",            CoinThief,   { also: [{ who: me, does: ["Rally", "Guard"] }] }),
   v2("Lantern",     "🏮", 1, "condition",   1,  7, "While untouched, shields the ally ahead of it.",                        Lantern,     { who: [{ kind: "neighbours" }] }),
   v2("Hornet",      "🐝", 1, "position",    2,  5, "Poisons whatever it strikes.",                                          Hornet,      { who: [{ kind: "allEnemies" }] }),
-  v2("Prism",       "🔮", 2, "redirect",    1,  9, "Random shots aimed at it bend onto a random enemy.",                    Prism,       { also: [{ who: me, does: ["Guard"] }] }),
+  v2("Prism",       "🔮", 2, "redirect",    1,  9, "Gives back the Poison, Curse and Freeze enemies put on it.",             Prism,       { does: "ReflectAll" }),
   v2("War Horn",    "📯", 2, "condition",   1,  8, "When the line runs thin, it rallies everyone left.",                    Horn,        { also: [{ who: [{ kind: "allAllies" }], does: ["Guard"] }] }),
   v2("Vulture",     "🦅", 2, "scaling",     2,  7, "Feeds on every unit that falls, friend or foe.",                        Vulture,     { also: [{ who: me, does: ["Glow"] }] }),
   v2("Hexer",       "🧿", 3, "rule",        1,  7, "On turn 2, silences the enemy at the back.",               Hexer,       { who: [{ kind: "lastEnemy" }, { kind: "frontEnemy" }] }),

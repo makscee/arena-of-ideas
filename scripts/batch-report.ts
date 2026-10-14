@@ -45,7 +45,8 @@ const content = contentOf(ROWS_V2);
 // before → after list of every changed unit sentence (docs/mvp/wording-1047.json),
 // and with --night <batch json> each stored night fusion re-rendered by today's words.
 interface Reworded { unit: string; what: string; lang: string; before: string; after: string; why: string }
-const reworded: Reworded[] = existsSync("docs/mvp/wording-1047.json") ? JSON.parse(readFileSync("docs/mvp/wording-1047.json", "utf8")) : [];
+// (#1063: rows of units the rethink cut are left out)
+const reworded: Reworded[] = (existsSync("docs/mvp/wording-1047.json") ? (JSON.parse(readFileSync("docs/mvp/wording-1047.json", "utf8")) as Reworded[]) : []).filter((r) => ROWS_V2.some((u) => u.name === r.unit));
 const nightFile = opt("night")?.replace(/^~/, homedir());
 interface NightCandidate { name: { en: string }; text: { en: string; ru: string }; unit: unknown; abilities: unknown; statuses: unknown }
 const night: { name: string; lang: string; before: string; after: string }[] = [];
@@ -133,7 +134,7 @@ header{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.emoji{font-siz
 .reword{border-collapse:collapse;font-size:13px;width:100%;margin:8px 0}.reword td,.reword th{border-top:1px solid var(--dim);padding:4px 6px;vertical-align:top;text-align:left}.reword small{color:var(--dim)}
 </style></head><body>
 <h1>Arena · rules v2 · the 40 units (rethink, #1063)</h1>
-<p class="sub">Unit batch 2 of 3 (twenty new units, every shape class and tier) first, then batch 1 with Maks's notes applied: card sentences a person would say (the word chain in grey below each), lower HP. Mission branch <code>mission-1043-rules-v2</code>. Design: <a href="arena-rules-v2.html">arena-rules-v2.html</a>. Scenes open on the lab.</p>
+<p class="sub">${tuned ? "All 40 units after the rethink (#1063): one shared vocabulary (six statuses, the turn, Charge ⚡), 7 duplicates replaced, every card with its tuned numbers; batch 2 first, then batch 1." : "Unit batch 2 of 3 (twenty new units, every shape class and tier) first, then batch 1 with Maks's notes applied: card sentences a person would say (the word chain in grey below each), lower HP."} Mission branch <code>mission-1043-rules-v2</code>. Design: <a href="arena-rules-v2.html">arena-rules-v2.html</a>. Scenes open on the lab.</p>
 ${tune ? `<div class="note"><b>Tuned.</b> PWR and HP come from <code>npm run mvp:tune-v2</code>${tune.rounds.length ? `: ${tune.rounds.length} rounds of the quick meta check move each unit toward the pool's median field score` : `, read on the numbers as they are: each unit's field score against the pool's median`} (${pct(tune.median)} ± ${pct(tune.band)}), averaged over several quick meta checks; then the full meta check: <b>${tune.healthy ? "healthy" : "not healthy"}</b>${tune.healthChecks ? ` (${tune.healthChecks.filter((h) => h.healthy).length} of ${tune.healthChecks.length} full checks healthy, one per seed)` : ` (${Object.values(tune.checks).map((c) => `${esc(c.rule)}: ${c.value < 1 && c.value > 0 ? pct(c.value) : c.value} ${c.pass ? "✓" : "✗"}`).join("; ")})`}. ${tune.units.filter((u) => u.inBand).length} of ${tune.units.length} units in band${tune.units.some((u) => !u.inBand) ? `; outside it: ${tune.units.filter((u) => !u.inBand).map((u) => `${esc(u.name)} ${pct(u.fieldScore)}`).join(", ")}` : ""}. Field: the unit's best team's mean score against the meta's teams. Awoken: what three copies add over sleeping, same team.</div>` : ""}
 ${tuned ? "" : `<div class="note"><b>Untuned draft.</b> The numbers are placeholders; the tune and the meta run come next. Units with a fixture battle link it; the others link their pool battle (the lab's <code>v2-unit-</code> scenes).</div>`}
 ${wording}

@@ -549,6 +549,7 @@ function validateEffect(e: unknown, registry: StatusRegistry, abilities: Ability
   }
 
   switch (kind) {
+    case "reflectStatus":
     case "redirect":
       if (!isObject(e["to"]) || !(oneOf(e["to"]["kind"], SELECTOR_KINDS) || (typeof e["to"]["kind"] === "string" && selectorWord(e["to"]["kind"])))) {
         issues.push({ path: `${path}.to`, message: "redirect needs a selector to land on" });

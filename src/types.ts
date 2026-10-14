@@ -176,6 +176,7 @@ export type PositionSelector =
   | { kind: "lastEnemy" } // the enemy at the back
   | { kind: "randomAlly" } // one seeded draw among the other living allies
   | { kind: "eventTarget" } // the unit an event was aimed at (a Strike's defender)
+  | { kind: "applier" } // the unit whose rule gave the triggering status (#1063, Prism)
   | { kind: "poisonedEnemies" };
 
 export type Selector = SelectorV1 | PositionSelector;
@@ -249,7 +250,8 @@ export type EffectV2 =
   // interceptor: the proposed Strike's striker strikes the same defender again
   // after it; a strike made this way never strikes again (Gambler awoken)
   | { kind: "strikeAgain" }
-  | { kind: "takeRule" };
+  | { kind: "takeRule" }
+  | { kind: "reflectStatus"; to: Selector }; // the proposed status also lands on `to`, same amount (#1063, Prism)
 
 export type EffectV1 =
   // trigger-context atoms

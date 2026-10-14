@@ -28,5 +28,15 @@
     "word": "takes that rule and leaves none",
     "kind": "takeRule",
     "card": 1063
+  },
+  {
+    "word": "the unit that gave it",
+    "kind": "applier",
+    "card": 1063
+  },
+  {
+    "word": "that unit gets the same amount too",
+    "kind": "reflectStatus",
+    "card": 1063
   }
 ]

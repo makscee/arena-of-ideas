@@ -134,6 +134,9 @@ export interface InterceptAt {
   /** After the cancelled Death: set the unit to `hp` and take `amount` from
    * its `stat`. */
   survive(unit: string, hp: number, stat: import("../types.js").StatName, amount: number): void;
+  /** Once the intercepted status has landed: give `unit` the same status too
+   * (reflectStatus). */
+  alsoApply(unit: string, status: string, stacks: number): void;
 }
 
 /** An effect (§3.4–3.6). Interceptor words change or cancel the proposal. */
