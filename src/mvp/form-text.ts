@@ -29,8 +29,8 @@ export function formSegments(form: UnitForm, abilities: AbilityRegistry, lang?: 
 
 const CLAUSE_ENDS = [".", ", ", ", and ", ", then ", ", и ", ", затем "];
 
-/** Rules v2 content: a counter status carries a rule of its own. */
-const isV2Statuses = (statuses?: StatusRegistry): boolean => Object.values(statuses ?? {}).some((d) => d.counter && d.abilities.length > 0);
+/** Rules v2 content: the registry has a counter (Charge; since #1063 no counter carries a rule). */
+const isV2Statuses = (statuses?: StatusRegistry): boolean => Object.values(statuses ?? {}).some((d) => d.counter);
 
 /** Rules v2 (#1047, Maks's note on batch 1): a clause never opens on a bare
  * number. "Ally strikes: 1 Beats to self." reads "Ally strikes: gain 1

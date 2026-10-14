@@ -251,6 +251,8 @@ export type EffectV2 =
   // after it; a strike made this way never strikes again (Gambler awoken)
   | { kind: "strikeAgain" }
   | { kind: "takeRule" }
+  // the holder keeps the target's rule as a second rule of its own for the rest of the battle (#1063, Raven awoken)
+  | { kind: "keepRule" }
   | { kind: "reflectStatus"; to: Selector }; // the proposed status also lands on `to`, same amount (#1063, Prism)
 
 export type EffectV1 =
@@ -293,6 +295,9 @@ export interface AbilityRef {
   unit: string; // holding unit instance id
   status?: string; // present when the ability lives on a status
   ability: number; // index within the ability list
+  /** Present when the ability is a rule the unit kept (keepRule, #1063): the
+   * index in its kept list. The unit reacts with each kept rule as with its own. */
+  kept?: number;
   /** Which of the reactor's Whens (index in its triggers) set this firing off
    * (or would have, on a ChainBlocked). Stamped by the kernel; absent on logs
    * from before round 2 (R2-15). */
@@ -362,7 +367,7 @@ export type EventBody =
   // A redirect interceptor (rules v2, §3.4) moved a proposed event from one unit to another.
   | { type: "Redirected"; by: AbilityRef; original: string; from: string; to: string }
   // A rule-modifying effect (rules v2, §3.5) acted: `unit` is the holder, `other` the unit whose rule it took, ran or traded.
-  | { type: "RuleMod"; unit: string; op: "copyRule" | "takeRule" | "actAgain" | "remember" | "performRemembered" | "swapRules"; other?: string }
+  | { type: "RuleMod"; unit: string; op: "copyRule" | "takeRule" | "actAgain" | "remember" | "performRemembered" | "swapRules" | "keepRule"; other?: string }
   // A delay (rules v2, §3.6) was set on `unit`: its effect lands at the end of turn `at`.
   | { type: "Delayed"; unit: string; by: AbilityRef; at: number }
   // A transform (rules v2, §3.6): `unit` is now `name` with these stats.

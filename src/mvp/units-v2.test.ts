@@ -31,9 +31,9 @@ describe("rules v2 pool", () => {
     expect(content.units).toHaveLength(40);
     expect(new Set(content.units.map((u) => u.tier))).toEqual(new Set([1, 2, 3, 4]));
     expect(contentFormProblems(content)).toEqual([]);
-    expect(Object.keys(content.statuses)).toEqual(expect.arrayContaining(["Charge", "Memories", "Shield", "Strength", "Freeze", "Blessing"]));
+    expect(Object.keys(content.statuses)).toEqual(expect.arrayContaining(["Charge", "Shield", "Strength", "Freeze", "Blessing"]));
     // #1063: one shared counter, none of the old private ones
-    for (const old of ["Grains", "Sands", "Beats", "Drums", "Mana", "Arcana", "Memory", "Chime"]) expect(content.statuses[old], old).toBeUndefined();
+    for (const old of ["Grains", "Sands", "Beats", "Drums", "Mana", "Arcana", "Memory", "Memories", "Chime"]) expect(content.statuses[old], old).toBeUndefined();
   });
 
   it("numbers stay on the old pool's scale (#1047): sleeping HP 2-12, PWR at most 6, awoken at most +4 HP / +1 PWR", () => {
@@ -144,15 +144,37 @@ describe("rules v2 pool", () => {
     }
   });
 
-  it("a v2 line fights the MVP way: Gambler flips, Raven starts with its Memory", () => {
+  it("a v2 line fights the MVP way: Gambler flips, Raven carries no status", () => {
     const unit = (name: string, copies = 1, uid = name) => lineUnitOf(content.units.find((u) => u.name === name)!, uid, copies);
     const a = [unit("Gambler"), unit("Raven", 3)];
     const b = [unit("Nautilus"), unit("Hourglass")];
-    expect(toBattleDef(a[1]!).statuses).toEqual([{ status: "Memories", stacks: 1 }]);
+    expect(toBattleDef(a[1]!).statuses ?? []).toEqual([]);
     const p = { id: "bot", name: "bot", bot: true };
     const rec = fightLines({ player: p, line: a }, { player: p, line: b }, { battleId: "x", seed: 1, kind: "round", round: 1, runId: null, at: "2026-10-13T00:00:00.000Z", content, rules: MVP_RULES });
     const lines = traceLines({ teamA: a.map(toBattleDef), teamB: b.map(toBattleDef), seed: 1, statuses: content.statuses, abilities: content.abilities }, rec.log);
     expect(lines.some((l) => /^Gambler: 50% → (double|nothing)$/.test(l))).toBe(true);
+  });
+
+  it("awoken Raven uses a fallen ally's rule once, then keeps it as a second rule with its own When (#1063)", () => {
+    const unit = (name: string, copies = 1, uid = name) => lineUnitOf(content.units.find((u) => u.name === name)!, uid, copies);
+    // Sniper (shoots the back enemy at each turn start) falls first; Raven then shoots too, every turn, as Raven.
+    const a = [unit("Sniper"), unit("Raven", 3)];
+    const b = [unit("Berserker", 3), unit("Berserker", 3, "B2"), unit("Berserker", 3, "B3")];
+    const p = { id: "bot", name: "bot", bot: true };
+    const rec = fightLines({ player: p, line: a }, { player: p, line: b }, { battleId: "x", seed: 1, kind: "round", round: 1, runId: null, at: "2026-10-14T00:00:00.000Z", content, rules: MVP_RULES });
+    const log = rec.log as Array<{ type: string; op?: string; unit?: string; other?: string; turn: number; source: "kernel" | { unit: string; kept?: number } }>;
+    const is = (id: string | undefined, name: string) => id?.endsWith(`:${name}`) ?? false;
+    const death = log.find((e) => e.type === "Death" && is(e.unit, "Sniper"));
+    expect(death).toBeDefined();
+    const mods = log.filter((e) => e.type === "RuleMod" && is(e.unit, "Raven") && is(e.other, "Sniper")).map((e) => e.op);
+    expect(mods).toEqual(["remember", "performRemembered", "keepRule"]);
+    // The kept rule fires on later turns, sourced to Raven's kept slot, and the memory list stays empty (no Memories status).
+    const keptHits = log.filter((e) => e.type === "Hurt" && e.source !== "kernel" && is(e.source.unit, "Raven") && e.source.kept === 0);
+    expect(keptHits.length).toBeGreaterThan(0);
+    expect(keptHits.every((e) => e.turn > death!.turn)).toBe(true);
+    expect(log.some((e) => e.type === "StatusApplied" && (e as { status?: string }).status === "Memories")).toBe(false);
+    const lines = traceLines({ teamA: a.map(toBattleDef), teamB: b.map(toBattleDef), seed: 1, statuses: content.statuses, abilities: content.abilities }, rec.log);
+    expect(lines.some((l) => /^Raven keeps the rule of Sniper$/.test(l))).toBe(true);
   });
 
   // Batch 1's gate (#1046, reopened 10-14): the card says the whole unit, in
@@ -179,7 +201,7 @@ describe("rules v2 pool", () => {
     expect(say("Hourglass", "sleeping", "ru")).toMatch(/^Конец хода: получить 1 Заряд, и если у него 3 Заряда или больше, /);
     expect(say("Drummer", "sleeping", "en")).toMatch(/^Ally strikes: gain 1 Charge, and if it has 3\+ Charge, 1 Strength to every ally behind; otherwise, nothing, /);
     expect(say("Raven", "sleeping", "en")).toBe("Ally dies: remember the rule of that unit, then perform the oldest remembered rule once and forget it.");
-    expect(say("Raven", "awoken", "en")).toMatch(/Turn start: perform every remembered rule\.$/);
+    expect(say("Raven", "awoken", "en")).toMatch(/, then keep the rule of that unit as a second rule of its own\.$/);
     expect(say("Chrysalis", "sleeping", "en")).toBe("Turn start, on turn 3: become Butterfly (2/3). Butterfly: Turn start: PWR damage to all enemies.");
     // every form that gives or starts with a status carrying a rule, or
     // becomes a unit with a rule, says more than its own clause
@@ -200,7 +222,7 @@ describe("rules v2 pool", () => {
     expect(ruStatusName("Charge")).toBe("Charge");
     setKnownStatusNames(content.statuses);
     try {
-      expect(["Charge", "Memories"].map(ruStatusName)).toEqual(["Заряд", "Воспоминания"]);
+      expect(["Charge"].map(ruStatusName)).toEqual(["Заряд"]);
     } finally {
       setKnownStatusNames(undefined);
     }

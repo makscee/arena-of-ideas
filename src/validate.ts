@@ -425,7 +425,7 @@ function validateAbility(ab: unknown, registry: StatusRegistry, abilities: Abili
   }
 }
 
-const RULE_MOD_EFFECTS = ["copyRule", "actAgain", "remember", "performRemembered", "swapRules"] as const;
+const RULE_MOD_EFFECTS = ["copyRule", "actAgain", "remember", "performRemembered", "swapRules", "keepRule"] as const;
 const CHAIN_LINK_EVENTS = ["StatusApplied", "StatusRemoved", "Heal", "StatChanged"] as const;
 
 /** A condition: the v1 hp threshold, or a v2 word (src/words/) with its own

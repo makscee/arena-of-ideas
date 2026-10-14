@@ -44,7 +44,7 @@ export function traceLines(input: BattleInput, log: readonly BattleEvent[]): str
     }
     if (e.type === "RuleMod") {
       const o = name(e.other ?? "");
-      const said = { copyRule: `${name(e.unit)} copies the rule of ${o}`, takeRule: `${name(e.unit)} takes the rule of ${o}`, actAgain: `${name(e.unit)}: ${o} acts again`, remember: `${name(e.unit)} remembers the rule of ${o}`, performRemembered: `${name(e.unit)} performs the rule of ${o}`, swapRules: `${name(e.unit)} trades rules with ${o}` };
+      const said = { copyRule: `${name(e.unit)} copies the rule of ${o}`, takeRule: `${name(e.unit)} takes the rule of ${o}`, actAgain: `${name(e.unit)}: ${o} acts again`, remember: `${name(e.unit)} remembers the rule of ${o}`, performRemembered: `${name(e.unit)} performs the rule of ${o}`, swapRules: `${name(e.unit)} trades rules with ${o}`, keepRule: `${name(e.unit)} keeps the rule of ${o}` };
       out.push(said[e.op]);
       continue;
     }

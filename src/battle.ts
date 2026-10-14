@@ -79,6 +79,8 @@ interface UnitState {
   transformed?: boolean;
   /** Rules it remembered (rules v2 §3.5), oldest first, with whose they were. */
   remembered?: { from: string; rule: Reaction[] }[];
+  /** Rules it keeps as second rules of its own (#1063, Raven awoken), oldest first, with whose they were. */
+  kept?: { from: string; rule: Reaction[] }[];
 }
 
 interface ReactorEntry {
@@ -516,6 +518,15 @@ class Engine {
         const does = u.abilities.map((ab, i) => ({ ref: { unit: u.id, ability: i }, effects: ab.effects, selectors: ab.selectors }));
         out.push({ ref: does[0]!.ref, holder: u.id, ability: first, does });
       }
+      // A kept rule (#1063, Raven awoken) reacts as the unit's own second rule: its own When, Who and Does.
+      if (!u.silenced) {
+        (u.kept ?? []).forEach((k, i) => {
+          const head = k.rule[0];
+          if (!head) return;
+          const does = k.rule.map((ab, j) => ({ ref: { unit: u.id, ability: j, kept: i }, effects: ab.effects, selectors: ab.selectors }));
+          out.push({ ref: does[0]!.ref, holder: u.id, ability: head, does });
+        });
+      }
       for (const st of [...u.statuses].sort((p, q) => p.attachedAt - q.attachedAt)) {
         st.def.abilities.forEach((ab, i) => {
           const triggers = st.def.triggers ?? ab.whens;
@@ -836,6 +847,12 @@ class Engine {
         note("swapRules", target.id);
         return;
       }
+      case "keepRule":
+        // #1063, Raven awoken: the target's rule becomes a second rule of the holder for the rest of the battle.
+        if (target.abilities.length === 0) return;
+        (holder.kept ??= []).push({ from: target.id, rule: [...target.abilities] });
+        note("keepRule", target.id);
+        return;
       case "remember":
         if (target.abilities.length === 0) return;
         (holder.remembered ??= []).push({ from: target.id, rule: [...target.abilities] });
@@ -1309,7 +1326,7 @@ function withWhen(r: ReactorEntry, when: number): ReactorEntry {
 }
 
 function refKey(r: AbilityRef): string {
-  return `${r.unit}|${r.status ?? ""}|${r.ability}`;
+  return `${r.unit}|${r.status ?? ""}|${r.ability}|${r.kept ?? ""}`;
 }
 
 function pairKey(a: string, b: string): string {
