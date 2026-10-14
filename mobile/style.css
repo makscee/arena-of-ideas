@@ -1776,6 +1776,10 @@ button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padd
 .seal-list { display: flex; flex-direction: column; gap: 8px; }
 .seal { display: flex; flex-direction: row; align-items: flex-start; gap: 12px; padding: 8px 10px; text-align: left; background: transparent; border: var(--bw, 2px) solid var(--outline); box-shadow: none; color: var(--text); font-weight: normal; position: relative; }
 .seal > .card { width: 72px; flex: none; }
+/* #1122: the claim sheet's small cards grow to fit: the name takes 2 lines
+   instead of an ellipsis, and the PWR/HP badges stay inside the card */
+.seal > .card { height: auto; min-height: 92px; padding-bottom: 7px; gap: 3px; }
+.seal > .card .name { white-space: normal; line-height: 13px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: clip; overflow-wrap: break-word; }
 .seal.on { border-color: var(--action); }
 .seal-words { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
 .seal-name { font-size: 15px; }
