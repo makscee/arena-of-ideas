@@ -19,6 +19,6 @@ export const flip: ConditionWord<C> = {
   ru: (c) => `с вероятностью ${Math.round(c.p * 100)}%`,
   example: {
     input: example([rule("Gambler", 6, 1, { on: "TurnStart" }, { kind: "frontEnemy" }, "Zap", { kind: "flip", p: 0.5 })], [plain("Brute", 9, 1)]),
-    trace: "Gambler flips: heads",
+    trace: "Gambler: 50% → double",
   },
 };

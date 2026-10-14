@@ -1154,8 +1154,8 @@ describe("rules v2 event captions", () => {
   const log = (body: object): BattleEvent[] => [{ id: 0, causedBy: null, source: "kernel", type: "TurnStart", turn: 1 } as unknown as BattleEvent, at(body)];
   const plainName = (id: string) => id.replace(/^[AB]\d+:/, "");
   const cases: [object, string, string][] = [
-    [{ type: "Flipped", unit: "A1:Gambler", by: ref, heads: true }, "Gambler flips a coin → heads", "Gambler бросает монету → орёл"],
-    [{ type: "Flipped", unit: "A1:Gambler", by: ref, heads: false }, "Gambler flips a coin → tails", "Gambler бросает монету → решка"],
+    [{ type: "Flipped", unit: "A1:Gambler", by: ref, heads: true }, "Gambler: 50% → double", "Gambler: 50% → двойной урон"],
+    [{ type: "Flipped", unit: "A1:Gambler", by: ref, heads: false }, "Gambler: 50% → nothing", "Gambler: 50% → ничего"],
     [{ type: "Redirected", by: { unit: "A2:Magnet" }, original: "Hurt", from: "A1:Gambler", to: "A2:Magnet" }, "Magnet → takes the hit meant for Gambler", "Magnet → перехватывает удар (цель: Gambler)"],
     [{ type: "RuleMod", unit: "A1:Mirror", op: "copyRule", other: "B1:Sniper" }, "Mirror copies the rule of Sniper", "Mirror копирует правило Sniper"],
     [{ type: "Transformed", unit: "A1:Seed", name: "Tree", hp: 8, pwr: 0 }, "Seed becomes Tree (0/8)", "Seed превращается в Tree (0/8)"],

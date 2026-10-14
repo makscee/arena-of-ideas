@@ -19,7 +19,7 @@ export function traceLines(input: BattleInput, log: readonly BattleEvent[]): str
   const firings = new Map<string, { line: number; holder: string; def: UnitDef; targets: string[]; did: string[] }>();
   for (const e of log) {
     if (e.type === "Flipped") {
-      out.push(`${name(e.unit)} flips: ${e.heads ? "heads" : "tails"}`);
+      out.push(`${name(e.unit)}: 50% → ${e.heads ? "double" : "nothing"}`); // #1063: the chance, never a coin
       continue;
     }
     if (e.type === "Redirected") {

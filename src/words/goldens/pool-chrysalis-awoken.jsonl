@@ -1,57 +1,90 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Chrysalis","name":"Chrysalis","hp":10,"pwr":2},{"id":"A2:Gravedigger","name":"Gravedigger","hp":3,"pwr":2}],"B":[{"id":"B1:Scavenger","name":"Scavenger","hp":12,"pwr":2},{"id":"B2:Prism","name":"Prism","hp":12,"pwr":6},{"id":"B3:War Horn","name":"War Horn","hp":9,"pwr":4}]}}
-{"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":2,"turn":1,"causedBy":1,"source":{"unit":"A2:Gravedigger","ability":0,"when":0},"type":"Hurt","unit":"B1:Scavenger","amount":0,"hpAfter":12}
-{"id":3,"turn":1,"causedBy":1,"source":{"unit":"B3:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Scavenger","status":"Strength","stacks":1,"total":1}
-{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"StatChanged","unit":"B1:Scavenger","stat":"pwr","delta":1,"now":3}
-{"id":5,"turn":1,"causedBy":1,"source":{"unit":"B3:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Prism","status":"Strength","stacks":1,"total":1}
-{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"StatChanged","unit":"B2:Prism","stat":"pwr","delta":1,"now":7}
-{"id":7,"turn":1,"causedBy":1,"source":{"unit":"B3:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B3:War Horn","status":"Strength","stacks":1,"total":1}
-{"id":8,"turn":1,"causedBy":7,"source":"kernel","type":"StatChanged","unit":"B3:War Horn","stat":"pwr","delta":1,"now":5}
-{"id":9,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Chrysalis","b":"B1:Scavenger","first":"B1:Scavenger"}
-{"id":10,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Scavenger","defender":"A1:Chrysalis"}
-{"id":11,"turn":1,"causedBy":10,"source":"kernel","type":"Hurt","unit":"A1:Chrysalis","amount":3,"hpAfter":7}
-{"id":12,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Chrysalis","defender":"B1:Scavenger"}
-{"id":13,"turn":1,"causedBy":12,"source":"kernel","type":"Hurt","unit":"B1:Scavenger","amount":2,"hpAfter":10}
-{"id":14,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":15,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":16,"turn":2,"causedBy":15,"source":{"unit":"A2:Gravedigger","ability":0,"when":0},"type":"Hurt","unit":"B1:Scavenger","amount":0,"hpAfter":10}
-{"id":17,"turn":2,"causedBy":15,"source":{"unit":"B3:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Scavenger","status":"Strength","stacks":1,"total":2}
-{"id":18,"turn":2,"causedBy":17,"source":"kernel","type":"StatChanged","unit":"B1:Scavenger","stat":"pwr","delta":1,"now":4}
-{"id":19,"turn":2,"causedBy":15,"source":{"unit":"B3:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Prism","status":"Strength","stacks":1,"total":2}
-{"id":20,"turn":2,"causedBy":19,"source":"kernel","type":"StatChanged","unit":"B2:Prism","stat":"pwr","delta":1,"now":8}
-{"id":21,"turn":2,"causedBy":15,"source":{"unit":"B3:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B3:War Horn","status":"Strength","stacks":1,"total":2}
-{"id":22,"turn":2,"causedBy":21,"source":"kernel","type":"StatChanged","unit":"B3:War Horn","stat":"pwr","delta":1,"now":6}
-{"id":23,"turn":2,"causedBy":15,"source":"kernel","type":"Strike","striker":"B1:Scavenger","defender":"A1:Chrysalis"}
-{"id":24,"turn":2,"causedBy":23,"source":"kernel","type":"Hurt","unit":"A1:Chrysalis","amount":4,"hpAfter":3}
-{"id":25,"turn":2,"causedBy":15,"source":"kernel","type":"Strike","striker":"A1:Chrysalis","defender":"B1:Scavenger"}
-{"id":26,"turn":2,"causedBy":25,"source":"kernel","type":"Hurt","unit":"B1:Scavenger","amount":2,"hpAfter":8}
-{"id":27,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":28,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":29,"turn":3,"causedBy":28,"source":{"unit":"A1:Chrysalis","ability":0,"when":0},"type":"Transformed","unit":"A1:Chrysalis","name":"Monarch","hp":1,"pwr":2}
-{"id":30,"turn":3,"causedBy":28,"source":{"unit":"A2:Gravedigger","ability":0,"when":0},"type":"Hurt","unit":"B1:Scavenger","amount":0,"hpAfter":8}
-{"id":31,"turn":3,"causedBy":28,"source":{"unit":"B3:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Scavenger","status":"Strength","stacks":1,"total":3}
-{"id":32,"turn":3,"causedBy":31,"source":"kernel","type":"StatChanged","unit":"B1:Scavenger","stat":"pwr","delta":1,"now":5}
-{"id":33,"turn":3,"causedBy":28,"source":{"unit":"B3:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Prism","status":"Strength","stacks":1,"total":3}
-{"id":34,"turn":3,"causedBy":33,"source":"kernel","type":"StatChanged","unit":"B2:Prism","stat":"pwr","delta":1,"now":9}
-{"id":35,"turn":3,"causedBy":28,"source":{"unit":"B3:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B3:War Horn","status":"Strength","stacks":1,"total":3}
-{"id":36,"turn":3,"causedBy":35,"source":"kernel","type":"StatChanged","unit":"B3:War Horn","stat":"pwr","delta":1,"now":7}
-{"id":37,"turn":3,"causedBy":28,"source":"kernel","type":"Strike","striker":"B1:Scavenger","defender":"A1:Chrysalis"}
-{"id":38,"turn":3,"causedBy":37,"source":"kernel","type":"Hurt","unit":"A1:Chrysalis","amount":5,"hpAfter":-4}
-{"id":39,"turn":3,"causedBy":38,"source":"kernel","type":"Death","unit":"A1:Chrysalis"}
-{"id":40,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":41,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":42,"turn":4,"causedBy":41,"source":{"unit":"A2:Gravedigger","ability":0,"when":0},"type":"Hurt","unit":"B1:Scavenger","amount":1,"hpAfter":7}
-{"id":43,"turn":4,"causedBy":41,"source":{"unit":"B3:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Scavenger","status":"Strength","stacks":1,"total":4}
-{"id":44,"turn":4,"causedBy":43,"source":"kernel","type":"StatChanged","unit":"B1:Scavenger","stat":"pwr","delta":1,"now":6}
-{"id":45,"turn":4,"causedBy":41,"source":{"unit":"B3:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Prism","status":"Strength","stacks":1,"total":4}
-{"id":46,"turn":4,"causedBy":45,"source":"kernel","type":"StatChanged","unit":"B2:Prism","stat":"pwr","delta":1,"now":10}
-{"id":47,"turn":4,"causedBy":41,"source":{"unit":"B3:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B3:War Horn","status":"Strength","stacks":1,"total":4}
-{"id":48,"turn":4,"causedBy":47,"source":"kernel","type":"StatChanged","unit":"B3:War Horn","stat":"pwr","delta":1,"now":8}
-{"id":49,"turn":4,"causedBy":41,"source":"kernel","type":"PairFaced","a":"A2:Gravedigger","b":"B1:Scavenger","first":"A2:Gravedigger"}
-{"id":50,"turn":4,"causedBy":41,"source":"kernel","type":"Strike","striker":"A2:Gravedigger","defender":"B1:Scavenger"}
-{"id":51,"turn":4,"causedBy":50,"source":"kernel","type":"Hurt","unit":"B1:Scavenger","amount":2,"hpAfter":5}
-{"id":52,"turn":4,"causedBy":41,"source":"kernel","type":"Strike","striker":"B1:Scavenger","defender":"A2:Gravedigger"}
-{"id":53,"turn":4,"causedBy":52,"source":"kernel","type":"Hurt","unit":"A2:Gravedigger","amount":6,"hpAfter":-3}
-{"id":54,"turn":4,"causedBy":53,"source":"kernel","type":"Death","unit":"A2:Gravedigger"}
-{"id":55,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":56,"turn":4,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":4}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Chrysalis","name":"Chrysalis","hp":10,"pwr":2},{"id":"A2:Trickster","name":"Trickster","hp":2,"pwr":0}],"B":[{"id":"B1:Coin Thief","name":"Coin Thief","hp":6,"pwr":1},{"id":"B2:War Horn","name":"War Horn","hp":9,"pwr":4},{"id":"B3:Oracle","name":"Oracle","hp":6,"pwr":1}]}}
+{"id":1,"turn":0,"causedBy":0,"source":{"unit":"A2:Trickster","ability":0,"when":0},"type":"RuleMod","unit":"A2:Trickster","op":"swapRules","other":"B1:Coin Thief"}
+{"id":2,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":3,"turn":1,"causedBy":2,"source":{"unit":"A2:Trickster","ability":0,"when":0},"type":"StatusApplied","unit":"B2:War Horn","status":"Curse","stacks":1,"total":1}
+{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"StatChanged","unit":"B2:War Horn","stat":"pwr","delta":-1,"now":3}
+{"id":5,"turn":1,"causedBy":2,"source":{"unit":"A2:Trickster","ability":1,"when":0},"type":"StatusApplied","unit":"A2:Trickster","status":"Strength","stacks":1,"total":1}
+{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"StatChanged","unit":"A2:Trickster","stat":"pwr","delta":1,"now":1}
+{"id":7,"turn":1,"causedBy":2,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Coin Thief","status":"Strength","stacks":1,"total":1}
+{"id":8,"turn":1,"causedBy":7,"source":"kernel","type":"StatChanged","unit":"B1:Coin Thief","stat":"pwr","delta":1,"now":2}
+{"id":9,"turn":1,"causedBy":2,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B2:War Horn","status":"Strength","stacks":1,"total":1}
+{"id":10,"turn":1,"causedBy":9,"source":"kernel","type":"StatChanged","unit":"B2:War Horn","stat":"pwr","delta":1,"now":4}
+{"id":11,"turn":1,"causedBy":2,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Oracle","status":"Strength","stacks":1,"total":1}
+{"id":12,"turn":1,"causedBy":11,"source":"kernel","type":"StatChanged","unit":"B3:Oracle","stat":"pwr","delta":1,"now":2}
+{"id":13,"turn":1,"causedBy":2,"source":"kernel","type":"PairFaced","a":"A1:Chrysalis","b":"B1:Coin Thief","first":"A1:Chrysalis"}
+{"id":14,"turn":1,"causedBy":2,"source":"kernel","type":"Strike","striker":"A1:Chrysalis","defender":"B1:Coin Thief"}
+{"id":15,"turn":1,"causedBy":14,"source":"kernel","type":"Hurt","unit":"B1:Coin Thief","amount":2,"hpAfter":4}
+{"id":16,"turn":1,"causedBy":2,"source":"kernel","type":"Strike","striker":"B1:Coin Thief","defender":"A1:Chrysalis"}
+{"id":17,"turn":1,"causedBy":16,"source":"kernel","type":"Hurt","unit":"A1:Chrysalis","amount":2,"hpAfter":8}
+{"id":18,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":19,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":20,"turn":2,"causedBy":19,"source":{"unit":"A2:Trickster","ability":0,"when":0},"type":"StatusApplied","unit":"B2:War Horn","status":"Curse","stacks":1,"total":2}
+{"id":21,"turn":2,"causedBy":20,"source":"kernel","type":"StatChanged","unit":"B2:War Horn","stat":"pwr","delta":-1,"now":3}
+{"id":22,"turn":2,"causedBy":19,"source":{"unit":"A2:Trickster","ability":1,"when":0},"type":"StatusApplied","unit":"A2:Trickster","status":"Strength","stacks":1,"total":2}
+{"id":23,"turn":2,"causedBy":22,"source":"kernel","type":"StatChanged","unit":"A2:Trickster","stat":"pwr","delta":1,"now":2}
+{"id":24,"turn":2,"causedBy":19,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Coin Thief","status":"Strength","stacks":1,"total":2}
+{"id":25,"turn":2,"causedBy":24,"source":"kernel","type":"StatChanged","unit":"B1:Coin Thief","stat":"pwr","delta":1,"now":3}
+{"id":26,"turn":2,"causedBy":19,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B2:War Horn","status":"Strength","stacks":1,"total":2}
+{"id":27,"turn":2,"causedBy":26,"source":"kernel","type":"StatChanged","unit":"B2:War Horn","stat":"pwr","delta":1,"now":4}
+{"id":28,"turn":2,"causedBy":19,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Oracle","status":"Strength","stacks":1,"total":2}
+{"id":29,"turn":2,"causedBy":28,"source":"kernel","type":"StatChanged","unit":"B3:Oracle","stat":"pwr","delta":1,"now":3}
+{"id":30,"turn":2,"causedBy":19,"source":"kernel","type":"Strike","striker":"A1:Chrysalis","defender":"B1:Coin Thief"}
+{"id":31,"turn":2,"causedBy":30,"source":"kernel","type":"Hurt","unit":"B1:Coin Thief","amount":2,"hpAfter":2}
+{"id":32,"turn":2,"causedBy":19,"source":"kernel","type":"Strike","striker":"B1:Coin Thief","defender":"A1:Chrysalis"}
+{"id":33,"turn":2,"causedBy":32,"source":"kernel","type":"Hurt","unit":"A1:Chrysalis","amount":3,"hpAfter":5}
+{"id":34,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":35,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":36,"turn":3,"causedBy":35,"source":{"unit":"A1:Chrysalis","ability":0,"when":0},"type":"Transformed","unit":"A1:Chrysalis","name":"Monarch","hp":2,"pwr":2}
+{"id":37,"turn":3,"causedBy":35,"source":{"unit":"A2:Trickster","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Oracle","status":"Curse","stacks":1,"total":1}
+{"id":38,"turn":3,"causedBy":37,"source":"kernel","type":"StatChanged","unit":"B3:Oracle","stat":"pwr","delta":-1,"now":2}
+{"id":39,"turn":3,"causedBy":35,"source":{"unit":"A2:Trickster","ability":1,"when":0},"type":"StatusApplied","unit":"A2:Trickster","status":"Strength","stacks":1,"total":3}
+{"id":40,"turn":3,"causedBy":39,"source":"kernel","type":"StatChanged","unit":"A2:Trickster","stat":"pwr","delta":1,"now":3}
+{"id":41,"turn":3,"causedBy":35,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Coin Thief","status":"Strength","stacks":1,"total":3}
+{"id":42,"turn":3,"causedBy":41,"source":"kernel","type":"StatChanged","unit":"B1:Coin Thief","stat":"pwr","delta":1,"now":4}
+{"id":43,"turn":3,"causedBy":35,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B2:War Horn","status":"Strength","stacks":1,"total":3}
+{"id":44,"turn":3,"causedBy":43,"source":"kernel","type":"StatChanged","unit":"B2:War Horn","stat":"pwr","delta":1,"now":5}
+{"id":45,"turn":3,"causedBy":35,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Oracle","status":"Strength","stacks":1,"total":3}
+{"id":46,"turn":3,"causedBy":45,"source":"kernel","type":"StatChanged","unit":"B3:Oracle","stat":"pwr","delta":1,"now":3}
+{"id":47,"turn":3,"causedBy":35,"source":{"unit":"B3:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Chrysalis","status":"Curse","stacks":1,"total":1}
+{"id":48,"turn":3,"causedBy":47,"source":"kernel","type":"StatChanged","unit":"A1:Chrysalis","stat":"pwr","delta":-1,"now":1}
+{"id":49,"turn":3,"causedBy":35,"source":"kernel","type":"Strike","striker":"A1:Chrysalis","defender":"B1:Coin Thief"}
+{"id":50,"turn":3,"causedBy":49,"source":"kernel","type":"Hurt","unit":"B1:Coin Thief","amount":1,"hpAfter":1}
+{"id":51,"turn":3,"causedBy":35,"source":"kernel","type":"Strike","striker":"B1:Coin Thief","defender":"A1:Chrysalis"}
+{"id":52,"turn":3,"causedBy":51,"source":"kernel","type":"Hurt","unit":"A1:Chrysalis","amount":4,"hpAfter":-2}
+{"id":53,"turn":3,"causedBy":52,"source":"kernel","type":"Death","unit":"A1:Chrysalis"}
+{"id":54,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":55,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":56,"turn":4,"causedBy":55,"source":{"unit":"A2:Trickster","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Oracle","status":"Curse","stacks":1,"total":2}
+{"id":57,"turn":4,"causedBy":56,"source":"kernel","type":"StatChanged","unit":"B3:Oracle","stat":"pwr","delta":-1,"now":2}
+{"id":58,"turn":4,"causedBy":55,"source":{"unit":"A2:Trickster","ability":1,"when":0},"type":"StatusApplied","unit":"A2:Trickster","status":"Strength","stacks":1,"total":4}
+{"id":59,"turn":4,"causedBy":58,"source":"kernel","type":"StatChanged","unit":"A2:Trickster","stat":"pwr","delta":1,"now":4}
+{"id":60,"turn":4,"causedBy":55,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Coin Thief","status":"Strength","stacks":1,"total":4}
+{"id":61,"turn":4,"causedBy":60,"source":"kernel","type":"StatChanged","unit":"B1:Coin Thief","stat":"pwr","delta":1,"now":5}
+{"id":62,"turn":4,"causedBy":55,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B2:War Horn","status":"Strength","stacks":1,"total":4}
+{"id":63,"turn":4,"causedBy":62,"source":"kernel","type":"StatChanged","unit":"B2:War Horn","stat":"pwr","delta":1,"now":6}
+{"id":64,"turn":4,"causedBy":55,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Oracle","status":"Strength","stacks":1,"total":4}
+{"id":65,"turn":4,"causedBy":64,"source":"kernel","type":"StatChanged","unit":"B3:Oracle","stat":"pwr","delta":1,"now":3}
+{"id":66,"turn":4,"causedBy":55,"source":{"unit":"B3:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Trickster","status":"Curse","stacks":1,"total":1}
+{"id":67,"turn":4,"causedBy":66,"source":"kernel","type":"StatChanged","unit":"A2:Trickster","stat":"pwr","delta":-1,"now":3}
+{"id":68,"turn":4,"causedBy":55,"source":"kernel","type":"PairFaced","a":"A2:Trickster","b":"B1:Coin Thief","first":"A2:Trickster"}
+{"id":69,"turn":4,"causedBy":55,"source":"kernel","type":"Strike","striker":"A2:Trickster","defender":"B1:Coin Thief"}
+{"id":70,"turn":4,"causedBy":69,"source":"kernel","type":"Hurt","unit":"B1:Coin Thief","amount":3,"hpAfter":-2}
+{"id":71,"turn":4,"causedBy":70,"source":"kernel","type":"Death","unit":"B1:Coin Thief"}
+{"id":72,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":73,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":74,"turn":5,"causedBy":73,"source":{"unit":"A2:Trickster","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Oracle","status":"Curse","stacks":1,"total":3}
+{"id":75,"turn":5,"causedBy":74,"source":"kernel","type":"StatChanged","unit":"B3:Oracle","stat":"pwr","delta":-1,"now":2}
+{"id":76,"turn":5,"causedBy":73,"source":{"unit":"A2:Trickster","ability":1,"when":0},"type":"StatusApplied","unit":"A2:Trickster","status":"Strength","stacks":1,"total":5}
+{"id":77,"turn":5,"causedBy":76,"source":"kernel","type":"StatChanged","unit":"A2:Trickster","stat":"pwr","delta":1,"now":4}
+{"id":78,"turn":5,"causedBy":73,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B2:War Horn","status":"Strength","stacks":1,"total":5}
+{"id":79,"turn":5,"causedBy":78,"source":"kernel","type":"StatChanged","unit":"B2:War Horn","stat":"pwr","delta":1,"now":7}
+{"id":80,"turn":5,"causedBy":73,"source":{"unit":"B2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Oracle","status":"Strength","stacks":1,"total":5}
+{"id":81,"turn":5,"causedBy":80,"source":"kernel","type":"StatChanged","unit":"B3:Oracle","stat":"pwr","delta":1,"now":3}
+{"id":82,"turn":5,"causedBy":73,"source":{"unit":"B3:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Trickster","status":"Curse","stacks":1,"total":2}
+{"id":83,"turn":5,"causedBy":82,"source":"kernel","type":"StatChanged","unit":"A2:Trickster","stat":"pwr","delta":-1,"now":3}
+{"id":84,"turn":5,"causedBy":73,"source":"kernel","type":"PairFaced","a":"A2:Trickster","b":"B2:War Horn","first":"B2:War Horn"}
+{"id":85,"turn":5,"causedBy":73,"source":"kernel","type":"Strike","striker":"B2:War Horn","defender":"A2:Trickster"}
+{"id":86,"turn":5,"causedBy":85,"source":"kernel","type":"Hurt","unit":"A2:Trickster","amount":7,"hpAfter":-5}
+{"id":87,"turn":5,"causedBy":86,"source":"kernel","type":"Death","unit":"A2:Trickster"}
+{"id":88,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":89,"turn":5,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":5}

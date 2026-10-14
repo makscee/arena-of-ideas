@@ -1,0 +1,108 @@
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Frost Witch","name":"Frost Witch","hp":7,"pwr":1},{"id":"A2:Candle","name":"Candle","hp":8,"pwr":4}],"B":[{"id":"B1:Raven","name":"Raven","hp":4,"pwr":1},{"id":"B2:Leech","name":"Leech","hp":7,"pwr":4},{"id":"B3:Drummer","name":"Drummer","hp":12,"pwr":5}]}}
+{"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":2,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Frost Witch","b":"B1:Raven","first":"B1:Raven"}
+{"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Raven","defender":"A1:Frost Witch"}
+{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"Hurt","unit":"A1:Frost Witch","amount":1,"hpAfter":6}
+{"id":5,"turn":1,"causedBy":3,"source":{"unit":"B3:Drummer","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Drummer","status":"Charge","stacks":1,"total":1}
+{"id":6,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Frost Witch","defender":"B1:Raven"}
+{"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"Hurt","unit":"B1:Raven","amount":1,"hpAfter":3}
+{"id":8,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":9,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":10,"turn":2,"causedBy":9,"source":{"unit":"A1:Frost Witch","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Raven","status":"Freeze","stacks":1,"total":1}
+{"id":11,"turn":2,"causedBy":9,"source":{"unit":"A1:Frost Witch","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Leech","status":"Freeze","stacks":1,"total":1}
+{"id":12,"turn":2,"causedBy":9,"source":{"unit":"A1:Frost Witch","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Drummer","status":"Freeze","stacks":1,"total":1}
+{"id":13,"turn":2,"causedBy":9,"source":{"unit":"B1:Raven","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B1:Raven","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"B1:Raven"}
+{"id":14,"turn":2,"causedBy":13,"source":{"unit":"B1:Raven","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"B1:Raven","status":"Freeze","stacks":1,"remaining":0}
+{"id":15,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"A1:Frost Witch","defender":"B1:Raven"}
+{"id":16,"turn":2,"causedBy":15,"source":"kernel","type":"Hurt","unit":"B1:Raven","amount":1,"hpAfter":2}
+{"id":17,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":18,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":19,"turn":3,"causedBy":18,"source":"kernel","type":"Strike","striker":"B1:Raven","defender":"A1:Frost Witch"}
+{"id":20,"turn":3,"causedBy":19,"source":"kernel","type":"Hurt","unit":"A1:Frost Witch","amount":1,"hpAfter":5}
+{"id":21,"turn":3,"causedBy":19,"source":{"unit":"B3:Drummer","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Drummer","status":"Charge","stacks":1,"total":2}
+{"id":22,"turn":3,"causedBy":18,"source":"kernel","type":"Strike","striker":"A1:Frost Witch","defender":"B1:Raven"}
+{"id":23,"turn":3,"causedBy":22,"source":"kernel","type":"Hurt","unit":"B1:Raven","amount":1,"hpAfter":1}
+{"id":24,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":25,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":26,"turn":4,"causedBy":25,"source":"kernel","type":"Strike","striker":"B1:Raven","defender":"A1:Frost Witch"}
+{"id":27,"turn":4,"causedBy":26,"source":"kernel","type":"Hurt","unit":"A1:Frost Witch","amount":1,"hpAfter":4}
+{"id":28,"turn":4,"causedBy":26,"source":{"unit":"B3:Drummer","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Drummer","status":"Charge","stacks":1,"total":3}
+{"id":29,"turn":4,"causedBy":26,"source":{"unit":"B3:Drummer","ability":2,"when":0},"type":"StatusRemoved","unit":"B3:Drummer","status":"Charge","stacks":3,"remaining":0}
+{"id":30,"turn":4,"causedBy":25,"source":"kernel","type":"Strike","striker":"A1:Frost Witch","defender":"B1:Raven"}
+{"id":31,"turn":4,"causedBy":30,"source":"kernel","type":"Hurt","unit":"B1:Raven","amount":1,"hpAfter":0}
+{"id":32,"turn":4,"causedBy":31,"source":"kernel","type":"Death","unit":"B1:Raven"}
+{"id":33,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":34,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":35,"turn":5,"causedBy":34,"source":"kernel","type":"PairFaced","a":"A1:Frost Witch","b":"B2:Leech","first":"A1:Frost Witch"}
+{"id":36,"turn":5,"causedBy":34,"source":"kernel","type":"Strike","striker":"A1:Frost Witch","defender":"B2:Leech"}
+{"id":37,"turn":5,"causedBy":36,"source":"kernel","type":"Hurt","unit":"B2:Leech","amount":1,"hpAfter":6}
+{"id":38,"turn":5,"causedBy":34,"source":{"unit":"B2:Leech","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B2:Leech","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"B2:Leech"}
+{"id":39,"turn":5,"causedBy":38,"source":{"unit":"B2:Leech","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"B2:Leech","status":"Freeze","stacks":1,"remaining":0}
+{"id":40,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":41,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":42,"turn":6,"causedBy":41,"source":"kernel","type":"Strike","striker":"A1:Frost Witch","defender":"B2:Leech"}
+{"id":43,"turn":6,"causedBy":42,"source":"kernel","type":"Hurt","unit":"B2:Leech","amount":1,"hpAfter":5}
+{"id":44,"turn":6,"causedBy":41,"source":"kernel","type":"Strike","striker":"B2:Leech","defender":"A1:Frost Witch"}
+{"id":45,"turn":6,"causedBy":44,"source":"kernel","type":"Hurt","unit":"A1:Frost Witch","amount":4,"hpAfter":0}
+{"id":46,"turn":6,"causedBy":45,"source":"kernel","type":"Death","unit":"A1:Frost Witch"}
+{"id":47,"turn":6,"causedBy":44,"source":{"unit":"B2:Leech","ability":0,"when":0},"type":"Heal","unit":"B2:Leech","amount":2,"hpAfter":7}
+{"id":48,"turn":6,"causedBy":44,"source":{"unit":"B3:Drummer","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Drummer","status":"Charge","stacks":1,"total":1}
+{"id":49,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":50,"turn":7,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":51,"turn":7,"causedBy":50,"source":"kernel","type":"PairFaced","a":"A2:Candle","b":"B2:Leech","first":"B2:Leech"}
+{"id":52,"turn":7,"causedBy":50,"source":"kernel","type":"Strike","striker":"B2:Leech","defender":"A2:Candle"}
+{"id":53,"turn":7,"causedBy":52,"source":"kernel","type":"Hurt","unit":"A2:Candle","amount":4,"hpAfter":4}
+{"id":54,"turn":7,"causedBy":52,"source":{"unit":"B3:Drummer","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Drummer","status":"Charge","stacks":1,"total":2}
+{"id":55,"turn":7,"causedBy":50,"source":"kernel","type":"Strike","striker":"A2:Candle","defender":"B2:Leech"}
+{"id":56,"turn":7,"causedBy":55,"source":"kernel","type":"Hurt","unit":"B2:Leech","amount":4,"hpAfter":3}
+{"id":57,"turn":7,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":58,"turn":8,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":59,"turn":8,"causedBy":58,"source":"kernel","type":"Strike","striker":"B2:Leech","defender":"A2:Candle"}
+{"id":60,"turn":8,"causedBy":59,"source":"kernel","type":"Hurt","unit":"A2:Candle","amount":4,"hpAfter":0}
+{"id":61,"turn":8,"causedBy":60,"source":{"unit":"A2:Candle","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A2:Candle","ability":0,"when":0},"original":"Death","unit":"A2:Candle"}
+{"id":62,"turn":8,"causedBy":61,"source":{"unit":"A2:Candle","ability":0,"when":0},"type":"Heal","unit":"A2:Candle","amount":1,"hpAfter":1}
+{"id":63,"turn":8,"causedBy":61,"source":{"unit":"A2:Candle","ability":0,"when":0},"type":"StatChanged","unit":"A2:Candle","stat":"pwr","delta":-1,"now":3}
+{"id":64,"turn":8,"causedBy":59,"source":{"unit":"B2:Leech","ability":0,"when":0},"type":"Heal","unit":"B2:Leech","amount":2,"hpAfter":5}
+{"id":65,"turn":8,"causedBy":59,"source":{"unit":"B3:Drummer","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Drummer","status":"Charge","stacks":1,"total":3}
+{"id":66,"turn":8,"causedBy":59,"source":{"unit":"B3:Drummer","ability":2,"when":0},"type":"StatusRemoved","unit":"B3:Drummer","status":"Charge","stacks":3,"remaining":0}
+{"id":67,"turn":8,"causedBy":58,"source":"kernel","type":"Strike","striker":"A2:Candle","defender":"B2:Leech"}
+{"id":68,"turn":8,"causedBy":67,"source":"kernel","type":"Hurt","unit":"B2:Leech","amount":3,"hpAfter":2}
+{"id":69,"turn":8,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":70,"turn":9,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":71,"turn":9,"causedBy":70,"source":"kernel","type":"Strike","striker":"B2:Leech","defender":"A2:Candle"}
+{"id":72,"turn":9,"causedBy":71,"source":"kernel","type":"Hurt","unit":"A2:Candle","amount":4,"hpAfter":-3}
+{"id":73,"turn":9,"causedBy":72,"source":{"unit":"A2:Candle","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A2:Candle","ability":0,"when":0},"original":"Death","unit":"A2:Candle"}
+{"id":74,"turn":9,"causedBy":73,"source":{"unit":"A2:Candle","ability":0,"when":0},"type":"Heal","unit":"A2:Candle","amount":4,"hpAfter":1}
+{"id":75,"turn":9,"causedBy":73,"source":{"unit":"A2:Candle","ability":0,"when":0},"type":"StatChanged","unit":"A2:Candle","stat":"pwr","delta":-1,"now":2}
+{"id":76,"turn":9,"causedBy":71,"source":{"unit":"B2:Leech","ability":0,"when":0},"type":"Heal","unit":"B2:Leech","amount":2,"hpAfter":4}
+{"id":77,"turn":9,"causedBy":71,"source":{"unit":"B3:Drummer","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Drummer","status":"Charge","stacks":1,"total":1}
+{"id":78,"turn":9,"causedBy":70,"source":"kernel","type":"Strike","striker":"A2:Candle","defender":"B2:Leech"}
+{"id":79,"turn":9,"causedBy":78,"source":"kernel","type":"Hurt","unit":"B2:Leech","amount":2,"hpAfter":2}
+{"id":80,"turn":9,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":81,"turn":10,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":82,"turn":10,"causedBy":81,"source":"kernel","type":"Strike","striker":"B2:Leech","defender":"A2:Candle"}
+{"id":83,"turn":10,"causedBy":82,"source":"kernel","type":"Hurt","unit":"A2:Candle","amount":4,"hpAfter":-3}
+{"id":84,"turn":10,"causedBy":83,"source":{"unit":"A2:Candle","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A2:Candle","ability":0,"when":0},"original":"Death","unit":"A2:Candle"}
+{"id":85,"turn":10,"causedBy":84,"source":{"unit":"A2:Candle","ability":0,"when":0},"type":"Heal","unit":"A2:Candle","amount":4,"hpAfter":1}
+{"id":86,"turn":10,"causedBy":84,"source":{"unit":"A2:Candle","ability":0,"when":0},"type":"StatChanged","unit":"A2:Candle","stat":"pwr","delta":-1,"now":1}
+{"id":87,"turn":10,"causedBy":82,"source":{"unit":"B2:Leech","ability":0,"when":0},"type":"Heal","unit":"B2:Leech","amount":2,"hpAfter":4}
+{"id":88,"turn":10,"causedBy":82,"source":{"unit":"B3:Drummer","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Drummer","status":"Charge","stacks":1,"total":2}
+{"id":89,"turn":10,"causedBy":81,"source":"kernel","type":"Strike","striker":"A2:Candle","defender":"B2:Leech"}
+{"id":90,"turn":10,"causedBy":89,"source":"kernel","type":"Hurt","unit":"B2:Leech","amount":1,"hpAfter":3}
+{"id":91,"turn":10,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":92,"turn":10,"causedBy":91,"source":"kernel","type":"Fatigue","amount":1}
+{"id":93,"turn":10,"causedBy":92,"source":"kernel","type":"Hurt","unit":"A2:Candle","amount":1,"hpAfter":0}
+{"id":94,"turn":10,"causedBy":93,"source":{"unit":"A2:Candle","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A2:Candle","ability":0,"when":0},"original":"Death","unit":"A2:Candle"}
+{"id":95,"turn":10,"causedBy":94,"source":{"unit":"A2:Candle","ability":0,"when":0},"type":"Heal","unit":"A2:Candle","amount":1,"hpAfter":1}
+{"id":96,"turn":10,"causedBy":94,"source":{"unit":"A2:Candle","ability":0,"when":0},"type":"StatChanged","unit":"A2:Candle","stat":"pwr","delta":-1,"now":0}
+{"id":97,"turn":10,"causedBy":92,"source":"kernel","type":"Hurt","unit":"B2:Leech","amount":1,"hpAfter":2}
+{"id":98,"turn":10,"causedBy":92,"source":"kernel","type":"Hurt","unit":"B3:Drummer","amount":1,"hpAfter":11}
+{"id":99,"turn":11,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":100,"turn":11,"causedBy":99,"source":"kernel","type":"Strike","striker":"B2:Leech","defender":"A2:Candle"}
+{"id":101,"turn":11,"causedBy":100,"source":"kernel","type":"Hurt","unit":"A2:Candle","amount":4,"hpAfter":-3}
+{"id":102,"turn":11,"causedBy":101,"source":"kernel","type":"Death","unit":"A2:Candle"}
+{"id":103,"turn":11,"causedBy":100,"source":{"unit":"B2:Leech","ability":0,"when":0},"type":"Heal","unit":"B2:Leech","amount":2,"hpAfter":4}
+{"id":104,"turn":11,"causedBy":100,"source":{"unit":"B3:Drummer","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Drummer","status":"Charge","stacks":1,"total":3}
+{"id":105,"turn":11,"causedBy":100,"source":{"unit":"B3:Drummer","ability":2,"when":0},"type":"StatusRemoved","unit":"B3:Drummer","status":"Charge","stacks":3,"remaining":0}
+{"id":106,"turn":11,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":107,"turn":11,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":11}

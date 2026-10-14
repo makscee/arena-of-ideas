@@ -1,0 +1,34 @@
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Priest","name":"Priest","hp":7,"pwr":2},{"id":"A2:Frost Witch","name":"Frost Witch","hp":7,"pwr":1}],"B":[{"id":"B1:Mirror","name":"Mirror","hp":8,"pwr":4},{"id":"B2:Gambler","name":"Gambler","hp":10,"pwr":2},{"id":"B3:Magnet","name":"Magnet","hp":12,"pwr":6}]}}
+{"id":1,"turn":0,"causedBy":0,"source":{"unit":"B1:Mirror","ability":0,"when":0},"type":"RuleMod","unit":"B1:Mirror","op":"copyRule","other":"A1:Priest"}
+{"id":2,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":3,"turn":1,"causedBy":2,"source":"kernel","type":"PairFaced","a":"A1:Priest","b":"B1:Mirror","first":"B1:Mirror"}
+{"id":4,"turn":1,"causedBy":2,"source":"kernel","type":"Strike","striker":"B1:Mirror","defender":"A1:Priest"}
+{"id":5,"turn":1,"causedBy":4,"source":"kernel","type":"Hurt","unit":"A1:Priest","amount":4,"hpAfter":3}
+{"id":6,"turn":1,"causedBy":2,"source":"kernel","type":"Strike","striker":"A1:Priest","defender":"B1:Mirror"}
+{"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"Hurt","unit":"B1:Mirror","amount":2,"hpAfter":6}
+{"id":8,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":9,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":10,"turn":2,"causedBy":9,"source":"kernel","type":"Redirected","by":{"unit":"B3:Magnet","ability":0,"when":2},"original":"StatusApplied","from":"B1:Mirror","to":"B3:Magnet"}
+{"id":11,"turn":2,"causedBy":9,"source":{"unit":"A2:Frost Witch","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Magnet","status":"Freeze","stacks":1,"total":1}
+{"id":12,"turn":2,"causedBy":9,"source":"kernel","type":"ChainBlocked","ability":{"unit":"B3:Magnet","ability":0,"when":2},"at":9,"spent":true}
+{"id":13,"turn":2,"causedBy":9,"source":{"unit":"A2:Frost Witch","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Gambler","status":"Freeze","stacks":1,"total":1}
+{"id":14,"turn":2,"causedBy":9,"source":{"unit":"A2:Frost Witch","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Magnet","status":"Freeze","stacks":1,"total":2}
+{"id":15,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"B1:Mirror","defender":"A1:Priest"}
+{"id":16,"turn":2,"causedBy":15,"source":"kernel","type":"Hurt","unit":"A1:Priest","amount":4,"hpAfter":-1}
+{"id":17,"turn":2,"causedBy":16,"source":"kernel","type":"Death","unit":"A1:Priest"}
+{"id":18,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":19,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":20,"turn":3,"causedBy":19,"source":"kernel","type":"PairFaced","a":"A2:Frost Witch","b":"B1:Mirror","first":"A2:Frost Witch"}
+{"id":21,"turn":3,"causedBy":19,"source":"kernel","type":"Strike","striker":"A2:Frost Witch","defender":"B1:Mirror"}
+{"id":22,"turn":3,"causedBy":21,"source":"kernel","type":"Hurt","unit":"B1:Mirror","amount":1,"hpAfter":5}
+{"id":23,"turn":3,"causedBy":19,"source":"kernel","type":"Strike","striker":"B1:Mirror","defender":"A2:Frost Witch"}
+{"id":24,"turn":3,"causedBy":23,"source":"kernel","type":"Hurt","unit":"A2:Frost Witch","amount":4,"hpAfter":3}
+{"id":25,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":26,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":27,"turn":4,"causedBy":26,"source":"kernel","type":"Strike","striker":"A2:Frost Witch","defender":"B1:Mirror"}
+{"id":28,"turn":4,"causedBy":27,"source":"kernel","type":"Hurt","unit":"B1:Mirror","amount":1,"hpAfter":4}
+{"id":29,"turn":4,"causedBy":26,"source":"kernel","type":"Strike","striker":"B1:Mirror","defender":"A2:Frost Witch"}
+{"id":30,"turn":4,"causedBy":29,"source":"kernel","type":"Hurt","unit":"A2:Frost Witch","amount":4,"hpAfter":-1}
+{"id":31,"turn":4,"causedBy":30,"source":"kernel","type":"Death","unit":"A2:Frost Witch"}
+{"id":32,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":33,"turn":4,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":4}

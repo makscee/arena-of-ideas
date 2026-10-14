@@ -11,6 +11,7 @@ import { V2_NUMBERS } from "./units-v2-numbers.js";
 import { traceLines } from "../words/trace.js";
 import { formSegments, formText, sentenceSegments, sentenceText } from "./form-text.js";
 import { ruStatusName, setKnownStatusNames } from "../status-names.js";
+import { captionOf, setTraceLang } from "./trace.js";
 
 const content = contentOf(ROWS_V2);
 
@@ -80,6 +81,29 @@ describe("rules v2 pool", () => {
     expect(content.units.find((u) => u.name === "Gambler")!.forms.sleeping.say!.en).toContain("50% chance");
     expect(content.units.find((u) => u.name === "Fortune Teller")!.forms.sleeping.say!.ru).toContain("с вероятностью 50%");
   });
+  it("no log row or caption names a coin either (#1063): Gambler's says 50% → double / nothing", () => {
+    const unit = (name: string, copies = 1, uid = name) => lineUnitOf(content.units.find((u) => u.name === name)!, uid, copies);
+    const p = { id: "bot", name: "bot", bot: true };
+    const a = [unit("Gambler"), unit("Gambler", 3, "G3")];
+    const b = [unit("Nautilus"), unit("Fortune Teller")];
+    const rec = fightLines({ player: p, line: a }, { player: p, line: b }, { battleId: "x", seed: 1, kind: "round", round: 1, runId: null, at: "2026-10-13T00:00:00.000Z", content, rules: MVP_RULES });
+    const input = { teamA: a.map(toBattleDef), teamB: b.map(toBattleDef), seed: 1, statuses: content.statuses, abilities: content.abilities };
+    const lines = traceLines(input, rec.log);
+    expect(lines.some((l) => /^Gambler: 50% → (double|nothing)$/.test(l))).toBe(true);
+    for (const l of lines) expect(l).not.toMatch(COIN.en);
+    for (const lang of ["en", "ru"] as const) {
+      setTraceLang(lang);
+      try {
+        const rows = rec.log.filter((e) => e.type === "Flipped").map((e) => captionOf(rec.log, e.id));
+        expect(rows.length, lang).toBeGreaterThan(0);
+        // Fortune Teller still rolls until its rework (#1063, next attempt); then only Gambler flips
+        for (const r of rows) expect(r, lang).toMatch(lang === "en" ? /^(Gambler|Fortune Teller): 50% → (double|nothing)$/ : /^(Gambler|Fortune Teller): 50% → (двойной урон|ничего)$/);
+        for (const e of rec.log) expect(captionOf(rec.log, e.id), `${lang} ${e.type}`).not.toMatch(COIN[lang]);
+      } finally {
+        setTraceLang("en");
+      }
+    }
+  });
 
   it("every period says its turns, so no rule reads two ways: no 'every second/third turn' or 'every Nth' on a card (#1047)", () => {
     const vague = { en: /\bevery (second|third|\d+(st|nd|rd|th))\b|\bunhurt\b/i, ru: /кажд(ый|ое|ую) \d+-[йм]|кажд(ый|ое) (второй|третий)|не ранен/i };
@@ -128,7 +152,7 @@ describe("rules v2 pool", () => {
     const p = { id: "bot", name: "bot", bot: true };
     const rec = fightLines({ player: p, line: a }, { player: p, line: b }, { battleId: "x", seed: 1, kind: "round", round: 1, runId: null, at: "2026-10-13T00:00:00.000Z", content, rules: MVP_RULES });
     const lines = traceLines({ teamA: a.map(toBattleDef), teamB: b.map(toBattleDef), seed: 1, statuses: content.statuses, abilities: content.abilities }, rec.log);
-    expect(lines.some((l) => /^Gambler flips: (heads|tails)$/.test(l))).toBe(true);
+    expect(lines.some((l) => /^Gambler: 50% → (double|nothing)$/.test(l))).toBe(true);
   });
 
   // Batch 1's gate (#1046, reopened 10-14): the card says the whole unit, in
@@ -154,7 +178,7 @@ describe("rules v2 pool", () => {
     expect(say("Hourglass", "sleeping", "en")).toMatch(/^Turn end: gain 1 Charge, and if it has 3\+ Charge, the ally behind acts again; otherwise, nothing, and if it has 3\+ Charge, spend 3 Charge; otherwise, nothing\.$/);
     expect(say("Hourglass", "sleeping", "ru")).toMatch(/^Конец хода: получить 1 Заряд, и если у него 3 Заряда или больше, /);
     expect(say("Drummer", "sleeping", "en")).toMatch(/^Ally strikes: gain 1 Charge, and if it has 3\+ Charge, 1 Strength to every ally behind; otherwise, nothing, /);
-    expect(say("Raven", "sleeping", "en")).toBe("Ally dies: remember the rule of that unit and perform the oldest remembered rule once and forget it.");
+    expect(say("Raven", "sleeping", "en")).toBe("Ally dies: remember the rule of that unit, then perform the oldest remembered rule once and forget it.");
     expect(say("Raven", "awoken", "en")).toMatch(/Turn start: perform every remembered rule\.$/);
     expect(say("Chrysalis", "sleeping", "en")).toBe("Turn start, on turn 3: become Butterfly (2/4). Butterfly: Turn start: PWR damage to all enemies.");
     // every form that gives or starts with a status carrying a rule, or

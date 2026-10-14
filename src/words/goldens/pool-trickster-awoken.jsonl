@@ -1,31 +1,38 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Trickster","name":"Trickster","hp":10,"pwr":3},{"id":"A2:Conductor","name":"Conductor","hp":8,"pwr":2}],"B":[{"id":"B1:Lantern","name":"Lantern","hp":11,"pwr":6},{"id":"B2:Wolf Pup","name":"Wolf Pup","hp":12,"pwr":6},{"id":"B3:Copycat","name":"Copycat","hp":3,"pwr":1}]}}
-{"id":1,"turn":0,"causedBy":0,"source":{"unit":"A1:Trickster","ability":0,"when":0},"type":"RuleMod","unit":"A1:Trickster","op":"swapRules","other":"B1:Lantern"}
-{"id":2,"turn":0,"causedBy":0,"source":{"unit":"A1:Trickster","ability":0,"when":0},"type":"RuleMod","unit":"A1:Trickster","op":"swapRules","other":"B3:Copycat"}
-{"id":3,"turn":0,"causedBy":0,"source":{"unit":"B3:Copycat","ability":0,"when":0},"type":"RuleMod","unit":"B3:Copycat","op":"copyRule","other":"B2:Wolf Pup"}
-{"id":4,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":5,"turn":1,"causedBy":4,"source":"kernel","type":"PairFaced","a":"A1:Trickster","b":"B1:Lantern","first":"B1:Lantern"}
-{"id":6,"turn":1,"causedBy":4,"source":"kernel","type":"Strike","striker":"B1:Lantern","defender":"A1:Trickster"}
-{"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"Hurt","unit":"A1:Trickster","amount":6,"hpAfter":4}
-{"id":8,"turn":1,"causedBy":4,"source":"kernel","type":"Strike","striker":"A1:Trickster","defender":"B1:Lantern"}
-{"id":9,"turn":1,"causedBy":8,"source":"kernel","type":"Hurt","unit":"B1:Lantern","amount":3,"hpAfter":8}
-{"id":10,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":11,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":12,"turn":2,"causedBy":11,"source":"kernel","type":"Strike","striker":"B1:Lantern","defender":"A1:Trickster"}
-{"id":13,"turn":2,"causedBy":12,"source":"kernel","type":"Hurt","unit":"A1:Trickster","amount":6,"hpAfter":-2}
-{"id":14,"turn":2,"causedBy":13,"source":"kernel","type":"Death","unit":"A1:Trickster"}
-{"id":15,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":16,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":17,"turn":3,"causedBy":16,"source":"kernel","type":"PairFaced","a":"A2:Conductor","b":"B1:Lantern","first":"A2:Conductor"}
-{"id":18,"turn":3,"causedBy":16,"source":"kernel","type":"Strike","striker":"A2:Conductor","defender":"B1:Lantern"}
-{"id":19,"turn":3,"causedBy":18,"source":"kernel","type":"Hurt","unit":"B1:Lantern","amount":2,"hpAfter":6}
-{"id":20,"turn":3,"causedBy":16,"source":"kernel","type":"Strike","striker":"B1:Lantern","defender":"A2:Conductor"}
-{"id":21,"turn":3,"causedBy":20,"source":"kernel","type":"Hurt","unit":"A2:Conductor","amount":6,"hpAfter":2}
-{"id":22,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":23,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":24,"turn":4,"causedBy":23,"source":"kernel","type":"Strike","striker":"A2:Conductor","defender":"B1:Lantern"}
-{"id":25,"turn":4,"causedBy":24,"source":"kernel","type":"Hurt","unit":"B1:Lantern","amount":2,"hpAfter":4}
-{"id":26,"turn":4,"causedBy":23,"source":"kernel","type":"Strike","striker":"B1:Lantern","defender":"A2:Conductor"}
-{"id":27,"turn":4,"causedBy":26,"source":"kernel","type":"Hurt","unit":"A2:Conductor","amount":6,"hpAfter":-4}
-{"id":28,"turn":4,"causedBy":27,"source":"kernel","type":"Death","unit":"A2:Conductor"}
-{"id":29,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":30,"turn":4,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":4}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Trickster","name":"Trickster","hp":10,"pwr":3},{"id":"A2:Thornback","name":"Thornback","hp":7,"pwr":3}],"B":[{"id":"B1:Prism","name":"Prism","hp":12,"pwr":6},{"id":"B2:Fortune Teller","name":"Fortune Teller","hp":2,"pwr":0},{"id":"B3:Gravecaller","name":"Gravecaller","hp":9,"pwr":2}]}}
+{"id":1,"turn":0,"causedBy":0,"source":{"unit":"A1:Trickster","ability":0,"when":0},"type":"RuleMod","unit":"A1:Trickster","op":"swapRules","other":"B1:Prism"}
+{"id":2,"turn":0,"causedBy":0,"source":{"unit":"A1:Trickster","ability":0,"when":0},"type":"RuleMod","unit":"A1:Trickster","op":"swapRules","other":"B3:Gravecaller"}
+{"id":3,"turn":0,"causedBy":0,"source":"kernel","type":"Flipped","unit":"B2:Fortune Teller","by":{"unit":"B2:Fortune Teller","ability":0,"when":0},"heads":false}
+{"id":4,"turn":0,"causedBy":0,"source":{"unit":"B2:Fortune Teller","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Prism","status":"Shield","stacks":1,"total":1}
+{"id":5,"turn":0,"causedBy":0,"source":"kernel","type":"Flipped","unit":"B2:Fortune Teller","by":{"unit":"B2:Fortune Teller","ability":0,"when":0},"heads":true}
+{"id":6,"turn":0,"causedBy":0,"source":{"unit":"B2:Fortune Teller","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Fortune Teller","status":"Strength","stacks":1,"total":1}
+{"id":7,"turn":0,"causedBy":6,"source":"kernel","type":"StatChanged","unit":"B2:Fortune Teller","stat":"pwr","delta":1,"now":1}
+{"id":8,"turn":0,"causedBy":0,"source":"kernel","type":"Flipped","unit":"B2:Fortune Teller","by":{"unit":"B2:Fortune Teller","ability":0,"when":0},"heads":false}
+{"id":9,"turn":0,"causedBy":0,"source":{"unit":"B2:Fortune Teller","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Gravecaller","status":"Shield","stacks":1,"total":1}
+{"id":10,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":11,"turn":1,"causedBy":10,"source":"kernel","type":"PairFaced","a":"A1:Trickster","b":"B1:Prism","first":"B1:Prism"}
+{"id":12,"turn":1,"causedBy":10,"source":"kernel","type":"Strike","striker":"B1:Prism","defender":"A1:Trickster"}
+{"id":13,"turn":1,"causedBy":12,"source":"kernel","type":"Hurt","unit":"A1:Trickster","amount":6,"hpAfter":4}
+{"id":14,"turn":1,"causedBy":10,"source":"kernel","type":"Strike","striker":"A1:Trickster","defender":"B1:Prism"}
+{"id":15,"turn":1,"causedBy":14,"source":"kernel","type":"Hurt","unit":"B1:Prism","amount":2,"absorbed":1,"hpAfter":10}
+{"id":16,"turn":1,"causedBy":15,"source":{"unit":"B1:Prism","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"B1:Prism","status":"Shield","stacks":1,"remaining":0}
+{"id":17,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":18,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":19,"turn":2,"causedBy":18,"source":"kernel","type":"Strike","striker":"B1:Prism","defender":"A1:Trickster"}
+{"id":20,"turn":2,"causedBy":19,"source":"kernel","type":"Hurt","unit":"A1:Trickster","amount":6,"hpAfter":-2}
+{"id":21,"turn":2,"causedBy":20,"source":"kernel","type":"Death","unit":"A1:Trickster"}
+{"id":22,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":23,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":24,"turn":3,"causedBy":23,"source":"kernel","type":"PairFaced","a":"A2:Thornback","b":"B1:Prism","first":"B1:Prism"}
+{"id":25,"turn":3,"causedBy":23,"source":"kernel","type":"Strike","striker":"B1:Prism","defender":"A2:Thornback"}
+{"id":26,"turn":3,"causedBy":25,"source":"kernel","type":"Hurt","unit":"A2:Thornback","amount":6,"hpAfter":1}
+{"id":27,"turn":3,"causedBy":26,"source":{"unit":"A2:Thornback","ability":0,"when":0},"type":"Hurt","unit":"B1:Prism","amount":1,"hpAfter":9}
+{"id":28,"turn":3,"causedBy":23,"source":"kernel","type":"Strike","striker":"A2:Thornback","defender":"B1:Prism"}
+{"id":29,"turn":3,"causedBy":28,"source":"kernel","type":"Hurt","unit":"B1:Prism","amount":3,"hpAfter":6}
+{"id":30,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":31,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":32,"turn":4,"causedBy":31,"source":"kernel","type":"Strike","striker":"B1:Prism","defender":"A2:Thornback"}
+{"id":33,"turn":4,"causedBy":32,"source":"kernel","type":"Hurt","unit":"A2:Thornback","amount":6,"hpAfter":-5}
+{"id":34,"turn":4,"causedBy":33,"source":"kernel","type":"Death","unit":"A2:Thornback"}
+{"id":35,"turn":4,"causedBy":33,"source":{"unit":"A2:Thornback","ability":0,"when":0},"type":"Hurt","unit":"B1:Prism","amount":1,"hpAfter":5}
+{"id":36,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":37,"turn":4,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":4}

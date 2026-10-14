@@ -28,7 +28,7 @@ export const branch: EffectWord<E> = {
   example: {
     // seed 2: the first coin is tails, so the strike deals none
     input: { ...example([Gambler], [plain("Brute", 30, 1)], 2), abilities: { ...EXAMPLE_ABILITIES, AllOrNothing: { name: "AllOrNothing", family: "Strike", effects: [ALL_OR_NOTHING] } } },
-    trace: "Gambler flips: tails",
+    trace: "Gambler: 50% → nothing",
   },
 };
 

@@ -1429,7 +1429,8 @@ export function captionOf(log: BattleEvent[], id: number, name: NameOf = display
       return e.timeUp ? TIME_UP_CAPTION : endCaption(e.winner, p);
     // Rules v2's words (#1043 §3): each says what it did, never its event name.
     case "Flipped":
-      return `${name(e.unit)} flips a coin → ${e.heads ? "heads" : "tails"}`;
+      // #1063: the chance, never a coin: "Gambler: 50% → double" / "50% → nothing"
+      return `${name(e.unit)}: 50% → ${e.heads ? "double" : "nothing"}`;
     case "Redirected":
       return `${name(e.by.unit)} → takes ${REDIRECTED_EN[e.original] ?? "the hit"} meant for ${name(e.from)}${e.to === e.by.unit ? "" : `, onto ${name(e.to)}`}`;
     case "RuleMod": {
@@ -1491,7 +1492,7 @@ function captionOfRu(log: BattleEvent[], e: BattleEvent, name: NameOf, merged: n
     case "BattleEnd":
       return e.timeUp ? TIME_UP_CAPTION_RU : endCaption(e.winner, p);
     case "Flipped":
-      return `${name(e.unit)} бросает монету → ${e.heads ? "орёл" : "решка"}`;
+      return `${name(e.unit)}: 50% → ${e.heads ? "двойной урон" : "ничего"}`;
     case "Redirected":
       return `${name(e.by.unit)} → перехватывает ${REDIRECTED_RU[e.original] ?? "удар"} (цель: ${name(e.from)})${e.to === e.by.unit ? "" : ` → ${name(e.to)}`}`;
     case "RuleMod": {
