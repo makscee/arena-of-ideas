@@ -49,6 +49,9 @@ delay branch
 delay strikeAgain
   en: Turn start: in 2 turns: it strikes again.
   ru: Начало хода: через 2 хода: он бьёт ещё раз.
+delay takeRule
+  en: Turn start: in 2 turns: take the rule of front enemy and leave it none.
+  ru: Начало хода: через 2 хода: забрать правило переднего врага, оставив его без правила.
 and(flip, not turnIs)
   en: Turn start, with a 50% chance and unless on turn 2: in 1 turn: 1 damage to front enemy.
   ru: Начало хода, с вероятностью 50% и если не на 2-м ходу: через 1 ход: 1 урон переднему врагу.

@@ -163,10 +163,10 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "В начале 3-го хода превращается в Монарха (2/4), который в начале каждого хода бьёт всех врагов и даёт всем союзникам 1 Силу.",
   ],
   Trickster: () => [
-    "At battle start, trades rules with the enemy in front of it.",
-    "At battle start, trades rules with the enemies at the front and at the back.",
+    "At battle start, it swaps rules with the enemy in front of it.",
+    "At battle start, it takes the rule of the enemy in front of it and leaves it with none.",
     "В начале боя меняется правилами с врагом перед собой.",
-    "В начале боя меняется правилами с передним и задним врагом.",
+    "В начале боя забирает правило врага перед собой и оставляет его без правила.",
   ],
   // batch 2 (#1047)
   Thornback: () => [

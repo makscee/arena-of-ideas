@@ -162,6 +162,7 @@ export const V2_ABILITIES: AbilityRegistry = {
   Bless: { name: "Bless", family: "Shield", effects: [{ kind: "applyStatus", status: "Blessing", stacks: pwrOfHolder }] },
   Sting2: { name: "Sting2", family: "Poison", effects: [{ kind: "applyStatus", status: "Poison", stacks: c(2) }] },
   Again: { name: "Again", family: "Strike", effects: [{ kind: "strikeAgain" }] },
+  Take: { name: "Take", family: "Arcane", effects: [{ kind: "takeRule" }] },
 };
 
 type Form = Omit<UnitForm, "who" | "does"> & { who?: UnitForm["who"]; does: string };
@@ -273,7 +274,7 @@ export const ROWS_V2: V2Row[] = [
   v2("Drummer",     "🥁", 2, "counter",     1,  9, "Ally strikes build its Charge; at 3, the line behind it grows stronger.",  Drummer,     { also: [{ who: [{ kind: "allAllies" }], does: ["RallyCharged"] }, { who: me, does: ["Spend"] }] }),
   v2("Bodyguard",   "🕴️", 2, "redirect",    1, 11, "Once a turn, takes a hit meant for an ally.",                           Bodyguard,   { also: [{ who: [{ kind: "eventUnit" }], does: ["Guard"] }] }),
   v2("Chrysalis",   "🐛", 3, "form",        0,  7, "On the third turn, becomes a Butterfly that strikes every enemy.",      Chrysalis,   { does: "EmergeMonarch" }),
-  v2("Trickster",   "🃏", 3, "rule",        2,  8, "Trades rules with the front enemy before the first blow.",             Trickster,   { who: [{ kind: "frontEnemy" }, { kind: "lastEnemy" }] }),
+  v2("Trickster",   "🃏", 3, "rule",        2,  8, "Trades rules with the front enemy before the first blow.",             Trickster,   { does: "Take" }),
   v2("Gravedigger", "⚰️", 4, "scaling",     2, 10, "Hits the front enemy for every fallen ally.",                    Gravedigger, { who: [{ kind: "allEnemies" }] }),
   v2("Conductor",   "🎼", 4, "rule",        1,  9, "On turns 3, 6, 9…, its neighbours act again.",                          Conductor,   { also: [{ who: [{ kind: "neighbours" }], does: ["Rally"] }] }),
   // batch 2 (#1047)

@@ -823,6 +823,13 @@ class Engine {
         note("copyRule", target.id);
         if (e.withPower) this.proposeStatusApplied(holder.id, "Strength", this.effStat(target, "pwr"), f.event.id, f.ref);
         return;
+      case "takeRule":
+        // #1063, Trickster awoken: the target's rule moves to the holder; the target keeps none.
+        if (!target.alive || target.id === holder.id || target.abilities.length === 0) return;
+        holder.abilities = [...target.abilities];
+        target.abilities = [];
+        note("takeRule", target.id);
+        return;
       case "swapRules": {
         if (!target.alive || target.id === holder.id) return;
         [holder.abilities, target.abilities] = [target.abilities, holder.abilities];
