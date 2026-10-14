@@ -60,7 +60,16 @@ async function open(lang, label, { theme = "plum", hash = "" } = {}) {
   const tid = (id) => page.getByTestId(id);
   const press = (k) => page.keyboard.press(k);
   const active = () => page.evaluate(() => document.activeElement?.dataset?.testid ?? document.activeElement?.tagName ?? "");
-  const settle = async () => { await page.waitForTimeout(150); await page.waitForFunction(() => !document.getElementById("app").classList.contains("busy")); };
+  // The app is idle when no guarded request is out (#app.busy, set synchronously by the key's handler)
+  // and the frames after it have drawn; a queued move (setTimeout 0) runs inside those frames.
+  const settle = async () => {
+    for (let i = 0; i < 2; i++) {
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      await page.waitForFunction(() => !document.getElementById("app").classList.contains("busy"), null, { timeout: 30_000 });
+    }
+  };
+  /** Where the page is, for a problem report: the screen, the sheets and the focus. */
+  const where = () => page.evaluate(() => `screen ${document.getElementById("app").dataset.screen ?? "-"}, ${document.getElementById("app").classList.contains("busy") ? "busy" : "idle"}, focus ${document.activeElement?.dataset?.testid ?? document.activeElement?.tagName}, sheets ${document.querySelectorAll(".overlay").length}, gift ${!!document.querySelector('[data-testid="gift-title"]')}/${!!document.querySelector('[data-testid="gift-banner"]')}, error "${document.querySelector('[data-testid="error"]')?.textContent ?? ""}"`).catch(() => "page gone");
   /** Tab (or Shift+Tab) until the focus is on `id`; the tab order has to reach it. */
   const tabTo = async (id, { back = false, max = 70 } = {}) => {
     for (let i = 0; i < max; i++) {
@@ -78,7 +87,7 @@ async function open(lang, label, { theme = "plum", hash = "" } = {}) {
   }, id);
   const expect = (what, ok) => ok || fail(what);
   const mouseClicks = () => page.evaluate(() => window.__mouse);
-  return { ctx, page, fail, tid, press, active, settle, tabTo, ringOn, expect, mouseClicks, goto: (h) => page.goto(url + h) };
+  return { ctx, page, fail, tid, press, active, settle, where, tabTo, ringOn, expect, mouseClicks, goto: (h) => page.goto(url + h) };
 }
 
 const unitName = (card) => card.evaluate((el) => el.querySelector(".name")?.textContent ?? "");
@@ -93,7 +102,7 @@ async function fullRun(lang) {
   await page.keyboard.type(`Keys${lang}${TAG}`);
   await press("Enter");
   await tid("play").waitFor();
-  await page.waitForTimeout(300);
+  await settle();
   expect("Home: Play has the keyboard", (await k.active()) === "play");
   for (const id of ["codex", "forge-open", "dictionary-open", "stats", "settings"]) if (!(await tid(id).count())) fail(`Home: no ${id}`);
   expect("Home: the links wear their keys", (await tid("codex").locator("kbd").count()) === 1 && (await tid("forge-open").locator("kbd").count()) === 1);
@@ -108,30 +117,42 @@ async function fullRun(lang) {
   let battleChecked = false;
   let round = 0;
   for (; round < 16; round++) {
-    await page.waitForFunction(() => document.querySelector('[data-testid="fight"]') || document.querySelector('[data-testid="run-over"]'), null, { timeout: 15_000 });
+    try {
+      await page.waitForFunction(() => document.querySelector('[data-testid="fight"]') || document.querySelector('[data-testid="run-over"]'), null, { timeout: 30_000 });
+    } catch {
+      await page.screenshot({ path: `${out}/stuck-${lang}.png` }).catch(() => {});
+      fail(`round ${round + 1}: neither the shop nor the run's end came (${await k.where()})`);
+      await k.ctx.close();
+      return;
+    }
     if (await tid("run-over").isVisible().catch(() => false)) break;
     await settle();
-    // The awakening gift: a number picks a card, else Esc sets it aside.
+    // The awakening gift, whatever state it is in: the sheet open (the first card that fits is
+    // picked by its number, else Esc sets it aside behind the banner), or set aside on a full
+    // board (sell a unit by keys: the sale makes room and the sheet opens again by itself).
     const gift = async () => {
-      if (!(await tid("gift-title").isVisible().catch(() => false))) return;
-      await press("1");
-      if (await tid("gift-title").isVisible().catch(() => false)) await press("Escape");
-      await settle();
-      // A full board can't take the gift: sell a bench unit by keys (Tab, Enter, S), then open the gift and pick.
-      if (await tid("gift-banner").count()) {
-        const benched = await page.locator('[data-testid^="bench-"].card.you').count();
-        if (benched && (await tabTo("bench-0"))) {
+      for (let step = 0; step < 6; step++) {
+        await settle();
+        if (await tid("gift-title").isVisible().catch(() => false)) {
+          const n = await page.locator('[data-testid^="gift-pick-"]').evaluateAll((els) => els.findIndex((e) => !e.disabled) + 1);
+          await press(n > 0 ? String(n) : "Escape");
+          await tid("gift-title").waitFor({ state: "hidden", timeout: 10_000 }).catch(() => fail(`${n > 0 ? n : "Esc"} didn't close the gift`));
+          continue;
+        }
+        if (!(await tid("gift-banner").count())) return;
+        const zone = (await page.locator('[data-testid^="bench-"].card.you').count()) ? "bench-0" : "line-0";
+        if (!(await tabTo(zone))) return;
+        await press("Enter");
+        await press("s");
+        await settle();
+        // The sale made room, so the sheet opens again by itself; if it didn't, open it by its button.
+        if (!(await tid("gift-title").isVisible().catch(() => false)) && (await tid("gift-banner").count())) {
+          if (!(await tabTo("gift-open"))) return;
           await press("Enter");
-          await press("s");
-          await settle();
-          if (await tabTo("gift-open")) {
-            await press("Enter");
-            await tid("gift-title").waitFor({ timeout: 3_000 }).catch(() => fail("Enter on the gift banner didn't open the gift"));
-            await press("1");
-            await settle();
-          }
+          await tid("gift-title").waitFor({ timeout: 10_000 }).catch(() => fail("Enter on the gift banner didn't open the gift"));
         }
       }
+      fail(`the gift never settled (${await k.where()})`);
     };
     await gift();
     // Buy with the number keys, as long as the gold lasts.
@@ -153,7 +174,7 @@ async function fullRun(lang) {
         expect("a focused unit shows its ring", (await k.ringOn("line-0")) === "");
         expect("Tab to a unit reads it in the inspector", ((await tid("inspector").textContent()) ?? "").includes(first));
         await press("Enter");
-        await page.waitForTimeout(200);
+        await settle();
         expect("Enter selects the unit", (await tid("line-0").getAttribute("class"))?.includes("selected"));
         await press("ArrowRight");
         await settle();
@@ -212,12 +233,12 @@ async function fullRun(lang) {
     if (!menuChecked && round === 1) {
       await press("Escape");
       await tid("run-menu").waitFor({ timeout: 3_000 }).catch(() => fail("Esc didn't open the menu"));
-      await page.waitForTimeout(150);
+      await settle();
       expect("the menu takes the keyboard (Resume)", (await k.active()) === "menu-resume");
       for (let i = 0; i < 25; i++) await press("Tab");
       expect("Tab stays inside the menu", await page.evaluate(() => !!document.activeElement?.closest(".overlay")));
       await press("Escape");
-      await page.waitForTimeout(150);
+      await settle();
       expect("Esc closes the menu", !(await tid("run-menu").count()));
       expect("the keyboard is back on the shop", (await k.active()) !== "BODY");
       menuChecked = true;
@@ -264,16 +285,23 @@ async function scenes(lang) {
     const k = await open(lang, "awaken");
     await k.goto(`#scene=awaken&lang=${lang}`);
     await k.tid("line").waitFor();
-    await k.page.waitForTimeout(1200);
+    // The scene is ready when its offers are drawn and the app is idle (no clock).
+    await k.tid("offer-0").waitFor();
+    await k.settle();
     const awoken = () => k.page.locator('[data-testid^="line-"].awoken, [data-testid^="bench-"].awoken').count();
     const before = await awoken();
-    // A copy of a unit you own merges in: buy each by its number until one awakens (a gift opens).
-    const owned = await k.page.locator('[data-testid^="offer-"]').evaluateAll((els) => els.map((e, i) => (e.classList.contains("owned") ? i + 1 : 0)).filter(Boolean));
-    for (const n of owned) {
-      if ((await awoken()) > before || (await k.tid("gift-title").isVisible().catch(() => false))) break;
-      await k.press(String(n));
-      await k.settle();
-    }
+    // The offer that is the 3rd copy: affordable, and its unit sits on the board with two copies
+    // (two filled pips). Its number is its place among the offers now (a buy moves the rest up).
+    const third = await k.page.evaluate(() => {
+      const name = (c) => c.querySelector(".name")?.textContent ?? "";
+      const two = new Set([...document.querySelectorAll('[data-testid^="line-"].card.you, [data-testid^="bench-"].card.you')].filter((c) => (c.querySelector(".copies.pips")?.textContent ?? "").startsWith("●●○")).map(name));
+      const offers = [...document.querySelectorAll('[data-testid^="offer-"].card')];
+      const i = offers.findIndex((o) => o.classList.contains("owned") && !o.classList.contains("poor") && two.has(name(o)));
+      return i + 1;
+    });
+    k.expect("the awaken scene has a 3rd copy on offer", third > 0);
+    if (third > 0) await k.press(String(third));
+    await k.tid("gift-title").waitFor({ timeout: 10_000 }).catch(() => {});
     const gift = await k.tid("gift-title").isVisible().catch(() => false);
     k.expect("buying the 3rd copy by its number awakens (a gift opens)", gift || (await awoken()) > before);
     if (gift) {
@@ -295,14 +323,15 @@ async function scenes(lang) {
     await k.goto(`#scene=fusion-now&lang=${lang}`);
     await k.tid("line").waitFor();
     await k.page.waitForResponse((r) => /\/forge$/.test(r.url()), { timeout: 30_000 }).catch(() => {});
-    await k.page.waitForTimeout(600);
+    await k.page.waitForFunction(() => document.querySelectorAll('[data-testid^="fuse-mark-"]').length >= 2, null, { timeout: 15_000 }).catch(() => {});
+    await k.settle();
     const marked = await k.page.locator('[data-testid^="fuse-mark-"]').evaluateAll((els) => els.map((e) => e.closest(".card")?.dataset.testid));
     k.expect("the fusion-now scene has two marked units", marked.length === 2);
     if (marked.length === 2) {
       await k.tabTo(marked[0]);
       await k.press("Enter");
       await k.press("f");
-      await k.page.waitForTimeout(200);
+      await k.settle();
       k.expect("F starts a fuse", (await k.tid(marked[1]).getAttribute("class"))?.includes("fusable"));
       await k.tabTo(marked[1]);
       await k.press("Enter");
@@ -325,12 +354,12 @@ async function scenes(lang) {
     const k = await open(lang, "claim");
     await k.goto(`#scene=forge-ready&lang=${lang}`);
     await k.tid("forge-claim").waitFor();
-    await k.page.waitForTimeout(500);
+    await k.settle();
     await k.press("3");
     k.expect("3 picks the third sealed design", (await k.tid("forge-card-2").getAttribute("aria-pressed")) === "true");
     k.expect("the sealed designs wear their numbers", (await k.tid("forge-card-0").locator("kbd").count()) === 1);
     await k.press("Escape");
-    await k.page.waitForTimeout(200);
+    await k.settle();
     k.expect("Esc closes the forge sheet", !(await k.tid("forge-claim").count()));
     // And again, claimed: Enter on the button.
     await k.goto(`#scene=forge-ready&lang=${lang}`);
@@ -350,10 +379,10 @@ async function scenes(lang) {
 // ---------- 3. Codex, Forge, Dictionary, Settings, sheets ----------
 async function menus(lang) {
   const k = await open(lang, "menus");
-  const { page, tid, press, expect, fail } = k;
+  const { page, tid, press, settle, expect, fail } = k;
   await k.goto(`#scene=home&lang=${lang}`);
   await tid("play").waitFor();
-  await page.waitForTimeout(500);
+  await settle();
   // Settings: G opens, Tab stays inside, Esc closes and gives the keyboard back.
   await press("g");
   await tid("settings-sheet").waitFor({ timeout: 3_000 }).catch(() => fail("G didn't open Settings"));
@@ -366,7 +395,7 @@ async function menus(lang) {
     expect("Enter switches the theme", (await page.evaluate(() => document.documentElement.dataset.theme)) === "brass");
   }
   await press("Escape");
-  await page.waitForTimeout(200);
+  await settle();
   expect("Esc closes Settings", !(await tid("settings-sheet").count()));
   expect("the keyboard goes back to where it was (Play)", (await k.active()) === "play");
   // The Codex: C, tabs by number, search by /, a unit's sheet by Enter, Esc closes the sheet, Esc leaves.
@@ -378,13 +407,13 @@ async function menus(lang) {
   await press("Escape"); // blurs the field
   if (await k.tabTo("codex-unit")) {
     await press("Enter");
-    await page.waitForTimeout(300);
+    await settle();
     expect("Enter on a unit reads it", (await tid("inspector").locator('[data-testid="unit-sheet"]').count()) === 1);
     await press("Escape");
   }
   for (const [key, id] of [["2", "codex-fusions"], ["3", "codex-keywords"], ["6", "codex-howto"]]) {
     await press(key);
-    await page.waitForTimeout(500);
+    await settle();
     expect(`${key} opens the Codex tab ${id}`, (await tid(`codex-tab-${id.replace("codex-", "")}`).getAttribute("class"))?.includes("on") ?? false);
   }
   await press("Escape");
@@ -393,7 +422,7 @@ async function menus(lang) {
   await press("f");
   await tid("forge").waitFor({ timeout: 5_000 }).catch(() => fail("F didn't open the Forge"));
   await press("ArrowRight");
-  await page.waitForTimeout(200);
+  await settle();
   expect("→ goes to the next unit in the Forge", (await k.active()) === "forge-pick");
   await press("2");
   expect("2 opens the feed", (await tid("forge-tab-feed").getAttribute("class"))?.includes("on") ?? false);
@@ -410,7 +439,7 @@ async function menus(lang) {
   // The ideas screen and the vote card are Buttons; I opens ideas.
   if (await tid("ideas").count()) {
     await press("i");
-    await page.waitForTimeout(500);
+    await settle();
     expect("I leaves Home for the ideas", !(await tid("play").count()));
     await press("Escape");
     await tid("play").waitFor({ timeout: 5_000 }).catch(() => fail("Esc didn't leave the ideas"));
@@ -425,7 +454,8 @@ async function rings(lang) {
     for (const scene of ["shop-r3", "codex-units", "settings"]) {
       const k = await open(lang, `ring ${theme} ${scene}`, { theme });
       await k.goto(`?theme=${theme}#scene=${scene}&lang=${lang}`);
-      await k.page.waitForTimeout(1500);
+      await k.tid("line").or(k.tid("codex-units")).or(k.tid("settings-sheet")).first().waitFor({ timeout: 20_000 }).catch(() => k.fail("the scene never drew"));
+      await k.settle();
       const on = await k.page.evaluate(() => document.documentElement.dataset.theme);
       if (on !== theme) k.fail(`the page shows the ${on} palette, not ${theme}`);
       const seen = [];
@@ -459,10 +489,10 @@ async function rings(lang) {
 
 try {
   for (const lang of langs) {
-    await fullRun(lang);
-    await scenes(lang);
-    await menus(lang);
-    await rings(lang);
+    // A step that throws (a wait that ran out, a page that went) is a problem in the list, not a crash.
+    for (const [name, step] of [["run", fullRun], ["scenes", scenes], ["menus", menus], ["rings", rings]]) {
+      await step(lang).catch((e) => errors.push(`${name} [${lang}]: ${String(e.message).split("\n")[0]}`));
+    }
     console.log(`${lang}: done, ${errors.length} problem(s) so far`);
   }
 } finally {
