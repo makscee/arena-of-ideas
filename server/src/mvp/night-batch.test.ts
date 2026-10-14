@@ -43,13 +43,13 @@ const Brute = plain("Brute", 14, 3);
 const field: Field = { ghosts: [[Brute, Hourglass, Archer], [Nautilus, Archer, Brute], [Archer, Candle, Brute]], breakers: [[Brute, Brute, Archer]], abilities: FIXTURE_ABILITIES, statuses: FIXTURE_STATUSES };
 
 describe("one pair through the batch", () => {
-  it("gives three candidates with the parents' summed stats, a rendered EN/RU sentence and a check", async () => {
+  it("gives three candidates with the game's fused stats (the stronger parent's, plus a copy's growth: #1065), a rendered EN/RU sentence and a check", async () => {
     const list = pickPairs({ units, now, size: 1, small: true, requests: ["Hourglass+Mirror"] });
     const [r] = await runBatch(list, { designer: fakeDesigner(), field, parents: { Hourglass: parent(Hourglass), Mirror: parent(Mirror) } });
     expect(r!.error).toBeUndefined();
     expect(r!.candidates.map((c) => c.lean)).toEqual(["A", "B", "twist"]);
     for (const c of r!.candidates) {
-      expect(c.unit.base).toEqual({ hp: 14, pwr: 2 });
+      expect(c.unit.base).toEqual({ hp: Math.max(Hourglass.base.hp, Mirror.base.hp) + 2, pwr: Math.max(Hourglass.base.pwr, Mirror.base.pwr) + 1 });
       expect(c.name.en).toBeTruthy();
       expect(c.name.ru).toBeTruthy();
       expect(c.check).not.toBeNull();

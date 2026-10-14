@@ -242,8 +242,38 @@ function owned(d: DesignDraft, taken: Set<string>): { rule: DesignDraft["rule"];
   return { rule: walk(d.rule) as DesignDraft["rule"], abilities, statuses };
 }
 
-/** The draft as a unit with the parents' summed stats, or the issues. */
-export function compile(d: DesignDraft, a: Parent, b: Parent, name: string, taken: Set<string>): { ok: Compiled; own: Set<string> } | { issues: string[] } {
+/** The entries of `k` the unit and its own entries reach, through abilities
+ * and statuses (so a shared registry adds only the words the rule uses). */
+function reachedOnly(unit: UnitDef, statuses: StatusRegistry, abilities: AbilityRegistry, own: { abilities: AbilityRegistry; statuses: StatusRegistry }, k: "abilities" | "statuses"): Record<string, never> {
+  const seen = { abilities: new Set<string>(), statuses: new Set<string>() };
+  const visit = (x: unknown): void => {
+    if (Array.isArray(x)) return x.forEach(visit);
+    if (!x || typeof x !== "object") return;
+    for (const [key, v] of Object.entries(x)) {
+      if (key === "status" && typeof v === "string") {
+        if (!seen.statuses.has(v)) {
+          seen.statuses.add(v);
+          visit(statuses[v]);
+        }
+      } else if ((key === "abilities" || key === "does") && Array.isArray(v) && v.every((id) => typeof id === "string")) {
+        for (const id of v as string[])
+          if (!seen.abilities.has(id)) {
+            seen.abilities.add(id);
+            visit(abilities[id]);
+          }
+      } else visit(v);
+    }
+  };
+  visit(unit);
+  visit(own.abilities);
+  visit(own.statuses);
+  const reg = (k === "abilities" ? abilities : statuses) as Record<string, never>;
+  // an unknown id stays unknown, so the validator still names it
+  return Object.fromEntries([...seen[k], ...Object.keys(own[k])].filter((id) => reg[id]).map((id) => [id, reg[id]!]));
+}
+
+/** The draft as a unit with the game's fused stats, or the issues. */
+export function compile(d: DesignDraft, a: Parent, b: Parent, name: string, taken: Set<string>, shared?: Pick<Field, "abilities" | "statuses">): { ok: Compiled; own: Set<string> } | { issues: string[] } {
   const n = owned(d, taken);
   const unit: UnitDef = {
     name,
@@ -255,8 +285,9 @@ export function compile(d: DesignDraft, a: Parent, b: Parent, name: string, take
     ...(n.rule.also?.length ? { also: n.rule.also } : {}),
     ...(n.rule.statuses?.length ? { statuses: n.rule.statuses } : {}),
   };
-  const statuses = { ...a.statuses, ...b.statuses, ...n.statuses };
-  const abilities = { ...a.abilities, ...b.abilities, ...n.abilities };
+  // the pool's shared words (#1065: Strength, Curse, Charge …) under the parents' and its own
+  const statuses = reachedOnly(unit, { ...shared?.statuses, ...a.statuses, ...b.statuses, ...n.statuses }, { ...shared?.abilities, ...a.abilities, ...b.abilities, ...n.abilities }, n, "statuses");
+  const abilities = reachedOnly(unit, { ...shared?.statuses, ...a.statuses, ...b.statuses, ...n.statuses }, { ...shared?.abilities, ...a.abilities, ...b.abilities, ...n.abilities }, n, "abilities");
   // A coined status says itself in EN and RU, or the rule isn't legal (§3 guardrail).
   const unnamed = Object.entries(n.statuses).flatMap(([id, def]) => {
     const why = namesMissing(def);
@@ -437,7 +468,7 @@ async function designPair(pair: ListedPair, a: Parent, b: Parent, o: BatchOption
       const empty = { unit: { name: naming.name.en, base: fusedBase(a, b) }, abilities: {}, statuses: {}, text: { en: "", ru: "" }, check: null };
       if (d.wordRequest?.word) return { ...base, ...empty, state: "word", wordRequest: d.wordRequest, why: `waiting for a new word: ${d.wordRequest.word}` };
       const taken = new Set([...Object.keys(a.abilities), ...Object.keys(b.abilities), ...Object.keys(a.statuses), ...Object.keys(b.statuses), ...Object.keys(o.field.abilities), ...Object.keys(o.field.statuses)]);
-      const c = compile(d, a, b, naming.name.en, taken);
+      const c = compile(d, a, b, naming.name.en, taken, o.field);
       if ("issues" in c) return { ...base, ...empty, state: "rejected", why: c.issues.slice(0, 3).join("; ") };
       const tuned = quickTune(c.ok, c.own, o.field);
       const text = { en: ruleText(tuned.compiled, "en"), ru: ruleText(tuned.compiled, "ru") };
