@@ -1527,8 +1527,16 @@ img.tg-qr { align-self: center; width: 200px; height: 200px; image-rendering: pi
 .card.empty { --text: var(--paper); --dim: var(--muted); background: transparent; border-color: var(--muted); }
 /* Descenders (y, g, p) stay whole: the name clips sideways only (#889 note). */
 .card .name { font-family: var(--font-head); font-weight: var(--head-weight); letter-spacing: 0.01em; overflow-x: clip; overflow-y: visible; }
-.card .stats:not(.big) { display: flex; justify-content: center; gap: 3px; font-size: 0; }
-.card .stats:not(.big) > span { padding: 0 4px; font-size: 11px; line-height: 11px; border: 1.5px solid var(--outline); border-radius: 7px; color: var(--outline); }
+.card .stats:not(.big) { display: flex; justify-content: center; align-items: center; gap: 3px; font-size: 0; }
+/* The number sits in the middle of its badge at every size (#1124): the box is
+   trimmed to the digits (cap height to baseline) and the padding puts the old
+   line-height around them, so Rubik's ascent/descent rounding at 10-13 px can't
+   push it up, and a badge a grid or flex row stretches can't leave it on top. */
+@supports (text-box: trim-both cap alphabetic) {
+  .card .stats:not(.big) { --bpv: calc((1lh - 1cap) / 2); }
+  .card .stats:not(.big) > span { text-box: trim-both cap alphabetic; }
+}
+.card .stats:not(.big) > span { padding: var(--bpv, 0) 4px; font-size: 11px; line-height: 11px; border: 1.5px solid var(--outline); border-radius: 7px; color: var(--outline); }
 .card .stats:not(.big) .p { background: var(--power); }
 .card .stats:not(.big) .h { background: var(--them); }
 .card .stats.unset > span { background: var(--soft); }
@@ -1542,11 +1550,11 @@ img.tg-qr { align-self: center; width: 200px; height: 200px; image-rendering: pi
 .card.locked .cost { color: var(--outline); }
 .card .icons .more { color: var(--ink-dim); }
 @media (max-width: 1023.98px) {
-  .bench-row .card .stats:not(.big) > span { font-size: 10px; line-height: 10px; padding: 0 3px; }
+  .bench-row .card .stats:not(.big) > span { font-size: 10px; line-height: 10px; padding: var(--bpv, 0) 3px; }
 }
 @media (min-width: 1024px) {
   #app[data-screen] .card .stats:not(.big) { font-size: 0; gap: 6px; }
-  #app[data-screen] .card .stats:not(.big) > span { padding: 1px 7px; font-size: 16px; line-height: 17px; border-width: 2px; border-radius: 11px; }
+  #app[data-screen] .card .stats:not(.big) > span { padding: calc(var(--bpv, 0px) + 1px) 7px; font-size: 16px; line-height: 17px; border-width: 2px; border-radius: 11px; }
   #app[data-screen] .card .cost { padding: 1px 7px; line-height: 15px; border-width: 2px; border-radius: 10px; }
 }
 /* 120px cards (1024–1279) hold 3 icons and "+n", not 5: a fused champion's
@@ -1566,6 +1574,10 @@ img.tg-qr { align-self: center; width: 200px; height: 200px; image-rendering: pi
 .sheet-stats { display: flex; gap: 8px; }
 .sheet-stat { flex: 1; display: flex; align-items: baseline; gap: 6px; padding: 4px 10px; color: var(--outline); border: var(--bw) solid var(--outline); border-radius: var(--radius); box-shadow: var(--drop); }
 .sheet-stat b { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 22px; line-height: 26px; }
+/* Lilita One's digits sit high in their line box: trim it to the digits and pad them back to 26px (#1124). */
+@supports (text-box: trim-both cap alphabetic) {
+  .sheet-stat b { text-box: trim-both cap alphabetic; padding-block: calc((26px - 1cap) / 2); }
+}
 .sheet-stat small { font-size: 12px; font-weight: 700; }
 .sheet-stat.p { background: var(--power); }
 .sheet-stat.h { background: var(--them); }
@@ -1647,7 +1659,7 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
   #app[data-screen="shop"] .bench-row .card .emoji { grid-row: 1 / span 3; grid-column: 1; font-size: 28px; line-height: 32px; height: 32px; margin: 0; }
   #app[data-screen="shop"] .bench-row .card .name { grid-row: 2; grid-column: 2 / span 2; font-size: 15px; line-height: 20px; text-overflow: ellipsis; }
   #app[data-screen="shop"] .bench-row .card .stats { grid-row: 3; grid-column: 2; justify-content: flex-start; }
-  #app[data-screen="shop"] .bench-row .card .stats:not(.big) > span { font-size: 13px; line-height: 14px; padding: 0 5px; }
+  #app[data-screen="shop"] .bench-row .card .stats:not(.big) > span { font-size: 13px; line-height: 14px; padding: var(--bpv, 0) 5px; }
   #app[data-screen="shop"] .bench-row .card .foot { grid-row: 3; grid-column: 3; min-height: 0; }
   #app[data-screen="shop"] .bench-row .card .tier { top: 4px; right: 6px; }
   #app[data-screen="shop"] .bench-row .card.empty { display: block; }
@@ -1786,7 +1798,7 @@ button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padd
   #app[data-screen] .seal > .card .emoji { font-size: 34px; line-height: 40px; height: 40px; margin-top: 4px; }
   #app[data-screen] .seal > .card .name { font-size: 13px; line-height: 14px; }
   #app[data-screen] .seal > .card .stats:not(.big) { gap: 3px; }
-  #app[data-screen] .seal > .card .stats:not(.big) > span { padding: 0 4px; font-size: 12px; line-height: 13px; border-width: 1.5px; border-radius: 7px; }
+  #app[data-screen] .seal > .card .stats:not(.big) > span { padding: var(--bpv, 0) 4px; font-size: 12px; line-height: 13px; border-width: 1.5px; border-radius: 7px; }
 }
 .seal.on { border-color: var(--action); }
 .seal-words { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
