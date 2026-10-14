@@ -22,7 +22,7 @@ const opt = (n: string) => {
   const i = args.indexOf(`--${n}`);
   return i >= 0 ? args[i + 1] : undefined;
 };
-const out = (opt("out") ?? "~/reports/arena-batch2.html").replace(/^~/, homedir());
+const out = (opt("out") ?? "~/reports/arena-batch3.html").replace(/^~/, homedir());
 const base = (opt("base") ?? "https://m1.twin-pogona.ts.net/arena-lab/").replace(/\/?$/, "/");
 const tuned = args.includes("--tuned");
 interface TuneUnit { name: string; fieldScore: number; awokenMargin: number; share: number; inBand: boolean; team: string[] }
@@ -84,9 +84,11 @@ function poolTrace(name: string, awoken: boolean): string[] {
   return own.length ? own.slice(0, 3) : lines.slice(0, 2);
 }
 
-/** The newest batch first (#1047): batch 2's twenty, then batch 1's. */
-const BATCH1 = 20;
-const ordered = [...ROWS_V2.slice(BATCH1), ...ROWS_V2.slice(0, BATCH1)];
+/** The newest batch first (#1047): batch 3's twenty (#1048), then 2's, then 1's. */
+const BATCH = 20;
+const batches = Array.from({ length: Math.ceil(ROWS_V2.length / BATCH) }, (_, b) => ROWS_V2.slice(b * BATCH, b * BATCH + BATCH)).reverse();
+const ordered = batches.flat();
+const HEADINGS = ["Batch 3 · new (#1048)", "Batch 2 · after the rethink (#1063)", "Batch 1 · after the rethink (#1063)"];
 const cards = ordered.map((row, i) => {
   const u = content.units.find((x) => x.id === slug(row.name))!;
   const key = row.name.replace(/[^A-Za-z]/g, "");
@@ -106,7 +108,7 @@ const cards = ordered.map((row, i) => {
   <p class="go">Scene: <a href="${esc(scene(sceneId, "en"))}" target="_blank" rel="noopener">EN</a> <a href="${esc(scene(sceneId, "ru"))}" target="_blank" rel="noopener">RU</a> <code>${sceneId}</code></p>
 </div>`;
   });
-  const heading = i === 0 ? `<h2 class="batch">Batch 2 · new</h2>` : i === ROWS_V2.length - BATCH1 ? `<h2 class="batch">Batch 1 · with Maks's notes applied</h2>` : "";
+  const heading = i % BATCH === 0 ? `<h2 class="batch">${HEADINGS[i / BATCH] ?? `Batch ${batches.length - i / BATCH}`}</h2>` : "";
   return `${heading}<section class="card" id="${u.id}">
   <header><span class="emoji">${u.emoji}</span><h2>${esc(u.name)}</h2><span class="meta">tier ${u.tier} · ${row.shape} · ${u.base.pwr}/${u.base.hp}${esc(balanceOf(row.name))}</span></header>
   <p class="arch">${esc(u.archetype)}</p>
@@ -134,7 +136,7 @@ header{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.emoji{font-siz
 .reword{border-collapse:collapse;font-size:13px;width:100%;margin:8px 0}.reword td,.reword th{border-top:1px solid var(--dim);padding:4px 6px;vertical-align:top;text-align:left}.reword small{color:var(--dim)}
 </style></head><body>
 <h1>Arena · rules v2 · the 40 units (rethink, #1063)</h1>
-<p class="sub">${tuned ? "All 40 units after the rethink (#1063): one shared vocabulary (six statuses, the turn, Charge ⚡), 7 duplicates replaced, every card with its tuned numbers; batch 2 first, then batch 1." : "Unit batch 2 of 3 (twenty new units, every shape class and tier) first, then batch 1 with Maks's notes applied: card sentences a person would say (the word chain in grey below each), lower HP."} Mission branch <code>mission-1043-rules-v2</code>. Design: <a href="arena-rules-v2.html">arena-rules-v2.html</a>. Scenes open on the lab.</p>
+<p class="sub">${tuned ? "Unit batch 3 of 3 (#1048): twenty new units on the shared vocabulary (six statuses, the turn, Charge ⚡), every shape class and tier, first; then the 40 of batches 2 and 1 after the rethink. Every card with its tuned numbers." : "Unit batch 3 of 3 (#1048), twenty new units, first, then batches 2 and 1; placeholder numbers until the tune."} Mission branch <code>mission-1043-rules-v2</code>. Design: <a href="arena-rules-v2.html">arena-rules-v2.html</a>. Scenes open on the lab.</p>
 ${tune ? `<div class="note"><b>Tuned.</b> PWR and HP come from <code>npm run mvp:tune-v2</code>${tune.rounds.length ? `: ${tune.rounds.length} rounds of the quick meta check move each unit toward the pool's median field score` : `, read on the numbers as they are: each unit's field score against the pool's median`} (${pct(tune.median)} ± ${pct(tune.band)}), averaged over several quick meta checks; then the full meta check: <b>${tune.healthy ? "healthy" : "not healthy"}</b>${tune.healthChecks ? ` (${tune.healthChecks.filter((h) => h.healthy).length} of ${tune.healthChecks.length} full checks healthy, one per seed)` : ` (${Object.values(tune.checks).map((c) => `${esc(c.rule)}: ${c.value < 1 && c.value > 0 ? pct(c.value) : c.value} ${c.pass ? "✓" : "✗"}`).join("; ")})`}. ${tune.units.filter((u) => u.inBand).length} of ${tune.units.length} units in band${tune.units.some((u) => !u.inBand) ? `; outside it: ${tune.units.filter((u) => !u.inBand).map((u) => `${esc(u.name)} ${pct(u.fieldScore)}`).join(", ")}` : ""}. Field: the unit's best team's mean score against the meta's teams. Awoken: what three copies add over sleeping, same team.</div>` : ""}
 ${tuned ? "" : `<div class="note"><b>Untuned draft.</b> The numbers are placeholders; the tune and the meta run come next. Units with a fixture battle link it; the others link their pool battle (the lab's <code>v2-unit-</code> scenes).</div>`}
 ${wording}
