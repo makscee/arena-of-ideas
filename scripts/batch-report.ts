@@ -15,6 +15,7 @@ import { FIXTURES } from "../src/words/fixtures.js";
 import { traceLines } from "../src/words/trace.js";
 import { slug } from "../src/mvp/units.js";
 import { poolBattle, poolBattleId } from "../src/mvp/pool-battles.js";
+import { ruleText } from "../server/src/mvp/night-batch.js";
 
 const args = process.argv.slice(2);
 const opt = (n: string) => {
@@ -39,6 +40,32 @@ const balanceOf = (name: string) => {
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 
 const content = contentOf(ROWS_V2);
+
+// Maks's two wording rules (10-14): no coin words, one strong reading. The
+// before → after list of every changed unit sentence (docs/mvp/wording-1047.json),
+// and with --night <batch json> each stored night fusion re-rendered by today's words.
+interface Reworded { unit: string; what: string; lang: string; before: string; after: string; why: string }
+const reworded: Reworded[] = existsSync("docs/mvp/wording-1047.json") ? JSON.parse(readFileSync("docs/mvp/wording-1047.json", "utf8")) : [];
+const nightFile = opt("night")?.replace(/^~/, homedir());
+interface NightCandidate { name: { en: string }; text: { en: string; ru: string }; unit: unknown; abilities: unknown; statuses: unknown }
+const night: { name: string; lang: string; before: string; after: string }[] = [];
+if (nightFile) {
+  const batch = JSON.parse(readFileSync(nightFile, "utf8")) as { results: { candidates?: NightCandidate[] }[] };
+  for (const r of batch.results) for (const c of r.candidates ?? []) for (const lang of ["en", "ru"] as const) {
+    if (!c.text?.[lang]) continue;
+    const after = ruleText(c as never, lang);
+    if (after !== c.text[lang]) night.push({ name: c.name.en, lang, before: c.text[lang], after });
+  }
+}
+const rewordTable = (rows: { who: string; before: string; after: string; why?: string }[]) =>
+  `<table class="reword"><tr><th></th><th>Before</th><th>After</th></tr>${rows.map((r) => `<tr><td>${esc(r.who)}${r.why ? `<br><small>${esc(r.why)}</small>` : ""}</td><td>${esc(r.before)}</td><td>${esc(r.after)}</td></tr>`).join("")}</table>`;
+const wording = reworded.length || night.length
+  ? `<details class="note" open><summary><b>Wording: every changed sentence, before → after</b> (${reworded.length} on units${nightFile ? `, ${night.length} on stored night fusions` : ""})</summary>
+<p>Maks's rules (10-14): a card says the chance, never a coin; every count, period, condition and target says what is counted and when it resets ("on turns 2, 4, 6…", "at a turn end with 3+ beats, it spends 3", "the first time … in a battle", "while at full HP"). Tests: no card sentence has heads/tails/flip/coin or орёл/решка/монет, and none says "every second/third turn".</p>
+${rewordTable(reworded.map((r) => ({ who: `${r.unit} · ${r.what} · ${r.lang.toUpperCase()}`, before: r.before, after: r.after, why: r.why })))}
+${nightFile ? `<h3>Night fusions (${esc(nightFile.split("/").pop()!)}), re-rendered</h3>${night.length ? rewordTable(night.map((r) => ({ who: `${r.name} · ${r.lang.toUpperCase()}`, before: r.before, after: r.after }))) : "<p>No sentence changed.</p>"}` : ""}
+</details>`
+  : "";
 const scene = (id: string, lang: string) => `${base}#scene=${id}&lang=${lang}`;
 
 /** The fixture's trace line, and the first other line that names the unit. */
@@ -103,11 +130,13 @@ header{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.emoji{font-siz
 .go a{margin-right:8px}code{font-size:12px;color:var(--dim)}
 .batch{margin:32px 0 12px;font-size:20px}.chain code{font-size:12px}
 .note{border-left:4px solid var(--acc);padding:8px 12px;margin:0 0 24px;background:var(--card)}
+.reword{border-collapse:collapse;font-size:13px;width:100%;margin:8px 0}.reword td,.reword th{border-top:1px solid var(--dim);padding:4px 6px;vertical-align:top;text-align:left}.reword small{color:var(--dim)}
 </style></head><body>
 <h1>Arena · rules v2 · unit batches 1 and 2</h1>
 <p class="sub">Unit batch 2 of 3 (twenty new units, every shape class and tier) first, then batch 1 with Maks's notes applied: card sentences a person would say (the word chain in grey below each), lower HP. Mission branch <code>mission-1043-rules-v2</code>. Design: <a href="arena-rules-v2.html">arena-rules-v2.html</a>. Scenes open on the lab.</p>
 ${tune ? `<div class="note"><b>Tuned.</b> PWR and HP come from <code>npm run mvp:tune-v2</code>${tune.rounds.length ? `: ${tune.rounds.length} rounds of the quick meta check move each unit toward the pool's median field score` : `, read on the numbers as they are: each unit's field score against the pool's median`} (${pct(tune.median)} ± ${pct(tune.band)}), averaged over several quick meta checks; then the full meta check: <b>${tune.healthy ? "healthy" : "not healthy"}</b>${tune.healthChecks ? ` (${tune.healthChecks.filter((h) => h.healthy).length} of ${tune.healthChecks.length} full checks healthy, one per seed)` : ` (${Object.values(tune.checks).map((c) => `${esc(c.rule)}: ${c.value < 1 && c.value > 0 ? pct(c.value) : c.value} ${c.pass ? "✓" : "✗"}`).join("; ")})`}. ${tune.units.filter((u) => u.inBand).length} of ${tune.units.length} units in band${tune.units.some((u) => !u.inBand) ? `; outside it: ${tune.units.filter((u) => !u.inBand).map((u) => `${esc(u.name)} ${pct(u.fieldScore)}`).join(", ")}` : ""}. Field: the unit's best team's mean score against the meta's teams. Awoken: what three copies add over sleeping, same team.</div>` : ""}
 ${tuned ? "" : `<div class="note"><b>Untuned draft.</b> The numbers are placeholders; the tune and the meta run come next. Units with a fixture battle link it; the others link their pool battle (the lab's <code>v2-unit-</code> scenes).</div>`}
+${wording}
 ${cards.join("\n")}
 </body></html>
 `;

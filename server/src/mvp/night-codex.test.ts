@@ -48,7 +48,7 @@ describe.each([
       expect(d.emoji).toBe("⏳🪞");
       expect(d.recipe.does).toEqual(ready[i]!.unit.abilities);
       expect(d.recipe.when).toEqual(ready[i]!.unit.triggers);
-      expect(d.recipe.text).toBe(ready[i]!.text.en);
+      expect(d.recipe.text).toBeUndefined(); // the card renders the rule, EN or RU (#1047)
     }
     const view = forgeView("mirror", "hourglass", pair, 0, false);
     expect(view.state).toBe("ready");

@@ -28,7 +28,7 @@ export function recipeOf(c: Candidate): UnitForm {
     does: [...(u.abilities ?? [])],
     ...(u.condition ? { condition: structuredClone(u.condition) } : {}),
     ...(u.also?.length ? { also: u.also.map((x) => ({ who: structuredClone(x.selectors ?? []), does: [...(x.abilities ?? [])] })) } : {}),
-    ...(c.text.en ? { text: c.text.en } : {}),
+    // no stored sentence: the card renders the rule in the reader's language with today's words (#1047)
   };
 }
 
