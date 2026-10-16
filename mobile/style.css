@@ -2251,3 +2251,32 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 @media not ((max-width: 599.98px) and (orientation: portrait)) {
   #app[data-screen="battle"] .bv-v3 .bv-line .bv-changes { left: -40px; right: calc(50% + 6px); justify-content: flex-end; }
 }
+/* Check of #1286 (#1294 reopened). One result tag per event, at the arrow:
+ * no running totals and no floating numbers over the pieces. */
+#app[data-screen="battle"]:has(.bv-v3) .bv-runs, #app[data-screen="battle"]:has(.bv-v3) .bv-fxnums { display: none; }
+/* The event card is sized to its text: the acting unit's when tab, then one
+ * plain sentence that wraps; nothing truncates. */
+#app[data-screen="battle"] .bv-v3 button.bv-caption { height: auto; min-height: 0; max-height: none; overflow: visible; }
+#app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+#app[data-screen="battle"] .bv-v3 .bv-cap-when { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px 1px 6px; border: 2px solid var(--outline); border-radius: 9px; color: var(--pc-ink); font-family: var(--font-head); font-size: 13px; line-height: 1.2; white-space: nowrap; }
+#app[data-screen="battle"] .bv-v3 .bv-rail-line { display: block; white-space: normal; overflow-wrap: anywhere; }
+#app[data-screen="battle"] .bv-v3 .bv-recent-row { display: block; -webkit-line-clamp: none; overflow: visible; flex: none; }
+#app[data-screen="battle"] .bv-v3 .bv-ledger-foot, #app[data-screen="battle"] .bv-v3 .bv-turn-line { white-space: normal; overflow: visible; text-overflow: clip; }
+@media (max-width: 599.98px) and (orientation: portrait) {
+  #app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  #app[data-screen="battle"] .bv-v3 button.bv-caption { min-height: 56px; }
+}
+/* The result tag: the event's change, at the arrow, shown while playing too. */
+#app[data-screen="battle"] .bv-v3 .bv-line .bv-pill { visibility: visible; height: 26px; line-height: 22px; padding: 0 8px; border: 2px solid var(--outline); border-radius: 10px; background: color-mix(in srgb, var(--action) 45%, var(--pc-face-hi)); color: var(--pc-ink); font-family: var(--font-head); font-size: 15px; box-shadow: 0 2px 0 var(--outline); overflow: visible; text-overflow: clip; }
+#app[data-screen="battle"] .bv-v3 .bv-line .bv-pill.two { height: auto; line-height: 1.15; padding: 2px 8px; }
+#app[data-screen="battle"] .bv-v3 .bv-line .bv-pill .bv-l.bv-dup { display: inline; }
+#app[data-screen="battle"] .bv-v3 .bv-line .bv-pill * { color: var(--pc-ink); }
+/* A hit flashes the face, not the piece's whole box (it drew a dark block under the piece). */
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.bv-flash-hit::after { content: none; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.bv-flash-hit > .pc > .pc-face { animation: bv-face-flash calc(0.4s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
+@keyframes bv-face-flash { from { filter: drop-shadow(0 0 8px var(--k-dmg)) brightness(1.25); } to { filter: none; } }
+/* Landscape: the lines face each other across the gap; spare height goes to the outer edges. */
+@media not ((max-width: 599.98px) and (orientation: portrait)) {
+  #app[data-screen="battle"] .bv-v3 .bv-line.theirs { align-items: end; }
+  #app[data-screen="battle"] .bv-v3 .bv-line.mine { align-items: start; }
+}
