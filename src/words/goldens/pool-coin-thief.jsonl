@@ -1,6 +1,6 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Coin Thief","name":"Coin Thief","hp":2,"pwr":0},{"id":"A2:Prism","name":"Prism","hp":12,"pwr":6}],"B":[{"id":"B1:Fortune Teller","name":"Fortune Teller","hp":4,"pwr":0},{"id":"B2:Archmage","name":"Archmage","hp":2,"pwr":1},{"id":"B3:Berserker","name":"Berserker","hp":9,"pwr":2}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Coin Thief","name":"Coin Thief","hp":7,"pwr":1},{"id":"A2:Prism","name":"Prism","hp":11,"pwr":6}],"B":[{"id":"B1:Fortune Teller","name":"Fortune Teller","hp":13,"pwr":1},{"id":"B2:Archmage","name":"Archmage","hp":14,"pwr":1},{"id":"B3:Berserker","name":"Berserker","hp":13,"pwr":2}]}}
 {"id":1,"turn":0,"causedBy":0,"source":{"unit":"B1:Fortune Teller","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Fortune Teller","status":"Strength","stacks":1,"total":1}
-{"id":2,"turn":0,"causedBy":1,"source":"kernel","type":"StatChanged","unit":"B1:Fortune Teller","stat":"pwr","delta":1,"now":1}
+{"id":2,"turn":0,"causedBy":1,"source":"kernel","type":"StatChanged","unit":"B1:Fortune Teller","stat":"pwr","delta":1,"now":2}
 {"id":3,"turn":0,"causedBy":0,"source":{"unit":"B1:Fortune Teller","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Archmage","status":"Strength","stacks":1,"total":1}
 {"id":4,"turn":0,"causedBy":3,"source":"kernel","type":"StatChanged","unit":"B2:Archmage","stat":"pwr","delta":1,"now":2}
 {"id":5,"turn":0,"causedBy":0,"source":{"unit":"B1:Fortune Teller","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Berserker","status":"Strength","stacks":1,"total":1}
@@ -9,55 +9,102 @@
 {"id":8,"turn":1,"causedBy":7,"source":{"unit":"A1:Coin Thief","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Archmage","status":"Curse","stacks":1,"total":1}
 {"id":9,"turn":1,"causedBy":8,"source":"kernel","type":"StatChanged","unit":"B2:Archmage","stat":"pwr","delta":-1,"now":1}
 {"id":10,"turn":1,"causedBy":7,"source":{"unit":"A1:Coin Thief","ability":1,"when":0},"type":"StatusApplied","unit":"A1:Coin Thief","status":"Strength","stacks":1,"total":1}
-{"id":11,"turn":1,"causedBy":10,"source":"kernel","type":"StatChanged","unit":"A1:Coin Thief","stat":"pwr","delta":1,"now":1}
+{"id":11,"turn":1,"causedBy":10,"source":"kernel","type":"StatChanged","unit":"A1:Coin Thief","stat":"pwr","delta":1,"now":2}
 {"id":12,"turn":1,"causedBy":7,"source":"kernel","type":"PairFaced","a":"A1:Coin Thief","b":"B1:Fortune Teller","first":"A1:Coin Thief"}
 {"id":13,"turn":1,"causedBy":7,"source":"kernel","type":"Strike","striker":"A1:Coin Thief","defender":"B1:Fortune Teller"}
-{"id":14,"turn":1,"causedBy":13,"source":"kernel","type":"Hurt","unit":"B1:Fortune Teller","amount":1,"hpAfter":3}
+{"id":14,"turn":1,"causedBy":13,"source":"kernel","type":"Hurt","unit":"B1:Fortune Teller","amount":2,"hpAfter":11}
 {"id":15,"turn":1,"causedBy":7,"source":"kernel","type":"Strike","striker":"B1:Fortune Teller","defender":"A1:Coin Thief"}
-{"id":16,"turn":1,"causedBy":15,"source":"kernel","type":"Hurt","unit":"A1:Coin Thief","amount":1,"hpAfter":1}
+{"id":16,"turn":1,"causedBy":15,"source":"kernel","type":"Hurt","unit":"A1:Coin Thief","amount":2,"hpAfter":5}
 {"id":17,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":18,"turn":1,"causedBy":17,"source":{"unit":"B2:Archmage","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Archmage","status":"Charge","stacks":1,"total":1}
 {"id":19,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":20,"turn":2,"causedBy":19,"source":{"unit":"A1:Coin Thief","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Archmage","status":"Curse","stacks":1,"total":2}
 {"id":21,"turn":2,"causedBy":20,"source":"kernel","type":"StatChanged","unit":"B2:Archmage","stat":"pwr","delta":-1,"now":0}
 {"id":22,"turn":2,"causedBy":19,"source":{"unit":"A1:Coin Thief","ability":1,"when":0},"type":"StatusApplied","unit":"A1:Coin Thief","status":"Strength","stacks":1,"total":2}
-{"id":23,"turn":2,"causedBy":22,"source":"kernel","type":"StatChanged","unit":"A1:Coin Thief","stat":"pwr","delta":1,"now":2}
+{"id":23,"turn":2,"causedBy":22,"source":"kernel","type":"StatChanged","unit":"A1:Coin Thief","stat":"pwr","delta":1,"now":3}
 {"id":24,"turn":2,"causedBy":19,"source":"kernel","type":"Strike","striker":"A1:Coin Thief","defender":"B1:Fortune Teller"}
-{"id":25,"turn":2,"causedBy":24,"source":"kernel","type":"Hurt","unit":"B1:Fortune Teller","amount":2,"hpAfter":1}
+{"id":25,"turn":2,"causedBy":24,"source":"kernel","type":"Hurt","unit":"B1:Fortune Teller","amount":3,"hpAfter":8}
 {"id":26,"turn":2,"causedBy":19,"source":"kernel","type":"Strike","striker":"B1:Fortune Teller","defender":"A1:Coin Thief"}
-{"id":27,"turn":2,"causedBy":26,"source":"kernel","type":"Hurt","unit":"A1:Coin Thief","amount":1,"hpAfter":0}
-{"id":28,"turn":2,"causedBy":27,"source":"kernel","type":"Death","unit":"A1:Coin Thief"}
-{"id":29,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":30,"turn":2,"causedBy":29,"source":{"unit":"B2:Archmage","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Archmage","status":"Charge","stacks":1,"total":2}
-{"id":31,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":32,"turn":3,"causedBy":31,"source":"kernel","type":"PairFaced","a":"A2:Prism","b":"B1:Fortune Teller","first":"B1:Fortune Teller"}
-{"id":33,"turn":3,"causedBy":31,"source":"kernel","type":"Strike","striker":"B1:Fortune Teller","defender":"A2:Prism"}
-{"id":34,"turn":3,"causedBy":33,"source":"kernel","type":"Hurt","unit":"A2:Prism","amount":1,"hpAfter":11}
-{"id":35,"turn":3,"causedBy":31,"source":"kernel","type":"Strike","striker":"A2:Prism","defender":"B1:Fortune Teller"}
-{"id":36,"turn":3,"causedBy":35,"source":"kernel","type":"Hurt","unit":"B1:Fortune Teller","amount":6,"hpAfter":-5}
-{"id":37,"turn":3,"causedBy":36,"source":"kernel","type":"Death","unit":"B1:Fortune Teller"}
-{"id":38,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":39,"turn":3,"causedBy":38,"source":{"unit":"B2:Archmage","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Archmage","status":"Charge","stacks":1,"total":3}
-{"id":40,"turn":3,"causedBy":38,"source":{"unit":"B2:Archmage","ability":1,"when":0},"type":"Hurt","unit":"A2:Prism","amount":0,"hpAfter":11}
-{"id":41,"turn":3,"causedBy":38,"source":{"unit":"B2:Archmage","ability":2,"when":0},"type":"StatusRemoved","unit":"B2:Archmage","status":"Charge","stacks":3,"remaining":0}
-{"id":42,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":43,"turn":4,"causedBy":42,"source":"kernel","type":"PairFaced","a":"A2:Prism","b":"B2:Archmage","first":"B2:Archmage"}
-{"id":44,"turn":4,"causedBy":42,"source":"kernel","type":"Strike","striker":"B2:Archmage","defender":"A2:Prism"}
-{"id":45,"turn":4,"causedBy":44,"source":"kernel","type":"Hurt","unit":"A2:Prism","amount":0,"hpAfter":11}
-{"id":46,"turn":4,"causedBy":42,"source":"kernel","type":"Strike","striker":"A2:Prism","defender":"B2:Archmage"}
-{"id":47,"turn":4,"causedBy":46,"source":"kernel","type":"Hurt","unit":"B2:Archmage","amount":6,"hpAfter":-4}
-{"id":48,"turn":4,"causedBy":47,"source":"kernel","type":"Death","unit":"B2:Archmage"}
-{"id":49,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":50,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":51,"turn":5,"causedBy":50,"source":"kernel","type":"PairFaced","a":"A2:Prism","b":"B3:Berserker","first":"A2:Prism"}
-{"id":52,"turn":5,"causedBy":50,"source":"kernel","type":"Strike","striker":"A2:Prism","defender":"B3:Berserker"}
-{"id":53,"turn":5,"causedBy":52,"source":"kernel","type":"Hurt","unit":"B3:Berserker","amount":6,"hpAfter":3}
-{"id":54,"turn":5,"causedBy":50,"source":"kernel","type":"Strike","striker":"B3:Berserker","defender":"A2:Prism","amount":9}
-{"id":55,"turn":5,"causedBy":54,"source":"kernel","type":"Hurt","unit":"A2:Prism","amount":9,"hpAfter":2}
-{"id":56,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":57,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":58,"turn":6,"causedBy":57,"source":"kernel","type":"Strike","striker":"A2:Prism","defender":"B3:Berserker"}
-{"id":59,"turn":6,"causedBy":58,"source":"kernel","type":"Hurt","unit":"B3:Berserker","amount":6,"hpAfter":-3}
-{"id":60,"turn":6,"causedBy":59,"source":"kernel","type":"Death","unit":"B3:Berserker"}
-{"id":61,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":62,"turn":6,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":6}
+{"id":27,"turn":2,"causedBy":26,"source":"kernel","type":"Hurt","unit":"A1:Coin Thief","amount":2,"hpAfter":3}
+{"id":28,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":29,"turn":2,"causedBy":28,"source":{"unit":"B2:Archmage","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Archmage","status":"Charge","stacks":1,"total":2}
+{"id":30,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":31,"turn":3,"causedBy":30,"source":{"unit":"A1:Coin Thief","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Berserker","status":"Curse","stacks":1,"total":1}
+{"id":32,"turn":3,"causedBy":31,"source":"kernel","type":"StatChanged","unit":"B3:Berserker","stat":"pwr","delta":-1,"now":2}
+{"id":33,"turn":3,"causedBy":30,"source":{"unit":"A1:Coin Thief","ability":1,"when":0},"type":"StatusApplied","unit":"A1:Coin Thief","status":"Strength","stacks":1,"total":3}
+{"id":34,"turn":3,"causedBy":33,"source":"kernel","type":"StatChanged","unit":"A1:Coin Thief","stat":"pwr","delta":1,"now":4}
+{"id":35,"turn":3,"causedBy":30,"source":"kernel","type":"Strike","striker":"A1:Coin Thief","defender":"B1:Fortune Teller"}
+{"id":36,"turn":3,"causedBy":35,"source":"kernel","type":"Hurt","unit":"B1:Fortune Teller","amount":4,"hpAfter":4}
+{"id":37,"turn":3,"causedBy":30,"source":"kernel","type":"Strike","striker":"B1:Fortune Teller","defender":"A1:Coin Thief"}
+{"id":38,"turn":3,"causedBy":37,"source":"kernel","type":"Hurt","unit":"A1:Coin Thief","amount":2,"hpAfter":1}
+{"id":39,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":40,"turn":3,"causedBy":39,"source":{"unit":"B2:Archmage","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Archmage","status":"Charge","stacks":1,"total":3}
+{"id":41,"turn":3,"causedBy":39,"source":{"unit":"B2:Archmage","ability":1,"when":0},"type":"Hurt","unit":"A1:Coin Thief","amount":0,"hpAfter":1}
+{"id":42,"turn":3,"causedBy":39,"source":{"unit":"B2:Archmage","ability":1,"when":0},"type":"Hurt","unit":"A2:Prism","amount":0,"hpAfter":11}
+{"id":43,"turn":3,"causedBy":39,"source":{"unit":"B2:Archmage","ability":2,"when":0},"type":"StatusRemoved","unit":"B2:Archmage","status":"Charge","stacks":3,"remaining":0}
+{"id":44,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":45,"turn":4,"causedBy":44,"source":{"unit":"A1:Coin Thief","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Berserker","status":"Curse","stacks":1,"total":2}
+{"id":46,"turn":4,"causedBy":45,"source":"kernel","type":"StatChanged","unit":"B3:Berserker","stat":"pwr","delta":-1,"now":1}
+{"id":47,"turn":4,"causedBy":44,"source":{"unit":"A1:Coin Thief","ability":1,"when":0},"type":"StatusApplied","unit":"A1:Coin Thief","status":"Strength","stacks":1,"total":4}
+{"id":48,"turn":4,"causedBy":47,"source":"kernel","type":"StatChanged","unit":"A1:Coin Thief","stat":"pwr","delta":1,"now":5}
+{"id":49,"turn":4,"causedBy":44,"source":"kernel","type":"Strike","striker":"A1:Coin Thief","defender":"B1:Fortune Teller"}
+{"id":50,"turn":4,"causedBy":49,"source":"kernel","type":"Hurt","unit":"B1:Fortune Teller","amount":5,"hpAfter":-1}
+{"id":51,"turn":4,"causedBy":50,"source":"kernel","type":"Death","unit":"B1:Fortune Teller"}
+{"id":52,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":53,"turn":4,"causedBy":52,"source":{"unit":"B2:Archmage","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Archmage","status":"Charge","stacks":1,"total":1}
+{"id":54,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":55,"turn":5,"causedBy":54,"source":{"unit":"A1:Coin Thief","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Archmage","status":"Curse","stacks":1,"total":3}
+{"id":56,"turn":5,"causedBy":55,"source":"kernel","type":"StatChanged","unit":"B2:Archmage","stat":"pwr","delta":-1,"now":0}
+{"id":57,"turn":5,"causedBy":54,"source":{"unit":"A1:Coin Thief","ability":1,"when":0},"type":"StatusApplied","unit":"A1:Coin Thief","status":"Strength","stacks":1,"total":5}
+{"id":58,"turn":5,"causedBy":57,"source":"kernel","type":"StatChanged","unit":"A1:Coin Thief","stat":"pwr","delta":1,"now":6}
+{"id":59,"turn":5,"causedBy":54,"source":"kernel","type":"PairFaced","a":"A1:Coin Thief","b":"B2:Archmage","first":"B2:Archmage"}
+{"id":60,"turn":5,"causedBy":54,"source":"kernel","type":"Strike","striker":"B2:Archmage","defender":"A1:Coin Thief"}
+{"id":61,"turn":5,"causedBy":60,"source":"kernel","type":"Hurt","unit":"A1:Coin Thief","amount":0,"hpAfter":1}
+{"id":62,"turn":5,"causedBy":54,"source":"kernel","type":"Strike","striker":"A1:Coin Thief","defender":"B2:Archmage"}
+{"id":63,"turn":5,"causedBy":62,"source":"kernel","type":"Hurt","unit":"B2:Archmage","amount":6,"hpAfter":8}
+{"id":64,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":65,"turn":5,"causedBy":64,"source":{"unit":"B2:Archmage","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Archmage","status":"Charge","stacks":1,"total":2}
+{"id":66,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":67,"turn":6,"causedBy":66,"source":{"unit":"A1:Coin Thief","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Berserker","status":"Curse","stacks":1,"total":3}
+{"id":68,"turn":6,"causedBy":67,"source":"kernel","type":"StatChanged","unit":"B3:Berserker","stat":"pwr","delta":-1,"now":0}
+{"id":69,"turn":6,"causedBy":66,"source":{"unit":"A1:Coin Thief","ability":1,"when":0},"type":"StatusApplied","unit":"A1:Coin Thief","status":"Strength","stacks":1,"total":6}
+{"id":70,"turn":6,"causedBy":69,"source":"kernel","type":"StatChanged","unit":"A1:Coin Thief","stat":"pwr","delta":1,"now":7}
+{"id":71,"turn":6,"causedBy":66,"source":"kernel","type":"Strike","striker":"B2:Archmage","defender":"A1:Coin Thief"}
+{"id":72,"turn":6,"causedBy":71,"source":"kernel","type":"Hurt","unit":"A1:Coin Thief","amount":0,"hpAfter":1}
+{"id":73,"turn":6,"causedBy":66,"source":"kernel","type":"Strike","striker":"A1:Coin Thief","defender":"B2:Archmage"}
+{"id":74,"turn":6,"causedBy":73,"source":"kernel","type":"Hurt","unit":"B2:Archmage","amount":7,"hpAfter":1}
+{"id":75,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":76,"turn":6,"causedBy":75,"source":{"unit":"B2:Archmage","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Archmage","status":"Charge","stacks":1,"total":3}
+{"id":77,"turn":6,"causedBy":75,"source":{"unit":"B2:Archmage","ability":1,"when":0},"type":"Hurt","unit":"A1:Coin Thief","amount":0,"hpAfter":1}
+{"id":78,"turn":6,"causedBy":75,"source":{"unit":"B2:Archmage","ability":1,"when":0},"type":"Hurt","unit":"A2:Prism","amount":0,"hpAfter":11}
+{"id":79,"turn":6,"causedBy":75,"source":{"unit":"B2:Archmage","ability":2,"when":0},"type":"StatusRemoved","unit":"B2:Archmage","status":"Charge","stacks":3,"remaining":0}
+{"id":80,"turn":7,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":81,"turn":7,"causedBy":80,"source":{"unit":"A1:Coin Thief","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Archmage","status":"Curse","stacks":1,"total":4}
+{"id":82,"turn":7,"causedBy":81,"source":"kernel","type":"StatChanged","unit":"B2:Archmage","stat":"pwr","delta":-1,"now":0}
+{"id":83,"turn":7,"causedBy":80,"source":{"unit":"A1:Coin Thief","ability":1,"when":0},"type":"StatusApplied","unit":"A1:Coin Thief","status":"Strength","stacks":1,"total":7}
+{"id":84,"turn":7,"causedBy":83,"source":"kernel","type":"StatChanged","unit":"A1:Coin Thief","stat":"pwr","delta":1,"now":8}
+{"id":85,"turn":7,"causedBy":80,"source":"kernel","type":"Strike","striker":"B2:Archmage","defender":"A1:Coin Thief"}
+{"id":86,"turn":7,"causedBy":85,"source":"kernel","type":"Hurt","unit":"A1:Coin Thief","amount":0,"hpAfter":1}
+{"id":87,"turn":7,"causedBy":80,"source":"kernel","type":"Strike","striker":"A1:Coin Thief","defender":"B2:Archmage"}
+{"id":88,"turn":7,"causedBy":87,"source":"kernel","type":"Hurt","unit":"B2:Archmage","amount":8,"hpAfter":-7}
+{"id":89,"turn":7,"causedBy":88,"source":"kernel","type":"Death","unit":"B2:Archmage"}
+{"id":90,"turn":7,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":91,"turn":8,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":92,"turn":8,"causedBy":91,"source":{"unit":"A1:Coin Thief","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Berserker","status":"Curse","stacks":1,"total":4}
+{"id":93,"turn":8,"causedBy":92,"source":"kernel","type":"StatChanged","unit":"B3:Berserker","stat":"pwr","delta":-1,"now":0}
+{"id":94,"turn":8,"causedBy":91,"source":{"unit":"A1:Coin Thief","ability":1,"when":0},"type":"StatusApplied","unit":"A1:Coin Thief","status":"Strength","stacks":1,"total":8}
+{"id":95,"turn":8,"causedBy":94,"source":"kernel","type":"StatChanged","unit":"A1:Coin Thief","stat":"pwr","delta":1,"now":9}
+{"id":96,"turn":8,"causedBy":91,"source":"kernel","type":"PairFaced","a":"A1:Coin Thief","b":"B3:Berserker","first":"A1:Coin Thief"}
+{"id":97,"turn":8,"causedBy":91,"source":"kernel","type":"Strike","striker":"A1:Coin Thief","defender":"B3:Berserker"}
+{"id":98,"turn":8,"causedBy":97,"source":"kernel","type":"Hurt","unit":"B3:Berserker","amount":9,"hpAfter":4}
+{"id":99,"turn":8,"causedBy":91,"source":"kernel","type":"Strike","striker":"B3:Berserker","defender":"A1:Coin Thief","amount":9}
+{"id":100,"turn":8,"causedBy":99,"source":"kernel","type":"Hurt","unit":"A1:Coin Thief","amount":9,"hpAfter":-8}
+{"id":101,"turn":8,"causedBy":100,"source":"kernel","type":"Death","unit":"A1:Coin Thief"}
+{"id":102,"turn":8,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":103,"turn":9,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":104,"turn":9,"causedBy":103,"source":"kernel","type":"PairFaced","a":"A2:Prism","b":"B3:Berserker","first":"A2:Prism"}
+{"id":105,"turn":9,"causedBy":103,"source":"kernel","type":"Strike","striker":"A2:Prism","defender":"B3:Berserker"}
+{"id":106,"turn":9,"causedBy":105,"source":"kernel","type":"Hurt","unit":"B3:Berserker","amount":6,"hpAfter":-2}
+{"id":107,"turn":9,"causedBy":106,"source":"kernel","type":"Death","unit":"B3:Berserker"}
+{"id":108,"turn":9,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":109,"turn":9,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":9}

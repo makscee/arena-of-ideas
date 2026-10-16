@@ -1,122 +1,132 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Witch Doctor","name":"Witch Doctor","hp":17,"pwr":4},{"id":"A2:Broodmother","name":"Broodmother","hp":6,"pwr":1}],"B":[{"id":"B1:Phoenix","name":"Phoenix","hp":7,"pwr":2},{"id":"B2:Candle","name":"Candle","hp":7,"pwr":4},{"id":"B3:Leech","name":"Leech","hp":9,"pwr":5}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Witch Doctor","name":"Witch Doctor","hp":21,"pwr":5},{"id":"A2:Broodmother","name":"Broodmother","hp":12,"pwr":1}],"B":[{"id":"B1:Phoenix","name":"Phoenix","hp":13,"pwr":2},{"id":"B2:Candle","name":"Candle","hp":10,"pwr":4},{"id":"B3:Leech","name":"Leech","hp":7,"pwr":5}]}}
 {"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":2,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Witch Doctor","b":"B1:Phoenix","first":"B1:Phoenix"}
 {"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Phoenix","defender":"A1:Witch Doctor"}
-{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"Hurt","unit":"A1:Witch Doctor","amount":2,"hpAfter":15}
+{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"Hurt","unit":"A1:Witch Doctor","amount":2,"hpAfter":19}
 {"id":5,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Witch Doctor","defender":"B1:Phoenix"}
-{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"B1:Phoenix","amount":4,"hpAfter":3}
+{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"B1:Phoenix","amount":5,"hpAfter":8}
 {"id":7,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":8,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":9,"turn":2,"causedBy":8,"source":{"unit":"A2:Broodmother","ability":0,"when":0},"type":"Summon","unit":"A+1:Spiderling","name":"Spiderling","side":"A","hp":1,"pwr":1,"front":true}
 {"id":10,"turn":2,"causedBy":8,"source":"kernel","type":"PairFaced","a":"A+1:Spiderling","b":"B1:Phoenix","first":"A+1:Spiderling"}
 {"id":11,"turn":2,"causedBy":8,"source":"kernel","type":"Strike","striker":"A+1:Spiderling","defender":"B1:Phoenix"}
-{"id":12,"turn":2,"causedBy":11,"source":"kernel","type":"Hurt","unit":"B1:Phoenix","amount":1,"hpAfter":2}
+{"id":12,"turn":2,"causedBy":11,"source":"kernel","type":"Hurt","unit":"B1:Phoenix","amount":1,"hpAfter":7}
 {"id":13,"turn":2,"causedBy":11,"source":{"unit":"A+1:Spiderling","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Phoenix","status":"Poison","stacks":1,"total":1}
 {"id":14,"turn":2,"causedBy":13,"source":{"unit":"A1:Witch Doctor","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Witch Doctor","status":"Charge","stacks":1,"total":1}
 {"id":15,"turn":2,"causedBy":8,"source":"kernel","type":"Strike","striker":"B1:Phoenix","defender":"A+1:Spiderling"}
 {"id":16,"turn":2,"causedBy":15,"source":"kernel","type":"Hurt","unit":"A+1:Spiderling","amount":2,"hpAfter":-1}
 {"id":17,"turn":2,"causedBy":16,"source":"kernel","type":"Death","unit":"A+1:Spiderling"}
 {"id":18,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":19,"turn":2,"causedBy":18,"source":{"unit":"B1:Phoenix","status":"Poison","ability":0,"when":0},"type":"Hurt","unit":"B1:Phoenix","amount":1,"hpAfter":1}
+{"id":19,"turn":2,"causedBy":18,"source":{"unit":"B1:Phoenix","status":"Poison","ability":0,"when":0},"type":"Hurt","unit":"B1:Phoenix","amount":1,"hpAfter":6}
 {"id":20,"turn":2,"causedBy":18,"source":{"unit":"B1:Phoenix","status":"Poison","ability":0,"when":0},"type":"StatusRemoved","unit":"B1:Phoenix","status":"Poison","stacks":1,"remaining":0}
 {"id":21,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":22,"turn":3,"causedBy":21,"source":"kernel","type":"Strike","striker":"B1:Phoenix","defender":"A1:Witch Doctor"}
-{"id":23,"turn":3,"causedBy":22,"source":"kernel","type":"Hurt","unit":"A1:Witch Doctor","amount":2,"hpAfter":13}
+{"id":23,"turn":3,"causedBy":22,"source":"kernel","type":"Hurt","unit":"A1:Witch Doctor","amount":2,"hpAfter":17}
 {"id":24,"turn":3,"causedBy":21,"source":"kernel","type":"Strike","striker":"A1:Witch Doctor","defender":"B1:Phoenix"}
-{"id":25,"turn":3,"causedBy":24,"source":"kernel","type":"Hurt","unit":"B1:Phoenix","amount":4,"hpAfter":-3}
-{"id":26,"turn":3,"causedBy":25,"source":"kernel","type":"Death","unit":"B1:Phoenix"}
-{"id":27,"turn":3,"causedBy":26,"source":{"unit":"B1:Phoenix","ability":0,"when":0},"type":"Summon","unit":"B1:Phoenix","name":"Phoenix","side":"B","hp":7,"pwr":2,"resurrected":true,"atHp":2,"slot":0}
-{"id":28,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":29,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":30,"turn":4,"causedBy":29,"source":{"unit":"A2:Broodmother","ability":0,"when":0},"type":"Summon","unit":"A+2:Spiderling","name":"Spiderling","side":"A","hp":1,"pwr":1,"front":true}
-{"id":31,"turn":4,"causedBy":29,"source":"kernel","type":"PairFaced","a":"A+2:Spiderling","b":"B1:Phoenix","first":"B1:Phoenix"}
-{"id":32,"turn":4,"causedBy":29,"source":"kernel","type":"Strike","striker":"B1:Phoenix","defender":"A+2:Spiderling"}
-{"id":33,"turn":4,"causedBy":32,"source":"kernel","type":"Hurt","unit":"A+2:Spiderling","amount":2,"hpAfter":-1}
-{"id":34,"turn":4,"causedBy":33,"source":"kernel","type":"Death","unit":"A+2:Spiderling"}
-{"id":35,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":36,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":37,"turn":5,"causedBy":36,"source":"kernel","type":"Strike","striker":"B1:Phoenix","defender":"A1:Witch Doctor"}
-{"id":38,"turn":5,"causedBy":37,"source":"kernel","type":"Hurt","unit":"A1:Witch Doctor","amount":2,"hpAfter":11}
-{"id":39,"turn":5,"causedBy":36,"source":"kernel","type":"Strike","striker":"A1:Witch Doctor","defender":"B1:Phoenix"}
-{"id":40,"turn":5,"causedBy":39,"source":"kernel","type":"Hurt","unit":"B1:Phoenix","amount":4,"hpAfter":-2}
-{"id":41,"turn":5,"causedBy":40,"source":"kernel","type":"Death","unit":"B1:Phoenix"}
-{"id":42,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":43,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":44,"turn":6,"causedBy":43,"source":{"unit":"A2:Broodmother","ability":0,"when":0},"type":"Summon","unit":"A+3:Spiderling","name":"Spiderling","side":"A","hp":1,"pwr":1,"front":true}
-{"id":45,"turn":6,"causedBy":43,"source":"kernel","type":"PairFaced","a":"A+3:Spiderling","b":"B2:Candle","first":"B2:Candle"}
-{"id":46,"turn":6,"causedBy":43,"source":"kernel","type":"Strike","striker":"B2:Candle","defender":"A+3:Spiderling"}
-{"id":47,"turn":6,"causedBy":46,"source":"kernel","type":"Hurt","unit":"A+3:Spiderling","amount":4,"hpAfter":-3}
-{"id":48,"turn":6,"causedBy":47,"source":"kernel","type":"Death","unit":"A+3:Spiderling"}
-{"id":49,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":50,"turn":7,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":51,"turn":7,"causedBy":50,"source":"kernel","type":"PairFaced","a":"A1:Witch Doctor","b":"B2:Candle","first":"B2:Candle"}
-{"id":52,"turn":7,"causedBy":50,"source":"kernel","type":"Strike","striker":"B2:Candle","defender":"A1:Witch Doctor"}
-{"id":53,"turn":7,"causedBy":52,"source":"kernel","type":"Hurt","unit":"A1:Witch Doctor","amount":4,"hpAfter":7}
-{"id":54,"turn":7,"causedBy":50,"source":"kernel","type":"Strike","striker":"A1:Witch Doctor","defender":"B2:Candle"}
-{"id":55,"turn":7,"causedBy":54,"source":"kernel","type":"Hurt","unit":"B2:Candle","amount":4,"hpAfter":3}
-{"id":56,"turn":7,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":57,"turn":8,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":58,"turn":8,"causedBy":57,"source":{"unit":"A2:Broodmother","ability":0,"when":0},"type":"Summon","unit":"A+4:Spiderling","name":"Spiderling","side":"A","hp":1,"pwr":1,"front":true}
-{"id":59,"turn":8,"causedBy":57,"source":"kernel","type":"PairFaced","a":"A+4:Spiderling","b":"B2:Candle","first":"A+4:Spiderling"}
-{"id":60,"turn":8,"causedBy":57,"source":"kernel","type":"Strike","striker":"A+4:Spiderling","defender":"B2:Candle"}
-{"id":61,"turn":8,"causedBy":60,"source":"kernel","type":"Hurt","unit":"B2:Candle","amount":1,"hpAfter":2}
-{"id":62,"turn":8,"causedBy":60,"source":{"unit":"A+4:Spiderling","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Candle","status":"Poison","stacks":1,"total":1}
-{"id":63,"turn":8,"causedBy":62,"source":{"unit":"A1:Witch Doctor","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Witch Doctor","status":"Charge","stacks":1,"total":2}
-{"id":64,"turn":8,"causedBy":57,"source":"kernel","type":"Strike","striker":"B2:Candle","defender":"A+4:Spiderling"}
-{"id":65,"turn":8,"causedBy":64,"source":"kernel","type":"Hurt","unit":"A+4:Spiderling","amount":4,"hpAfter":-3}
-{"id":66,"turn":8,"causedBy":65,"source":"kernel","type":"Death","unit":"A+4:Spiderling"}
-{"id":67,"turn":8,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":68,"turn":8,"causedBy":67,"source":{"unit":"B2:Candle","status":"Poison","ability":0,"when":0},"type":"Hurt","unit":"B2:Candle","amount":1,"hpAfter":1}
-{"id":69,"turn":8,"causedBy":67,"source":{"unit":"B2:Candle","status":"Poison","ability":0,"when":0},"type":"StatusRemoved","unit":"B2:Candle","status":"Poison","stacks":1,"remaining":0}
-{"id":70,"turn":9,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":71,"turn":9,"causedBy":70,"source":"kernel","type":"Strike","striker":"B2:Candle","defender":"A1:Witch Doctor"}
-{"id":72,"turn":9,"causedBy":71,"source":"kernel","type":"Hurt","unit":"A1:Witch Doctor","amount":4,"hpAfter":3}
-{"id":73,"turn":9,"causedBy":70,"source":"kernel","type":"Strike","striker":"A1:Witch Doctor","defender":"B2:Candle"}
-{"id":74,"turn":9,"causedBy":73,"source":"kernel","type":"Hurt","unit":"B2:Candle","amount":4,"hpAfter":-3}
-{"id":75,"turn":9,"causedBy":74,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B2:Candle","ability":0,"when":0},"original":"Death","unit":"B2:Candle"}
-{"id":76,"turn":9,"causedBy":75,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"Heal","unit":"B2:Candle","amount":4,"hpAfter":1}
-{"id":77,"turn":9,"causedBy":75,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"StatChanged","unit":"B2:Candle","stat":"pwr","delta":-1,"now":3}
-{"id":78,"turn":9,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":79,"turn":10,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":80,"turn":10,"causedBy":79,"source":{"unit":"A2:Broodmother","ability":0,"when":0},"type":"Summon","unit":"A+5:Spiderling","name":"Spiderling","side":"A","hp":1,"pwr":1,"front":true}
-{"id":81,"turn":10,"causedBy":79,"source":"kernel","type":"PairFaced","a":"A+5:Spiderling","b":"B2:Candle","first":"B2:Candle"}
-{"id":82,"turn":10,"causedBy":79,"source":"kernel","type":"Strike","striker":"B2:Candle","defender":"A+5:Spiderling"}
-{"id":83,"turn":10,"causedBy":82,"source":"kernel","type":"Hurt","unit":"A+5:Spiderling","amount":3,"hpAfter":-2}
-{"id":84,"turn":10,"causedBy":83,"source":"kernel","type":"Death","unit":"A+5:Spiderling"}
-{"id":85,"turn":10,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":86,"turn":10,"causedBy":85,"source":"kernel","type":"Fatigue","amount":1}
-{"id":87,"turn":10,"causedBy":86,"source":"kernel","type":"Hurt","unit":"A1:Witch Doctor","amount":1,"hpAfter":2}
-{"id":88,"turn":10,"causedBy":86,"source":"kernel","type":"Hurt","unit":"A2:Broodmother","amount":1,"hpAfter":5}
-{"id":89,"turn":10,"causedBy":86,"source":"kernel","type":"Hurt","unit":"B2:Candle","amount":1,"hpAfter":0}
-{"id":90,"turn":10,"causedBy":89,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B2:Candle","ability":0,"when":0},"original":"Death","unit":"B2:Candle"}
-{"id":91,"turn":10,"causedBy":90,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"Heal","unit":"B2:Candle","amount":1,"hpAfter":1}
-{"id":92,"turn":10,"causedBy":90,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"StatChanged","unit":"B2:Candle","stat":"pwr","delta":-1,"now":2}
-{"id":93,"turn":10,"causedBy":86,"source":"kernel","type":"Hurt","unit":"B3:Leech","amount":1,"hpAfter":8}
-{"id":94,"turn":11,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":95,"turn":11,"causedBy":94,"source":"kernel","type":"Strike","striker":"B2:Candle","defender":"A1:Witch Doctor"}
-{"id":96,"turn":11,"causedBy":95,"source":"kernel","type":"Hurt","unit":"A1:Witch Doctor","amount":2,"hpAfter":0}
-{"id":97,"turn":11,"causedBy":96,"source":"kernel","type":"Death","unit":"A1:Witch Doctor"}
-{"id":98,"turn":11,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":99,"turn":11,"causedBy":98,"source":"kernel","type":"Fatigue","amount":2}
-{"id":100,"turn":11,"causedBy":99,"source":"kernel","type":"Hurt","unit":"A2:Broodmother","amount":2,"hpAfter":3}
-{"id":101,"turn":11,"causedBy":99,"source":"kernel","type":"Hurt","unit":"B2:Candle","amount":2,"hpAfter":-1}
-{"id":102,"turn":11,"causedBy":101,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B2:Candle","ability":0,"when":0},"original":"Death","unit":"B2:Candle"}
-{"id":103,"turn":11,"causedBy":102,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"Heal","unit":"B2:Candle","amount":2,"hpAfter":1}
-{"id":104,"turn":11,"causedBy":102,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"StatChanged","unit":"B2:Candle","stat":"pwr","delta":-1,"now":1}
-{"id":105,"turn":11,"causedBy":99,"source":"kernel","type":"Hurt","unit":"B3:Leech","amount":2,"hpAfter":6}
-{"id":106,"turn":12,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":107,"turn":12,"causedBy":106,"source":{"unit":"A2:Broodmother","ability":0,"when":0},"type":"Summon","unit":"A+6:Spiderling","name":"Spiderling","side":"A","hp":1,"pwr":1,"front":true}
-{"id":108,"turn":12,"causedBy":106,"source":"kernel","type":"PairFaced","a":"A+6:Spiderling","b":"B2:Candle","first":"B2:Candle"}
-{"id":109,"turn":12,"causedBy":106,"source":"kernel","type":"Strike","striker":"B2:Candle","defender":"A+6:Spiderling"}
-{"id":110,"turn":12,"causedBy":109,"source":"kernel","type":"Hurt","unit":"A+6:Spiderling","amount":1,"hpAfter":0}
-{"id":111,"turn":12,"causedBy":110,"source":"kernel","type":"Death","unit":"A+6:Spiderling"}
-{"id":112,"turn":12,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":113,"turn":12,"causedBy":112,"source":"kernel","type":"Fatigue","amount":3}
-{"id":114,"turn":12,"causedBy":113,"source":"kernel","type":"Hurt","unit":"A2:Broodmother","amount":3,"hpAfter":0}
-{"id":115,"turn":12,"causedBy":114,"source":"kernel","type":"Death","unit":"A2:Broodmother"}
-{"id":116,"turn":12,"causedBy":113,"source":"kernel","type":"Hurt","unit":"B2:Candle","amount":3,"hpAfter":-2}
-{"id":117,"turn":12,"causedBy":116,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B2:Candle","ability":0,"when":0},"original":"Death","unit":"B2:Candle"}
-{"id":118,"turn":12,"causedBy":117,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"Heal","unit":"B2:Candle","amount":3,"hpAfter":1}
-{"id":119,"turn":12,"causedBy":117,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"StatChanged","unit":"B2:Candle","stat":"pwr","delta":-1,"now":0}
-{"id":120,"turn":12,"causedBy":113,"source":"kernel","type":"Hurt","unit":"B3:Leech","amount":3,"hpAfter":3}
-{"id":121,"turn":12,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":12}
+{"id":25,"turn":3,"causedBy":24,"source":"kernel","type":"Hurt","unit":"B1:Phoenix","amount":5,"hpAfter":1}
+{"id":26,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":27,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":28,"turn":4,"causedBy":27,"source":{"unit":"A2:Broodmother","ability":0,"when":0},"type":"Summon","unit":"A+2:Spiderling","name":"Spiderling","side":"A","hp":1,"pwr":1,"front":true}
+{"id":29,"turn":4,"causedBy":27,"source":"kernel","type":"PairFaced","a":"A+2:Spiderling","b":"B1:Phoenix","first":"B1:Phoenix"}
+{"id":30,"turn":4,"causedBy":27,"source":"kernel","type":"Strike","striker":"B1:Phoenix","defender":"A+2:Spiderling"}
+{"id":31,"turn":4,"causedBy":30,"source":"kernel","type":"Hurt","unit":"A+2:Spiderling","amount":2,"hpAfter":-1}
+{"id":32,"turn":4,"causedBy":31,"source":"kernel","type":"Death","unit":"A+2:Spiderling"}
+{"id":33,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":34,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":35,"turn":5,"causedBy":34,"source":"kernel","type":"Strike","striker":"B1:Phoenix","defender":"A1:Witch Doctor"}
+{"id":36,"turn":5,"causedBy":35,"source":"kernel","type":"Hurt","unit":"A1:Witch Doctor","amount":2,"hpAfter":15}
+{"id":37,"turn":5,"causedBy":34,"source":"kernel","type":"Strike","striker":"A1:Witch Doctor","defender":"B1:Phoenix"}
+{"id":38,"turn":5,"causedBy":37,"source":"kernel","type":"Hurt","unit":"B1:Phoenix","amount":5,"hpAfter":-4}
+{"id":39,"turn":5,"causedBy":38,"source":"kernel","type":"Death","unit":"B1:Phoenix"}
+{"id":40,"turn":5,"causedBy":39,"source":{"unit":"B1:Phoenix","ability":0,"when":0},"type":"Summon","unit":"B1:Phoenix","name":"Phoenix","side":"B","hp":13,"pwr":2,"resurrected":true,"atHp":2,"slot":0}
+{"id":41,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":42,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":43,"turn":6,"causedBy":42,"source":{"unit":"A2:Broodmother","ability":0,"when":0},"type":"Summon","unit":"A+3:Spiderling","name":"Spiderling","side":"A","hp":1,"pwr":1,"front":true}
+{"id":44,"turn":6,"causedBy":42,"source":"kernel","type":"PairFaced","a":"A+3:Spiderling","b":"B1:Phoenix","first":"B1:Phoenix"}
+{"id":45,"turn":6,"causedBy":42,"source":"kernel","type":"Strike","striker":"B1:Phoenix","defender":"A+3:Spiderling"}
+{"id":46,"turn":6,"causedBy":45,"source":"kernel","type":"Hurt","unit":"A+3:Spiderling","amount":2,"hpAfter":-1}
+{"id":47,"turn":6,"causedBy":46,"source":"kernel","type":"Death","unit":"A+3:Spiderling"}
+{"id":48,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":49,"turn":7,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":50,"turn":7,"causedBy":49,"source":"kernel","type":"Strike","striker":"B1:Phoenix","defender":"A1:Witch Doctor"}
+{"id":51,"turn":7,"causedBy":50,"source":"kernel","type":"Hurt","unit":"A1:Witch Doctor","amount":2,"hpAfter":13}
+{"id":52,"turn":7,"causedBy":49,"source":"kernel","type":"Strike","striker":"A1:Witch Doctor","defender":"B1:Phoenix"}
+{"id":53,"turn":7,"causedBy":52,"source":"kernel","type":"Hurt","unit":"B1:Phoenix","amount":5,"hpAfter":-3}
+{"id":54,"turn":7,"causedBy":53,"source":"kernel","type":"Death","unit":"B1:Phoenix"}
+{"id":55,"turn":7,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":56,"turn":8,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":57,"turn":8,"causedBy":56,"source":{"unit":"A2:Broodmother","ability":0,"when":0},"type":"Summon","unit":"A+4:Spiderling","name":"Spiderling","side":"A","hp":1,"pwr":1,"front":true}
+{"id":58,"turn":8,"causedBy":56,"source":"kernel","type":"PairFaced","a":"A+4:Spiderling","b":"B2:Candle","first":"B2:Candle"}
+{"id":59,"turn":8,"causedBy":56,"source":"kernel","type":"Strike","striker":"B2:Candle","defender":"A+4:Spiderling"}
+{"id":60,"turn":8,"causedBy":59,"source":"kernel","type":"Hurt","unit":"A+4:Spiderling","amount":4,"hpAfter":-3}
+{"id":61,"turn":8,"causedBy":60,"source":"kernel","type":"Death","unit":"A+4:Spiderling"}
+{"id":62,"turn":8,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":63,"turn":9,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":64,"turn":9,"causedBy":63,"source":"kernel","type":"PairFaced","a":"A1:Witch Doctor","b":"B2:Candle","first":"A1:Witch Doctor"}
+{"id":65,"turn":9,"causedBy":63,"source":"kernel","type":"Strike","striker":"A1:Witch Doctor","defender":"B2:Candle"}
+{"id":66,"turn":9,"causedBy":65,"source":"kernel","type":"Hurt","unit":"B2:Candle","amount":5,"hpAfter":5}
+{"id":67,"turn":9,"causedBy":63,"source":"kernel","type":"Strike","striker":"B2:Candle","defender":"A1:Witch Doctor"}
+{"id":68,"turn":9,"causedBy":67,"source":"kernel","type":"Hurt","unit":"A1:Witch Doctor","amount":4,"hpAfter":9}
+{"id":69,"turn":9,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":70,"turn":10,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":71,"turn":10,"causedBy":70,"source":{"unit":"A2:Broodmother","ability":0,"when":0},"type":"Summon","unit":"A+5:Spiderling","name":"Spiderling","side":"A","hp":1,"pwr":1,"front":true}
+{"id":72,"turn":10,"causedBy":70,"source":"kernel","type":"PairFaced","a":"A+5:Spiderling","b":"B2:Candle","first":"B2:Candle"}
+{"id":73,"turn":10,"causedBy":70,"source":"kernel","type":"Strike","striker":"B2:Candle","defender":"A+5:Spiderling"}
+{"id":74,"turn":10,"causedBy":73,"source":"kernel","type":"Hurt","unit":"A+5:Spiderling","amount":4,"hpAfter":-3}
+{"id":75,"turn":10,"causedBy":74,"source":"kernel","type":"Death","unit":"A+5:Spiderling"}
+{"id":76,"turn":10,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":77,"turn":10,"causedBy":76,"source":"kernel","type":"Fatigue","amount":1}
+{"id":78,"turn":10,"causedBy":77,"source":"kernel","type":"Hurt","unit":"A1:Witch Doctor","amount":1,"hpAfter":8}
+{"id":79,"turn":10,"causedBy":77,"source":"kernel","type":"Hurt","unit":"A2:Broodmother","amount":1,"hpAfter":11}
+{"id":80,"turn":10,"causedBy":77,"source":"kernel","type":"Hurt","unit":"B2:Candle","amount":1,"hpAfter":4}
+{"id":81,"turn":10,"causedBy":77,"source":"kernel","type":"Hurt","unit":"B3:Leech","amount":1,"hpAfter":6}
+{"id":82,"turn":11,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":83,"turn":11,"causedBy":82,"source":"kernel","type":"Strike","striker":"A1:Witch Doctor","defender":"B2:Candle"}
+{"id":84,"turn":11,"causedBy":83,"source":"kernel","type":"Hurt","unit":"B2:Candle","amount":5,"hpAfter":-1}
+{"id":85,"turn":11,"causedBy":84,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B2:Candle","ability":0,"when":0},"original":"Death","unit":"B2:Candle"}
+{"id":86,"turn":11,"causedBy":85,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"Heal","unit":"B2:Candle","amount":2,"hpAfter":1}
+{"id":87,"turn":11,"causedBy":85,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"StatChanged","unit":"B2:Candle","stat":"pwr","delta":-1,"now":3}
+{"id":88,"turn":11,"causedBy":82,"source":"kernel","type":"Strike","striker":"B2:Candle","defender":"A1:Witch Doctor"}
+{"id":89,"turn":11,"causedBy":88,"source":"kernel","type":"Hurt","unit":"A1:Witch Doctor","amount":3,"hpAfter":5}
+{"id":90,"turn":11,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":91,"turn":11,"causedBy":90,"source":"kernel","type":"Fatigue","amount":2}
+{"id":92,"turn":11,"causedBy":91,"source":"kernel","type":"Hurt","unit":"A1:Witch Doctor","amount":2,"hpAfter":3}
+{"id":93,"turn":11,"causedBy":91,"source":"kernel","type":"Hurt","unit":"A2:Broodmother","amount":2,"hpAfter":9}
+{"id":94,"turn":11,"causedBy":91,"source":"kernel","type":"Hurt","unit":"B2:Candle","amount":2,"hpAfter":-1}
+{"id":95,"turn":11,"causedBy":94,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B2:Candle","ability":0,"when":0},"original":"Death","unit":"B2:Candle"}
+{"id":96,"turn":11,"causedBy":95,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"Heal","unit":"B2:Candle","amount":2,"hpAfter":1}
+{"id":97,"turn":11,"causedBy":95,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"StatChanged","unit":"B2:Candle","stat":"pwr","delta":-1,"now":2}
+{"id":98,"turn":11,"causedBy":91,"source":"kernel","type":"Hurt","unit":"B3:Leech","amount":2,"hpAfter":4}
+{"id":99,"turn":12,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":100,"turn":12,"causedBy":99,"source":{"unit":"A2:Broodmother","ability":0,"when":0},"type":"Summon","unit":"A+6:Spiderling","name":"Spiderling","side":"A","hp":1,"pwr":1,"front":true}
+{"id":101,"turn":12,"causedBy":99,"source":"kernel","type":"PairFaced","a":"A+6:Spiderling","b":"B2:Candle","first":"B2:Candle"}
+{"id":102,"turn":12,"causedBy":99,"source":"kernel","type":"Strike","striker":"B2:Candle","defender":"A+6:Spiderling"}
+{"id":103,"turn":12,"causedBy":102,"source":"kernel","type":"Hurt","unit":"A+6:Spiderling","amount":2,"hpAfter":-1}
+{"id":104,"turn":12,"causedBy":103,"source":"kernel","type":"Death","unit":"A+6:Spiderling"}
+{"id":105,"turn":12,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":106,"turn":12,"causedBy":105,"source":"kernel","type":"Fatigue","amount":3}
+{"id":107,"turn":12,"causedBy":106,"source":"kernel","type":"Hurt","unit":"A1:Witch Doctor","amount":3,"hpAfter":0}
+{"id":108,"turn":12,"causedBy":107,"source":"kernel","type":"Death","unit":"A1:Witch Doctor"}
+{"id":109,"turn":12,"causedBy":106,"source":"kernel","type":"Hurt","unit":"A2:Broodmother","amount":3,"hpAfter":6}
+{"id":110,"turn":12,"causedBy":106,"source":"kernel","type":"Hurt","unit":"B2:Candle","amount":3,"hpAfter":-2}
+{"id":111,"turn":12,"causedBy":110,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B2:Candle","ability":0,"when":0},"original":"Death","unit":"B2:Candle"}
+{"id":112,"turn":12,"causedBy":111,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"Heal","unit":"B2:Candle","amount":3,"hpAfter":1}
+{"id":113,"turn":12,"causedBy":111,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"StatChanged","unit":"B2:Candle","stat":"pwr","delta":-1,"now":1}
+{"id":114,"turn":12,"causedBy":106,"source":"kernel","type":"Hurt","unit":"B3:Leech","amount":3,"hpAfter":1}
+{"id":115,"turn":13,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":116,"turn":13,"causedBy":115,"source":"kernel","type":"PairFaced","a":"A2:Broodmother","b":"B2:Candle","first":"A2:Broodmother"}
+{"id":117,"turn":13,"causedBy":115,"source":"kernel","type":"Strike","striker":"A2:Broodmother","defender":"B2:Candle"}
+{"id":118,"turn":13,"causedBy":117,"source":"kernel","type":"Hurt","unit":"B2:Candle","amount":1,"hpAfter":0}
+{"id":119,"turn":13,"causedBy":118,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B2:Candle","ability":0,"when":0},"original":"Death","unit":"B2:Candle"}
+{"id":120,"turn":13,"causedBy":119,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"Heal","unit":"B2:Candle","amount":1,"hpAfter":1}
+{"id":121,"turn":13,"causedBy":119,"source":{"unit":"B2:Candle","ability":0,"when":0},"type":"StatChanged","unit":"B2:Candle","stat":"pwr","delta":-1,"now":0}
+{"id":122,"turn":13,"causedBy":115,"source":"kernel","type":"Strike","striker":"B2:Candle","defender":"A2:Broodmother"}
+{"id":123,"turn":13,"causedBy":122,"source":"kernel","type":"Hurt","unit":"A2:Broodmother","amount":0,"hpAfter":6}
+{"id":124,"turn":13,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":125,"turn":13,"causedBy":124,"source":"kernel","type":"Fatigue","amount":4}
+{"id":126,"turn":13,"causedBy":125,"source":"kernel","type":"Hurt","unit":"A2:Broodmother","amount":4,"hpAfter":2}
+{"id":127,"turn":13,"causedBy":125,"source":"kernel","type":"Hurt","unit":"B2:Candle","amount":4,"hpAfter":-3}
+{"id":128,"turn":13,"causedBy":127,"source":"kernel","type":"Death","unit":"B2:Candle"}
+{"id":129,"turn":13,"causedBy":125,"source":"kernel","type":"Hurt","unit":"B3:Leech","amount":4,"hpAfter":-3}
+{"id":130,"turn":13,"causedBy":129,"source":"kernel","type":"Death","unit":"B3:Leech"}
+{"id":131,"turn":13,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":13}
