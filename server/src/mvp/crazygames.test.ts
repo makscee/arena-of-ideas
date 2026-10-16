@@ -5,9 +5,10 @@ import { describe, expect, it } from "vitest";
 import type { HomeView, PlayerSession, RunView } from "../../../src/mvp/contract.js";
 import { createMvpApp } from "./app.js";
 import { mvpContent } from "./content.js";
-import { CrazyGamesRefused, freeName, verifyCgJwt, verifyCgToken, type CgLogin } from "./crazygames.js";
+import { cgKeyFromWeb, CrazyGamesRefused, freeName, guestLimiter, verifyCgJwt, verifyCgToken, type CgLogin } from "./crazygames.js";
 import { isCrudeText } from "./crude.js";
-import { createInvite, InviteError, openJoin } from "./invites.js";
+import { FakeMailer } from "./email.js";
+import { createInvite, InviteError, openJoin, redeemInvite } from "./invites.js";
 import { mvpRuntime, type MvpDeps } from "./runtime.js";
 import { SqliteMvpStore } from "./sqlite-store.js";
 import { MemoryMvpStore } from "./store.js";
@@ -29,7 +30,7 @@ function cgToken(claims: Record<string, unknown>, key = KEY.privateKey, alg = "R
 function world(extra: Partial<MvpDeps> = {}) {
   const store = extra.store ?? new MemoryMvpStore();
   let now = NOW;
-  const rt = mvpRuntime({ content: mvpContent(), store, invites: true, now: () => now, cgKeys: async () => KEY.publicKey, ...extra });
+  const rt = mvpRuntime({ content: mvpContent(), store, invites: true, cg: true, now: () => now, cgKeys: async () => KEY.publicKey, ...extra });
   const app = createMvpApp(rt);
   const call = async <T>(method: string, path: string, headers: Record<string, string> = {}, body?: unknown) => {
     const res = await app.request(`/api/v1${path}`, { method, headers: { "content-type": "application/json", "x-forwarded-for": "10.0.0.1", ...headers }, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
@@ -236,5 +237,112 @@ describe("names and ideas pass the crude filter (#1218)", () => {
     expect(isCrudeText("Сука волк")).toBe(true);
     expect(isCrudeText("A classic assassin that strikes twice at night")).toBe(false);
     expect(isCrudeText("Цапля, которая лечит союзников")).toBe(false);
+  });
+});
+
+// The orchestrator's strict review of PR #786 (74bb342), each fix a case.
+describe("review of #786 (#1218)", () => {
+  it("1. reads the client address from ARENA_CLIENT_IP_HEADER when set; a client-sent one is ignored when not", async () => {
+    // Live: every visitor reaches :8791 from mcow's tailnet address.
+    const viaProxy = world({ clientIpHeader: "X-Arena-Client-IP" });
+    for (let i = 0; i < 5; i++) expect((await viaProxy.call("POST", "/players/guest", { "X-Arena-Client-IP": "203.0.113.1" })).status).toBe(200);
+    expect((await viaProxy.call("POST", "/players/guest", { "X-Arena-Client-IP": "203.0.113.1" })).status).toBe(429);
+    expect((await viaProxy.call("POST", "/players/guest", { "X-Arena-Client-IP": "203.0.113.2" })).status).toBe(200);
+    // Unset: the header is a client's word, never trusted.
+    const plain = world();
+    for (let i = 0; i < 5; i++) expect((await plain.call("POST", "/players/guest", { "X-Arena-Client-IP": `198.51.100.${i}` })).status).toBe(200);
+    expect((await plain.call("POST", "/players/guest", { "X-Arena-Client-IP": "198.51.100.9" })).status).toBe(429);
+  });
+
+  it("2. a guest and a CrazyGames player start runs on an invite-only server with email required", async () => {
+    const { guest, cg, call, store } = world({ mail: new FakeMailer(false) });
+    const g = (await guest()).json;
+    expect((await call<HomeView>("GET", "/home", tok(g))).json.email?.required).toBe(false);
+    expect((await call("GET", "/auth/email", tok(g))).json).toMatchObject({ required: false });
+    expect((await call<RunView>("POST", "/runs", tok(g))).status).toBe(200);
+    const fresh = (await cg(cgToken({ userId: "cg-new" }))).json;
+    expect((await call<RunView>("POST", "/runs", tok(fresh))).status).toBe(200);
+    // An invite's player still adds an email first.
+    const inv = createInvite(store, { name: "Rook", now: NOW });
+    const s = redeemInvite(store, inv.code, NOW)!;
+    expect((await call<HomeView>("GET", "/home", tok(s))).json.email?.required).toBe(true);
+    expect((await call("POST", "/runs", tok(s))).status).toBe(403);
+  });
+
+  it("3. both routes are off without ARENA_CG, and /health says so", async () => {
+    const off = world({ cg: false });
+    for (const path of ["/players/guest", "/players/crazygames"]) {
+      const r = await off.call("POST", path, {}, { token: cgToken({}) });
+      expect(r.status).toBe(404);
+      expect(r.json.error).toBe("CrazyGames play is off");
+    }
+    expect((await off.call("GET", "/health")).json).toMatchObject({ cg: false });
+    expect((await world().call("GET", "/health")).json).toMatchObject({ cg: true });
+  });
+
+  it("4. with ARENA_CG_GAME_ID set, a token of another game or of none is refused", async () => {
+    const { cg } = world({ cgGameId: "arena" });
+    expect((await cg(cgToken({ gameId: "arena" }))).status).toBe(200);
+    const other = await cg(cgToken({ userId: "cg-2", gameId: "other-game" }));
+    expect(other.status).toBe(401);
+    expect(other.json.error).toMatch(/another game/);
+    expect((await cg(cgToken({ userId: "cg-3", gameId: undefined }))).status).toBe(401);
+    expect(() => verifyCgJwt(cgToken({ gameId: "x" }), KEY.publicKey, NOW, "arena")).toThrow(CrazyGamesRefused);
+    expect(verifyCgJwt(cgToken({ gameId: "x" }), KEY.publicKey, NOW).userId).toBe("cg-1");
+  });
+
+  it("5. idea text is checked word by word: normal words pass, crude ones don't", () => {
+    for (const w of ["drapery", "Hancock", "Sussex", "Essex", "skyscraper", "niggle", "snigger", "shitake", "Matsushita", "thorny", "knobby"])
+      expect([w, isCrudeText(`A wolf named ${w} that bites twice`)]).toEqual([w, false]);
+    for (const w of ["fuck", "fucking", "motherfucker", "shit", "shits", "shitty", "bullshit", "cunt", "cunts", "bitch", "bitches", "ass", "asses", "dick", "nigger", "faggot", "whore", "slut", "nazi", "wanker", "Сука"])
+      expect([w, isCrudeText(`A wolf that is a ${w} every turn`)]).toEqual([w, true]);
+  });
+
+  it("6. links a guest only by its session token, never a bare player id", async () => {
+    const { store, call, cg } = world({ invites: false });
+    const g = (await call<PlayerSession>("POST", "/players/guest")).json;
+    const r = await call<CgLogin>("POST", "/players/crazygames", { "X-Arena-Player": g.player.id }, { token: cgToken({}) });
+    expect(r.json.via).toBe("new");
+    expect(store.crazyGamesLink({ playerId: g.player.id })).toBeUndefined();
+    expect((await cg(cgToken({ userId: "cg-2" }), g)).json.via).toBe("linked");
+  });
+
+  it("7. links only a guest-made player, never an invite's or an admin's", async () => {
+    const { store, cg } = world();
+    for (const admin of [false, true]) {
+      const inv = createInvite(store, { name: admin ? "Boss" : "Rook", admin, now: NOW });
+      const s = redeemInvite(store, inv.code, NOW)!;
+      const r = await cg(cgToken({ userId: `cg-${inv.name}` }), s);
+      expect(r.json.via).toBe("new");
+      expect(r.json.player.id).not.toBe(s.player.id);
+      expect(store.crazyGamesLink({ playerId: s.player.id })).toBeUndefined();
+    }
+  });
+
+  it("8. a bad signature refetches the key at most once a minute", async () => {
+    let at = 1_000_000;
+    let fetches = 0;
+    const fetcher = (async () => (fetches++, new Response(JSON.stringify({ publicKey: KEY.publicKey })))) as unknown as typeof fetch;
+    const keys = cgKeyFromWeb("https://key.test", fetcher, () => at);
+    const bad = cgToken({}, OTHER.privateKey);
+    for (let i = 0; i < 5; i++) await expect(verifyCgToken(bad, keys, NOW)).rejects.toThrow(/bad signature/);
+    expect(fetches).toBe(1);
+    at += 61_000;
+    await expect(verifyCgToken(bad, keys, NOW)).rejects.toThrow(/bad signature/);
+    expect(fetches).toBe(2);
+    expect((await verifyCgToken(cgToken({}), keys, NOW)).userId).toBe("cg-1");
+    expect(fetches).toBe(2);
+  });
+
+  it("9. the per-address counts forget addresses with no joins in the last hour", () => {
+    const limit = guestLimiter({ perAddress: 5, perHour: 300 });
+    for (const ip of ["a", "b", "c"]) expect(limit.admit(ip, 0)).toBe(true);
+    expect(limit.addresses()).toBe(3);
+    expect(limit.admit("d", 3_600_001)).toBe(true);
+    expect(limit.addresses()).toBe(1);
+  });
+
+  it("refuses a numeric userId", () => {
+    expect(() => verifyCgJwt(cgToken({ userId: 12345 }), KEY.publicKey, NOW)).toThrow(/no userId/);
   });
 });
