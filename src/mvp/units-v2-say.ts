@@ -294,8 +294,8 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
   Squire: () => [
     "When an ally gains Shield, it gains 1 Strength.",
     "When an ally gains Shield, it and that ally each gain 1 Strength.",
-    "Когда союзник получает Щит, получает 1 Силу.",
-    "Когда союзник получает Щит, он и этот союзник получают по 1 Силе.",
+    "Когда союзник получает Щит, Оруженосец получает 1 Силу.",
+    "Когда союзник получает Щит, Оруженосец и этот союзник получают по 1 Силе.",
   ],
   Dynamo: () => [
     "When it strikes, it gains 1 Charge. At 3 Charge, it spends them and strikes the same enemy again.",
@@ -329,9 +329,9 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
   ],
   Heckler: () => [
     "When the enemy in front uses its rule, it hits that enemy for its power.",
-    "When the enemy in front uses its rule, it hits that enemy for its power and curses it (−1 power).",
+    "When the enemy in front uses its rule, it hits that enemy for its power and gives it 1 Curse.",
     "Когда передний враг использует своё правило, бьёт его на свою АТК.",
-    "Когда передний враг использует своё правило, бьёт его на свою АТК и проклинает (−1 АТК).",
+    "Когда передний враг использует своё правило, бьёт его на свою АТК и даёт ему 1 Проклятие.",
   ],
   "Witch Doctor": () => [
     "When an enemy gains Poison, Curse or Freeze, it gains 1 Charge. At 3 Charge, it spends them and heals every ally for its power.",
@@ -352,10 +352,10 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "Когда атакует, все враги также получают урон, равный его АТК.",
   ],
   Kraken: () => [
-    "At each turn end, it hits the enemy in front for 1 per hit it has taken this battle.",
-    "At each turn end, it hits every enemy for 1 per hit it has taken this battle.",
-    "В конце каждого хода бьёт переднего врага на 1 за каждый удар, полученный им в этом бою.",
-    "В конце каждого хода бьёт всех врагов на 1 за каждый удар, полученный им в этом бою.",
+    "When it is hit, it gains 1 Charge, then hits the enemy in front for 1 per Charge it has.",
+    "When it is hit, it gains 1 Charge, then hits every enemy for 1 per Charge it has.",
+    "Когда Кракена бьют, он получает 1 Заряд, затем бьёт переднего врага на 1 за каждый свой Заряд.",
+    "Когда Кракена бьют, он получает 1 Заряд, затем бьёт всех врагов на 1 за каждый свой Заряд.",
   ],
   Puppeteer: () => [
     "On turns 2, 4, 6…, the first time an enemy strikes, the strike hits the enemy at the back instead.",

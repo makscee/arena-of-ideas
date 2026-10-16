@@ -185,7 +185,7 @@ export const V2_ABILITIES: AbilityRegistry = {
   MendGuardAllCharged: { name: "MendGuardAllCharged", family: "Heal", effects: [whenCharged([{ kind: "heal", amount: pwrOfHolder }, { kind: "applyStatus", status: "Shield", stacks: c(1) }])] },
   Brood: { name: "Brood", family: "Summon", effects: [{ kind: "summon", unit: spiderling }] },
   Scorch: { name: "Scorch", family: "Strike", effects: [{ kind: "damage", amount: { kind: "half", of: pwrOfHolder } }] },
-  Grudge: { name: "Grudge", family: "Strike", effects: [{ kind: "damage", amount: { kind: "count", fact: "hitsTaken" } }] },
+  GrudgeCharge: { name: "GrudgeCharge", family: "Strike", effects: [{ kind: "damage", amount: { kind: "stacksOf", status: "Charge", of: "holder" } }] },
   Puppet: { name: "Puppet", family: "Control", effects: [{ kind: "redirect", to: { kind: "lastEnemy" } }] },
   Rebirth: { name: "Rebirth", family: "Summon", effects: [{ kind: "resurrect", hp: pwrOfHolder }] },
 };
@@ -323,7 +323,8 @@ const WitchDoctor = sleeping(
 );
 const Broodmother = sleeping(trig({ on: "TurnStart" }), me, "Brood", { condition: { kind: "turnEvery", n: 2 } });
 const Dragon = sleeping(trig({ on: "Strike", striker: "holder" }), [{ kind: "allEnemies" }], "Scorch");
-const Kraken = sleeping(trig({ on: "TurnEnd" }), [{ kind: "frontEnemy" }], "Grudge");
+// the seat's check (10-14): Charge, not a private count of hits taken
+const Kraken = sleeping(trig({ on: "Hurt", unit: "holder" }), me, "Spark", { also: [{ who: [{ kind: "frontEnemy" }], does: ["GrudgeCharge"] }] });
 // #1048 second tune: once a turn on even turns only; it stayed strong at 0/4
 const Puppeteer = sleeping(intercept({ on: "Strike", striker: "enemy" }), me, "Puppet", { condition: { kind: "and", all: [{ kind: "turnEvery", n: 2 }, { kind: "oncePerTurn" }] } });
 const Phoenix = sleeping(trig({ on: "Death", unit: "holder" }), me, "Rebirth", { condition: { kind: "onceHolder" } });
@@ -392,7 +393,7 @@ export const ROWS_V2: V2Row[] = [
   v2("Witch Doctor", "🪶", 3, "counter",     1,  7, "Each Poison, Curse or Freeze on an enemy builds its Charge; at 3, it heals every ally.", WitchDoctor, { also: [{ who: [{ kind: "allAllies" }], does: ["MendGuardAllCharged"] }, { who: me, does: ["Spend"] }] }),
   v2("Broodmother",  "🕷️", 3, "form",        1,  7, "Lays a poisoning Spiderling at the front every other turn.",            Broodmother, { condition: { kind: "turnAtLeast", n: 1 } }),
   v2("Dragon",       "🐲", 4, "position",    2,  8, "Every strike it makes scorches the whole enemy line.",                  Dragon,      { does: "Spine" }),
-  v2("Kraken",       "🦑", 4, "scaling",     1,  9, "Pays back every hit it has taken, each turn end.",                      Kraken,      { who: [{ kind: "allEnemies" }] }),
+  v2("Kraken",       "🦑", 4, "scaling",     1,  9, "Pays back every hit it takes, harder each time.",                         Kraken,      { also: [{ who: [{ kind: "allEnemies" }], does: ["GrudgeCharge"] }] }),
   v2("Puppeteer",    "🪆", 4, "redirect",    1,  8, "On even turns, once a turn, turns an enemy's strike onto the enemy at the back.",      Puppeteer,   { also: [{ who: me, does: ["Guard"] }] }),
   v2("Phoenix",      "🐦‍🔥", 4, "form",        2,  7, "Comes back once from death, at the back of its line.",                  Phoenix,     { also: [{ who: [{ kind: "allEnemies" }], does: ["Spine"] }] }),
   v2("Volcano",      "🌋", 4, "rule",        2,  9, "Burns every unit on the field every other turn, its own side included.",       Volcano,     { also: [{ who: [{ kind: "allAllies" }], does: ["Guard"] }] }),
