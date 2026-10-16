@@ -2052,3 +2052,100 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 @media (max-width: 560px) { .gallery .g-unit .g-name { width: 100%; padding-top: 6px; } }
 .gallery .g-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 4px; }
 .gallery .g-tabs a { color: var(--action); font-family: var(--font-head); }
+
+/* Battle in the new layout (#1294, mission #1286; design r/arena-redesign/final/
+ * battle-800.png and battle-phone.png). Landscape: their line on top, yours
+ * below, the gap between holds only the arrows and the result tags; the rail
+ * on the right holds the play-by-play (the event on screen big, the last few
+ * small) and the controls; the turn scrubber runs under the board. The phone
+ * (portrait): two columns, theirs left and yours right, fronts at the top,
+ * and the rail at the foot. Cards are the shared piece (ui/piece.ts). */
+#app[data-screen="battle"] .bv-screen.bv-v3 { --rail: 216px; display: grid; grid-template-columns: minmax(0, 1fr) var(--rail); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "hud hud" "board rail" "tl rail"; gap: 4px 12px; }
+#app[data-screen="battle"] .bv-v3 > .hud { grid-area: hud; min-height: 32px; }
+#app[data-screen="battle"] .bv-v3 > .bv-board { grid-area: board; min-height: 0; display: grid; grid-template-columns: 22px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(34px, 0.42fr) minmax(0, 1fr); grid-template-areas: "lthem enemy" "gap gap" "lyou mine"; column-gap: 6px; row-gap: 0; align-content: stretch; }
+#app[data-screen="battle"] .bv-v3 > .bv-tl { grid-area: tl; display: block; }
+#app[data-screen="battle"] .bv-v3 > .bv-rail { grid-area: rail; min-height: 0; display: flex; flex-direction: column; gap: 6px; padding: 8px; margin-bottom: 4px; border: var(--bw, 2px) solid var(--outline); border-radius: 14px; background: color-mix(in srgb, var(--panel) 70%, var(--ground)); overflow: hidden; }
+/* The side labels: a slim upright pill beside each line. */
+#app[data-screen="battle"] .bv-v3 .bv-lab-them, #app[data-screen="battle"] .bv-v3 .bv-lab-you { display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; rotate: 180deg; margin: 10px 0; padding: 0; border-radius: 11px; font-size: 11px; line-height: 1; letter-spacing: 0.08em; white-space: nowrap; overflow: hidden; color: var(--ground); text-align: center; }
+#app[data-screen="battle"] .bv-v3 .bv-lab-them { grid-area: lthem; background: var(--them); }
+#app[data-screen="battle"] .bv-v3 .bv-lab-you { grid-area: lyou; background: var(--you); }
+#app[data-screen="battle"] .bv-v3 .bv-lab-them > *, #app[data-screen="battle"] .bv-v3 .bv-lab-you > * { display: none; }
+#app[data-screen="battle"] .bv-v3 .bv-gap { grid-area: gap; }
+#app[data-screen="battle"] .bv-v3 .bv-clash { display: none; }
+#app[data-screen="battle"] .bv-v3 .bv-line { display: grid; flex-direction: row; gap: 4px; margin: 0; padding: 0; min-height: 0; align-items: center; justify-items: center; }
+#app[data-screen="battle"] .bv-v3 .bv-line.theirs { grid-area: enemy; }
+#app[data-screen="battle"] .bv-v3 .bv-line.mine { grid-area: mine; }
+#app[data-screen="battle"] .bv-v3 .bv-slot { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+/* A card is the piece in a box that holds its tab above and its rim, shelf and name below. */
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc { position: relative; height: auto; min-height: 0; width: auto; padding: 0; margin: 0; display: block; background: none; border: 0; box-shadow: none; clip-path: none; overflow: visible; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc { box-sizing: border-box; display: flex; justify-content: center; align-items: flex-start; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc > .pc { margin: 0; flex: none; }
+/* The scrubber under the board: one box per turn, compact. */
+#app[data-screen="battle"] .bv-v3 .bv-tl-track { position: relative; display: flex; gap: 2px; cursor: pointer; touch-action: none; user-select: none; }
+#app[data-screen="battle"] .bv-v3 .bv-tl-turn { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+#app[data-screen="battle"] .bv-v3 .bv-tl-box { height: 18px; display: flex; align-items: center; justify-content: center; gap: 1px; overflow: hidden; border: 1.5px solid var(--outline); border-radius: 5px; background: color-mix(in srgb, var(--panel) 60%, var(--ground)); }
+#app[data-screen="battle"] .bv-v3 .bv-tl-box .ic { width: 11px; height: 11px; }
+#app[data-screen="battle"] .bv-v3 .bv-tl-turn.past .bv-tl-box { background: color-mix(in srgb, var(--action) 45%, var(--ground)); }
+#app[data-screen="battle"] .bv-v3 .bv-tl-turn.on .bv-tl-box { border-color: var(--action); background: color-mix(in srgb, var(--action) 30%, var(--ground)); }
+#app[data-screen="battle"] .bv-v3 .bv-tl-mark { display: inline-flex; flex: none; }
+#app[data-screen="battle"] .bv-v3 .bv-tl-mark.ahead, #app[data-screen="battle"] .bv-v3 .bv-tl-more.ahead { visibility: hidden; }
+#app[data-screen="battle"] .bv-v3 .bv-tl-more { flex: none; font-size: 10px; line-height: 12px; }
+#app[data-screen="battle"] .bv-v3 .bv-tl-n { height: 11px; overflow: hidden; white-space: nowrap; font-size: 9px; line-height: 11px; text-align: center; }
+#app[data-screen="battle"] .bv-v3 .bv-tl-turn.on .bv-tl-n { color: var(--action); }
+#app[data-screen="battle"] .bv-v3 .bv-tl-head { position: absolute; top: -2px; width: 2px; height: 22px; margin-left: -1px; background: var(--action); box-shadow: 0 0 6px var(--action); pointer-events: none; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.acting { transform: translateY(-2px); background: none; box-shadow: none; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.acting > .pc > .pc-face { outline: 3px solid var(--action); outline-offset: 2px; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.dead { opacity: 0.42; filter: grayscale(1); transform: none; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.dead.bv-dying { filter: none; opacity: 1; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.silenced .pc-em { filter: grayscale(1); }
+#app[data-screen="battle"] .bv-v3 .pc-b.h.hurt { color: #fff; background: var(--k-dmg); }
+/* The when tab lights up when its rule fires. */
+#app[data-screen="battle"] .bv-v3 .pc-tab.bv-fired { animation: bv-tab-fired calc(0.6s / var(--bv-sp, 1)) ease-out calc(var(--bv-ftt, 0s) / var(--bv-sp, 1)) both; }
+#app[data-screen="battle"] .bv-v3 .pc-tab.bv-fired.still { animation: none; box-shadow: 0 0 0 3px var(--action), 0 0 12px var(--action); scale: 1.12; }
+@keyframes bv-tab-fired { 0% { box-shadow: 0 0 0 0 var(--action); scale: 1; } 25% { box-shadow: 0 0 0 4px var(--action), 0 0 14px var(--action); scale: 1.18; } 100% { box-shadow: 0 0 0 3px var(--action); scale: 1.08; } }
+@media (prefers-reduced-motion: reduce) { #app[data-screen="battle"] .bv-v3 .pc-tab.bv-fired { animation: none; box-shadow: 0 0 0 3px var(--action); } }
+/* Result tags sit in the gap: under their cards, over yours. */
+#app[data-screen="battle"] .bv-v3 .bv-changes { left: -12px; right: -12px; height: auto; justify-content: center; z-index: 3; pointer-events: none; }
+#app[data-screen="battle"] .bv-v3 .bv-changes > * { pointer-events: auto; }
+#app[data-screen="battle"] .bv-v3 .bv-line.theirs .bv-changes { top: calc(100% + 2px); bottom: auto; }
+#app[data-screen="battle"] .bv-v3 .bv-line.mine .bv-changes { top: auto; bottom: calc(100% + 2px); }
+#app[data-screen="battle"] .bv-v3 button.bv-badge { display: none; }
+/* The rail: the event on screen big, the last few small, the ledger, the controls. */
+#app[data-screen="battle"] .bv-v3 button.bv-caption { flex: none; width: 100%; height: auto; min-height: 64px; max-height: 40%; translate: none; margin: 0; padding: 8px 10px; align-items: flex-start; border: 3px solid var(--action); border-radius: 12px; background: var(--paper, #fbf6ea); color: var(--ink, #2a2238); text-shadow: none; font-size: 15px; line-height: 1.25; white-space: normal; overflow: hidden; }
+#app[data-screen="battle"] .bv-v3 button.bv-caption * { text-shadow: none; }
+#app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line { flex-wrap: wrap; white-space: normal; row-gap: 2px; }
+#app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line > * { flex: none !important; width: auto !important; max-width: 100%; white-space: normal; overflow: visible; text-overflow: clip; }
+#app[data-screen="battle"] .bv-v3 .bv-recent { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 1.25; }
+#app[data-screen="battle"] .bv-v3 .bv-recent-row { opacity: 0.85; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+#app[data-screen="battle"] .bv-v3 .bv-recent-row:nth-child(n+3) { opacity: 0.6; }
+#app[data-screen="battle"] .bv-v3 .bv-rail > .bv-below { flex: none; max-height: 30%; overflow: hidden; font-size: 12px; }
+#app[data-screen="battle"] .bv-v3 .bv-rail > .bv-below .bv-ledger { min-height: 0; padding: 4px 6px; }
+#app[data-screen="battle"] .bv-v3 .bv-controls { flex: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+#app[data-screen="battle"] .bv-v3 .bv-controls button { min-height: 34px; min-width: 0; padding: 0 2px; }
+#app[data-screen="battle"] .bv-v3 .bv-controls .bv-keys { display: none; }
+/* Desktop: a wider rail; the inspector column stays to its right. */
+@media (min-width: 1024px) {
+  #app[data-screen="battle"] .bv-screen.bv-v3 { --rail: 260px; height: 100dvh; padding: 0 16px 12px; }
+  #app[data-screen="battle"] .bv-v3 > .hud { margin: 0 -16px; padding: 0 16px; min-height: 48px; }
+  #app[data-screen="battle"] .bv-v3 button.bv-caption { font-size: 18px; }
+  #app[data-screen="battle"] .bv-v3 .bv-recent { font-size: 14px; }
+  #app[data-screen="battle"] .bv-v3 .bv-controls button { min-height: 44px; }
+}
+/* The phone, upright: two columns (theirs left, yours right), fronts on top, the rail at the foot. */
+@media (max-width: 599.98px) and (orientation: portrait) {
+  #app[data-screen="battle"] .bv-screen.bv-v3 { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "hud" "board" "rail"; }
+  #app[data-screen="battle"] .bv-v3 > .bv-tl { display: none; }
+  #app[data-screen="battle"] .bv-v3 > .bv-board { grid-template-columns: minmax(0, 1fr) minmax(40px, 0.35fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "lthem . lyou" "enemy gap mine"; }
+  #app[data-screen="battle"] .bv-v3 .bv-lab-them, #app[data-screen="battle"] .bv-v3 .bv-lab-you { writing-mode: horizontal-tb; rotate: none; margin: 0 8px 4px; padding: 4px 0; font-size: 12px; }
+  #app[data-screen="battle"] .bv-v3 .bv-line { grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: repeat(var(--n, 5), minmax(0, 1fr)); align-content: stretch; }
+  #app[data-screen="battle"] .bv-v3 .bv-line.theirs .bv-changes { top: 20px; bottom: auto; left: calc(100% - 8px); right: auto; width: max-content; justify-content: flex-start; }
+  #app[data-screen="battle"] .bv-v3 .bv-line.mine .bv-changes { top: 20px; bottom: auto; right: calc(100% - 8px); left: auto; width: max-content; justify-content: flex-end; }
+  #app[data-screen="battle"] .bv-v3 > .bv-rail { flex-direction: column; margin: 0; }
+  #app[data-screen="battle"] .bv-v3 .bv-recent, #app[data-screen="battle"] .bv-v3 .bv-rail > .bv-below { display: none; }
+  #app[data-screen="battle"] .bv-v3 button.bv-caption { min-height: 56px; max-height: 96px; }
+  #app[data-screen="battle"] .bv-v3 .bv-controls { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  #app[data-screen="battle"] .bv-v3 .bv-controls button { min-height: 44px; }
+}
+/* The ledger in the rail shows only a chain's Skip and a turn's bottom line. */
+#app[data-screen="battle"] .bv-v3 .bv-ledger-head:not(:has(button)) { display: none; }
+#app[data-screen="battle"] .bv-v3 .bv-rail > .bv-below:not(:has(button)):has(.bv-ledger-foot:empty) { display: none; }
