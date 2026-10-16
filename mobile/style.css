@@ -2313,3 +2313,7 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 }
 /* On a light panel (the champion's pink) the name reads dark. */
 .champion .card.pcard .pc-nm, .champion .card.pcard .foot { color: var(--outline); }
+/* A unit's detail opens wide enough for its two columns (800×450 included). */
+@media (min-width: 600px) {
+  .sheet:has(> [data-testid="unit-sheet"]), .sheet:has(> * > [data-testid="unit-sheet"]) { max-width: 760px; }
+}
