@@ -130,7 +130,7 @@ try {
       const twin = page.locator('[data-testid^="offer-"].owned').first();
       if (!(await twin.count())) fail("shop-merge-hint has no owned offer");
       else {
-        const offerName = (await twin.locator(".name").first().textContent())?.trim();
+        const offerName = (await twin.getAttribute("data-name"))?.trim();
         const target = page.locator(`[data-testid^="line-"]:not([data-testid$="-empty"]), [data-testid^="bench-"]:not([data-testid$="-empty"])`).filter({ hasText: offerName ?? "" }).first();
         const tid = await target.getAttribute("data-testid");
         await drag(`[data-testid="${await twin.getAttribute("data-testid")}"]`, `[data-testid="${tid}"]`);

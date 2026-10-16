@@ -2052,3 +2052,89 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 @media (max-width: 560px) { .gallery .g-unit .g-name { width: 100%; padding-top: 6px; } }
 .gallery .g-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 4px; }
 .gallery .g-tabs a { color: var(--action); font-family: var(--font-head); }
+
+/* The shop with pieces (mission #1286 slice 2, #1293; r/arena-redesign/final/
+ * shop-800 and shop-phone). Each slot and offer is a cell holding a piece
+ * (ui/piece.ts); main.ts sets the cell's height for its piece (--s). Tap-tap
+ * and drag light the slots a unit or an offer can go to: teal to place,
+ * gold on the twin it merges into. */
+#app[data-screen="shop"] .slots:has(> .cell) { display: grid; grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); gap: 2px; align-items: start; margin: 0; }
+#app[data-screen="shop"] .slots.bench-row:has(> .cell) { --n: 3; }
+.cell.bare .pc-meta { display: none; }
+#app[data-screen="shop"] .slots.bench-row > .bench-label { grid-column: 1 / -1; justify-content: flex-start; flex-direction: row; gap: 10px; align-items: baseline; font: 400 15px/1 var(--font-head); letter-spacing: 0.5px; text-transform: uppercase; color: var(--dim); }
+#app[data-screen="shop"] .slots.bench-row > .bench-label span:first-child { color: var(--paper); opacity: 0.75; }
+.cell { position: relative; display: flex; justify-content: center; align-items: flex-start; padding-top: 15px; min-width: 0; border-radius: 16px; cursor: pointer; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+.cell:focus-visible { outline: 3px solid var(--action); outline-offset: -2px; }
+.cell .cell-well { width: var(--s); height: var(--s); box-sizing: border-box; border: 2.5px dashed color-mix(in srgb, var(--paper) 22%, transparent); border-radius: 30%; display: grid; place-items: center; font: 400 14px/1 var(--font-head); color: var(--dim); }
+.cell.empty { cursor: default; }
+.cell.selected { background: color-mix(in srgb, var(--action) 16%, transparent); box-shadow: inset 0 0 0 2.5px var(--action); }
+.cell.selected .pc-face { box-shadow: 0 0 0 3px var(--action), 0 0 16px 4px color-mix(in srgb, var(--action) 55%, transparent) !important; }
+.cell.poor .pc { opacity: 0.5; filter: saturate(0.6); }
+/* Lit: where the unit or offer in hand can go (tap-tap and drag alike). */
+.cell.lit .cell-well, #app.drag-on .cell.empty.drop-ok .cell-well { border-color: var(--you); border-style: dashed; background: color-mix(in srgb, var(--you) 14%, transparent); box-shadow: 0 0 12px 2px color-mix(in srgb, var(--you) 45%, transparent); color: var(--you); cursor: pointer; }
+.cell.lit:not(.empty), #app.drag-on .cell:not(.empty).drop-ok { box-shadow: inset 0 0 0 2.5px color-mix(in srgb, var(--you) 75%, transparent); }
+.cell.lit-twin, #app.drag-on .cell.lit-twin { background: color-mix(in srgb, var(--pc-gold) 16%, transparent); box-shadow: inset 0 0 0 3px var(--pc-gold); }
+.cell.lit-twin .pc-face { box-shadow: 0 0 0 3px var(--pc-gold), 0 0 16px 4px color-mix(in srgb, var(--pc-gold) 55%, transparent) !important; }
+.cell .lit-tag { position: absolute; z-index: 8; left: 50%; bottom: 2px; transform: translateX(-50%); white-space: nowrap; padding: 1px 7px; border-radius: 999px; background: var(--pc-gold); border: 2px solid var(--outline); font: 400 12px/1.2 var(--font-head); color: var(--pc-ink); }
+#app.drag-on .cell.drop { box-shadow: inset 0 0 0 3px var(--you); background: color-mix(in srgb, var(--you) 18%, transparent); }
+#app.drag-on .cell.empty.drop .cell-well { border-style: solid; }
+#app[data-screen="shop"] .cell.draggable { touch-action: none; cursor: grab; }
+#app[data-screen="shop"] .cell.dragging { opacity: 0.35; }
+.cell.drag-ghost { background: none; box-shadow: none; transform-origin: center; }
+.cell .fuse-mark { position: absolute; z-index: 9; top: 0; right: 2px; }
+.cell .fuse-tag { position: absolute; z-index: 9; left: 50%; bottom: 0; transform: translateX(-50%); white-space: nowrap; font-size: 11px; }
+#app[data-screen="shop"] .run-panel { border-radius: 18px; }
+#app[data-screen="shop"] .run-panel > .label, #app[data-screen="shop"] .line-head .label, #app[data-screen="shop"] .shop-head .label { font: 400 15px/1 var(--font-head); letter-spacing: 0.5px; text-transform: uppercase; opacity: 0.8; }
+#app[data-screen="shop"] .shop-head { gap: 12px; align-items: baseline; flex-wrap: nowrap; min-width: 0; }
+#app[data-screen="shop"] .shop-head .how { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+/* The sell zone, while a unit is dragged: a dashed red strip along the foot. */
+.sell-zone { min-height: 64px; margin: 0 12px 8px; border: 3px dashed var(--paper); border-radius: 18px; font: 400 20px/1 var(--font-head); background: color-mix(in srgb, var(--loss) 70%, var(--outline)); }
+/* Who's next, in full (no ellipsis): its name never shrinks. */
+#app[data-screen="shop"] .next-opp { flex: none; white-space: nowrap; color: var(--them); font-family: var(--font-head); }
+#app[data-screen="shop"] .next-opp .who { max-width: none; overflow: visible; }
+#app[data-screen="shop"] .hud .hud-gap { flex: 1 1 0; min-width: 0; }
+
+/* Phone and tablet column (below 1024 px, not the short landscape). */
+@media (max-width: 1023.98px) {
+  #app[data-screen="shop"] .opp { justify-content: space-between; gap: 10px; flex-wrap: nowrap; }
+  #app[data-screen="shop"] .opp .pin { flex: 0 1 auto; min-width: 0; }
+  #app[data-screen="shop"] .bench-panel .slots.bench-row { margin-top: 0; }
+  #app[data-screen="shop"] [data-testid="offers"]:has(> .cell) { --n: 3; row-gap: 0; margin-top: 0; }
+  #app[data-screen="shop"] .shop-side { display: flex; flex-direction: column; gap: 8px; }
+  #app[data-screen="shop"] .shop-side .shop-foot button { min-height: 56px; }
+}
+/* The short landscape (800×450, 821×462): HUD across the top; the line and
+ * the bench; the shop and a side column (the selected unit's buttons, the
+ * champion, Reroll over Fight). Nothing scrolls. */
+@media (orientation: landscape) and (min-width: 760px) and (max-width: 1023.98px) and (max-height: 560px) {
+  #app[data-screen="shop"] {
+    padding: 6px 12px 8px; column-gap: 10px; row-gap: 6px;
+    grid-template-columns: minmax(0, 1fr) 220px;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "hud hud" "line bench" "hint hint" "shop side" "err err";
+  }
+  #app[data-screen="shop"] .hud { gap: 10px; font-size: 17px; }
+  #app[data-screen="shop"] .hud .menu-btn { min-height: 36px; min-width: 44px; }
+  #app[data-screen="shop"] .next-opp { font-size: 17px; padding: 4px 12px; border: var(--bw) solid var(--outline); border-radius: 999px; background: color-mix(in srgb, var(--them) 14%, var(--panel)); }
+  #app[data-screen="shop"] .line-panel { grid-area: line; padding: 6px 8px 4px; }
+  #app[data-screen="shop"] .bench-panel { grid-area: bench; padding: 6px 8px 4px; }
+  #app[data-screen="shop"] .hint-slot { grid-area: hint; }
+  #app[data-screen="shop"] .hint-slot:empty { display: none; }
+  #app[data-screen="shop"] .shop-panel { grid-area: shop; overflow: hidden; padding: 6px 8px 4px; }
+  #app[data-screen="shop"] [data-testid="offers"]:has(> .cell) { --n: 6; grid-auto-rows: auto; flex: none; gap: 2px; }
+  #app[data-screen="shop"] .shop-side { grid-area: side; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+  #app[data-screen="shop"] .shop-side .actions { flex-wrap: wrap; gap: 4px; }
+  #app[data-screen="shop"] .shop-side .actions button { min-height: 34px; padding: 0 8px; font-size: 13px; flex: 1 0 auto; }
+  #app[data-screen="shop"] .shop-side .pin .pin-btn { max-width: 100%; min-height: 34px; font-size: 13px; }
+  #app[data-screen="shop"] .shop-side .shop-foot { flex: 1 1 auto; flex-direction: column; align-items: stretch; gap: 6px; }
+  #app[data-screen="shop"] .shop-side .shop-foot .reroll-btn { min-height: 44px; }
+  #app[data-screen="shop"] .shop-side .shop-foot button.grow { flex: 1 1 auto; min-height: 56px; font-size: 26px; }
+  #app[data-screen="shop"] .line-head .label { font-size: 14px; }
+  #app[data-screen="shop"] .run-panel .line-head, #app[data-screen="shop"] .run-panel .line-head button.small { min-height: 30px; font-size: 13px; }
+}
+/* Desktop: the offers spread over one row, the bench keeps room for three pieces. */
+@media (min-width: 1024px) {
+  #app[data-screen="shop"] [data-testid="offers"]:has(> .cell) { grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); row-gap: 8px; }
+  #app[data-screen="shop"] .bench-panel { min-width: 330px; }
+  #app[data-screen="shop"] .slots.bench-row:has(> .cell) { column-gap: 6px; }
+}

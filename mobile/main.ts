@@ -29,11 +29,12 @@ import { isMine, reportLink, setReporter } from "./ui/report";
 import { previewName } from "./ui/fusion";
 import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
-import { actionable, app, button, closable, desktopQuery, dismissable, h, hasKeys, isDesktop, keepFocus, keepScreen, keyboardLost, keyLabel, keyOf, onKeys, onRestore, overlay, screen, show, who, withKey } from "./ui/dom";
+import { actionable, app, button, wideQuery, closable, desktopQuery, dismissable, h, hasKeys, isDesktop, keepFocus, keepScreen, keyboardLost, keyLabel, keyOf, onKeys, onRestore, overlay, screen, show, who, withKey } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
 import { telegramSheet } from "./screens/telegram";
 import { emailAttach, emailSignIn, emailSignUp } from "./screens/email";
 import { galleryScreen } from "./screens/gallery";
+import { faceOfUnit, lineToPiece, piece } from "./ui/piece";
 import { initSound, music, onSoundChange, play, setSound, soundSettings } from "./ui/sound";
 import { shopSound } from "./ui/sound-map";
 import { t, withNodes } from "./i18n";
@@ -946,17 +947,73 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     if (slot < L) return run.bench.length < B ? L + run.bench.length : L + B - 1;
     return run.line.length < L ? run.line.length : L - 1;
   };
+  /** The piece's side per layout (mission #1286 slice 2): the phone's line of
+   * five keeps the when tab's icon only, the bench is a size down. */
+  const pieceSizes = () =>
+    desk
+      ? { line: 76, bench: 60, offer: 76, lineWord: true, benchWord: false, benchBare: false }
+      : wideQuery.matches
+        ? { line: 58, bench: 46, offer: 58, lineWord: true, benchWord: false, benchBare: false }
+        : { line: 46, bench: 46, offer: 62, lineWord: false, benchWord: false, benchBare: true };
+  /** Tap-tap: the offer in hand (chosen) or the unit in hand (picked) lights
+   * every slot it can go to; the twin it merges into is gold. */
+  /** The board slot an offer's copy merges into, or -1. */
+  const twinSlot = (unitId: string) => {
+    const i = mergeTarget(board, unitId);
+    return i < 0 ? -1 : i < run.line.length ? i : L + i - run.line.length;
+  };
+  /** A cell's height for a piece of side `s`: the tab above, the rim numbers, the name and the foot below. */
+  const cellStyle = (s: number, bare = false) => `--s:${s}px;height:${Math.round(s + 0.3 * Math.max(22, s * 0.37) + Math.max(12, s * 0.2) + (bare ? 22 : 47))}px`;
+  const lightTarget = (el: HTMLElement, slot: number) => {
+    const o = chosen !== null ? run.offers[chosen] : undefined;
+    const u = unitAt(slot);
+    if (o) {
+      if (buyBlock(o) && !(u && twinSlot(o.unitId) === slot && run.gold >= o.cost && !run.gift)) return;
+      if (u && twinSlot(o.unitId) === slot) {
+        el.classList.add("lit", "lit-twin");
+        el.append(h("span", { class: "lit-tag" }, u.kind === "unit" && u.form === "sleeping" && u.copies + 1 >= rules.copiesToAwaken ? t("slot.awakens") : t("slot.merges")));
+      } else if (!u || !owns(o.unitId)) el.classList.add("lit");
+    } else if (pick.mode === "picked" && pick.index !== slot && destFor(run, pick.index, slot) !== null && (!desk || !u)) el.classList.add("lit");
+  };
+  /** The second tap of tap-tap, on a slot: buys the offer in hand there, or
+   * moves the unit in hand there. False: not a second tap (the slot's own click goes on). */
+  const tapSlot = (slot: number): boolean => {
+    if (crown) return false;
+    const o = chosen !== null ? run.offers[chosen] : undefined;
+    if (o) {
+      const u = unitAt(slot);
+      // An offer you own goes to its twin; a tap on another unit of yours picks that one instead.
+      if (u && owns(o.unitId) && twinSlot(o.unitId) !== slot) return false;
+      if (u && !owns(o.unitId) && run.line.length >= L && run.bench.length >= B) return false;
+      play("click");
+      buyAt(o, slot);
+      return true;
+    }
+    if (pick.mode === "picked" && pick.index !== slot && (!desk || !unitAt(slot)) && destFor(run, pick.index, slot) !== null) {
+      play("click");
+      moveTo(pick.index, slot);
+      return true;
+    }
+    return false;
+  };
   const slotCard = (slot: number): HTMLElement => {
     const u = unitAt(slot);
     const onBench = slot >= L;
     const id = onBench ? `bench-${slot - L}` : `line-${slot}`;
     if (!u) {
-      const e = h("div", { class: "card empty", "data-testid": `${id}-empty` }, h("div", { class: "dim" }, onBench ? "" : `${slot + 1}`));
+      const e = h("div", { class: "cell empty", "data-testid": `${id}-empty`, style: onBench ? cellStyle(pieceSizes().bench, pieceSizes().benchBare) : cellStyle(pieceSizes().line) }, h("div", { class: "cell-well" }, onBench ? "" : `${slot + 1}`));
       if (!crown) dropTarget(e, slot);
+      if (!crown) lightTarget(e, slot);
+      e.addEventListener("click", () => tapSlot(slot));
       return e;
     }
-    const c = actionable(card(u, { side: "you", extra: [copiesBadge(u)], testid: id }), `${u.name}, ${onBench ? t("board.onBench", { n: slot - L + 1 }) : t("board.inLine", { n: slot + 1 })}`);
+    const sz = pieceSizes();
+    const c = actionable(
+      h("div", { class: onBench && sz.benchBare ? "cell bare" : "cell", "data-testid": id, style: onBench ? cellStyle(sz.bench, sz.benchBare) : cellStyle(sz.line) }, piece(lineToPiece(u, content), { size: "L", side: "you", px: onBench ? sz.bench : sz.line, word: onBench ? sz.benchWord : sz.lineWord })),
+      `${u.name}, ${onBench ? t("board.onBench", { n: slot - L + 1 }) : t("board.inLine", { n: slot + 1 })}`,
+    );
     if (pick.mode === "picked" && pick.index === slot) c.classList.add("selected");
+    if (!crown) lightTarget(c, slot);
     if (pick.mode === "fuse") {
       if (pick.first === slot) c.classList.add("selected");
       else if (fusesWith(pick.first, slot)) c.classList.add("fusable");
@@ -967,6 +1024,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       c.append(fuseMark(designedPairs(slot), slot));
     }
     c.addEventListener("click", () => {
+      if (tapSlot(slot)) return;
       play("click");
       if (pick.mode === "fuse") {
         if (pick.first === slot) pick = { mode: "none" };
@@ -1495,17 +1553,28 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     { class: "slots", "data-testid": "offers" },
     ...run.offers.map((o: Offer) => {
       const u = unitOf(o.unitId);
-      const cu: CardUnit = { unitId: o.unitId, emoji: u?.emoji ?? "?", name: u?.name ?? o.unitId, stats: u?.base ?? { pwr: 0, hp: 0 }, ...(u ? { recipe: u.forms.sleeping } : {}) };
       const owned = owns(o.unitId);
-      // The lock is a corner mark, so "3g ＋" keeps one line at 360 px.
       const price = `${t("shop.gold", { n: o.cost })}${owned ? " ＋" : ""}`;
-      const c = actionable(card(cu, { side: "you", tier: o.tier, extra: [h("div", { class: "cost" }, price)], testid: `offer-${o.slot}` }), `${cu.name}, ${price}`);
-      if (o.locked) c.append(h("span", { class: "lock-mark", "aria-label": t("offer.locked") }, "🔒"));
+      // The piece (mission #1286): price and lock on its foot, the tier beside them.
+      const pu = { name: u?.name ?? o.unitId, emoji: u?.emoji ?? "?", stats: u?.base ?? { pwr: 0, hp: 0 }, face: u ? faceOfUnit(u) : { when: { icon: "✨", label: "" }, headline: { icon: "✨" } }, tier: o.tier, copies: 1 };
+      const c = actionable(
+        h("div", { class: "cell offer", "data-testid": `offer-${o.slot}`, "data-name": pu.name, style: cellStyle(pieceSizes().offer) }, piece(pu, { size: "L", side: "shop", px: pieceSizes().offer, word: pieceSizes().lineWord, price: o.cost, lock: o.locked === true })),
+        `${pu.name}, ${price}`,
+      );
       if (run.gold < o.cost) c.classList.add("poor");
       if (o.locked) c.classList.add("locked");
       if (owned) c.classList.add("owned");
       if (!crown) dragCard(c, { kind: "offer", offer: o });
-      if (!desk) c.addEventListener("click", () => (play("click"), void offerSheet(o)));
+      if (!desk)
+        // Tap-tap: the first tap takes it in hand and lights the slots it can go to,
+        // a tap on a lit slot buys it there; a second tap on it reads it (its sheet: Buy, Lock).
+        c.addEventListener("click", () => {
+          play("click");
+          if (chosen === o.slot) return (chosen = null), renderLine(), void offerSheet(o);
+          chosen = o.slot;
+          pick = { mode: "none" };
+          renderLine();
+        });
       else {
         // Click selects it (the inspector holds it), double-click buys it.
         c.addEventListener("click", () => {
@@ -1696,7 +1765,47 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   if (desk) (menuBtn.title = t("shop.menuEsc"), withKey(menuBtn, "Esc"));
 
   const nextOpp = h("span", { class: "dim next-opp", "data-testid": "next-opponent" }, ...(opp ? [`${crown ? t("opp.crownVs") : t("opp.next")} `, who(opp.player.name), `${opp.player.bot ? " 🤖" : ""}${ownCrown ? t("opp.yourChampionTeam") : ""}`] : [crown ? t("opp.crownVsChampion") : t("opp.nextSaved")]));
-  show(
+  // Phone and the 800×450 frame (mission #1286 slice 2, r/arena-redesign/final/):
+  // the HUD's one row with who's next in full, the line and the bench as two
+  // panels, the shop with its one line of how, and a side column of the
+  // selected unit's buttons, Reroll and Fight. The phone stacks them.
+  if (!desk) {
+    const wide = wideQuery.matches;
+    const how = crown ? null : h("span", { class: "dim how" }, wide ? t("shop.howWide") : t("shop.howPhone"));
+    show(
+      h(
+        "div",
+        { class: "topbar", "data-testid": "topbar" },
+        h(
+          "div",
+          { class: "hud", "data-testid": "hud" },
+          menuBtn,
+          h("span", { class: "round-pill", "data-testid": "round" }, roundLabel(run.round)),
+          heartIcons(run.hearts),
+          h("span", { class: "hud-gap" }),
+          wide ? nextOpp : null,
+          // The Crown has no shop: no gold to show.
+          crown ? null : h("span", { class: "gold", "data-testid": "gold" }, t("shop.gold", { n: run.gold })),
+        ),
+        wide ? null : h("div", { class: "row opp" }, nextOpp, crown ? null : pin),
+      ),
+      h(
+        "div",
+        { class: "board" },
+        h(
+          "section",
+          { class: "run-panel line-panel" },
+          h("div", { class: "row spread line-head" }, h("div", { class: "label" }, crown ? t("line.crown") : t("line.phone")), legendBtn),
+          line,
+        ),
+        B > 0 ? h("section", { class: "run-panel bench-panel" }, bench) : null,
+        hintSlot,
+        h("section", { class: "run-panel shop-panel" }, crown ? null : h("div", { class: "row shop-head" }, h("div", { class: "label" }, t("shop.offersPhone")), how), crown ? foe : offers),
+        h("div", { class: "shop-side" }, wide && !crown ? pin : null, actions, h("div", { class: "row shop-foot" }, crown ? null : reroll, fight)),
+      ),
+      err,
+    );
+  } else show(
     h(
       "div",
       { class: "topbar", "data-testid": "topbar" },
