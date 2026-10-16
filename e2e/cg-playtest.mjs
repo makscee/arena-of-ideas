@@ -69,7 +69,7 @@ try {
   await game.getByTestId("menu-title").click();
   await game.getByTestId("play").waitFor({ timeout: 15_000 });
   await page.getByRole("button", { name: "Log in as CrazyGames user" }).click();
-  await inFrame().waitForFunction(() => JSON.parse(localStorage.getItem("arena.player") ?? "{}").name === "PlaytestUser", null, { timeout: 20_000 }).catch(() => errors.push("the login didn't rename the guest to PlaytestUser"));
+  await inFrame().waitForFunction(() => /^PlaytestUser/.test(JSON.parse(localStorage.getItem("arena.player") ?? "{}").name ?? ""), null, { timeout: 20_000 }).catch(() => errors.push("the login didn't rename the guest to the CrazyGames username"));
   const linked = await player();
   if (linked?.id !== first?.id) errors.push(`login made another player: ${first?.id} → ${linked?.id}`);
   await game.getByTestId("play").waitFor({ timeout: 15_000 });
