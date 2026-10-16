@@ -255,7 +255,7 @@ export function piece(u: PieceUnit, o: PieceOptions): HTMLElement {
   }
   if (showName) {
     const nf = Math.round(Math.max(12, s * 0.2));
-    root.append(h("div", { class: "pc-nm", "data-k": "name", style: css({ top: y + 3, "font-size": nf }) }, u.name));
+    root.append(h("div", { class: "pc-nm name", "data-k": "name", style: css({ top: y + 3, "font-size": nf }) }, u.name));
     y += 3 + nf;
   }
   if (showMeta) {
@@ -270,7 +270,7 @@ export function piece(u: PieceUnit, o: PieceOptions): HTMLElement {
       for (let i = 0; i < 3; i++) pips.append(h("u", i < c ? {} : { class: "o" }));
       meta.append(pips);
     }
-    if (o.lock) meta.append(h("span", { class: "pc-lock" }, "🔒"));
+    if (o.lock) meta.append(h("span", { class: "pc-lock lock-mark" }, "🔒"));
     root.append(meta);
   }
   return root;

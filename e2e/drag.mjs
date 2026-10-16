@@ -145,6 +145,60 @@ try {
       expect("sell: units", (await count("line")) + (await count("bench")), u3 - 1);
       if ((await gold()) <= g3) fail("sell: gold did not rise");
       if (await page.locator(".sell-zone, .drag-ghost").count()) fail("sell zone/ghost left on screen after the drop");
+
+      // Tap-tap (#1293): an offer tapped lights every slot it can go to; a tap on a lit slot buys it there.
+      await open("shop-r3");
+      const t0 = (await count("line")) + (await count("bench")), g4 = await gold();
+      const aff2 = page.locator('[data-testid^="offer-"]:not(.poor):not(.owned)').first();
+      if (await aff2.count()) {
+        await tap(`[data-testid="${await aff2.getAttribute("data-testid")}"]`);
+        const lit = await page.locator(".cell.lit").count();
+        if (!lit) fail("tap-tap: an offer in hand lit no slot");
+        const spot = page.locator('.cell.empty.lit').first();
+        if (!(await spot.count())) fail("tap-tap: no empty slot lit");
+        else {
+          const before = await sig();
+          await tap(`[data-testid="${await spot.getAttribute("data-testid")}"]`);
+          for (let i = 0; i < 30 && (await sig()) === before; i++) await page.waitForTimeout(100);
+          expect("tap-tap offer → slot: units", (await count("line")) + (await count("bench")), t0 + 1);
+          if ((await gold()) >= g4) fail("tap-tap offer → slot: gold did not drop");
+        }
+      }
+      // Tap-tap a unit: line-0 in hand, a tap on the empty bench slot moves it there.
+      await open("shop-r3");
+      if ((await page.locator('[data-testid="bench-0-empty"]').count()) && (await count("line")) >= 1) {
+        const l5 = await count("line");
+        await tap('[data-testid="line-0"]');
+        if (!(await page.locator('[data-testid="bench-0-empty"].lit').count())) fail("tap-tap: a unit in hand did not light the empty bench slot");
+        const before = await sig();
+        await tap('[data-testid="bench-0-empty"]');
+        for (let i = 0; i < 30 && (await sig()) === before; i++) await page.waitForTimeout(100);
+        expect("tap-tap line → bench: line", await count("line"), l5 - 1);
+      }
+      // Tap-tap the twin: an owned offer lights its twin gold; a tap there merges it.
+      await open("shop-merge-hint");
+      const own = page.locator('[data-testid^="offer-"].owned:not(.poor)').first();
+      if (await own.count()) {
+        const u5 = (await count("line")) + (await count("bench")), g5 = await gold();
+        await tap(`[data-testid="${await own.getAttribute("data-testid")}"]`);
+        const twinCell = page.locator(".cell.lit-twin").first();
+        if (!(await twinCell.count())) fail("tap-tap: the twin is not lit gold");
+        else {
+          const before = await sig();
+          await tap(`[data-testid="${await twinCell.getAttribute("data-testid")}"]`);
+          for (let i = 0; i < 30 && (await sig()) === before; i++) await page.waitForTimeout(100);
+          expect("tap-tap offer → twin: units", (await count("line")) + (await count("bench")), u5);
+          if ((await gold()) >= g5) fail("tap-tap offer → twin: gold did not drop");
+        }
+      }
+      // A second tap on the offer in hand reads it (the phone's sheet, Buy in it).
+      if (v.touch) {
+        await open("shop-r3");
+        const o1 = '[data-testid="offer-0"]';
+        await tap(o1);
+        await tap(o1);
+        if (!(await page.locator('[data-testid="buy"]').count())) fail("a second tap on the offer in hand did not open its sheet");
+      }
     } catch (e) {
       fail(`threw: ${String(e.message).split("\n")[0]}`);
     }

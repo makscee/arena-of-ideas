@@ -1009,7 +1009,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }
     const sz = pieceSizes();
     const c = actionable(
-      h("div", { class: onBench && sz.benchBare ? "cell bare" : "cell", "data-testid": id, style: onBench ? cellStyle(sz.bench, sz.benchBare) : cellStyle(sz.line) }, piece(lineToPiece(u, content), { size: "L", side: "you", px: onBench ? sz.bench : sz.line, word: onBench ? sz.benchWord : sz.lineWord })),
+      h("div", { class: ["cell", "you", onBench && sz.benchBare ? "bare" : "", u.kind === "fused" ? "fused" : u.form === "awoken" ? "awoken" : ""].filter(Boolean).join(" "), "data-copies": String(u.copies), "data-testid": id, style: onBench ? cellStyle(sz.bench, sz.benchBare) : cellStyle(sz.line) }, piece(lineToPiece(u, content), { size: "L", side: "you", px: onBench ? sz.bench : sz.line, word: onBench ? sz.benchWord : sz.lineWord })),
       `${u.name}, ${onBench ? t("board.onBench", { n: slot - L + 1 }) : t("board.inLine", { n: slot + 1 })}`,
     );
     if (pick.mode === "picked" && pick.index === slot) c.classList.add("selected");

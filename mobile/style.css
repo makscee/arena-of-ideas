@@ -2126,6 +2126,10 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
   #app[data-screen="shop"] .shop-side .actions { flex-wrap: wrap; gap: 4px; }
   #app[data-screen="shop"] .shop-side .actions button { min-height: 34px; padding: 0 8px; font-size: 13px; flex: 1 0 auto; }
   #app[data-screen="shop"] .shop-side .pin .pin-btn { max-width: 100%; min-height: 34px; font-size: 13px; }
+  /* A unit in hand: its buttons take the champion's place; moving is tap-tap, drag or ← → here. */
+  #app[data-screen="shop"] .shop-side:has(.actions > *) .pin { display: none; }
+  #app[data-screen="shop"] .shop-side .actions [data-testid="move-left"], #app[data-screen="shop"] .shop-side .actions [data-testid="move-right"] { display: none; }
+  #app[data-screen="shop"] .shop-side .actions button { flex: 1 1 0; min-width: 0; padding: 0 4px; }
   #app[data-screen="shop"] .shop-side .shop-foot { flex: 1 1 auto; flex-direction: column; align-items: stretch; gap: 6px; }
   #app[data-screen="shop"] .shop-side .shop-foot .reroll-btn { min-height: 44px; }
   #app[data-screen="shop"] .shop-side .shop-foot button.grow { flex: 1 1 auto; min-height: 56px; font-size: 26px; }
