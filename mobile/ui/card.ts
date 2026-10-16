@@ -18,6 +18,8 @@ import { discoveredLine } from "./fusion";
 import { isMine, reportLink } from "./report";
 import { icon } from "./icon";
 import { roman } from "./roman";
+import { faceOfUnit, lineToPiece, piece, statusEmoji, type PieceUnit } from "./piece";
+import { termDef } from "../../src/glossary";
 import { markChangedPieces, richText } from "./term";
 import { unitStatsLine, type UnitRates } from "./unit-stats";
 import { rulesLangOpt } from "../lang";
@@ -243,7 +245,7 @@ export function formRich(form: UnitForm, content: MvpContent): Node[] {
 export function unitSheet(
   u: LineUnit | BattleUnit | UnitContent,
   content: MvpContent,
-  opts: { rates?: UnitRates; from?: Stats; preview?: boolean; candidate?: boolean; credit?: Parameters<typeof creditText>[0] } = {},
+  opts: { rates?: UnitRates; from?: Stats; preview?: boolean; candidate?: boolean; credit?: Parameters<typeof creditText>[0]; now?: { pwr: number; hp: number; statuses: { status: string; stacks: number }[] } } = {},
 ): HTMLElement {
   const unitId = "forms" in u ? u.id : u.unitId;
   // A unit that left the pool (a champion's, a replay's) is in content.left (M2-2).
@@ -318,31 +320,90 @@ export function unitSheet(
     children.push(btn, note);
   }
 
+  // The XL detail (mission #1286, detail-800.png): the piece big on the left,
+  // its statuses on the shelf; the name, the rule in words, sleeping vs
+  // awoken and what is on it now, explained, on the right.
+  const pu: PieceUnit =
+    "forms" in u ? { name: u.name, emoji: u.emoji, stats: u.base, face: faceOfUnit(u), tier: u.tier } : lineToPiece(u, content);
+  if ("stats" in u) pu.stats = u.stats;
+  const now$ = opts.now?.statuses ?? ("recipe" in u ? u.recipe.statuses : undefined) ?? [];
+  const onIt = now$.filter((x) => x.stacks > 0);
+  if (opts.now) pu.stats = { pwr: opts.now.pwr, hp: opts.now.hp };
+  const ring = pu.face.counter;
+  const k = known(content);
+  const hero = h(
+    "div",
+    { class: "sheet-hero", "data-testid": "sheet-piece" },
+    piece(pu, { size: "M", px: heroPx(), side: "stats" in u ? "you" : "shop", statuses: onIt, counter: ring ? (onIt.find((x) => x.status === ring.status)?.stacks ?? 0) : 0, word: true }),
+  );
+  const tier = "forms" in u ? u.tier : pu.tier;
+  const pips = !fused && copies > 0 && !("form" in u && u.form === "awoken")
+    ? h("span", { class: "sheet-pips", "aria-label": t("card.formCopies", { form: formName("sleeping"), n: copies }) }, ...[0, 1, 2].map((i) => h("u", i < copies ? {} : { class: "o" })))
+    : null;
+  const onNow = onIt.length
+    ? h(
+        "div",
+        { class: "stack sheet-now", "data-testid": "sheet-now" },
+        h("div", { class: "label" }, t("card.onNow")),
+        ...onIt.map(({ status, stacks }) => {
+          const def = termDef(`status:${status}`, k.statuses, rulesLangOpt());
+          const max = ring && ring.status === status ? ring.max : 0;
+          return h(
+            "div",
+            { class: "sheet-now-row", "data-status": status },
+            h("span", { class: `sheet-now-chip ${statusEmoji(status)[1]}` }, statusEmoji(status)[0], h("b", {}, max ? `${stacks}/${max}` : String(stacks))),
+            // A counter's own tip says nothing ("No effect"): its ring's fill says what it is.
+            h("span", {}, h("b", {}, `${def?.label ?? status} ${stacks}`), max ? ` · ${t("card.counterTip", { n: stacks, max })}` : def?.tip ? ` · ${def.tip}` : ""),
+          );
+        }),
+      )
+    : null;
+
   return h(
     "div",
-    { class: "stack", "data-testid": "unit-sheet" },
-    // M5-2 (C-Shop's inspector): the portrait in a round frame, the name big, its state under it.
+    { class: "stack sheet-xl", "data-testid": "unit-sheet" },
+    hero,
     h(
       "div",
-      { class: "row sheet-head" },
-      h("span", { class: `sheet-portrait${fused ? " fused" : ""}`, "aria-hidden": "true" }, u.emoji),
-      h("div", { class: "sheet-title" }, h("h2", {}, fused ? fusionName("fusion" in u ? u.fusion : undefined, u.name) : unitName(unitId, u.name)), state),
+      { class: "stack sheet-body" },
+      // M5-2 (C-Shop's inspector): the name big, tier and copies beside it, its state under it.
+      h(
+        "div",
+        { class: "row sheet-head" },
+        h("span", { class: `sheet-portrait${fused ? " fused" : ""}`, "aria-hidden": "true" }, u.emoji),
+        h(
+          "div",
+          { class: "sheet-title" },
+          h("div", { class: "row sheet-name" }, h("h2", {}, fused ? fusionName("fusion" in u ? u.fusion : undefined, u.name) : unitName(unitId, u.name)), tier ? h("span", { class: `pc-tier pc-t${tier}` }, roman(tier)) : null, pips),
+          state,
+        ),
+      ),
+      // What the unit is about, in one sentence (R4-8); a fused unit has none.
+      c?.archetype ? h("div", { class: "archetype", "data-testid": "sheet-archetype" }, c.archetype) : null,
+      opts.candidate ? h("div", { class: "dim small", "data-testid": "sheet-unset" }, SET_BY_SIM()) : "stats" in u ? statsLine(u.stats) : sheetStats(u.base.pwr, u.base.hp),
+      opts.from ? h("div", { class: "dim small" }, t("card.yourCopyNow")) : null,
+      h("div", { class: "label sheet-rule-head" }, t("card.ruleHead")),
+      icons.childNodes.length ? icons : null,
+      box,
+      ...children,
+      summons.childNodes.length || (sleeping && c) ? summons : null,
+      onNow,
+      // opts.credit: a Library unit's own (M3-8), not a live version's that shares its id.
+      fused ? null : opts.credit ? creditText(opts.credit) : creditLine(unitId),
+      // #1271: a unit a player made can be reported (not your own).
+      fused ? null : reportUnit(opts.credit ?? creditOf(unitId), unitId, u.name),
+      "forms" in u ? null : discoveredLine(u, { preview: opts.preview ?? false }),
+      fused || opts.candidate ? null : unitStatsLine(unitId, opts.rates),
     ),
-    // What the unit is about, in one sentence (R4-8); a fused unit has none.
-    c?.archetype ? h("div", { class: "archetype", "data-testid": "sheet-archetype" }, c.archetype) : null,
-    // opts.credit: a Library unit's own (M3-8), not a live version's that shares its id.
-    fused ? null : opts.credit ? creditText(opts.credit) : creditLine(unitId),
-    // #1271: a unit a player made can be reported (not your own).
-    fused ? null : reportUnit(opts.credit ?? creditOf(unitId), unitId, u.name),
-    "forms" in u ? null : discoveredLine(u, { preview: opts.preview ?? false }),
-    opts.candidate ? h("div", { class: "dim small", "data-testid": "sheet-unset" }, SET_BY_SIM()) : "stats" in u ? statsLine(u.stats) : sheetStats(u.base.pwr, u.base.hp),
-    opts.from ? h("div", { class: "dim small" }, t("card.yourCopyNow")) : null,
-    icons.childNodes.length ? icons : null,
-    box,
-    ...children,
-    summons.childNodes.length || (sleeping && c) ? summons : null,
-    fused || opts.candidate ? null : unitStatsLine(unitId, opts.rates),
   );
+}
+
+/** The detail's piece: big where the sheet is wide, smaller on a phone or a short frame. */
+function heroPx(): number {
+  const w = window.innerWidth;
+  const hgt = window.innerHeight;
+  if (w < 600) return 72;
+  return hgt < 560 ? 92 : 120;
 }
 
 /** A sheet's numbers as two chips (C-Shop's inspector): PWR in its colour, HP in its. */

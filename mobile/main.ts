@@ -2224,7 +2224,7 @@ const galleryLink = galleryHash.has("gallery");
 function openGallery(): void {
   const size = galleryHash.get("gallery");
   const err = errorLine();
-  void guarded(err, async () => galleryScreen(await getContent(), size === "L" || size === "M" || size === "S" || size === "XS" ? size : null)).then(() => {
+  void guarded(err, async () => galleryScreen(await getContent(), size === "L" || size === "M" || size === "S" || size === "XS" ? size : null, galleryHash.get("detail"), galleryHash.has("on"))).then(() => {
     if (err.textContent) show(h("h1", {}, "Gallery"), err);
   });
 }

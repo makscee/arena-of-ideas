@@ -986,7 +986,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const full = entered
       ? button(tr("battle.now.fullCard"), () => {
           app.querySelector('[data-testid="now-sheet"]')?.closest(".overlay")?.remove();
-          closable(unitSheet(entered, a.content));
+          closable(unitSheet(entered, a.content, { now: { pwr: u.pwr, hp: u.hp, statuses: u.statuses } }));
         }, "small link", "now-full-card")
       : body
         ? button(tr("battle.now.fullCard"), () => {
