@@ -19,6 +19,7 @@ import { isMine, reportLink } from "./report";
 import { icon } from "./icon";
 import { roman } from "./roman";
 import { faceOfUnit, lineToPiece, piece, statusEmoji, type PieceUnit } from "./piece";
+import { faceFallback, fusedFace, type Face } from "../../src/mvp/face";
 import { termDef } from "../../src/glossary";
 import { markChangedPieces, richText } from "./term";
 import { unitStatsLine, type UnitRates } from "./unit-stats";
@@ -109,6 +110,7 @@ function creditLine(unitId: string): HTMLElement | null {
 export function card(u: CardUnit, o: CardOptions): HTMLElement {
   // M4-4: a line or battle unit comes named in English: its Russian name on a Russian page.
   u = { ...u, name: u.kind === "fused" ? fusionName(u.fusion, u.name) : unitName(u.unitId, u.name) };
+  if (!o.live && !o.unset) return pieceCard(u, o);
   const stats = o.live?.stats ?? u.stats;
   // A fused unit is its finders' (discoveredLine); its parts' credits stay on theirs.
   // A Library card's unit isn't live: no live credit, even when a live version shares its id.
@@ -148,6 +150,55 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
   return el;
 }
 
+/** The card as the piece (mission #1286, slice 4): every screen outside the
+ * shop and the battle (Codex, gift, fusion preview, vote, stats, a team)
+ * draws its units the way those do. The piece at M (its name under it), the
+ * tier and the footer's extras below. */
+function pieceCard(u: CardUnit, o: CardOptions): HTMLElement {
+  const first = u.fusion?.first ?? u.unitId;
+  const own = first ? faces.get(first) : undefined;
+  const face = own ? (u.kind === "fused" ? fusedFace(own) : own) : faceFallback(u.recipe ?? { when: [] } as unknown as UnitForm);
+  // A fused unit's emoji is both parts' ("🥁⚡"): the first big, the second small.
+  const ems = u.kind === "fused" ? [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(u.emoji)].map((x) => x.segment) : [u.emoji];
+  const pu: PieceUnit = {
+    name: u.name,
+    emoji: ems[0] ?? u.emoji,
+    stats: u.stats,
+    face,
+    awoken: u.kind !== "fused" && u.form === "awoken",
+    ...(u.kind === "fused" ? { fused: { emoji: ems.slice(1).join("") || "✨" } } : {}),
+  };
+  const pc = piece(pu, { size: "M", px: window.innerWidth < 600 ? 36 : 60, side: o.side === "ghost" ? "them" : "you", word: window.innerWidth >= 600 });
+  const credit = u.kind === "fused" || o.version !== undefined ? undefined : creditOf(u.unitId);
+  const version = o.version ?? credit?.version ?? 1;
+  const foot = (o.extra ?? []).filter((x): x is Node => x !== null);
+  const el = h(
+    "div",
+    { class: `card pcard ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}), title: u.name },
+    h("div", { class: "pcard-stage" }, pc),
+    h(
+      "div",
+      { class: "foot" },
+      o.tier ? h("span", { class: `pc-tier ${o.tier === "S" ? "pc-ts" : `pc-t${o.tier}`}`, "aria-label": o.tier === "S" ? t("card.summonedAria") : t("card.tierAria", { tier: o.tier }) }, o.tier === "S" ? "S" : roman(o.tier)) : null,
+      version > 1 ? h("span", { class: "ver", "data-testid": "card-version" }, `v${version}`) : null,
+      credit?.isNew ? h("span", { class: "new-badge", "data-testid": "card-new" }, t("card.new")) : null,
+      ...foot,
+    ),
+  );
+  if (u.kind === "fused") el.classList.add("fused");
+  else if (u.form === "awoken") el.classList.add("awoken");
+  if (credit?.by) {
+    el.dataset.by = credit.by.name;
+    el.title = `${u.name}: idea by @${credit.by.name}`;
+    el.append(h("span", { class: "by-mark", "data-testid": "card-by", "aria-label": t("card.ideaByAria", { name: credit.by.name }) }, "💡"));
+  }
+  if (o.onOpen) {
+    el.addEventListener("click", o.onOpen);
+    actionable(el, u.name);
+  }
+  return el;
+}
+
 /** A battle card's numbers (R2-13): an HP bar, then PWR and HP, big. */
 function liveStats(stats: Stats, maxHp: number): Node[] {
   const max = Math.max(1, maxHp, stats.hp);
@@ -171,6 +222,12 @@ function liveStats(stats: Stats, maxHp: number): Node[] {
 let abilities: AbilityRegistry = {};
 export function setCardAbilities(a: AbilityRegistry): void {
   abilities = a;
+}
+/** The units' faces (mission #1286), so a card draws its piece with the
+ * designer's when tab and headline (set once the content loads: ../content.ts). */
+let faces = new Map<string, Face>();
+export function setCardFaces(units: Pick<UnitContent, "id" | "face" | "forms">[]): void {
+  faces = new Map(units.map((u) => [u.id, faceOfUnit(u)]));
 }
 /** Adds abilities the content lacks (a vote card's candidate, M2-8; a
  * designed fusion's own, #1065). Sheets read them too (#1120: a sealed
