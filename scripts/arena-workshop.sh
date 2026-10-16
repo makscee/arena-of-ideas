@@ -24,11 +24,13 @@
 # MVP_POOL=grid for the old name grammar's). A world seeded on one pool keeps
 # it: use --fresh to start on the other.
 # Since #1219 it also serves the CrazyGames playtest frame's players: ARENA_CG=1
-# (guest and CrazyGames joins, 100 new players an hour per address), logins
-# checked with a test key (ARENA_CG_PUBLIC_KEY, ~/arena-workshop/cg-test) and
-# game id "playtest", CORS for the frame's game origin; once it is up,
-# scripts/arena-cg-playtest.sh publishes the frame at
-# https://m1.twin-pogona.ts.net/r/arena-cg/ . Refs from before the cg code skip all of it.
+# (guest and CrazyGames joins, 100 new players an hour per address). Since
+# #1220 the frame is the crazy kit's shared preview (makscee/crazy-kit
+# `npm run cgpreview`, https://m1.twin-pogona.ts.net/r/crazy/cg/arena/): its
+# mock signs logins with the kit's TEST key, so the workshop trusts that key's
+# public half (scripts/arena-cg-playtest/kit-test-public.pem) and game id
+# "arena"; scripts/arena-cg-playtest.sh turns the old r/arena-cg/ into a
+# redirect there. Refs from before the cg code skip all of it.
 # Never the live game's database, never the public domain: tailnet only.
 set -euo pipefail
 export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
@@ -76,11 +78,13 @@ fi
 
 CG_ENV=
 if [ -f server/src/mvp/crazygames.ts ] && [ -f scripts/arena-cg-playtest.sh ]; then
-  export ARENA_CG_KEYDIR="$DIR/cg-test"
-  bash scripts/arena-cg-playtest.sh keys
+  CG_KEY="$DIR/scripts/arena-cg-playtest/kit-test-public.pem"
+  [ -f "$CG_KEY" ] || { export ARENA_CG_KEYDIR="$DIR/cg-test"; bash scripts/arena-cg-playtest.sh keys; CG_KEY="$ARENA_CG_KEYDIR/public.pem"; }
+  CG_GAME=arena
+  [ "$CG_KEY" = "$DIR/scripts/arena-cg-playtest/kit-test-public.pem" ] || CG_GAME=playtest
   CG_ENV="<key>ARENA_CG</key><string>1</string>
-    <key>ARENA_CG_GAME_ID</key><string>playtest</string>
-    <key>ARENA_CG_PUBLIC_KEY</key><string>$ARENA_CG_KEYDIR/public.pem</string>
+    <key>ARENA_CG_GAME_ID</key><string>$CG_GAME</string>
+    <key>ARENA_CG_PUBLIC_KEY</key><string>$CG_KEY</string>
     <key>MVP_CORS_ORIGINS</key><string>https://m1.twin-pogona.ts.net:8444</string>
     <key>ARENA_GUEST_JOINS_PER_IP</key><string>100</string>"
 fi
