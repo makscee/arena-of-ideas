@@ -20,6 +20,7 @@ const scenes = sceneList();
 const REPORTS: [string, string, string][] = [
   ["20 designed fusions", "arena-fusions-20.html", "each pair, its 3 candidates and the pick (#1065)"],
   ["Discover a fusion", "arena-discover.html", "click-and-play checkpoints, one Fuse from each undiscovered pair (#1065)"],
+  ["CrazyGames playtest frame", "arena-cg/", "the cg build at 800×450 in a portal-like page: SDK log, login, ad break, mute, new guest (#1219)"],
 ];
 const groups = [...new Set(scenes.map((s) => s.group))];
 const link = (id: string, lang: string) => `${base}#scene=${id}&lang=${lang}`;
