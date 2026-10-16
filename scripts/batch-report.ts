@@ -13,6 +13,7 @@ import { ROWS_V2 } from "../src/mvp/units-v2.js";
 import { slug } from "../src/mvp/units.js";
 import { poolBattle, poolBattleId } from "../src/mvp/pool-battles.js";
 import { ruleText } from "../server/src/mvp/night-batch.js";
+import { TIER_STATS, ZERO_PWR } from "../src/mvp/tier-stats.js";
 
 const args = process.argv.slice(2);
 const opt = (n: string) => {
@@ -22,7 +23,7 @@ const opt = (n: string) => {
 const out = (opt("out") ?? "~/reports/arena-batch3.html").replace(/^~/, homedir());
 const base = (opt("base") ?? "https://m1.twin-pogona.ts.net/arena-lab/").replace(/\/?$/, "/");
 const tuned = args.includes("--tuned");
-interface TuneUnit { name: string; fieldScore: number; awokenMargin: number; share: number; inBand: boolean; team: string[] }
+interface TuneUnit { name: string; atEdge?: boolean; fieldScore: number; awokenMargin: number; share: number; inBand: boolean; team: string[] }
 interface TuneReport { median: number; band: number; healthy: boolean; checks: Record<string, { value: number; pass: boolean; rule: string }>; units: TuneUnit[]; rounds: unknown[]; seconds: number; healthChecks?: { seed: number; healthy: boolean }[] }
 const TUNE_FILE = "docs/mvp/tune-v2.json";
 const tune: TuneReport | null = tuned && existsSync(TUNE_FILE) ? JSON.parse(readFileSync(TUNE_FILE, "utf8")) : null;
@@ -33,6 +34,21 @@ const balanceOf = (name: string) => {
   if (!t || !tune) return "";
   const side = t.inBand ? "in band" : t.fieldScore > tune.median ? "strong" : "weak";
   return ` · field ${pct(t.fieldScore)} (${side}) · Awoken ${t.awokenMargin >= 0 ? "+" : ""}${pct(t.awokenMargin)} · ${pct(t.share)} of the meta`;
+};
+/** Each unit's PWR+HP next to its tier's range (Maks, 10-17, #1048). */
+const statsTable = () => {
+  const rows = [...ROWS_V2].sort((a, b) => a.tier - b.tier || a.pwr + a.hp - (b.pwr + b.hp));
+  return `<details class="note" open><summary><b>Stats by tier: each unit's PWR+HP inside its tier's range</b></summary>
+<p>Maks (10-17): a stat range per tier, rising and widening with the tier, not very tight: ${Object.entries(TIER_STATS).map(([t, r]) => `tier ${t} ${r.min}–${r.max}`).join(", ")} (PWR+HP asleep; Awoken adds at most +1/+4 on top). The tune moves numbers only inside it; a unit that misses the band at the range's edge gets its rule's amounts changed, not its stats. PWR is at least 1, except ${Object.entries(ZERO_PWR).map(([n, why]) => `${esc(n)} (${esc(why)})`).join(" and ")}.</p>
+<table class="reword"><tr><th>Unit</th><th>Tier</th><th>PWR/HP</th><th>Total</th><th>Tier range</th>${tune ? "<th>Field</th>" : ""}</tr>${rows
+    .map((r) => {
+      const range = TIER_STATS[r.tier];
+      const t = tune?.units.find((u) => u.name === r.name);
+      const total = r.pwr + r.hp;
+      const off = total < range.min || total > range.max ? " ✗" : "";
+      return `<tr><td>${r.emoji} <a href="#${slug(r.name)}">${esc(r.name)}</a></td><td>${r.tier}</td><td>${r.pwr}/${r.hp}</td><td><b>${total}</b>${off}</td><td>${range.min}–${range.max}</td>${t && tune ? `<td>${pct(t.fieldScore)} ${t.inBand ? "" : t.fieldScore > tune.median ? "strong" : "weak"}${t.atEdge ? " (at the edge)" : ""}</td>` : ""}</tr>`;
+    })
+    .join("")}</table></details>`;
 };
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 
@@ -97,7 +113,7 @@ const cards = ordered.map((row, i) => {
   });
   const heading = i % BATCH === 0 ? `<h2 class="batch">${HEADINGS[i / BATCH] ?? `Batch ${batches.length - i / BATCH}`}</h2>` : "";
   return `${heading}<section class="card" id="${u.id}">
-  <header><span class="emoji">${u.emoji}</span><h2>${esc(u.name)}</h2><span class="meta">tier ${u.tier} · ${row.shape} · ${u.base.pwr}/${u.base.hp}${esc(balanceOf(row.name))}</span></header>
+  <header><span class="emoji">${u.emoji}</span><h2>${esc(u.name)}</h2><span class="meta">tier ${u.tier} · ${row.shape} · ${u.base.pwr}/${u.base.hp} (total ${row.pwr + row.hp} of ${TIER_STATS[row.tier].min}–${TIER_STATS[row.tier].max})${esc(balanceOf(row.name))}</span></header>
   <p class="arch">${esc(u.archetype)}</p>
   <div class="forms">${forms.join("\n")}</div>
 </section>`;
@@ -126,6 +142,7 @@ header{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.emoji{font-siz
 <p class="sub">${tuned ? "Unit batch 3 of 3 (#1048): twenty new units on the shared vocabulary (six statuses, the turn, Charge ⚡), every shape class and tier, first; then the 40 of batches 2 and 1 after the rethink. Every card with its tuned numbers." : "Unit batch 3 of 3 (#1048), twenty new units, first, then batches 2 and 1; placeholder numbers until the tune."} Mission branch <code>mission-1043-rules-v2</code>. Design: <a href="arena-rules-v2.html">arena-rules-v2.html</a>. Scenes open on the lab.</p>
 ${tune ? `<div class="note"><b>Tuned.</b> PWR and HP come from <code>npm run mvp:tune-v2</code>${tune.rounds.length ? `: ${tune.rounds.length} rounds of the quick meta check move each unit toward the pool's median field score` : `, read on the numbers as they are: each unit's field score against the pool's median`} (${pct(tune.median)} ± ${pct(tune.band)}), averaged over several quick meta checks; then the full meta check: <b>${tune.healthy ? "healthy" : "not healthy"}</b>${tune.healthChecks ? ` (${tune.healthChecks.filter((h) => h.healthy).length} of ${tune.healthChecks.length} full checks healthy, one per seed)` : ` (${Object.values(tune.checks).map((c) => `${esc(c.rule)}: ${c.value < 1 && c.value > 0 ? pct(c.value) : c.value} ${c.pass ? "✓" : "✗"}`).join("; ")})`}. ${tune.units.filter((u) => u.inBand).length} of ${tune.units.length} units in band${tune.units.some((u) => !u.inBand) ? `; outside it: ${tune.units.filter((u) => !u.inBand).map((u) => `${esc(u.name)} ${pct(u.fieldScore)}`).join(", ")}` : ""}. Field: the unit's best team's mean score against the meta's teams. Awoken: what three copies add over sleeping, same team.</div>` : ""}
 ${tuned ? "" : `<div class="note"><b>Untuned draft.</b> The numbers are placeholders; the tune and the meta run come next. Units with a fixture battle link it; the others link their pool battle (the lab's <code>v2-unit-</code> scenes).</div>`}
+${statsTable()}
 ${wording}
 ${cards.join("\n")}
 </body></html>

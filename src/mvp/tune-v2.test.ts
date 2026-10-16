@@ -3,6 +3,7 @@
 // numbers in src/mvp/units-v2-numbers.ts, and what the report page shows.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { inTierRange, ZERO_PWR } from "./tier-stats.js";
 import { ROWS_V2 } from "./units-v2.js";
 
 type TuneUnit = { name: string; pwr: number; hp: number; awoken: { pwr: number; hp: number }; fieldScore: number; awokenMargin: number; inBand: boolean };
@@ -17,6 +18,11 @@ describe("rules v2 tune (batches 1 to 3, #1048: tuned all together)", () => {
     }
   });
   it("the full meta is healthy", () => expect(tune.healthy).toBe(true));
+  // Maks, 10-17 (#1048): a stat range per tier, PWR at least 1 unless the rule is built around 0
+  it("every unit's PWR+HP is inside its tier's range, PWR at least 1 but the units built around 0", () => {
+    expect(ROWS_V2.filter((r) => !inTierRange(r)).map((r) => `T${r.tier} ${r.name} ${r.pwr}/${r.hp}`)).toEqual([]);
+    expect(ROWS_V2.filter((r) => r.pwr < 1 && !(r.name in ZERO_PWR)).map((r) => r.name)).toEqual([]);
+  });
   it("awakening is an upgrade for every unit", () => {
     expect(tune.units.filter((u) => u.awokenMargin <= 0).map((u) => `${u.name} ${u.awokenMargin}`)).toEqual([]);
   });
