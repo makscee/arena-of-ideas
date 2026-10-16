@@ -100,7 +100,9 @@ export function verifyCgJwt(token: string, key: KeyObject | string, now: Date, g
   if (typeof claims.iat === "number" && claims.iat > sec + 300) throw new CrazyGamesRefused(401, "CrazyGames login: token from the future");
   const userId = typeof claims.userId === "string" ? claims.userId.trim() : "";
   if (!userId) throw new CrazyGamesRefused(401, "CrazyGames login: no userId");
-  if (gameId !== undefined && claims.gameId !== gameId) throw new CrazyGamesRefused(401, "CrazyGames login: a token of another game");
+  // The docs don't say if gameId is a number or a string: compare as text.
+  const tokenGame = typeof claims.gameId === "string" || typeof claims.gameId === "number" ? String(claims.gameId) : undefined;
+  if (gameId !== undefined && tokenGame !== gameId) throw new CrazyGamesRefused(401, "CrazyGames login: a token of another game");
   return { userId, username: typeof claims.username === "string" ? claims.username : "" };
 }
 

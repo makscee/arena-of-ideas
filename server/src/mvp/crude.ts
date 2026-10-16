@@ -266,7 +266,13 @@ export function isCrudeRuLine(text: string): boolean {
 const TEXT_ENDINGS = ["", "s", "es", "ed", "ing", "er", "ers", "y"];
 const TEXT_PREFIXES = ["fuck", "shit", "cunt"];
 const TEXT_REAL = new Set(["shitake", "shitakes", "shiitake", "shiitakes"]);
-const TEXT_STEMS = new Set([...CRUDE_STEMS.anywhere, ...CRUDE_STEMS.edge, ...CRUDE_STEMS.tail]);
+// Stems that are ordinary words in an idea ("an escort of knights", "tit for
+// tat", "a domination aura"): refused in names, allowed in idea text.
+const TEXT_ALLOWED = new Set([
+  "domination", "escort", "erect", "cripple", "swinger", "hardcore", "bondage", "hooker", "knob", "dong", "tit", "scum", "crap", "fart",
+  "poop", "holocaust", "lynch",
+]);
+const TEXT_STEMS = new Set([...CRUDE_STEMS.anywhere, ...CRUDE_STEMS.edge, ...CRUDE_STEMS.tail].filter((stem) => !TEXT_ALLOWED.has(stem)));
 
 function crudeTextWord(word: string): boolean {
   const w = fold(word);
