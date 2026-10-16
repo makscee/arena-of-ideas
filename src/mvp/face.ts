@@ -22,7 +22,7 @@ export interface Face {
 /** The when word's length, spaces not counted: "From turn 3" fits. */
 export const FACE_LABEL_MAX = 10;
 /** The headline amount's length: it sits in a small pill. */
-export const FACE_AMOUNT_MAX = 3;
+export const FACE_AMOUNT_MAX = 2;
 
 const charge = { status: "Charge", max: 3 };
 
@@ -31,7 +31,7 @@ export const V2_FACE: Record<string, Face> = {
   Hourglass: { when: { icon: "🌙", label: "Turn end" }, headline: { icon: "🔁" }, counter: charge },
   Mirror: { when: { icon: "🚩", label: "Battle" }, headline: { icon: "📜" } },
   Candle: { when: { icon: "💀", label: "Would die" }, headline: { icon: "❤️", amount: "1" } },
-  Gambler: { when: { icon: "⚔️", label: "Strikes" }, headline: { icon: "💥", amount: "×2?" } },
+  Gambler: { when: { icon: "⚔️", label: "Strikes" }, headline: { icon: "💥", amount: "×2" } },
   Nautilus: { when: { icon: "💔", label: "Is hit" }, headline: { icon: "🛡️", amount: "1" } },
   Magnet: { when: { icon: "🧪", label: "Ally hexed" }, headline: { icon: "🔀" } },
   Raven: { when: { icon: "💀", label: "Ally dies" }, headline: { icon: "📜" } },

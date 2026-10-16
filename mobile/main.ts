@@ -33,6 +33,7 @@ import { actionable, app, button, closable, desktopQuery, dismissable, h, hasKey
 import { loadUnitRates } from "./ui/unit-stats";
 import { telegramSheet } from "./screens/telegram";
 import { emailAttach, emailSignIn, emailSignUp } from "./screens/email";
+import { galleryScreen } from "./screens/gallery";
 import { initSound, music, onSoundChange, play, setSound, soundSettings } from "./ui/sound";
 import { shopSound } from "./ui/sound-map";
 import { t, withNodes } from "./i18n";
@@ -2107,6 +2108,17 @@ function openCheckpoint(pair: string): void {
     if (err.textContent) show(h("h1", {}, "Checkpoint " + pair), err, button(t("invite.retry"), () => location.reload(), "primary"));
   });
 }
+/** `#gallery[=L|M|S|XS]` (#1291): every unit as a piece at every size, no
+ * sign-in, for judging the piece and screenshot tests (./screens/gallery.ts). */
+const galleryHash = new URLSearchParams(location.hash.slice(1));
+const galleryLink = galleryHash.has("gallery");
+function openGallery(): void {
+  const size = galleryHash.get("gallery");
+  const err = errorLine();
+  void guarded(err, async () => galleryScreen(await getContent(), size === "L" || size === "M" || size === "S" || size === "XS" ? size : null)).then(() => {
+    if (err.textContent) show(h("h1", {}, "Gallery"), err);
+  });
+}
 /** `#scene=<id>` (#1026, ./scene.ts): a scenes server builds the fixture
  * (server/src/mvp/scenes.ts) and this opens its screen as its player, who
  * lives in memory only. */
@@ -2279,7 +2291,7 @@ initSound();
 // fragment, which reloads nothing: start over so the link opens.
 addEventListener("hashchange", () => {
   const hash = new URLSearchParams(location.hash.slice(1));
-  if (hash.has("invite") || hash.has("join") || hash.has("battle") || hash.has("scene") || hash.has("checkpoint")) location.reload();
+  if (hash.has("invite") || hash.has("join") || hash.has("battle") || hash.has("scene") || hash.has("checkpoint") || hash.has("gallery")) location.reload();
 });
 
 if (sceneId) {
@@ -2324,6 +2336,10 @@ async function cgBoot(): Promise<void> {
   if (err.textContent) show(h("h1", {}, t("name.title")), err, button(t("invite.retry"), () => location.reload(), "primary"));
 }
 function boot(): void {
+  if (galleryLink) {
+    openGallery();
+    return;
+  }
   if (CG && !battleLink) {
     void cgBoot();
     return;
