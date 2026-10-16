@@ -25,10 +25,10 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "Когда в союзника летит Яд, Проклятие или Заморозка, они попадают в Магнит, и он каждый раз получает 1 Щит.",
   ],
   Raven: () => [
-    "When an ally dies, Raven uses that ally's rule once, right away.",
-    "When an ally dies, Raven uses that ally's rule once, right away, and keeps it as a second rule of its own for the rest of the battle.",
-    "Когда союзник погибает, Ворон сразу один раз использует его правило.",
-    "Когда союзник погибает, Ворон сразу один раз использует его правило и до конца боя оставляет его себе как второе правило.",
+    "The first time an ally dies in a battle, Raven uses that ally's rule once, right away.",
+    "The first time an ally dies in a battle, Raven uses that ally's rule once, right away, and keeps it as a second rule of its own for the rest of the battle.",
+    "Когда в бою впервые погибает союзник, Ворон сразу один раз использует его правило.",
+    "Когда в бою впервые погибает союзник, Ворон сразу один раз использует его правило и до конца боя оставляет его себе как второе правило.",
   ],
   Seed: () => [
     "It does nothing on turns 1 and 2. From turn 3 on, at each turn start, it gains 2 HP and gives the ally behind it 1 Strength.",
@@ -37,10 +37,10 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "На 1-м ходу ничего не делает. Со 2-го хода в начале каждого хода получает 2 ОЗ и даёт союзнику позади 1 Силу.",
   ],
   "Lone Wolf": () => [
-    "While it has no allies left, its strikes deal double.",
-    "While it has no allies left, its strikes deal double and it strikes twice.",
-    "Пока у него не осталось союзников, его атаки наносят двойной урон.",
-    "Пока у него не осталось союзников, его атаки наносят двойной урон, и он бьёт дважды.",
+    "While it has 1 ally or none left, its strikes deal double.",
+    "While it has 1 ally or none left, its strikes deal double and it strikes twice.",
+    "Пока у него остался 1 союзник или ни одного, его атаки наносят двойной урон.",
+    "Пока у него остался 1 союзник или ни одного, его атаки наносят двойной урон, и он бьёт дважды.",
   ],
   Drummer: () => [
     "When an ally strikes, it gains 1 Charge. At 3 Charge, it spends them and every ally behind it gains 1 Strength.",
@@ -133,10 +133,10 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "Каждый раз, когда его бьют, получает 2 Щита.",
   ],
   Sniper: () => [
-    "At each turn start, shoots the enemy at the back for its power.",
-    "At each turn start, shoots the enemies at the back and at the front for its power.",
-    "В начале каждого хода стреляет в заднего врага на свою АТК.",
-    "В начале каждого хода стреляет в заднего и переднего врага на свою АТК.",
+    "At the start of turns 2, 4, 6…, shoots the enemy at the back for its power.",
+    "At the start of turns 2, 4, 6…, shoots the enemies at the back and at the front for its power.",
+    "В начале 2-го, 4-го, 6-го… хода стреляет в заднего врага на свою АТК.",
+    "В начале 2-го, 4-го, 6-го… хода стреляет в заднего и переднего врага на свою АТК.",
   ],
   Medic: () => [
     "When an ally is hit, heals it by its power.",
@@ -274,10 +274,10 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "Его атаки наносят урон, равный его текущим ОЗ плюс его АТК.",
   ],
   Daredevil: () => [
-    "While it has lost no HP, its strikes deal double.",
     "While it has lost no HP, its strikes deal triple.",
-    "Пока он не потерял ни одного ОЗ, его атаки наносят двойной урон.",
+    "While it has lost no HP, its strikes deal four times its power.",
     "Пока он не потерял ни одного ОЗ, его атаки наносят тройной урон.",
+    "Пока он не потерял ни одного ОЗ, его атаки наносят урон в четыре раза больше его АТК.",
   ],
   Duelist: () => [
     "Its strikes deal damage equal to the struck enemy's power instead of its own.",
@@ -322,10 +322,10 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "В начале 3-го, 6-го, 9-го… хода бьёт всех врагов на номер хода (3 на 3-м ходу, 6 на 6-м…).",
   ],
   Reaper: () => [
+    "At each turn start, if only 1 enemy is left, it hits that enemy for its power.",
     "At each turn start, if 2 or fewer enemies are left, it hits every enemy for its power.",
-    "At each turn start, if 3 or fewer enemies are left, it hits every enemy for its power.",
+    "В начале каждого хода, если остался только 1 враг, бьёт его на свою АТК.",
     "В начале каждого хода, если осталось не больше 2 врагов, бьёт всех врагов на свою АТК.",
-    "В начале каждого хода, если осталось не больше 3 врагов, бьёт всех врагов на свою АТК.",
   ],
   Heckler: () => [
     "When the enemy in front uses its rule, it hits that enemy for its power.",

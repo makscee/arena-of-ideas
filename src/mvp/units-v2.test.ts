@@ -200,7 +200,7 @@ describe("rules v2 pool", () => {
     expect(say("Hourglass", "sleeping", "en")).toMatch(/^Turn end: gain 1 Charge, and at 3 Charge, the ally behind acts again, and at 3 Charge, it spends them\.$/);
     expect(say("Hourglass", "sleeping", "ru")).toMatch(/^Конец хода: получить 1 Заряд, и если у него 3 Заряда или больше, /);
     expect(say("Drummer", "sleeping", "en")).toMatch(/^Ally strikes: gain 1 Charge, and at 3 Charge, 1 Strength to every ally behind, /);
-    expect(say("Raven", "sleeping", "en")).toBe("Ally dies: remember the rule of that unit, then perform the oldest remembered rule once and forget it.");
+    expect(say("Raven", "sleeping", "en")).toBe("Ally dies, once per battle: remember the rule of that unit, then perform the oldest remembered rule once and forget it.");
     expect(say("Raven", "awoken", "en")).toMatch(/, then keep the rule of that unit as a second rule of its own\.$/);
     expect(say("Chrysalis", "sleeping", "en")).toBe("Turn start, on turn 3: become Butterfly (2/3). Butterfly: Turn start: PWR damage to all enemies.");
     // every form that gives or starts with a status carrying a rule, or
