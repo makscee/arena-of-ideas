@@ -2144,7 +2144,7 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
   #app[data-screen="shop"] [data-testid="offers"]:has(> .cell) { grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); row-gap: 8px; }
   #app[data-screen="shop"] .bench-panel { min-width: 330px; }
   #app[data-screen="shop"] .slots.bench-row:has(> .cell) { column-gap: 6px; }
-
+}
 /* Battle in the new layout (#1294, mission #1286; design r/arena-redesign/final/
  * battle-800.png and battle-phone.png). Landscape: their line on top, yours
  * below, the gap between holds only the arrows and the result tags; the rail
