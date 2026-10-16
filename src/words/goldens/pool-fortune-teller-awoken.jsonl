@@ -1,10 +1,10 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Fortune Teller","name":"Fortune Teller","hp":8,"pwr":2},{"id":"A2:Hydra","name":"Hydra","hp":10,"pwr":4}],"B":[{"id":"B1:Frostling","name":"Frostling","hp":11,"pwr":3},{"id":"B2:Bully","name":"Bully","hp":12,"pwr":4},{"id":"B3:Executioner","name":"Executioner","hp":12,"pwr":4}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Fortune Teller","name":"Fortune Teller","hp":17,"pwr":3},{"id":"A2:Hydra","name":"Hydra","hp":14,"pwr":5}],"B":[{"id":"B1:Frostling","name":"Frostling","hp":9,"pwr":3},{"id":"B2:Bully","name":"Bully","hp":13,"pwr":4},{"id":"B3:Executioner","name":"Executioner","hp":15,"pwr":4}]}}
 {"id":1,"turn":0,"causedBy":0,"source":{"unit":"A1:Fortune Teller","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Fortune Teller","status":"Shield","stacks":2,"total":2}
 {"id":2,"turn":0,"causedBy":0,"source":{"unit":"A1:Fortune Teller","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Hydra","status":"Shield","stacks":2,"total":2}
 {"id":3,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"PairFaced","a":"A1:Fortune Teller","b":"B1:Frostling","first":"B1:Frostling"}
 {"id":5,"turn":1,"causedBy":3,"source":"kernel","type":"Strike","striker":"B1:Frostling","defender":"A1:Fortune Teller"}
-{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"A1:Fortune Teller","amount":1,"absorbed":2,"hpAfter":7}
+{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"A1:Fortune Teller","amount":1,"absorbed":2,"hpAfter":16}
 {"id":7,"turn":1,"causedBy":6,"source":{"unit":"A1:Fortune Teller","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:Fortune Teller","status":"Shield","stacks":2,"remaining":0}
 {"id":8,"turn":1,"causedBy":5,"source":{"unit":"B1:Frostling","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Fortune Teller","status":"Freeze","stacks":1,"total":1}
 {"id":9,"turn":1,"causedBy":3,"source":{"unit":"A1:Fortune Teller","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A1:Fortune Teller","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"A1:Fortune Teller"}
@@ -12,65 +12,100 @@
 {"id":11,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":12,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":13,"turn":2,"causedBy":12,"source":"kernel","type":"Strike","striker":"B1:Frostling","defender":"A1:Fortune Teller"}
-{"id":14,"turn":2,"causedBy":13,"source":"kernel","type":"Hurt","unit":"A1:Fortune Teller","amount":3,"hpAfter":4}
+{"id":14,"turn":2,"causedBy":13,"source":"kernel","type":"Hurt","unit":"A1:Fortune Teller","amount":3,"hpAfter":13}
 {"id":15,"turn":2,"causedBy":13,"source":{"unit":"B1:Frostling","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Fortune Teller","status":"Freeze","stacks":1,"total":1}
 {"id":16,"turn":2,"causedBy":12,"source":{"unit":"A1:Fortune Teller","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A1:Fortune Teller","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"A1:Fortune Teller"}
 {"id":17,"turn":2,"causedBy":16,"source":{"unit":"A1:Fortune Teller","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:Fortune Teller","status":"Freeze","stacks":1,"remaining":0}
 {"id":18,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":19,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":20,"turn":3,"causedBy":19,"source":"kernel","type":"Strike","striker":"B1:Frostling","defender":"A1:Fortune Teller"}
-{"id":21,"turn":3,"causedBy":20,"source":"kernel","type":"Hurt","unit":"A1:Fortune Teller","amount":3,"hpAfter":1}
+{"id":21,"turn":3,"causedBy":20,"source":"kernel","type":"Hurt","unit":"A1:Fortune Teller","amount":3,"hpAfter":10}
 {"id":22,"turn":3,"causedBy":20,"source":{"unit":"B1:Frostling","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Fortune Teller","status":"Freeze","stacks":1,"total":1}
 {"id":23,"turn":3,"causedBy":19,"source":{"unit":"A1:Fortune Teller","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A1:Fortune Teller","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"A1:Fortune Teller"}
 {"id":24,"turn":3,"causedBy":23,"source":{"unit":"A1:Fortune Teller","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:Fortune Teller","status":"Freeze","stacks":1,"remaining":0}
 {"id":25,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":26,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":27,"turn":4,"causedBy":26,"source":"kernel","type":"Strike","striker":"B1:Frostling","defender":"A1:Fortune Teller"}
-{"id":28,"turn":4,"causedBy":27,"source":"kernel","type":"Hurt","unit":"A1:Fortune Teller","amount":3,"hpAfter":-2}
-{"id":29,"turn":4,"causedBy":28,"source":"kernel","type":"Death","unit":"A1:Fortune Teller"}
-{"id":30,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":31,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":32,"turn":5,"causedBy":31,"source":"kernel","type":"PairFaced","a":"A2:Hydra","b":"B1:Frostling","first":"A2:Hydra"}
-{"id":33,"turn":5,"causedBy":31,"source":"kernel","type":"Strike","striker":"A2:Hydra","defender":"B1:Frostling"}
-{"id":34,"turn":5,"causedBy":33,"source":"kernel","type":"Hurt","unit":"B1:Frostling","amount":4,"hpAfter":7}
-{"id":35,"turn":5,"causedBy":31,"source":"kernel","type":"Strike","striker":"B1:Frostling","defender":"A2:Hydra"}
-{"id":36,"turn":5,"causedBy":35,"source":"kernel","type":"Hurt","unit":"A2:Hydra","amount":1,"absorbed":2,"hpAfter":9}
-{"id":37,"turn":5,"causedBy":36,"source":{"unit":"A2:Hydra","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Hydra","status":"Shield","stacks":2,"remaining":0}
-{"id":38,"turn":5,"causedBy":35,"source":{"unit":"B1:Frostling","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Hydra","status":"Freeze","stacks":1,"total":1}
+{"id":28,"turn":4,"causedBy":27,"source":"kernel","type":"Hurt","unit":"A1:Fortune Teller","amount":3,"hpAfter":7}
+{"id":29,"turn":4,"causedBy":27,"source":{"unit":"B1:Frostling","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Fortune Teller","status":"Freeze","stacks":1,"total":1}
+{"id":30,"turn":4,"causedBy":26,"source":{"unit":"A1:Fortune Teller","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A1:Fortune Teller","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"A1:Fortune Teller"}
+{"id":31,"turn":4,"causedBy":30,"source":{"unit":"A1:Fortune Teller","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:Fortune Teller","status":"Freeze","stacks":1,"remaining":0}
+{"id":32,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":33,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":34,"turn":5,"causedBy":33,"source":"kernel","type":"Strike","striker":"B1:Frostling","defender":"A1:Fortune Teller"}
+{"id":35,"turn":5,"causedBy":34,"source":"kernel","type":"Hurt","unit":"A1:Fortune Teller","amount":3,"hpAfter":4}
+{"id":36,"turn":5,"causedBy":34,"source":{"unit":"B1:Frostling","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Fortune Teller","status":"Freeze","stacks":1,"total":1}
+{"id":37,"turn":5,"causedBy":33,"source":{"unit":"A1:Fortune Teller","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A1:Fortune Teller","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"A1:Fortune Teller"}
+{"id":38,"turn":5,"causedBy":37,"source":{"unit":"A1:Fortune Teller","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:Fortune Teller","status":"Freeze","stacks":1,"remaining":0}
 {"id":39,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":40,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":41,"turn":6,"causedBy":40,"source":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"A2:Hydra"}
-{"id":42,"turn":6,"causedBy":41,"source":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Hydra","status":"Freeze","stacks":1,"remaining":0}
-{"id":43,"turn":6,"causedBy":40,"source":"kernel","type":"Strike","striker":"B1:Frostling","defender":"A2:Hydra"}
-{"id":44,"turn":6,"causedBy":43,"source":"kernel","type":"Hurt","unit":"A2:Hydra","amount":3,"hpAfter":6}
-{"id":45,"turn":6,"causedBy":43,"source":{"unit":"B1:Frostling","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Hydra","status":"Freeze","stacks":1,"total":1}
+{"id":41,"turn":6,"causedBy":40,"source":"kernel","type":"Strike","striker":"B1:Frostling","defender":"A1:Fortune Teller"}
+{"id":42,"turn":6,"causedBy":41,"source":"kernel","type":"Hurt","unit":"A1:Fortune Teller","amount":3,"hpAfter":1}
+{"id":43,"turn":6,"causedBy":41,"source":{"unit":"B1:Frostling","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Fortune Teller","status":"Freeze","stacks":1,"total":1}
+{"id":44,"turn":6,"causedBy":40,"source":{"unit":"A1:Fortune Teller","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A1:Fortune Teller","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"A1:Fortune Teller"}
+{"id":45,"turn":6,"causedBy":44,"source":{"unit":"A1:Fortune Teller","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"A1:Fortune Teller","status":"Freeze","stacks":1,"remaining":0}
 {"id":46,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":47,"turn":7,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":48,"turn":7,"causedBy":47,"source":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"A2:Hydra"}
-{"id":49,"turn":7,"causedBy":48,"source":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Hydra","status":"Freeze","stacks":1,"remaining":0}
-{"id":50,"turn":7,"causedBy":47,"source":"kernel","type":"Strike","striker":"B1:Frostling","defender":"A2:Hydra"}
-{"id":51,"turn":7,"causedBy":50,"source":"kernel","type":"Hurt","unit":"A2:Hydra","amount":3,"hpAfter":3}
-{"id":52,"turn":7,"causedBy":50,"source":{"unit":"B1:Frostling","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Hydra","status":"Freeze","stacks":1,"total":1}
-{"id":53,"turn":7,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":54,"turn":8,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":55,"turn":8,"causedBy":54,"source":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"A2:Hydra"}
-{"id":56,"turn":8,"causedBy":55,"source":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Hydra","status":"Freeze","stacks":1,"remaining":0}
-{"id":57,"turn":8,"causedBy":54,"source":"kernel","type":"Strike","striker":"B1:Frostling","defender":"A2:Hydra"}
-{"id":58,"turn":8,"causedBy":57,"source":"kernel","type":"Hurt","unit":"A2:Hydra","amount":3,"hpAfter":0}
-{"id":59,"turn":8,"causedBy":58,"source":"kernel","type":"Death","unit":"A2:Hydra"}
-{"id":60,"turn":8,"causedBy":59,"source":{"unit":"A2:Hydra","ability":0,"when":0},"type":"Summon","unit":"A+1:Head","name":"Head","side":"A","hp":3,"pwr":2,"front":true}
-{"id":61,"turn":8,"causedBy":59,"source":{"unit":"A2:Hydra","ability":0,"when":0},"type":"Summon","unit":"A+2:Head","name":"Head","side":"A","hp":3,"pwr":2,"front":true}
-{"id":62,"turn":8,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":63,"turn":9,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":64,"turn":9,"causedBy":63,"source":"kernel","type":"PairFaced","a":"A+2:Head","b":"B1:Frostling","first":"B1:Frostling"}
-{"id":65,"turn":9,"causedBy":63,"source":"kernel","type":"Strike","striker":"B1:Frostling","defender":"A+2:Head"}
-{"id":66,"turn":9,"causedBy":65,"source":"kernel","type":"Hurt","unit":"A+2:Head","amount":3,"hpAfter":0}
-{"id":67,"turn":9,"causedBy":66,"source":"kernel","type":"Death","unit":"A+2:Head"}
-{"id":68,"turn":9,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":69,"turn":10,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":70,"turn":10,"causedBy":69,"source":"kernel","type":"PairFaced","a":"A+1:Head","b":"B1:Frostling","first":"B1:Frostling"}
-{"id":71,"turn":10,"causedBy":69,"source":"kernel","type":"Strike","striker":"B1:Frostling","defender":"A+1:Head"}
-{"id":72,"turn":10,"causedBy":71,"source":"kernel","type":"Hurt","unit":"A+1:Head","amount":3,"hpAfter":0}
-{"id":73,"turn":10,"causedBy":72,"source":"kernel","type":"Death","unit":"A+1:Head"}
+{"id":48,"turn":7,"causedBy":47,"source":"kernel","type":"Strike","striker":"B1:Frostling","defender":"A1:Fortune Teller"}
+{"id":49,"turn":7,"causedBy":48,"source":"kernel","type":"Hurt","unit":"A1:Fortune Teller","amount":3,"hpAfter":-2}
+{"id":50,"turn":7,"causedBy":49,"source":"kernel","type":"Death","unit":"A1:Fortune Teller"}
+{"id":51,"turn":7,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":52,"turn":8,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":53,"turn":8,"causedBy":52,"source":"kernel","type":"PairFaced","a":"A2:Hydra","b":"B1:Frostling","first":"A2:Hydra"}
+{"id":54,"turn":8,"causedBy":52,"source":"kernel","type":"Strike","striker":"A2:Hydra","defender":"B1:Frostling"}
+{"id":55,"turn":8,"causedBy":54,"source":"kernel","type":"Hurt","unit":"B1:Frostling","amount":5,"hpAfter":4}
+{"id":56,"turn":8,"causedBy":52,"source":"kernel","type":"Strike","striker":"B1:Frostling","defender":"A2:Hydra"}
+{"id":57,"turn":8,"causedBy":56,"source":"kernel","type":"Hurt","unit":"A2:Hydra","amount":1,"absorbed":2,"hpAfter":13}
+{"id":58,"turn":8,"causedBy":57,"source":{"unit":"A2:Hydra","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Hydra","status":"Shield","stacks":2,"remaining":0}
+{"id":59,"turn":8,"causedBy":56,"source":{"unit":"B1:Frostling","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Hydra","status":"Freeze","stacks":1,"total":1}
+{"id":60,"turn":8,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":61,"turn":9,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":62,"turn":9,"causedBy":61,"source":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"A2:Hydra"}
+{"id":63,"turn":9,"causedBy":62,"source":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Hydra","status":"Freeze","stacks":1,"remaining":0}
+{"id":64,"turn":9,"causedBy":61,"source":"kernel","type":"Strike","striker":"B1:Frostling","defender":"A2:Hydra"}
+{"id":65,"turn":9,"causedBy":64,"source":"kernel","type":"Hurt","unit":"A2:Hydra","amount":3,"hpAfter":10}
+{"id":66,"turn":9,"causedBy":64,"source":{"unit":"B1:Frostling","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Hydra","status":"Freeze","stacks":1,"total":1}
+{"id":67,"turn":9,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":68,"turn":10,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":69,"turn":10,"causedBy":68,"source":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"A2:Hydra"}
+{"id":70,"turn":10,"causedBy":69,"source":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Hydra","status":"Freeze","stacks":1,"remaining":0}
+{"id":71,"turn":10,"causedBy":68,"source":"kernel","type":"Strike","striker":"B1:Frostling","defender":"A2:Hydra"}
+{"id":72,"turn":10,"causedBy":71,"source":"kernel","type":"Hurt","unit":"A2:Hydra","amount":3,"hpAfter":7}
+{"id":73,"turn":10,"causedBy":71,"source":{"unit":"B1:Frostling","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Hydra","status":"Freeze","stacks":1,"total":1}
 {"id":74,"turn":10,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":75,"turn":10,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":10}
+{"id":75,"turn":10,"causedBy":74,"source":"kernel","type":"Fatigue","amount":1}
+{"id":76,"turn":10,"causedBy":75,"source":"kernel","type":"Hurt","unit":"A2:Hydra","amount":1,"hpAfter":6}
+{"id":77,"turn":10,"causedBy":75,"source":"kernel","type":"Hurt","unit":"B1:Frostling","amount":1,"hpAfter":3}
+{"id":78,"turn":10,"causedBy":75,"source":"kernel","type":"Hurt","unit":"B2:Bully","amount":1,"hpAfter":12}
+{"id":79,"turn":10,"causedBy":75,"source":"kernel","type":"Hurt","unit":"B3:Executioner","amount":1,"hpAfter":14}
+{"id":80,"turn":11,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":81,"turn":11,"causedBy":80,"source":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"A2:Hydra"}
+{"id":82,"turn":11,"causedBy":81,"source":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Hydra","status":"Freeze","stacks":1,"remaining":0}
+{"id":83,"turn":11,"causedBy":80,"source":"kernel","type":"Strike","striker":"B1:Frostling","defender":"A2:Hydra"}
+{"id":84,"turn":11,"causedBy":83,"source":"kernel","type":"Hurt","unit":"A2:Hydra","amount":3,"hpAfter":3}
+{"id":85,"turn":11,"causedBy":83,"source":{"unit":"B1:Frostling","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Hydra","status":"Freeze","stacks":1,"total":1}
+{"id":86,"turn":11,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":87,"turn":11,"causedBy":86,"source":"kernel","type":"Fatigue","amount":2}
+{"id":88,"turn":11,"causedBy":87,"source":"kernel","type":"Hurt","unit":"A2:Hydra","amount":2,"hpAfter":1}
+{"id":89,"turn":11,"causedBy":87,"source":"kernel","type":"Hurt","unit":"B1:Frostling","amount":2,"hpAfter":1}
+{"id":90,"turn":11,"causedBy":87,"source":"kernel","type":"Hurt","unit":"B2:Bully","amount":2,"hpAfter":10}
+{"id":91,"turn":11,"causedBy":87,"source":"kernel","type":"Hurt","unit":"B3:Executioner","amount":2,"hpAfter":12}
+{"id":92,"turn":12,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":93,"turn":12,"causedBy":92,"source":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"A2:Hydra"}
+{"id":94,"turn":12,"causedBy":93,"source":{"unit":"A2:Hydra","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:Hydra","status":"Freeze","stacks":1,"remaining":0}
+{"id":95,"turn":12,"causedBy":92,"source":"kernel","type":"Strike","striker":"B1:Frostling","defender":"A2:Hydra"}
+{"id":96,"turn":12,"causedBy":95,"source":"kernel","type":"Hurt","unit":"A2:Hydra","amount":3,"hpAfter":-2}
+{"id":97,"turn":12,"causedBy":96,"source":"kernel","type":"Death","unit":"A2:Hydra"}
+{"id":98,"turn":12,"causedBy":97,"source":{"unit":"A2:Hydra","ability":0,"when":0},"type":"Summon","unit":"A+1:Head","name":"Head","side":"A","hp":3,"pwr":2,"front":true}
+{"id":99,"turn":12,"causedBy":97,"source":{"unit":"A2:Hydra","ability":0,"when":0},"type":"Summon","unit":"A+2:Head","name":"Head","side":"A","hp":3,"pwr":2,"front":true}
+{"id":100,"turn":12,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":101,"turn":12,"causedBy":100,"source":"kernel","type":"Fatigue","amount":3}
+{"id":102,"turn":12,"causedBy":101,"source":"kernel","type":"Hurt","unit":"A+2:Head","amount":3,"hpAfter":0}
+{"id":103,"turn":12,"causedBy":102,"source":"kernel","type":"Death","unit":"A+2:Head"}
+{"id":104,"turn":12,"causedBy":101,"source":"kernel","type":"Hurt","unit":"A+1:Head","amount":3,"hpAfter":0}
+{"id":105,"turn":12,"causedBy":104,"source":"kernel","type":"Death","unit":"A+1:Head"}
+{"id":106,"turn":12,"causedBy":101,"source":"kernel","type":"Hurt","unit":"B1:Frostling","amount":3,"hpAfter":-2}
+{"id":107,"turn":12,"causedBy":106,"source":"kernel","type":"Death","unit":"B1:Frostling"}
+{"id":108,"turn":12,"causedBy":101,"source":"kernel","type":"Hurt","unit":"B2:Bully","amount":3,"hpAfter":7}
+{"id":109,"turn":12,"causedBy":101,"source":"kernel","type":"Hurt","unit":"B3:Executioner","amount":3,"hpAfter":9}
+{"id":110,"turn":12,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":12}

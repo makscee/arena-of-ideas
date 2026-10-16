@@ -1,51 +1,59 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Ox","name":"Ox","hp":6,"pwr":1},{"id":"A2:Paladin","name":"Paladin","hp":9,"pwr":2}],"B":[{"id":"B1:Siphon","name":"Siphon","hp":10,"pwr":2},{"id":"B2:Witch Doctor","name":"Witch Doctor","hp":9,"pwr":2},{"id":"B3:Dragon","name":"Dragon","hp":7,"pwr":2}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Ox","name":"Ox","hp":7,"pwr":1},{"id":"A2:Paladin","name":"Paladin","hp":13,"pwr":4}],"B":[{"id":"B1:Siphon","name":"Siphon","hp":11,"pwr":3},{"id":"B2:Witch Doctor","name":"Witch Doctor","hp":13,"pwr":2},{"id":"B3:Dragon","name":"Dragon","hp":13,"pwr":2}]}}
 {"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":2,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Ox","b":"B1:Siphon","first":"B1:Siphon"}
 {"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Siphon","defender":"A1:Ox"}
-{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"Hurt","unit":"A1:Ox","amount":2,"hpAfter":4}
-{"id":5,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Ox","defender":"B1:Siphon","amount":6}
-{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"B1:Siphon","amount":6,"hpAfter":4}
+{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"Hurt","unit":"A1:Ox","amount":3,"hpAfter":4}
+{"id":5,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Ox","defender":"B1:Siphon","amount":7}
+{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"B1:Siphon","amount":7,"hpAfter":4}
 {"id":7,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":8,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":9,"turn":2,"causedBy":8,"source":"kernel","type":"Strike","striker":"B1:Siphon","defender":"A1:Ox"}
-{"id":10,"turn":2,"causedBy":9,"source":"kernel","type":"Hurt","unit":"A1:Ox","amount":2,"hpAfter":2}
-{"id":11,"turn":2,"causedBy":8,"source":"kernel","type":"Strike","striker":"A1:Ox","defender":"B1:Siphon","amount":6}
-{"id":12,"turn":2,"causedBy":11,"source":"kernel","type":"Hurt","unit":"B1:Siphon","amount":6,"hpAfter":-2}
+{"id":10,"turn":2,"causedBy":9,"source":"kernel","type":"Hurt","unit":"A1:Ox","amount":3,"hpAfter":1}
+{"id":11,"turn":2,"causedBy":8,"source":"kernel","type":"Strike","striker":"A1:Ox","defender":"B1:Siphon","amount":7}
+{"id":12,"turn":2,"causedBy":11,"source":"kernel","type":"Hurt","unit":"B1:Siphon","amount":7,"hpAfter":-3}
 {"id":13,"turn":2,"causedBy":12,"source":"kernel","type":"Death","unit":"B1:Siphon"}
 {"id":14,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":15,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":16,"turn":3,"causedBy":15,"source":"kernel","type":"PairFaced","a":"A1:Ox","b":"B2:Witch Doctor","first":"A1:Ox"}
-{"id":17,"turn":3,"causedBy":15,"source":"kernel","type":"Strike","striker":"A1:Ox","defender":"B2:Witch Doctor","amount":6}
-{"id":18,"turn":3,"causedBy":17,"source":"kernel","type":"Hurt","unit":"B2:Witch Doctor","amount":6,"hpAfter":3}
+{"id":17,"turn":3,"causedBy":15,"source":"kernel","type":"Strike","striker":"A1:Ox","defender":"B2:Witch Doctor","amount":7}
+{"id":18,"turn":3,"causedBy":17,"source":"kernel","type":"Hurt","unit":"B2:Witch Doctor","amount":7,"hpAfter":6}
 {"id":19,"turn":3,"causedBy":15,"source":"kernel","type":"Strike","striker":"B2:Witch Doctor","defender":"A1:Ox"}
-{"id":20,"turn":3,"causedBy":19,"source":"kernel","type":"Hurt","unit":"A1:Ox","amount":2,"hpAfter":0}
+{"id":20,"turn":3,"causedBy":19,"source":"kernel","type":"Hurt","unit":"A1:Ox","amount":2,"hpAfter":-1}
 {"id":21,"turn":3,"causedBy":20,"source":"kernel","type":"Death","unit":"A1:Ox"}
 {"id":22,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":23,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":24,"turn":4,"causedBy":23,"source":"kernel","type":"PairFaced","a":"A2:Paladin","b":"B2:Witch Doctor","first":"B2:Witch Doctor"}
 {"id":25,"turn":4,"causedBy":23,"source":"kernel","type":"Strike","striker":"B2:Witch Doctor","defender":"A2:Paladin"}
-{"id":26,"turn":4,"causedBy":25,"source":"kernel","type":"Hurt","unit":"A2:Paladin","amount":2,"hpAfter":7}
-{"id":27,"turn":4,"causedBy":23,"source":"kernel","type":"Strike","striker":"A2:Paladin","defender":"B2:Witch Doctor","amount":2}
-{"id":28,"turn":4,"causedBy":27,"source":"kernel","type":"Hurt","unit":"B2:Witch Doctor","amount":2,"hpAfter":1}
+{"id":26,"turn":4,"causedBy":25,"source":"kernel","type":"Hurt","unit":"A2:Paladin","amount":2,"hpAfter":11}
+{"id":27,"turn":4,"causedBy":23,"source":"kernel","type":"Strike","striker":"A2:Paladin","defender":"B2:Witch Doctor","amount":4}
+{"id":28,"turn":4,"causedBy":27,"source":"kernel","type":"Hurt","unit":"B2:Witch Doctor","amount":4,"hpAfter":2}
 {"id":29,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":30,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":31,"turn":5,"causedBy":30,"source":"kernel","type":"Strike","striker":"B2:Witch Doctor","defender":"A2:Paladin"}
-{"id":32,"turn":5,"causedBy":31,"source":"kernel","type":"Hurt","unit":"A2:Paladin","amount":2,"hpAfter":5}
-{"id":33,"turn":5,"causedBy":30,"source":"kernel","type":"Strike","striker":"A2:Paladin","defender":"B2:Witch Doctor","amount":2}
-{"id":34,"turn":5,"causedBy":33,"source":"kernel","type":"Hurt","unit":"B2:Witch Doctor","amount":2,"hpAfter":-1}
+{"id":32,"turn":5,"causedBy":31,"source":"kernel","type":"Hurt","unit":"A2:Paladin","amount":2,"hpAfter":9}
+{"id":33,"turn":5,"causedBy":30,"source":"kernel","type":"Strike","striker":"A2:Paladin","defender":"B2:Witch Doctor","amount":4}
+{"id":34,"turn":5,"causedBy":33,"source":"kernel","type":"Hurt","unit":"B2:Witch Doctor","amount":4,"hpAfter":-2}
 {"id":35,"turn":5,"causedBy":34,"source":"kernel","type":"Death","unit":"B2:Witch Doctor"}
 {"id":36,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":37,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":38,"turn":6,"causedBy":37,"source":"kernel","type":"PairFaced","a":"A2:Paladin","b":"B3:Dragon","first":"B3:Dragon"}
 {"id":39,"turn":6,"causedBy":37,"source":"kernel","type":"Strike","striker":"B3:Dragon","defender":"A2:Paladin"}
-{"id":40,"turn":6,"causedBy":39,"source":"kernel","type":"Hurt","unit":"A2:Paladin","amount":2,"hpAfter":3}
-{"id":41,"turn":6,"causedBy":39,"source":{"unit":"B3:Dragon","ability":0,"when":0},"type":"Hurt","unit":"A2:Paladin","amount":1,"hpAfter":2}
-{"id":42,"turn":6,"causedBy":37,"source":"kernel","type":"Strike","striker":"A2:Paladin","defender":"B3:Dragon","amount":2}
-{"id":43,"turn":6,"causedBy":42,"source":"kernel","type":"Hurt","unit":"B3:Dragon","amount":2,"hpAfter":5}
+{"id":40,"turn":6,"causedBy":39,"source":"kernel","type":"Hurt","unit":"A2:Paladin","amount":2,"hpAfter":7}
+{"id":41,"turn":6,"causedBy":39,"source":{"unit":"B3:Dragon","ability":0,"when":0},"type":"Hurt","unit":"A2:Paladin","amount":1,"hpAfter":6}
+{"id":42,"turn":6,"causedBy":37,"source":"kernel","type":"Strike","striker":"A2:Paladin","defender":"B3:Dragon","amount":4}
+{"id":43,"turn":6,"causedBy":42,"source":"kernel","type":"Hurt","unit":"B3:Dragon","amount":4,"hpAfter":9}
 {"id":44,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":45,"turn":7,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":46,"turn":7,"causedBy":45,"source":"kernel","type":"Strike","striker":"B3:Dragon","defender":"A2:Paladin"}
-{"id":47,"turn":7,"causedBy":46,"source":"kernel","type":"Hurt","unit":"A2:Paladin","amount":2,"hpAfter":0}
-{"id":48,"turn":7,"causedBy":47,"source":"kernel","type":"Death","unit":"A2:Paladin"}
-{"id":49,"turn":7,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":50,"turn":7,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":7}
+{"id":47,"turn":7,"causedBy":46,"source":"kernel","type":"Hurt","unit":"A2:Paladin","amount":2,"hpAfter":4}
+{"id":48,"turn":7,"causedBy":46,"source":{"unit":"B3:Dragon","ability":0,"when":0},"type":"Hurt","unit":"A2:Paladin","amount":1,"hpAfter":3}
+{"id":49,"turn":7,"causedBy":45,"source":"kernel","type":"Strike","striker":"A2:Paladin","defender":"B3:Dragon","amount":4}
+{"id":50,"turn":7,"causedBy":49,"source":"kernel","type":"Hurt","unit":"B3:Dragon","amount":4,"hpAfter":5}
+{"id":51,"turn":7,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":52,"turn":8,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":53,"turn":8,"causedBy":52,"source":"kernel","type":"Strike","striker":"B3:Dragon","defender":"A2:Paladin"}
+{"id":54,"turn":8,"causedBy":53,"source":"kernel","type":"Hurt","unit":"A2:Paladin","amount":2,"hpAfter":1}
+{"id":55,"turn":8,"causedBy":53,"source":{"unit":"B3:Dragon","ability":0,"when":0},"type":"Hurt","unit":"A2:Paladin","amount":1,"hpAfter":0}
+{"id":56,"turn":8,"causedBy":55,"source":"kernel","type":"Death","unit":"A2:Paladin"}
+{"id":57,"turn":8,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":58,"turn":8,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":8}

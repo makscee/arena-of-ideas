@@ -7,6 +7,7 @@ import { addCopy, contentFormProblems, lineUnitOf } from "./forms.js";
 import { fightLines, toBattleDef } from "./fight.js";
 import { MVP_RULES } from "./contract.js";
 import { ROWS_V2 } from "./units-v2.js";
+import { TIER_STATS } from "./tier-stats.js";
 import { V2_NUMBERS } from "./units-v2-numbers.js";
 import { traceLines } from "../words/trace.js";
 import { formSegments, formText, sentenceSegments, sentenceText } from "./form-text.js";
@@ -36,10 +37,11 @@ describe("rules v2 pool", () => {
     for (const old of ["Grains", "Sands", "Beats", "Drums", "Mana", "Arcana", "Memory", "Memories", "Chime"]) expect(content.statuses[old], old).toBeUndefined();
   });
 
-  it("numbers stay on the old pool's scale (#1047): sleeping HP 2-12, PWR at most 6, awoken at most +4 HP / +1 PWR", () => {
+  // HP's cap is the tier range's top since the tier stat ranges (#1048)
+  it("numbers stay on the old pool's scale (#1047): sleeping HP 2 up to the tier's range, PWR at most 6, awoken at most +4 HP / +1 PWR", () => {
     for (const u of content.units) {
       expect(u.base.hp, u.name).toBeGreaterThanOrEqual(2);
-      expect(u.base.hp, u.name).toBeLessThanOrEqual(12);
+      expect(u.base.hp, u.name).toBeLessThanOrEqual(TIER_STATS[u.tier].max);
       expect(u.base.pwr, u.name).toBeLessThanOrEqual(6);
       expect(u.awokenBonus?.hp ?? 0, u.name).toBeLessThanOrEqual(4);
       expect(u.awokenBonus?.pwr ?? 0, u.name).toBeLessThanOrEqual(1);
@@ -240,7 +242,7 @@ describe("rules v2 pool", () => {
       ["Dynamo", ["Dynamo"], ["Seed", "Seed"], /^Dynamo strikes again$/],
       ["Siphon", ["Siphon"], ["Leech", "Medic"], /^Siphon intercepts: the heal on Leech lands on Siphon$/],
       ["Comet", ["Comet"], ["Seed", "Seed"], /^Comet \(on turns 4, 8, 12…\) → all enemies \(Seed, Seed\) → 4 damage$/],
-      ["Heckler", ["Heckler"], ["Leech", "Seed"], /^Heckler → it \(Leech\) → \d+ damage$/],
+      ["Heckler", ["Heckler"], ["Frostling", "Seed"], /^Heckler → it \(Frostling\) → \d+ damage$/],
       ["Broodmother", ["Broodmother"], ["Nautilus", "Seed"], /^Broodmother \(on turns 2, 4, 6…\) → self \(Spiderling\)$/],
       ["Dragon", ["Dragon"], ["Nautilus", "Seed"], /^Dragon → all enemies \(Nautilus, Seed\) → \d+ damage/],
       ["Kraken", ["Kraken"], ["Leech", "Seed"], /^Kraken → self \(Kraken, Leech\) → Charge 1, 1 damage$/],
@@ -266,7 +268,7 @@ describe("rules v2 pool", () => {
       ["Phoenix", ["Phoenix"], ["Berserker", "Leech"], /^Phoenix \(once per battle\) → .*→ \d+ damage$/],
       ["Volcano", ["Volcano", "Sniper"], ["Nautilus", "Seed"], /^Volcano \(on turns 2, 4, 6…\) → .* → .*1 damage, Shield 1$/],
       ["Witch Doctor", ["Hornet", "Frostling", "Witch Doctor"], ["Seed", "Seed", "Seed"], /^Witch Doctor → .*Shield 1$/],
-      ["Heckler", ["Heckler"], ["Leech", "Seed"], /^Heckler → it \(Leech\) → \d+ damage, Curse 1$/],
+      ["Heckler", ["Heckler"], ["Frostling", "Seed"], /^Heckler → it \(Frostling\) → \d+ damage, Curse 1$/],
       ["Comet", ["Comet"], ["Seed", "Seed"], /^Comet \(on turns 3, 6, 9…\) → all enemies \(Seed, Seed\) → 3 damage$/],
     ];
     for (const [name, A, B, want] of cases) {
