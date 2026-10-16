@@ -168,7 +168,7 @@ function pieceCard(u: CardUnit, o: CardOptions): HTMLElement {
     awoken: u.kind !== "fused" && u.form === "awoken",
     ...(u.kind === "fused" ? { fused: { emoji: ems.slice(1).join("") || "✨" } } : {}),
   };
-  const pc = piece(pu, { size: "M", px: window.innerWidth < 600 ? 36 : 60, side: o.side === "ghost" ? "them" : "you", word: window.innerWidth >= 600 });
+  const pc = piece(pu, { size: "M", px: window.innerWidth < 600 ? 46 : 60, side: o.side === "ghost" ? "them" : "you", word: window.innerWidth >= 600 });
   const credit = u.kind === "fused" || o.version !== undefined ? undefined : creditOf(u.unitId);
   const version = o.version ?? credit?.version ?? 1;
   const foot = (o.extra ?? []).filter((x): x is Node => x !== null);

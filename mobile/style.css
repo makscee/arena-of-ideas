@@ -2308,7 +2308,7 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 .card.pcard .new-badge { position: static; }
 @media (max-width: 599.98px) {
   #app .card.pcard, .card.pcard { padding: 12px 0 4px; }
-  .card.pcard .pcard-stage { height: 64px; padding: 0 6px; }
+  .card.pcard .pcard-stage { height: 76px; padding: 0 6px; }
   .card.pcard .pc-nm { max-width: 64px; }
 }
 /* On a light panel (the champion's pink) the name reads dark. */
