@@ -71,7 +71,7 @@ export function galleryScreen(content: MvpContent, only: PieceSize | null): void
       tabs,
       h("h2", {}, "States"),
       ...stateRows,
-      h("h2", {}, "Every unit"),
+      h("h2", {}, "Units"),
       ...unitRows,
     ),
   );
