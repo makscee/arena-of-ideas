@@ -1891,8 +1891,10 @@ button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padd
   #app[data-screen="shop"] .line-panel { grid-area: line; }
   #app[data-screen="shop"] .actions { grid-area: act; }
   #app[data-screen="shop"] .hint-slot { grid-area: hint; }
-  #app[data-screen="shop"] .shop-panel { grid-area: shop; align-self: start; max-height: 100%; overflow-y: auto; }
-  #app[data-screen="shop"] [data-testid="offers"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  #app[data-screen="shop"] .shop-panel { grid-area: shop; align-self: stretch; display: flex; flex-direction: column; min-height: 0; max-height: 100%; overflow-y: auto; }
+  /* #1271. Three offers a row, the rows growing into the panel's height (up to 190 px each):
+   * 3 offers made one short row and left the lower part of the play area empty. */
+  #app[data-screen="shop"] [data-testid="offers"] { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: minmax(104px, 190px); flex: 1 1 auto; min-height: 0; align-content: start; gap: 8px; }
   #app[data-screen="shop"] > .spacer { display: none; }
   #app[data-screen="shop"] > .error { grid-area: err; }
   #app[data-screen="shop"] .shop-foot { grid-area: foot; }
@@ -1923,6 +1925,9 @@ button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padd
   .codex-filters button.chip.icon svg { width: 18px; height: 18px; }
   #app[data-screen="codex"] input[type="search"] { min-height: 36px; }
   /* The shop: the offers grow into the space under them. */
-  #app[data-screen="shop"] .shop-panel .card { height: 128px; }
+  #app[data-screen="shop"] .shop-panel .card { height: 100%; min-height: 104px; justify-content: space-evenly; }
+  #app[data-screen="shop"] .shop-panel .card .emoji { font-size: 40px; line-height: 44px; height: 44px; }
+  #app[data-screen="shop"] .shop-panel .card .name { font-size: 14px; line-height: 16px; }
+  #app[data-screen="shop"] .shop-panel .card .stats { font-size: 15px; }
   #app[data-screen="shop"] .line-panel .slots:not(.bench-row) .card { height: 104px; }
 }

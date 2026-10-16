@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, Idea, IdeaState, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { CodexClaim, CodexPair } from "../../../src/mvp/codex.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
-import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type TelegramCode, type CrazyGamesLink, type TelegramLink, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally, type Vote, type WordRequest, type CodexWish, type FoundWord, type DailyPost, type EmailCode, type EmailLink } from "./store.js";
+import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type TelegramCode, type CrazyGamesLink, type TelegramLink, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally, type Vote, type WordRequest, type CodexWish, type FoundWord, type DailyPost, type EmailCode, type EmailLink, type Report } from "./store.js";
 
 const SQL_DIR = fileURLToPath(new URL("./sql/", import.meta.url));
 
@@ -237,6 +237,16 @@ export class SqliteMvpStore implements MvpStore {
   }
   isGuest(playerId: string): boolean {
     return !!this.db.prepare("SELECT 1 FROM mvp_guests WHERE player_id = ?").get(playerId);
+  }
+  addReport(r: Report): boolean {
+    return this.db.prepare("INSERT OR IGNORE INTO mvp_reports (id, reporter_id, kind, target_id, reason, created_at, status) VALUES (?, ?, ?, ?, ?, ?, ?)").run(r.id, r.reporterId, r.kind, r.targetId, r.reason ?? null, r.at, r.status).changes > 0;
+  }
+  reports(opts: { open?: boolean } = {}): Report[] {
+    const rows = this.db.prepare(`SELECT id, reporter_id, kind, target_id, reason, created_at, status FROM mvp_reports ${opts.open ? "WHERE status = 'open'" : ""} ORDER BY created_at, rowid`).all() as { id: string; reporter_id: string; kind: Report["kind"]; target_id: string; reason: string | null; created_at: string; status: Report["status"] }[];
+    return rows.map((r) => ({ id: r.id, reporterId: r.reporter_id, kind: r.kind, targetId: r.target_id, ...(r.reason ? { reason: r.reason } : {}), at: r.created_at, status: r.status }));
+  }
+  reportsBy(reporterId: string, since: string): number {
+    return (this.db.prepare("SELECT COUNT(*) AS n FROM mvp_reports WHERE reporter_id = ? AND created_at >= ?").get(reporterId, since) as { n: number }).n;
   }
   unlinkTelegram(playerId: string): boolean { return this.db.prepare("DELETE FROM mvp_telegram_links WHERE player_id = ?").run(playerId).changes > 0; }
   linkEmail(l: EmailLink): void {

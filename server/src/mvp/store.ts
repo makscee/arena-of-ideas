@@ -125,6 +125,13 @@ export interface MvpStore {
   addGuest(playerId: string, at: string): void;
   /** Whether a guest join made this player. */
   isGuest(playerId: string): boolean;
+  // #1271: reports of a player's name or a player-made unit (./reports.ts writes them).
+  /** Files a report. False when this reporter already reported this target (nothing is added). */
+  addReport(r: Report): boolean;
+  /** Reports, oldest first; `open` only those not closed. */
+  reports(opts?: { open?: boolean }): Report[];
+  /** How many reports this player filed at or after `since` (an ISO time). */
+  reportsBy(reporterId: string, since: string): number;
   // #929's email login; only ./email.ts writes it.
   /** Ties an email to a player. Throws when either has one already. */
   linkEmail(l: EmailLink): void;
@@ -261,6 +268,18 @@ export type UnitOrigin = "idea" | "evolution" | "return" | "seed";
 
 /** A unit as data (M2-1). Its id is permanent and never reused, even for a
  * unit with the same name; `row` is what the pool is built from (mvpPool). */
+/** A player's report of a name or a player-made unit (#1271). */
+export interface Report {
+  id: string;
+  reporterId: string;
+  /** `name`: targetId is a player's id; `unit`: a unit's id. */
+  kind: "name" | "unit";
+  targetId: string;
+  reason?: string;
+  at: string;
+  status: "open";
+}
+
 export interface StoredUnit {
   unitId: UnitId;
   status: UnitStatus;
@@ -605,6 +624,18 @@ export class MemoryMvpStore implements MvpStore {
   }
   isGuest(playerId: string): boolean {
     return this.guests.has(playerId);
+  }
+  private reportList: Report[] = [];
+  addReport(r: Report): boolean {
+    if (this.reportList.some((x) => x.reporterId === r.reporterId && x.kind === r.kind && x.targetId === r.targetId)) return false;
+    this.reportList.push({ ...r });
+    return true;
+  }
+  reports(opts: { open?: boolean } = {}): Report[] {
+    return this.reportList.filter((r) => !opts.open || r.status === "open").map((r) => ({ ...r }));
+  }
+  reportsBy(reporterId: string, since: string): number {
+    return this.reportList.filter((r) => r.reporterId === reporterId && r.at >= since).length;
   }
   private emails = new Map<string, EmailLink>();
   private emailCodes = new Map<string, EmailCode>();
