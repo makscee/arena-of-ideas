@@ -214,6 +214,12 @@ try {
       await at(3300);
       await page.getByTestId("buy").click();
       await at(4600);
+      // The scene's offers are random: a buy that awakens a unit brings a gift, and Fight waits for it. Skip it.
+      if (await page.getByTestId("fight").isDisabled()) {
+        if (await page.getByTestId("gift-open").isVisible()) await page.getByTestId("gift-open").click();
+        await page.getByTestId("gift-skip").click({ timeout: 5_000 });
+        await page.getByTestId("gift-title").waitFor({ state: "hidden", timeout: 5_000 }).catch(() => {});
+      }
       await page.getByTestId("fight").click();
       await page.getByTestId("battle-you").waitFor({ timeout: 10_000 });
       await page.waitForTimeout(1500);
@@ -225,20 +231,27 @@ try {
     clearInterval(beat);
     await cdp.send("Page.stopScreencast");
     await ctx.close();
+    // A still page sends no screencast frame until something paints (the cover fades at 1.5 s):
+    // the video starts when recording did, on the cover, whenever the first frame came.
+    const start = t0 / 1000;
+    if (!got.length || got[0].t > start) got.unshift({ file: got[0]?.file ?? "", t: start });
     // Concat list: each frame lasts until the next one; the last fills to `seconds`.
-    const start = got[0].t;
+
     let list = "";
     for (let i = 0; i < got.length; i++) {
       const end = i + 1 < got.length ? got[i + 1].t : start + seconds;
+      if (got[i].t >= start + seconds) break;
       const d = Math.min(end, start + seconds) - got[i].t;
-      if (d <= 0) break;
+      if (d <= 0) continue; // two frames with one timestamp: the first never shows
       // Until the cover fades, the frame is the cover itself, at full resolution (the screencast's are 1×).
       const file = got[i].t < fadeAt && existsSync(join(out, `first-${s.name}.jpg`)) ? resolve(out, `first-${s.name}.jpg`) : got[i].file.split("/").pop();
       list += `file '${file}'\nduration ${d.toFixed(4)}\n`;
     }
     list += `file '${got[Math.max(0, got.length - 1)].file.split("/").pop()}'\n`;
     writeFileSync(join(frames, "list.txt"), list);
-    execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", join(frames, "list.txt"),
+    // The cover jpg is full size, the screencast frames 1×: without -reinit_filter 0 the size change
+    // rebuilds the filter graph and drops the cover's hold (the video came out 1.5 s short).
+    execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-reinit_filter", "0", "-f", "concat", "-safe", "0", "-i", join(frames, "list.txt"),
       "-vf", `fps=30,scale=${W}:${H}:flags=lanczos,format=yuv420p`, "-t", String(seconds), "-an", "-c:v", "libx264", "-preset", "slow", "-crf", "20",
       "-movflags", "+faststart", join(out, s.video)]);
     if (!process.env.KEEP_FRAMES) rmSync(frames, { recursive: true, force: true });
