@@ -7,6 +7,7 @@
 // opens in battleScreen) and, on dev servers only (HomeView.dev), "End day
 // now" under "Dev". The shop's ☰ (Esc on desktop) is the in-run menu.
 import { sceneId } from "./scene";
+import { CG } from "./cg";
 import type { BattleRecord, CandidateScore, DayView, FightResult, HomeView, IdeasView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView, UnitContent } from "../src/mvp/contract";
 import { benchSizeOf, lockedFull, MVP_RULES, offersAt, sellValue } from "../src/mvp/contract";
 import { mergeTarget } from "../src/mvp/forms";
@@ -535,7 +536,7 @@ function settingsSheet(home: HomeView, err: HTMLElement): void {
       langRow(),
       themeRow(),
       button(t("codex.tab.howto"), () => (close(), void guarded(err, () => openCodex({ tab: "howto" }))), "", "rules-open"),
-      api.ownInvite ? ownLinkRow(api.ownInvite) : null,
+      api.ownInvite && !CG ? ownLinkRow(api.ownInvite) : null,
       home.telegram?.enabled ? telegramRow(home.telegram.linked, err) : null,
     ),
   );
@@ -1948,12 +1949,12 @@ function ownLinkRow(code: string): HTMLElement {
  * fragment, which the browser never sends, so no access log holds it. A
  * device that is already another player asks first. A dead link offers Home
  * on a device with its own session, and otherwise asks for a new link. */
-const inviteCode = new URLSearchParams(location.hash.slice(1)).get("invite");
+const inviteCode = CG ? null : new URLSearchParams(location.hash.slice(1)).get("invite");
 /** `#join=<code>` (R4-20): the open join link. Anyone with it picks a name
  * and plays as a new player; the fragment then becomes their own #invite=
  * link, so a bookmark keeps working. A bad or rotated code shows the invite
  * screen. */
-const joinCode = new URLSearchParams(location.hash.slice(1)).get("join");
+const joinCode = CG ? null : new URLSearchParams(location.hash.slice(1)).get("join");
 /** `#battle=<id>` (mission 1007 follow-up): open one recorded battle in the
  * viewer straight away, no sign-in, so a change to the battle view can be
  * judged from a list of links. Battles are public by id (GET /battles/:id);
@@ -1971,7 +1972,7 @@ function openBattleLink(id: string): void {
 /** `#checkpoint=a+b` (#1065): a dev world (the workshop, an admin) puts your
  * run in the shop with Awoken a and b on the line, one Fuse from discovering
  * them. With `invite=` in the same link it opens once the invite is in. */
-const checkpointPair = new URLSearchParams(location.hash.slice(1)).get("checkpoint");
+const checkpointPair = CG ? null : new URLSearchParams(location.hash.slice(1)).get("checkpoint");
 function openCheckpoint(pair: string): void {
   const err = errorLine();
   void guarded(err, async () => {

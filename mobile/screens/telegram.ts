@@ -7,6 +7,7 @@ import qrcode from "qrcode-generator";
 import { api, ApiError } from "../api";
 import { t } from "../i18n";
 import { button, closable, h } from "../ui/dom";
+import { CG } from "../cg";
 
 /** How often the sheet asks whether the bot accepted. */
 const POLL_MS = 2_000;
@@ -29,7 +30,7 @@ export function telegramSheet(opts: { link: boolean; fake: boolean; onDone: () =
       status.textContent = e instanceof Error ? e.message : String(e);
       return;
     }
-    const open = h("a", { class: "button primary tg-step", href: start.url, target: "_blank", rel: "noopener", "data-testid": "tg-open" }, t("tg.open"));
+    const open = h("a", { class: "button primary tg-step", href: start.url, ...(CG ? {} : { target: "_blank" }), rel: "noopener", "data-testid": "tg-open" }, t("tg.open"));
     status.textContent = t("tg.instructions");
     body.append(open);
     // A laptop: scan it with the phone that has Telegram.

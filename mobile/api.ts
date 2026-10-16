@@ -33,13 +33,14 @@ import {
   type UnitId,
   type WriteIdeaRequest,
 } from "../src/mvp/contract";
+import { apiBase, CG } from "./cg";
 import { uiLang } from "./lang";
 import { addCardAbilities } from "./ui/card";
 import type { SceneBuilt } from "../server/src/mvp/scenes";
 import type { ForgeSlot, ForgeView, RunForge } from "../src/mvp/codex";
 import type { ForgeView as CodexOverview } from "../src/mvp/forge-view";
 
-const BASE = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "") + MVP_API_PREFIX;
+const BASE = apiBase(MVP_API_PREFIX);
 const PLAYER_KEY = "arena.player";
 /** Slice 13: the session token from an invite link, kept on the device. */
 const TOKEN_KEY = "arena.token";
@@ -229,9 +230,14 @@ export const api = {
    * `telegram` (M4-6): Telegram login is on, with the real bot or the fake.
    * `mail` (#929): email login is on, by SMTP or the fake mailer.
    * `contentVersion`: the live pool's; ./content.ts refetches when it moves. */
-  health: () => call<{ dark?: boolean; codex?: boolean; invites?: boolean; open?: boolean; contentVersion?: string; telegram?: false | "bot" | "fake"; mail?: false | "smtp" | "fake" }>("GET", "/health"),
+  health: () =>
+    call<{ dark?: boolean; codex?: boolean; invites?: boolean; open?: boolean; contentVersion?: string; telegram?: false | "bot" | "fake"; mail?: false | "smtp" | "fake" }>("GET", "/health").then((h) =>
+      // The CrazyGames build offers neither login (#1214): a name joins.
+      CG ? { ...h, telegram: false as const, mail: false as const } : h,
+    ),
   content: () => call<MvpContent>("GET", "/content"),
-  home: () => call<HomeView>("GET", "/home"),
+  home: () =>
+    call<HomeView>("GET", "/home").then((h) => (CG ? { ...h, dev: false, telegram: null, email: null } : h)),
   startRun: () => call<RunView>("POST", "/runs"),
   run: async (id: string) => learnFusions(await call<RunView>("GET", `/runs/${id}`)),
   decide: (id: string, d: Decision) => call<DecisionResponse>("POST", `/runs/${id}/decisions`, d),

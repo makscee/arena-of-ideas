@@ -26,6 +26,7 @@
 // On desktop a sheet opens in the inspector on the right, not an overlay.
 // The icon credits (CC BY 3.0) sit at its foot. Reads /content, /stats and
 // /fusions, each once while it stays open (CodexCache).
+import { CG } from "../cg";
 import { GLOSSARY, STATUS_TERMS, scopedLabel, scopedTip, termDef, termGroup, type FixedTermId, type IconId, type TermGroup, type TermId } from "../../src/glossary";
 import type { FusionDiscovery, HomeView, IdeasView, LibraryUnit, LibraryView, LineUnit, MvpContent, StatsView, UnitContent, UnitId, UnitVersion, VersionCredit } from "../../src/mvp/contract";
 import type { UnitFilter } from "../../src/types";
@@ -714,7 +715,8 @@ function landOn(body: HTMLElement, id: TermId, scope?: UnitFilter): void {
 
 /** The icon credits CC BY 3.0 asks for (docs/round2/icons.md, icons/CREDITS.txt). */
 function credits(): HTMLElement {
-  const a = (href: string, text: string) => h("a", { href, target: "_blank", rel: "noopener" }, text);
+  // The CrazyGames build links nowhere off the portal (#1214): plain text.
+  const a = (href: string, text: string) => (CG ? h("span", {}, text) : h("a", { href, target: "_blank", rel: "noopener" }, text));
   return h(
     "div",
     { class: "dim small credits", "data-testid": "icon-credits" },

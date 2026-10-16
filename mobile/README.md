@@ -24,6 +24,8 @@ Files and owners:
 | `npm run mvp:bot -- --runs 50 [--url …/arena]` | 50 full runs through the HTTP API, fails on any error |
 | `npm run mvp:phone [-- --url …/arena/]` | a whole game in Chromium at 360×640, screenshots in `e2e/.shots/mvp`; without `--url` (its own local server) it also plays the champion's own Crown (`e2e/mvp-own-crown.ts`), a `--url` run skips that |
 | `npm run mvp:desktop [-- --url …/arena/]` | a whole run at 1440×900 with mouse and keys only (hover, double-click, drag, 1–7, R, Space, ← →, F, S, Esc, Enter), awaken and fuse in the inspector, the desktop battle (facing lines, timeline drag, Log → Why, 1024×768), then the 1024px and 1023px edges; screenshots in `e2e/.shots/mvp-desktop` |
+| `npm run mvp:build:cg` | the CrazyGames zip (#1214): `mobile/dist-cg/` and `mobile/arena-cg.zip`, relative base, API at `VITE_API_ORIGIN` (e.g. `https://arena.makscee.ru/arena`; empty: its own base), `VITE_CG=1` hides off-portal links, email/Telegram/invite login and the dev tools (`mobile/cg.ts`); prints file count and size |
+| `npm run mvp:cg` | builds the cg zip against a local server, serves it from a second origin (`MVP_CORS_ORIGINS`), joins, buys, fights one battle at 800×450; fails on any console error, 4xx, outside request or off-portal link |
 | `npm run mvp:check` | typecheck, tests, the bot, the phone run and the desktop run |
 | `npm run mvp:redeploy [-- <branch>] [--fresh]` | redeploys the m1 test instance (default `mission-574-mvp`; usually `mvp-live`, the last checked build). It holds real players' data now: `--fresh` (an empty world) needs `ARENA_MVP_WIPE=1` and Maks's word |
 
