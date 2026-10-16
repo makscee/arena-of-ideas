@@ -136,7 +136,7 @@ try {
     await gain(0, "ad started");
     await page.evaluate(() => window.__cgAd.adFinished());
     await gain(1, "ad finished");
-    await page.getByTestId("offer-0").click();
+    await page.getByTestId("offer-0").click(); await page.getByTestId("offer-0").click();
     await page.getByTestId("buy").waitFor();
     await page.getByTestId("buy").click();
     await page.getByTestId("line").locator(".cell.you").first().waitFor({ timeout: 10_000 });

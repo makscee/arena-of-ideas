@@ -103,7 +103,8 @@ try {
       await open("shop-r3");
       const lineN = await count("line"), benchN = await count("bench"), g0 = await gold();
       const free = lineN < 5 ? `[data-testid="line-${lineN}-empty"]` : `[data-testid="bench-${benchN}-empty"]`;
-      const aff = page.locator('[data-testid^="offer-"]:not(.poor)').first();
+      // Not a twin: a twin merges in and adds no unit (the scene's offers are random).
+      const aff = page.locator('[data-testid^="offer-"]:not(.poor):not(.owned)').first();
       if (!(await aff.count())) fail("no affordable offer in shop-r3");
       else {
         await drag(`[data-testid="${await aff.getAttribute("data-testid")}"]`, free);

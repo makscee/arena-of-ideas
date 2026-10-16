@@ -2100,7 +2100,8 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
   #app[data-screen="shop"] .opp .pin { flex: 0 1 auto; min-width: 0; }
   #app[data-screen="shop"] .bench-panel .slots.bench-row { margin-top: 0; }
   #app[data-screen="shop"] [data-testid="offers"]:has(> .cell) { --n: 3; row-gap: 0; margin-top: 0; }
-  #app[data-screen="shop"] .shop-side { display: flex; flex-direction: column; gap: 8px; }
+  /* Reroll and Fight stay in view at the foot while the shop scrolls (a 360×640 phone). */
+  #app[data-screen="shop"] .shop-side { display: flex; flex-direction: column; gap: 8px; position: sticky; bottom: 0; z-index: 20; margin: 0 -4px; padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); background: var(--ground); }
   #app[data-screen="shop"] .shop-side .shop-foot button { min-height: 56px; }
 }
 /* The short landscape (800×450, 821×462): HUD across the top; the line and
@@ -2122,7 +2123,7 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
   #app[data-screen="shop"] .hint-slot:empty { display: none; }
   #app[data-screen="shop"] .shop-panel { grid-area: shop; overflow: hidden; padding: 6px 8px 4px; }
   #app[data-screen="shop"] [data-testid="offers"]:has(> .cell) { --n: 6; grid-auto-rows: auto; flex: none; gap: 2px; }
-  #app[data-screen="shop"] .shop-side { grid-area: side; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+  #app[data-screen="shop"] .shop-side { grid-area: side; display: flex; flex-direction: column; gap: 6px; min-height: 0; position: static; margin: 0; padding: 0; background: none; }
   #app[data-screen="shop"] .shop-side .actions { flex-wrap: wrap; gap: 4px; }
   #app[data-screen="shop"] .shop-side .actions button { min-height: 34px; padding: 0 8px; font-size: 13px; flex: 1 0 auto; }
   #app[data-screen="shop"] .shop-side .pin .pin-btn { max-width: 100%; min-height: 34px; font-size: 13px; }

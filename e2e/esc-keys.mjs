@@ -78,6 +78,8 @@ export async function escPass(browser, url, { label, viewport, touch = false, er
     await tid("gold").waitFor();
     if (mobile) {
       const gold = await tid("gold").textContent();
+      // Tap-tap (#1293): the first tap takes the offer in hand, the second opens its sheet.
+      await tid("offer-0").click();
       await tid("offer-0").click();
       await tid("offer-close").waitFor();
       await esc();
