@@ -14,7 +14,7 @@ import { dayView, endDay, hiddenSlay } from "./day.js";
 import { MvpNotYet } from "./errors.js";
 import { declineOptions, myIdea, pickArchetype, pickReading } from "./idea-reading.js";
 import { cancelIdea, grantIdea, IdeaRefused, ideasOf, myIdeas, writeIdea } from "./ideas.js";
-import { isAdmin, isJoinCode, JoinRefused, joinOpen, NAME_RE, openJoin, redeemInvite, sessionPlayer } from "./invites.js";
+import { CRUDE_NAME, isAdmin, isCrudePlayerName, isJoinCode, JoinRefused, joinOpen, NAME_RE, openJoin, redeemInvite, sessionPlayer } from "./invites.js";
 import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
 import { codexPair, sortPair } from "../../../src/mvp/codex.js";
 import { codexView, runForge, wish } from "./codex.js";
@@ -27,6 +27,7 @@ import { attachEmail, EMAIL_STARTS_PER_ADDRESS_HOUR, EMAIL_STARTS_PER_HOUR, Emai
 import { FakeTelegram, pollTelegramLogin, startTelegramLogin, TELEGRAM_STARTS_PER_HOUR, TelegramRefused } from "./telegram.js";
 import { buildScene, sceneById, sceneDesigns, SceneMissing, sceneList } from "./scenes.js";
 import { withSceneFixtures } from "./scene-fixtures.js";
+import { CrazyGamesRefused, joinGuest, loginCrazyGames, verifyCgToken } from "./crazygames.js";
 import { candidateScores, castVote, fakeVotes, nextCard, overnightCheck, seedCandidate, waitingForCheck } from "./votes.js";
 
 /** New players the open join link (R4-20) makes per hour, server-wide. */
@@ -68,7 +69,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   // shows the invite screen.
   api.use("*", async (c, next) => {
     const token = c.req.header(TOKEN_HEADER);
-    if (token && !/\/(invites|join|auth\/telegram\/(start|poll)|auth\/email\/(start|verify))(\/|$)/.test(c.req.path) && !sessionPlayer(store, token)) return unknownPlayer(c);
+    if (token && !/\/(invites|join|players\/(guest|crazygames)|auth\/telegram\/(start|poll)|auth\/email\/(start|verify))(\/|$)/.test(c.req.path) && !sessionPlayer(store, token)) return unknownPlayer(c);
     await next();
   });
   // A decision's body is read only from a known player.
@@ -87,6 +88,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     const body = (await c.req.json().catch(() => null)) as { name?: unknown } | null;
     const name = typeof body?.name === "string" ? body.name.trim() : "";
     if (!NAME_RE.test(name)) return bad(c, 400, "name: 1–24 letters, digits, spaces, _ or -");
+    if (isCrudePlayerName(name)) return bad(c, 400, CRUDE_NAME);
     const p: PlayerRef = { id: randomUUID(), name, bot: false };
     store.addPlayer(p);
     return c.json(p);
@@ -204,6 +206,40 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   api.get("/auth/email", (c) => {
     const p = playerOf(c);
     return p ? c.json(emailStatus(rt, p.id)) : unknownPlayer(c);
+  });
+
+  // #1218: CrazyGames players (./crazygames.ts), on any server, whatever its
+  // invites: a guest at once, or the player of a verified CrazyGames account.
+  // New players here have their own hourly limits, per address and for the
+  // whole server (rt.guestJoins), apart from the join link's.
+  const guestJoins = new Map<string, number[]>();
+  let allGuestJoins: number[] = [];
+  const admitGuest = (c: Context) => {
+    const now = rt.now().getTime();
+    const key = addressOf(c);
+    const mine = hourOf(guestJoins.get(key) ?? [], now);
+    allGuestJoins = hourOf(allGuestJoins, now);
+    if (mine.length >= rt.guestJoins.perAddress || allGuestJoins.length >= rt.guestJoins.perHour) return false;
+    guestJoins.set(key, [...mine, now]);
+    allGuestJoins.push(now);
+    return true;
+  };
+  const tooManyGuests = (c: Context) => bad(c, 429, "Too many new players from here this hour. Try again later.");
+  api.post("/players/guest", (c) => (admitGuest(c) ? c.json(joinGuest(store, rt.now())) : tooManyGuests(c)));
+  api.post("/players/crazygames", async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { token?: unknown } | null;
+    const token = str(body?.token);
+    if (!token) return bad(c, 400, "token: the CrazyGames user token");
+    let claims;
+    try {
+      claims = await verifyCgToken(token, rt.cgKeys, rt.now());
+    } catch (err) {
+      if (err instanceof CrazyGamesRefused) return bad(c, err.status, err.message);
+      console.error("crazygames login:", err instanceof Error ? err.message : err);
+      return bad(c, 502, "CrazyGames login is unavailable: try again later");
+    }
+    const r = loginCrazyGames(store, claims, playerOf(c), rt.now(), () => admitGuest(c));
+    return r ? c.json(r) : tooManyGuests(c);
   });
 
   // M4-6: log in with Telegram (./telegram.ts). Starts are counted per player,

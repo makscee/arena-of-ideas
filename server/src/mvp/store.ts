@@ -116,6 +116,11 @@ export interface MvpStore {
   telegramLink(by: { tgUserId: string } | { playerId: string }): TelegramLink | undefined;
   /** Removes this player's link; true when there was one. */
   unlinkTelegram(playerId: string): boolean;
+  // #1218: a CrazyGames account (./crazygames.ts writes it).
+  /** Links a CrazyGames user and a player. Throws when either is linked already. */
+  linkCrazyGames(l: CrazyGamesLink): void;
+  /** The link of this CrazyGames user, or of this player. */
+  crazyGamesLink(by: { cgUserId: string } | { playerId: string }): CrazyGamesLink | undefined;
   // #929's email login; only ./email.ts writes it.
   /** Ties an email to a player. Throws when either has one already. */
   linkEmail(l: EmailLink): void;
@@ -390,6 +395,13 @@ export interface EmailCode {
 }
 
 /** One Telegram user linked to one player (M4-6). */
+/** #1218: one CrazyGames user (their `userId`, never their username) and one player, each at most once. */
+export interface CrazyGamesLink {
+  cgUserId: string;
+  playerId: string;
+  linkedAt: string;
+}
+
 export interface TelegramLink {
   tgUserId: string;
   playerId: string;
@@ -573,6 +585,15 @@ export class MemoryMvpStore implements MvpStore {
   unlinkTelegram(playerId: string): boolean {
     const l = this.telegramLink({ playerId });
     return !!l && this.tgLinks.delete(l.tgUserId);
+  }
+  private cgLinks = new Map<string, CrazyGamesLink>();
+  linkCrazyGames(l: CrazyGamesLink): void {
+    if (this.cgLinks.has(l.cgUserId) || this.crazyGamesLink({ playerId: l.playerId })) throw new Error(`crazygames ${l.cgUserId} or player ${l.playerId} is linked already`);
+    this.cgLinks.set(l.cgUserId, { ...l });
+  }
+  crazyGamesLink(by: { cgUserId: string } | { playerId: string }): CrazyGamesLink | undefined {
+    const l = "cgUserId" in by ? this.cgLinks.get(by.cgUserId) : [...this.cgLinks.values()].find((x) => x.playerId === by.playerId);
+    return l && { ...l };
   }
   private emails = new Map<string, EmailLink>();
   private emailCodes = new Map<string, EmailCode>();

@@ -5,9 +5,14 @@
 // Invites are made on the host (./invite-cli.ts); the API only opens them.
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import type { JoinSession, PlayerRef, PlayerSession } from "../../../src/mvp/contract.js";
+import { isCrudeName, isCrudeRuName } from "./crude.js";
 import { nameKey, type Invite, type MvpStore } from "./store.js";
 
 export const NAME_RE = /^[\p{L}\p{N}_\- ]{1,24}$/u;
+
+/** #1218: a player's name reads crude (./crude.ts, English or Russian): every join path refuses it. */
+export const isCrudePlayerName = (name: string) => isCrudeName(name) || isCrudeRuName(name);
+export const CRUDE_NAME = "That name isn't allowed: pick another";
 
 export const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
 
@@ -39,6 +44,7 @@ const newCode = () => randomBytes(12).toString("base64url");
 export function createInvite(store: MvpStore, req: NewInvite): Invite {
   const name = req.name.trim();
   if (!NAME_RE.test(name)) throw new InviteError("name: 1–24 letters, digits, spaces, _ or -");
+  if (isCrudePlayerName(name)) throw new InviteError(CRUDE_NAME);
   const key = nameKey(name);
   const all = store.invites();
   const had = req.playerId ? all.find((i) => i.playerId === req.playerId) : undefined;
@@ -126,6 +132,7 @@ export function joinOpen(store: MvpStore, code: string, name: string, now: Date)
   if (!isJoinCode(store, code)) return undefined;
   const n = name.trim();
   if (!NAME_RE.test(n)) throw new JoinRefused(400, "name: 1–24 letters, digits, spaces, _ or -");
+  if (isCrudePlayerName(n)) throw new JoinRefused(400, CRUDE_NAME);
   const key = nameKey(n);
   if (key.startsWith("bot-") || store.playersNamed(n, { bots: true }).some((p) => p.bot)) throw new JoinRefused(409, `${n} is a bot's name: pick another`);
   if (store.playersNamed(n).length || store.invites().some((i) => nameKey(i.name) === key)) throw new JoinRefused(409, `${n} is taken: pick another name`);

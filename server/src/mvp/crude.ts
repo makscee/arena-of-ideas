@@ -258,3 +258,11 @@ export function isCrudeRuName(name: string): boolean {
 export function isCrudeRuLine(text: string): boolean {
   return ruWords(text).some(ruCrudeWord);
 }
+
+/** #1218: true when a player's idea text has a crude word, English (each
+ * word on its own, by isCrudeName) or Russian (isCrudeRuLine). Words are
+ * checked one at a time, never glued: in a sentence "an alpha" is not crude. */
+export function isCrudeText(text: string): boolean {
+  if (isCrudeRuLine(text)) return true;
+  return text.split(/[^\p{L}\p{N}'’-]+/u).filter(Boolean).some((w) => isCrudeName(w));
+}
