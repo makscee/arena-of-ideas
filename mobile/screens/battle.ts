@@ -833,7 +833,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   function pieceFit(compact: boolean): { size: PieceSize; px?: number } {
     const phone = innerWidth < 600 && innerHeight > innerWidth;
     if (phone) return compact ? { size: "XS" } : { size: "S" };
-    if (compact) return { size: "S", px: innerHeight < 520 ? 40 : 52 };
+    // Six on a line keeps the names (cg-layout's battle-six): M drawn smaller.
+    if (compact) return { size: "M", px: innerHeight < 520 ? 40 : 52 };
     return innerHeight < 520 ? { size: "M", px: 46 } : innerHeight < 700 ? { size: "M", px: 56 } : { size: "M" };
   }
   /** The box a piece takes in its slot: its tab above, the rim's discs, a
@@ -845,7 +846,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const d = Math.round(Math.max(22, s * 0.37));
     const top = Math.round(tabH * 0.62) + 2;
     const name = fit.size === "M" ? 3 + Math.round(Math.max(12, s * 0.2)) : 0;
-    return `padding-top:${top}px;height:${top + s + Math.round(d * 0.3) + 31 + name}px`;
+    // An M piece's name is wider than its face: the slot holds it (cg-layout's battle-six).
+    const wide = fit.size === "M" ? `;min-width:${s + 28}px` : "";
+    return `padding-top:${top}px;height:${top + s + Math.round(d * 0.3) + 31 + name}px${wide}`;
   }
   /** A unit as the piece (mobile/ui/piece.ts): its face, live stats, statuses on the shelf. */
   function pieceOf(id: string, live: BoardUnit | null, side: Side, compact: boolean): HTMLElement {
