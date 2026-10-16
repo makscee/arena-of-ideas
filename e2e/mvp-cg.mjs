@@ -1,11 +1,17 @@
-// The CrazyGames build (mission #1214, slice 1): the zip's files served from a
-// second origin play against the Arena server. Builds the cg zip pointed at a
-// local server, serves dist-cg on another port, joins by name, buys a unit and
-// fights one battle, and fails on any console error, failed request, request
-// outside those two origins, off-portal link or leftover Telegram/email/invite UI.
+// The CrazyGames build (mission #1214, slices 1 and 3): the zip's files served
+// from a second origin play against an invite-only Arena server. Builds the cg
+// zip pointed at a local server, serves dist-cg on another port, plays as a
+// guest at once (no form), buys a unit and fights one battle, and fails on any
+// console error, failed request, request outside those origins (and the SDK's),
+// off-portal link or leftover Telegram/email/invite UI. Then (#1218), with a
+// mocked CrazyGames SDK whose tokens a test key signs: logging in keeps the
+// guest's run under the CrazyGames name, a second browser with the same user is
+// the same player, and the 6th guest from one address in an hour is refused.
 //   npm run mvp:cg [-- --shots e2e/.shots/mvp-cg]
 import { spawn, execFileSync } from "node:child_process";
-import { createReadStream, existsSync, mkdirSync, statSync } from "node:fs";
+import { generateKeyPairSync, sign } from "node:crypto";
+import { createReadStream, existsSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { createServer as http } from "node:http";
 import { createServer } from "node:net";
 import { extname, join, normalize } from "node:path";
@@ -22,8 +28,33 @@ const pageOrigin = `http://localhost:${pagePort}`;
 execFileSync("npm", ["run", "-s", "mvp:build:cg"], { stdio: "inherit", env: { ...process.env, VITE_API_ORIGIN: `${apiOrigin}/arena` } });
 const root = "mobile/dist-cg";
 
+// A test key stands in for CrazyGames' (the server takes it with MVP_DEV=1).
+const keys = generateKeyPairSync("rsa", { modulusLength: 2048, publicKeyEncoding: { type: "spki", format: "pem" }, privateKeyEncoding: { type: "pkcs8", format: "pem" } });
+const keyDir = mkdtempSync(join(tmpdir(), "arena-cg-key-"));
+writeFileSync(join(keyDir, "cg.pem"), keys.publicKey);
+const b64 = (x) => Buffer.from(JSON.stringify(x)).toString("base64url");
+const cgToken = (userId, username) => {
+  const now = Math.floor(Date.now() / 1000);
+  const head = b64({ alg: "RS256", typ: "JWT" });
+  const body = b64({ userId, username, gameId: "arena", profilePictureUrl: "", iat: now, exp: now + 3600 });
+  return `${head}.${body}.${sign("RSA-SHA256", Buffer.from(`${head}.${body}`), keys.privateKey).toString("base64url")}`;
+};
+const SDK_URL = "https://sdk.crazygames.com/crazygames-sdk-v3.js";
+// The SDK as the portal runs it, its user logged out until window.__cgLogin().
+const mockSdk = (token) => `(() => {
+  let user = null; const listeners = [];
+  window.__cgLogin = () => { user = { username: "NightOwl" }; listeners.forEach((f) => f(user)); };
+  window.CrazyGames = { SDK: { environment: "crazygames", init: async () => {}, user: {
+    isUserAccountAvailable: true,
+    getUser: async () => user,
+    getUserToken: async () => { if (!user) throw new Error("userNotAuthenticated"); return ${JSON.stringify(token)}; },
+    addAuthListener: (f) => listeners.push(f),
+  } } };
+  if (${JSON.stringify(token)} && location.search.includes("cguser=1")) user = { username: "NightOwl" };
+})();`;
+
 const api = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], {
-  env: { ...process.env, PORT: String(apiPort), MVP_DB: ":memory:", MVP_INVITES: "1", MVP_OPEN: "1", MVP_CORS_ORIGINS: pageOrigin },
+  env: { ...process.env, PORT: String(apiPort), MVP_DB: ":memory:", MVP_INVITES: "1", MVP_DEV: "1", ARENA_CG_PUBLIC_KEY: join(keyDir, "cg.pem"), MVP_CORS_ORIGINS: pageOrigin },
   stdio: ["ignore", "inherit", "inherit"],
 });
 const MIME = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".woff2": "font/woff2", ".m4a": "audio/mp4", ".mp3": "audio/mpeg", ".ogg": "audio/ogg", ".wav": "audio/wav", ".svg": "image/svg+xml" };
@@ -44,7 +75,13 @@ try {
   }
   const browser = await launchChromium();
   try {
-    const page = await browser.newPage({ viewport: { width: 800, height: 450 } });
+    const token = cgToken("cg-e2e-1", "NightOwl");
+    const newPage = async (opts = {}) => {
+      const p = await browser.newPage({ viewport: { width: 800, height: 450 } });
+      await p.route(SDK_URL, (r) => r.fulfill({ contentType: "text/javascript", body: mockSdk(token) }));
+      return p;
+    };
+    const page = await newPage();
     const origins = new Set();
     page.on("request", (r) => { if (!r.url().startsWith("data:")) origins.add(new URL(r.url()).origin); });
     page.on("requestfailed", (r) => errors.push(`request failed: ${r.url()} ${r.failure()?.errorText}`));
@@ -53,13 +90,14 @@ try {
     page.on("console", (m) => m.type() === "error" && errors.push(`console: ${m.text()}`));
 
     await page.goto(`${pageOrigin}/index.html`, { timeout: 20_000 });
-    await page.getByTestId("join-name").waitFor({ timeout: 15_000 });
-    await page.screenshot({ path: `${shots}/01-join.png` });
-    for (const id of ["tg-login", "email-signin-open", "own-link-row"]) if (await page.getByTestId(id).count()) errors.push(`the cg build shows ${id}`);
-    await page.getByTestId("join-name").fill(`Cg${Date.now().toString(36).slice(-5)}`);
-    await page.keyboard.press("Enter");
+    // A guest at once: Home with a generated name, no form.
     await page.getByTestId("play").waitFor({ timeout: 15_000 });
     await page.screenshot({ path: `${shots}/02-home.png` });
+    if (await page.getByTestId("join-name").count()) errors.push("the cg build shows the name form");
+    for (const id of ["tg-login", "email-signin-open", "own-link-row"]) if (await page.getByTestId(id).count()) errors.push(`the cg build shows ${id}`);
+    const me = () => page.evaluate(() => JSON.parse(localStorage.getItem("arena.player") ?? "null"));
+    const guest = await me();
+    if (!/^\p{L}+ \p{L}+ \d+$/u.test(guest?.name ?? "")) errors.push(`guest name: ${guest?.name}`);
     if (await page.locator(".dev").count()) errors.push("the cg build shows the dev tools");
     await page.getByTestId("play").click();
     await page.getByTestId("fight").waitFor({ timeout: 15_000 });
@@ -79,9 +117,51 @@ try {
     await page.waitForFunction(() => document.querySelector('[data-testid="fight"], [data-testid="run-over"]'));
     const anchors = await page.evaluate(() => [...document.querySelectorAll("a[href]")].map((a) => a.getAttribute("href")));
     if (anchors.some((h) => /^https?:|^\/\//.test(h ?? ""))) errors.push(`outside links on screen: ${anchors}`);
-    const foreign = [...origins].filter((o) => o !== pageOrigin && o !== apiOrigin);
+    const foreign = [...origins].filter((o) => o !== pageOrigin && o !== apiOrigin && o !== new URL(SDK_URL).origin);
     if (foreign.length) errors.push(`requests outside the two origins: ${foreign}`);
     if (!origins.has(apiOrigin)) errors.push("the client never reached the API origin");
+
+    // #1218: the CrazyGames user logs in mid-run: the same player, now NightOwl, the run kept.
+    const runOf = (p) => p.evaluate(async (base) => {
+      const r = await fetch(`${base}/arena/api/v1/home`, { headers: { "X-Arena-Token": localStorage.getItem("arena.token") } });
+      return (await r.json()).activeRunId;
+    }, apiOrigin);
+    const run = await runOf(page);
+    await page.evaluate(() => window.__cgLogin());
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem("arena.player") ?? "{}").name === "NightOwl", null, { timeout: 15_000 });
+    // Home again, the CrazyGames name in the settings sheet.
+    await page.getByTestId("settings").waitFor({ timeout: 15_000 });
+    await page.getByTestId("settings").click();
+    await page.getByTestId("settings-sheet").getByText("@NightOwl").waitFor({ timeout: 15_000 });
+    await page.screenshot({ path: `${shots}/05-logged-in.png` });
+    const linked = await me();
+    if (linked.id !== guest.id) errors.push(`login made another player: ${guest.id} → ${linked.id}`);
+    if (!run || (await runOf(page)) !== run) errors.push(`login lost the run ${run}`);
+
+    // A second browser, the same CrazyGames user from the start: the same player and run.
+    const other = await browser.newContext({ viewport: { width: 800, height: 450 } });
+    const page2 = await other.newPage();
+    await page2.route(SDK_URL, (r) => r.fulfill({ contentType: "text/javascript", body: mockSdk(token) }));
+    await page2.goto(`${pageOrigin}/index.html?cguser=1`, { timeout: 20_000 });
+    await page2.getByTestId("play").waitFor({ timeout: 15_000 });
+    await page2.screenshot({ path: `${shots}/06-second-device.png` });
+    const second = await page2.evaluate(() => JSON.parse(localStorage.getItem("arena.player") ?? "null"));
+    if (second?.id !== guest.id) errors.push(`second device is another player: ${second?.id}`);
+    if ((await runOf(page2)) !== run) errors.push("second device lost the run");
+    await other.close();
+
+    // Guests 2–5 from this address, then the 6th is refused politely.
+    for (let i = 2; i <= 5; i++) {
+      const r = await fetch(`${apiOrigin}/arena/api/v1/players/guest`, { method: "POST" });
+      if (!r.ok) errors.push(`guest ${i}: ${r.status}`);
+    }
+    const sixth = await browser.newContext({ viewport: { width: 800, height: 450 } });
+    const page6 = await sixth.newPage();
+    await page6.route(SDK_URL, (r) => r.fulfill({ contentType: "text/javascript", body: mockSdk(token) }));
+    await page6.goto(`${pageOrigin}/index.html`, { timeout: 20_000 });
+    await page6.getByText("Too many new players from here this hour").waitFor({ timeout: 15_000 }).catch(() => errors.push("the 6th guest wasn't refused politely"));
+    await page6.screenshot({ path: `${shots}/07-sixth-guest.png` });
+    await sixth.close();
   } finally {
     await browser.close();
   }
@@ -90,6 +170,7 @@ try {
 } finally {
   api.kill();
   pages.close();
+  rmSync(keyDir, { recursive: true, force: true });
 }
 failed = errors.length > 0;
 console.log(failed ? `mvp:cg FAILED\n${[...new Set(errors)].join("\n")}` : `mvp:cg ok (screenshots in ${shots})`);
