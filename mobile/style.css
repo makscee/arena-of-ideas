@@ -2063,7 +2063,7 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 .cell.bare .pc-meta { display: none; }
 #app[data-screen="shop"] .slots.bench-row > .bench-label { grid-column: 1 / -1; justify-content: flex-start; flex-direction: row; gap: 10px; align-items: baseline; font: 400 15px/1 var(--font-head); letter-spacing: 0.5px; text-transform: uppercase; color: var(--dim); }
 #app[data-screen="shop"] .slots.bench-row > .bench-label span:first-child { color: var(--paper); opacity: 0.75; }
-.cell { position: relative; display: flex; justify-content: center; align-items: flex-start; padding-top: 15px; min-width: 0; border-radius: 16px; cursor: pointer; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+.cell { position: relative; isolation: isolate; display: flex; justify-content: center; align-items: flex-start; padding-top: 15px; min-width: 0; border-radius: 16px; cursor: pointer; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
 .cell:focus-visible { outline: 3px solid var(--action); outline-offset: -2px; }
 .cell .cell-well { width: var(--s); height: var(--s); box-sizing: border-box; border: 2.5px dashed color-mix(in srgb, var(--paper) 22%, transparent); border-radius: 30%; display: grid; place-items: center; font: 400 14px/1 var(--font-head); color: var(--dim); }
 .cell.empty { cursor: default; }
@@ -2100,8 +2100,10 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
   #app[data-screen="shop"] .opp .pin { flex: 0 1 auto; min-width: 0; }
   #app[data-screen="shop"] .bench-panel .slots.bench-row { margin-top: 0; }
   #app[data-screen="shop"] [data-testid="offers"]:has(> .cell) { --n: 3; row-gap: 0; margin-top: 0; }
-  /* Reroll and Fight stay in view at the foot while the shop scrolls (a 360×640 phone). */
-  #app[data-screen="shop"] .shop-side { display: flex; flex-direction: column; gap: 8px; position: sticky; bottom: 0; z-index: 20; margin: 0 -4px; padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); background: var(--ground); }
+  /* Reroll and Fight stay in view at the foot while the shop scrolls (a 360×640 phone);
+   * whatever scrolls into view stops above them. */
+  html:has(#app[data-screen="shop"]) { scroll-padding-bottom: 150px; }
+  #app[data-screen="shop"] .shop-side { display: flex; flex-direction: column; gap: 8px; position: sticky; bottom: 0; z-index: 3; margin: 0 -4px; padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); background: var(--ground); }
   #app[data-screen="shop"] .shop-side .shop-foot button { min-height: 56px; }
 }
 /* The short landscape (800×450, 821×462): HUD across the top; the line and
