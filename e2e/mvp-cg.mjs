@@ -7,6 +7,9 @@
 // mocked CrazyGames SDK whose tokens a test key signs: logging in keeps the
 // guest's run under the CrazyGames name, a second browser with the same user is
 // the same player, and the 6th guest from one address in an hour is refused.
+// And (#1219) the SDK's lifecycle: the mock records every call, and loading,
+// gameplay (shop and battle on, Home and the run menu off), muteAudio and an
+// ad break must come in the order the portal expects.
 //   npm run mvp:cg [-- --shots e2e/.shots/mvp-cg]
 import { spawn, execFileSync } from "node:child_process";
 import { generateKeyPairSync, sign } from "node:crypto";
@@ -44,7 +47,12 @@ const SDK_URL = "https://sdk.crazygames.com/crazygames-sdk-v3.js";
 const mockSdk = (token) => `(() => {
   let user = null; const listeners = [];
   window.__cgLogin = () => { user = { username: "NightOwl" }; listeners.forEach((f) => f(user)); };
-  window.CrazyGames = { SDK: { environment: "crazygames", init: async () => {}, user: {
+  const calls = (window.__cgCalls = []);
+  const settings = { muteAudio: location.search.includes("mute=1"), disableChat: false };
+  window.CrazyGames = { SDK: { environment: "crazygames", init: async () => { calls.push("init"); },
+    game: { settings, loadingStart: () => calls.push("loadingStart"), loadingStop: () => calls.push("loadingStop"), gameplayStart: () => calls.push("gameplayStart"), gameplayStop: () => calls.push("gameplayStop"), addSettingsChangeListener: (f) => (window.__cgSettings = f) },
+    ad: { requestAd: (type, cb) => { calls.push("requestAd:" + type); window.__cgAd = cb; } },
+    user: {
     isUserAccountAvailable: true,
     getUser: async () => user,
     getUserToken: async () => { if (!user) throw new Error("userNotAuthenticated"); return ${JSON.stringify(token)}; },
@@ -89,7 +97,7 @@ try {
     page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));
     page.on("console", (m) => m.type() === "error" && errors.push(`console: ${m.text()}`));
 
-    await page.goto(`${pageOrigin}/index.html`, { timeout: 20_000 });
+    await page.goto(`${pageOrigin}/index.html?playtest=1`, { timeout: 20_000 });
     // A guest at once: Home with a generated name, no form.
     await page.getByTestId("play").waitFor({ timeout: 15_000 });
     await page.screenshot({ path: `${shots}/02-home.png` });
@@ -99,8 +107,35 @@ try {
     const guest = await me();
     if (!/^\p{L}+ \p{L}+ \d+$/u.test(guest?.name ?? "")) errors.push(`guest name: ${guest?.name}`);
     if (await page.locator(".dev").count()) errors.push("the cg build shows the dev tools");
+    const calls = () => page.evaluate(() => window.__cgCalls.join(" "));
+    // #1219: SDK init, then loading start and stop around Home; no gameplay on Home.
+    await page.waitForFunction(() => window.__cgCalls.includes("loadingStop"), null, { timeout: 5_000 }).catch(() => undefined);
+    if ((await calls()) !== "init loadingStart loadingStop") errors.push(`lifecycle at Home: ${await calls()}`);
     await page.getByTestId("play").click();
     await page.getByTestId("fight").waitFor({ timeout: 15_000 });
+    if (!(await calls()).endsWith("loadingStop gameplayStart")) errors.push(`lifecycle in the shop: ${await calls()}`);
+    // The run menu is a pause: gameplayStop, and Resume starts it again.
+    await page.getByTestId("menu-open").click();
+    await page.getByTestId("run-menu").waitFor();
+    await page.waitForFunction(() => window.__cgCalls.at(-1) === "gameplayStop", null, { timeout: 5_000 }).catch(async () => errors.push(`no gameplayStop with the run menu open: ${await calls()}`));
+    await page.getByTestId("menu-resume").click();
+    await page.waitForFunction(() => window.__cgCalls.at(-1) === "gameplayStart", null, { timeout: 5_000 }).catch(() => errors.push("no gameplayStart after Resume"));
+    // muteAudio changed in the portal's menu: silent at once, and back when unmuted;
+    // an ad break mutes while it plays and restores after, and can't undo muteAudio.
+    const master = (want) => page.waitForFunction((w) => (w === 0 ? window.__music().master === 0 : window.__music().master > 0.1), want, { timeout: 5_000 });
+    const gain = async (want, why) => master(want).catch(async () => errors.push(`${why}: master gain is ${await page.evaluate(() => window.__music().master)}`));
+    await gain(1, "sound before muting");
+    await page.evaluate(() => window.__cgSettings({ muteAudio: true, disableChat: false }));
+    await gain(0, "muteAudio");
+    await page.evaluate(() => window.__cgSettings({ muteAudio: false, disableChat: false }));
+    await gain(1, "unmuting");
+    // The playtest frame's message asks for an ad break through the SDK.
+    await page.evaluate(() => window.postMessage({ type: "arena-playtest-ad" }, "*"));
+    await page.waitForFunction(() => window.__cgCalls.includes("requestAd:midgame"), null, { timeout: 5_000 }).catch(() => errors.push("no ad request from the playtest message"));
+    await page.evaluate(() => window.__cgAd.adStarted());
+    await gain(0, "ad started");
+    await page.evaluate(() => window.__cgAd.adFinished());
+    await gain(1, "ad finished");
     await page.getByTestId("offer-0").click();
     await page.getByTestId("buy").waitFor();
     await page.getByTestId("buy").click();
@@ -162,6 +197,18 @@ try {
     await page6.getByText("Too many new players from here this hour").waitFor({ timeout: 15_000 }).catch(() => errors.push("the 6th guest wasn't refused politely"));
     await page6.screenshot({ path: `${shots}/07-sixth-guest.png` });
     await sixth.close();
+
+    // #1219: a portal that starts the game with muteAudio on: silent from the first sound.
+    const quiet = await browser.newContext({ viewport: { width: 800, height: 450 } });
+    const page7 = await quiet.newPage();
+    await page7.route(SDK_URL, (r) => r.fulfill({ contentType: "text/javascript", body: mockSdk(token) }));
+    await page7.goto(`${pageOrigin}/index.html?cguser=1&mute=1`, { timeout: 20_000 });
+    await page7.getByTestId("play").waitFor({ timeout: 15_000 });
+    await page7.getByTestId("play").click();
+    await page7.getByTestId("fight").waitFor({ timeout: 15_000 });
+    const silent = await page7.waitForFunction(() => window.__music?.().master === 0 && window.__sfx.length > 0, null, { timeout: 5_000 }).then(() => true, () => false);
+    if (!silent) errors.push("muteAudio at start left the sound on");
+    await quiet.close();
   } finally {
     await browser.close();
   }

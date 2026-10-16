@@ -23,6 +23,12 @@
 # The world plays the rules v2 pool (MVP_POOL=v2, src/mvp/units-v2.ts; set
 # MVP_POOL=grid for the old name grammar's). A world seeded on one pool keeps
 # it: use --fresh to start on the other.
+# Since #1219 it also serves the CrazyGames playtest frame's players: ARENA_CG=1
+# (guest and CrazyGames joins, 100 new players an hour per address), logins
+# checked with a test key (ARENA_CG_PUBLIC_KEY, ~/arena-workshop/cg-test) and
+# game id "playtest", CORS for the frame's game origin; once it is up,
+# scripts/arena-cg-playtest.sh publishes the frame at
+# https://m1.twin-pogona.ts.net/r/arena-cg/ . Refs from before the cg code skip all of it.
 # Never the live game's database, never the public domain: tailnet only.
 set -euo pipefail
 export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
@@ -68,6 +74,17 @@ if [ ! -f node_modules/.workshop-lock ] || ! cmp -s package-lock.json node_modul
 fi
 "$NODE" node_modules/vite/bin/vite.js build --config mobile/vite.config.ts --base /arena-workshop/ --logLevel warn
 
+CG_ENV=
+if [ -f server/src/mvp/crazygames.ts ] && [ -f scripts/arena-cg-playtest.sh ]; then
+  export ARENA_CG_KEYDIR="$DIR/cg-test"
+  bash scripts/arena-cg-playtest.sh keys
+  CG_ENV="<key>ARENA_CG</key><string>1</string>
+    <key>ARENA_CG_GAME_ID</key><string>playtest</string>
+    <key>ARENA_CG_PUBLIC_KEY</key><string>$ARENA_CG_KEYDIR/public.pem</string>
+    <key>MVP_CORS_ORIGINS</key><string>https://m1.twin-pogona.ts.net:8444</string>
+    <key>ARENA_GUEST_JOINS_PER_IP</key><string>100</string>"
+fi
+
 mkdir -p "$DIR/data" "$(dirname "$PLIST")"
 cat > "$PLIST" <<PL
 <?xml version="1.0" encoding="UTF-8"?>
@@ -92,6 +109,7 @@ cat > "$PLIST" <<PL
     <key>MVP_DB</key><string>$DB</string>
     <key>MVP_BUILD</key><string>$BUILD (workshop)</string>
     <key>MVP_POOL</key><string>${MVP_POOL:-v2}</string>
+    $CG_ENV
   </dict>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
@@ -124,3 +142,6 @@ if ! printf '%s' "$HEALTH" | grep -q '"invites":true'; then
 fi
 echo "workshop: $REF at $BUILD on $PUBLIC_URL : $HEALTH"
 echo "invite link: $0 invite <name> --admin"
+if [ -n "$CG_ENV" ]; then
+  bash scripts/arena-cg-playtest.sh || echo "the playtest frame wasn't published (see above); the workshop itself is up" >&2
+fi
