@@ -1703,6 +1703,7 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
 .bv-unit-body { display: none; }
 /* The opponent's name is on the Them label, phone and desktop (the track cut it to "vs @bo…" at 1440, #893); the bar keeps the turn. */
 #app[data-screen="battle"] .bv-screen > .hud:has(> .run-bar) > .who { display: none; }
+.bv-lab-them .report-link { margin-left: 4px; text-transform: none; vertical-align: baseline; }
 .bv-lab-who { text-transform: none; }
 @media (max-width: 1023.98px) {
   /* The phone's HUD row holds the bar: one row, so the fight keeps its height at 360×640. */

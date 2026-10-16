@@ -157,6 +157,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const outcome = battle.winner === "draw" ? "draw" : battle.winner === you ? "win" : "loss";
   const owner = (s: Side) => `@${(s === "A" ? battle.player : battle.opponent).name}`;
   const log = battle.log;
+  /** #1271: "Report" for a human foe's name (the HUD's vs, or the THEM label when a run bar hides it). */
+  const reportFoe = () => (battle.opponent.bot || isMine(battle.opponent.id) ? [] : [reportLink("name", battle.opponent.id, `@${battle.opponent.name}`)]);
   // M4-4: the log names units in English; a Russian page reads their Russian names.
   const shown = displayNames(log);
   const lineUnits = new Map([...battle.teamA, ...battle.teamB].map((u) => [u.id, u]));
@@ -1362,7 +1364,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       // The run bar names the round itself.
       ...(a.outro?.bar ? [] : [h("span", {}, battle.kind === "crown" ? tr("battle.hud.crown") : battle.kind === "playoff" ? tr("battle.hud.playoff") : tr("battle.hud.round", { n: battle.round }))]),
       h("span", { class: "dim who", "data-testid": "battle-vs", title: battle.opponent.name }, tr("battle.hud.vs", { name: battle.opponent.name })),
-      ...(battle.opponent.bot || isMine(battle.opponent.id) ? [] : [reportLink("name", battle.opponent.id, `@${battle.opponent.name}`)]),
+      ...(a.outro?.bar ? [] : reportFoe()),
       // A repeat turn's ⏩ is drawn by CSS, so the label's text stays "T7" and the row keeps its spacing.
       h("span", { "data-testid": "battle-turn", ...(repeating ? { class: "bv-repeat", title: tr("battle.repeat"), "aria-label": `${turnLabel(hudTurn ?? turn)} · ${tr("battle.repeat")}` } : {}) }, turnLabel(hudTurn ?? turn)),
     );
@@ -2203,7 +2205,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         // Where each front is (R2-17): on the phone both run front first from
         // the left; on desktop the fronts meet in the middle.
         // On the phone a run's fight names them here: its HUD row holds the run bar (M5-4).
-        h("div", { class: "label bv-lab-them" }, h("span", { class: "bv-dk" }, tr("battle.lab.frontLeft")), a.you ? tr("battle.them") : owner(them), a.outro?.bar ? h("span", { class: "bv-lab-who", "data-testid": "battle-them-who" }, ` · ${owner(them)}`) : null, h("span", { class: "bv-ph" }, tr("battle.lab.frontFirst"))),
+        h("div", { class: "label bv-lab-them" }, h("span", { class: "bv-dk" }, tr("battle.lab.frontLeft")), a.you ? tr("battle.them") : owner(them), a.outro?.bar ? h("span", { class: "bv-lab-who", "data-testid": "battle-them-who" }, ` · ${owner(them)}`) : null, ...(a.outro?.bar ? reportFoe() : []), h("span", { class: "bv-ph" }, tr("battle.lab.frontFirst"))),
         enemy,
         caption,
         banner,
