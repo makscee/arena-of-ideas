@@ -148,6 +148,35 @@
 /* Lilita One has no Cyrillic: in Russian, headings and buttons take Rubik
  * semibold instead of a plain fallback (700 widened the shop's buttons). */
 :root:lang(ru) { --font-head: "Rubik", "Trebuchet MS", sans-serif; --head-weight: 600; }
+/* The piece (#1291): its face, ring, statuses and tiers, from the design page. */
+:root {
+  --pc-ink: #241d33;
+  --pc-face-hi: #fffdf8;
+  --pc-face: #f6eee0;
+  --pc-face-lo: #e6d8c2;
+  --pc-face-aw: #efe6fb;
+  --pc-face-aw-lo: #d9cbf2;
+  --pc-face-fu: #fbf0d6;
+  --pc-face-fu-lo: #efd9a4;
+  --pc-gold: #ffd34a;
+  --pc-ring-off: #4a3f68;
+  --pc-num: #fff;
+  --pc-hp: #e2546b;
+  --pc-glow-edge: #fff8;
+  --pc-glow: #ffd16a;
+  --pc-mark-shadow: #0008;
+  --pc-fuse: #ff9ad5;
+  --pc-shelf: #120e1ccc;
+  --pc-bad: #f7d3d9;
+  --pc-good: #d4f1e9;
+  --pc-name: #e6def7;
+  --pc-pip-off: #ffffff1c;
+  --pc-pip-off-line: #8f84b5;
+  --pc-t1: #cfe9df;
+  --pc-t2: #bcd3f5;
+  --pc-t3: #e5c9f4;
+  --pc-t4: #ffd27a;
+}
 /* end of tokens */
 * { box-sizing: border-box; }
 /* The ground: a faint dot grid, as on the Toybox boards. */
@@ -1954,3 +1983,72 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 .drag-ghost { position: fixed; left: 0; top: 0; z-index: 1000; pointer-events: none; opacity: 0.9; margin: 0; box-shadow: 0 6px 18px color-mix(in srgb, var(--outline) 60%, transparent); }
 .sell-zone { position: fixed; left: 0; right: 0; bottom: 0; z-index: 999; display: flex; align-items: center; justify-content: center; min-height: 56px; background: color-mix(in srgb, var(--loss) 75%, var(--outline)); color: var(--paper); font-weight: 700; border-top: 3px dashed var(--paper); }
 .sell-zone.drop { background: var(--loss); outline: none; }
+
+/* The piece (mission #1286, slice 1, #1291): ui/piece.ts sets the sizes and
+ * places, these draw them. The design: r/arena-redesign/final/. */
+.pc { position: relative; flex: none; }
+.pc-face { position: absolute; inset: 0; border-radius: 30%; border: 3px solid var(--outline); background: radial-gradient(circle at 50% 36%, var(--pc-face-hi) 0, var(--pc-face) 55%, var(--pc-face-lo) 100%); display: grid; place-items: center; z-index: 2; overflow: hidden; }
+.pc.aw .pc-face { background: radial-gradient(circle at 50% 36%, var(--pc-face-hi) 0, var(--pc-face-aw) 55%, var(--pc-face-aw-lo) 100%); }
+.pc.fu .pc-face { background: radial-gradient(circle at 50% 36%, var(--pc-face-hi) 0, var(--pc-face-fu) 55%, var(--pc-face-fu-lo) 100%); }
+.pc-em { line-height: 1; transform: translateY(4%); font-family: system-ui, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+.pc-em2 { position: relative; width: 100%; height: 100%; }
+.pc-em2 .pc-em { position: absolute; }
+.pc-em2 .a { left: 6%; top: 6%; }
+.pc-em2 .b { right: 6%; bottom: 8%; }
+.pc-tab { position: absolute; z-index: 4; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; border: 2.5px solid var(--outline); color: var(--pc-ink); font-family: var(--font-head); white-space: nowrap; box-shadow: 0 2px 0 var(--outline); }
+.pc-tab .ti, .pc-tab .tw { line-height: 1; }
+.pc-hb { position: absolute; z-index: 5; border-radius: 50%; display: grid; place-items: center; }
+.pc-hb .core { position: relative; z-index: 1; width: 100%; height: 100%; border-radius: 50%; border: 2.5px solid var(--outline); display: grid; place-items: center; line-height: 1; }
+.pc-hb.ring::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(var(--pc-gold) 0 var(--fill), var(--pc-ring-off) var(--fill) 100%); border: 2px solid var(--outline); }
+.pc-hb.ring::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: repeating-conic-gradient(from -4deg, var(--outline) 0 8deg, transparent 8deg var(--seg)); }
+.pc-num { position: absolute; z-index: 6; border: 2px solid var(--outline); border-radius: 999px; font-family: var(--font-head); line-height: 1; color: var(--pc-ink); background: var(--paper); display: grid; place-items: center; padding: 0 3px; white-space: nowrap; }
+.pc-b { position: absolute; z-index: 5; border-radius: 50%; border: 2.5px solid var(--outline); display: grid; place-items: center; color: var(--pc-num); font-family: var(--font-head); line-height: 1; text-shadow: 0 1.5px 0 var(--outline), 1px 0 0 var(--outline), -1px 0 0 var(--outline), 0 -1px 0 var(--outline); }
+.pc-b.p { background: var(--power); }
+.pc-b.h { background: var(--pc-hp); }
+.pc-b.up { box-shadow: 0 0 0 2px var(--pc-glow-edge), 0 0 8px 2px var(--pc-glow); }
+.pc-b.low { background: var(--loss); }
+.pc-mark { position: absolute; z-index: 6; line-height: 1; font-family: system-ui, sans-serif; text-shadow: 1.5px 0 0 var(--outline), -1.5px 0 0 var(--outline), 0 1.5px 0 var(--outline), 0 -1.5px 0 var(--outline), 0 2px 3px var(--pc-mark-shadow); }
+.pc-mark.star { color: var(--pc-gold); }
+.pc-mark.fuse { color: var(--pc-fuse); }
+.pc-shelf { position: absolute; z-index: 1; left: 50%; transform: translateX(-50%); background: var(--pc-shelf); border-radius: 0 0 12px 12px; display: flex; gap: 4px; justify-content: center; align-items: flex-end; }
+.pc-st { position: relative; border-radius: 999px; border: 2px solid var(--outline); display: flex; align-items: center; justify-content: center; gap: 2px; line-height: 1; flex: none; padding: 0 5px 0 3px; }
+.pc-st i { font-family: var(--font-head); font-style: normal; line-height: 1; color: var(--pc-ink); }
+.pc-st.bad { background: var(--pc-bad); }
+.pc-st.good { background: var(--pc-good); }
+.pc-nm { position: absolute; left: 50%; transform: translateX(-50%); font-family: var(--font-head); color: var(--pc-name); white-space: nowrap; line-height: 1; letter-spacing: 0.2px; z-index: 3; }
+.pc-meta { position: absolute; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; align-items: center; white-space: nowrap; }
+.pc-pips { display: flex; gap: 3px; align-items: center; }
+.pc-pips u { width: 9px; height: 9px; border-radius: 50%; background: var(--paper); border: 1.5px solid var(--outline); }
+.pc-pips u.o { background: var(--pc-pip-off); border-color: var(--pc-pip-off-line); }
+.pc-tier { height: 19px; min-width: 22px; padding: 0 4px; border-radius: 6px; border: 2px solid var(--outline); font: 400 12px/15px var(--font-head); text-align: center; color: var(--pc-ink); }
+.pc-t1 { background: var(--pc-t1); }
+.pc-t2 { background: var(--pc-t2); }
+.pc-t3 { background: var(--pc-t3); }
+.pc-t4 { background: var(--pc-t4); }
+.pc-flag { font: 400 13px/1 var(--font-head); }
+.pc-flag.star { color: var(--awoken); }
+.pc-flag.fuse { color: var(--pc-fuse); }
+.pc-price { display: flex; align-items: center; gap: 3px; height: 20px; padding: 0 6px 0 3px; border-radius: 10px; background: var(--cost); border: 2px solid var(--outline); font: 400 13px/1 var(--font-head); color: var(--pc-ink); }
+.pc-price .coin { width: 13px; height: 13px; border-radius: 50%; background: var(--action); border: 2px solid var(--outline); }
+.pc-lock { font-size: 13px; }
+
+/* #gallery (#1291): every unit at every size, for screenshot tests. */
+#app:has(> .gallery) { max-width: none; }
+.gallery { padding: 4px 4px 48px; }
+.gallery h1 { font-size: 22px; margin-bottom: 4px; }
+.gallery h2 { font-size: 16px; color: var(--dim); margin: 22px 0 8px; }
+.gallery .g-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+.gallery .g-cell { display: grid; justify-items: center; align-content: start; padding-top: 22px; }
+.gallery .g-cell.L { width: 124px; height: 156px; }
+.gallery .g-cell.M { width: 118px; height: 140px; }
+.gallery .g-cell.S { width: 108px; height: 96px; }
+.gallery .g-cell.XS { width: 48px; height: 48px; padding-top: 4px; }
+.gallery .g-cell.with-shelf.L { width: 150px; height: 186px; }
+.gallery .g-cell.with-shelf.M { width: 150px; height: 168px; }
+.gallery .g-cell.with-shelf.S { width: 140px; height: 126px; }
+.gallery .g-unit { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; padding: 6px 0; border-top: 1.5px solid color-mix(in srgb, var(--paper) 7%, transparent); }
+.gallery .g-unit .g-name { width: 120px; flex: none; font-family: var(--font-head); padding-top: 22px; }
+.gallery .g-unit .g-name small { display: block; font: 500 12px/1.3 var(--font-body); color: var(--dim); margin-top: 3px; }
+@media (max-width: 560px) { .gallery .g-unit .g-name { width: 100%; padding-top: 6px; } }
+.gallery .g-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 4px; }
+.gallery .g-tabs a { color: var(--action); font-family: var(--font-head); }

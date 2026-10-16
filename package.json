@@ -37,6 +37,7 @@
     "mvp:bot": "node --import tsx/esm e2e/mvp-api-bot.ts",
     "mvp:phone": "node e2e/mvp-phone.mjs",
     "mvp:drag": "node e2e/drag.mjs",
+    "mvp:gallery": "node e2e/gallery.mjs",
     "mvp:cg": "node e2e/mvp-cg.mjs",
     "mvp:cg-playtest": "node e2e/cg-playtest.mjs",
     "mvp:desktop": "node e2e/mvp-desktop.mjs",
