@@ -416,11 +416,16 @@ export function unitSheet(
       )
     : null;
 
+  // The sheet measures its own width (a container): two columns in a wide
+  // dialog, one in the shop's inspector or on a phone.
   return h(
     "div",
-    { class: "stack sheet-xl", "data-testid": "unit-sheet" },
-    hero,
+    { class: "sheet-xl", "data-testid": "unit-sheet" },
     h(
+      "div",
+      { class: "sheet-xl-grid" },
+      hero,
+      h(
       "div",
       { class: "stack sheet-body" },
       // M5-2 (C-Shop's inspector): the name big, tier and copies beside it, its state under it.
@@ -451,6 +456,7 @@ export function unitSheet(
       fused ? null : reportUnit(opts.credit ?? creditOf(unitId), unitId, u.name),
       "forms" in u ? null : discoveredLine(u, { preview: opts.preview ?? false }),
       fused || opts.candidate ? null : unitStatsLine(unitId, opts.rates),
+      ),
     ),
   );
 }

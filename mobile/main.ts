@@ -1533,9 +1533,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const owned = mine ? null : board.find((x) => x.kind === "unit" && x.unitId === o.unitId) ?? null;
     const sheet = mine ? unitSheet(mine.next, content, { from: mine.now.stats }) : owned ? unitSheet(owned, content) : u ? unitSheet(u, content) : h("h2", {}, o.unitId);
     // What buying does goes inside the sheet, above its last line (the rates hint).
-    if (after) sheet.insertBefore(after, sheet.querySelector('[data-testid="unit-rates"]'));
+    // The XL sheet's text column holds the rates line (mission #1286).
+    const body = sheet.querySelector(".sheet-body") ?? sheet;
+    const rates = body.querySelector(':scope > [data-testid="unit-rates"]');
+    if (after) body.insertBefore(after, rates);
     const fusions = offerFusions(o.slot);
-    if (fusions.length) sheet.insertBefore(h("div", { class: "stack offer-fusions", "data-testid": "offer-fusions" }, ...fusions.map((f) => h("div", { class: `small${f.awakens ? "" : " dim"}` }, `⚗ ${offerLine(f)}`))), sheet.querySelector('[data-testid="unit-rates"]'));
+    if (fusions.length) body.insertBefore(h("div", { class: "stack offer-fusions", "data-testid": "offer-fusions" }, ...fusions.map((f) => h("div", { class: `small${f.awakens ? "" : " dim"}` }, `⚗ ${offerLine(f)}`))), rates);
     return { sheet, blocked };
   };
   /** The phone's offer sheet: the body in an overlay, with Close and Buy. */
