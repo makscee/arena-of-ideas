@@ -121,6 +121,10 @@ export interface MvpStore {
   linkCrazyGames(l: CrazyGamesLink): void;
   /** The link of this CrazyGames user, or of this player. */
   crazyGamesLink(by: { cgUserId: string } | { playerId: string }): CrazyGamesLink | undefined;
+  /** Marks a player a guest join made (once). */
+  addGuest(playerId: string, at: string): void;
+  /** Whether a guest join made this player. */
+  isGuest(playerId: string): boolean;
   // #929's email login; only ./email.ts writes it.
   /** Ties an email to a player. Throws when either has one already. */
   linkEmail(l: EmailLink): void;
@@ -594,6 +598,13 @@ export class MemoryMvpStore implements MvpStore {
   crazyGamesLink(by: { cgUserId: string } | { playerId: string }): CrazyGamesLink | undefined {
     const l = "cgUserId" in by ? this.cgLinks.get(by.cgUserId) : [...this.cgLinks.values()].find((x) => x.playerId === by.playerId);
     return l && { ...l };
+  }
+  private guests = new Set<string>();
+  addGuest(playerId: string): void {
+    this.guests.add(playerId);
+  }
+  isGuest(playerId: string): boolean {
+    return this.guests.has(playerId);
   }
   private emails = new Map<string, EmailLink>();
   private emailCodes = new Map<string, EmailCode>();

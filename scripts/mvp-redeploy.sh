@@ -98,6 +98,17 @@ VOTE_MIN="${ARENA_MVP_VOTE_MIN:-2}"
 case "$VOTE_MIN" in [1-9]|[1-9][0-9]) ;; *) echo "ARENA_MVP_VOTE_MIN is a number from 1 to 99, not '$VOTE_MIN'" >&2; exit 2 ;; esac
 ROTATION="${ARENA_MVP_ROTATION:-1}"
 case "$ROTATION" in 0|1) ;; *) echo "ARENA_MVP_ROTATION is 0 or 1, not '$ROTATION'" >&2; exit 2 ;; esac
+# #1218: CrazyGames players (guests and CrazyGames logins), off unless
+# ARENA_MVP_CG=1, Maks's step. With it: ARENA_MVP_CG_GAME_ID (CrazyGames'
+# id of Arena; tokens of other games are refused) and
+# ARENA_MVP_CLIENT_IP_HEADER=X-Arena-Client-IP once mcow's Caddy sets it
+# (tailscale serve rewrites X-Forwarded-For: one address for every visitor).
+CG="${ARENA_MVP_CG:-0}"
+case "$CG" in 0|1) ;; *) echo "ARENA_MVP_CG is 0 or 1, not '$CG'" >&2; exit 2 ;; esac
+CG_GAME_ID="${ARENA_MVP_CG_GAME_ID:-}"
+case "$CG_GAME_ID" in *[!A-Za-z0-9_-]*) echo "ARENA_MVP_CG_GAME_ID is letters, digits, _ or -, not '$CG_GAME_ID'" >&2; exit 2 ;; esac
+CLIENT_IP_HEADER="${ARENA_MVP_CLIENT_IP_HEADER:-}"
+case "$CLIENT_IP_HEADER" in *[!A-Za-z0-9-]*) echo "ARENA_MVP_CLIENT_IP_HEADER is a header name, not '$CLIENT_IP_HEADER'" >&2; exit 2 ;; esac
 # Mission 4 (#810): Telegram. The bot's token lives only in this file on the
 # host (TELEGRAM_BOT_TOKEN=..., mode 600); the server reads it at start, so it
 # never enters the plist or the repo. A missing file leaves Telegram login off.
@@ -246,6 +257,9 @@ cat > "\$PLIST" <<PL
     <key>ARENA_NAMER_URL</key><string>http://127.0.0.1:$NAMER_PORT/v1/chat/completions</string>
     <key>MVP_VOTE_MIN</key><string>$VOTE_MIN</string>
     <key>MVP_ROTATION</key><string>$ROTATION</string>
+    <key>ARENA_CG</key><string>$CG</string>
+    <key>ARENA_CG_GAME_ID</key><string>$CG_GAME_ID</string>
+    <key>ARENA_CLIENT_IP_HEADER</key><string>$CLIENT_IP_HEADER</string>
     <key>ARENA_TELEGRAM_ENV</key><string>$TELEGRAM_ENV</string>
     <key>ARENA_TELEGRAM_POST</key><string>$TELEGRAM_POST</string>
     <key>ARENA_TELEGRAM_CHANNEL</key><string>$TELEGRAM_CHANNEL</string>

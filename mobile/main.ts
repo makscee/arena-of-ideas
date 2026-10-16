@@ -385,7 +385,8 @@ async function homeScreen(ended: number | null = null): Promise<void> {
   const [home, content, health]: [HomeView, MvpContent, { codex?: boolean }] = await Promise.all([api.home(), getContent(), api.health().catch(() => ({}))]);
   codexOn = !!health.codex;
   // #929: a player from before email login adds an email before playing.
-  if (home.email?.required && !home.email.address) return emailAttach({ playerName: api.player?.name ?? "", onDone: () => void homeScreen() });
+  // Never in the CrazyGames build (#1218): its players have no email.
+  if (!CG && home.email?.required && !home.email.address) return emailAttach({ playerName: api.player?.name ?? "", onDone: () => void homeScreen() });
   rules = home.rules;
   day = home.day;
   // The run that waits, for Continue's round and hearts (null if it ended meanwhile).

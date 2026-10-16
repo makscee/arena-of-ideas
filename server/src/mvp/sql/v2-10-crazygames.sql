@@ -6,3 +6,10 @@ CREATE TABLE IF NOT EXISTS mvp_cg_links (
   player_id TEXT NOT NULL UNIQUE,
   json TEXT NOT NULL
 );
+
+-- The players a guest join made: only these may take a CrazyGames link, and
+-- they play without the email an invite-only server asks of others.
+CREATE TABLE IF NOT EXISTS mvp_guests (
+  player_id TEXT PRIMARY KEY,
+  created_at TEXT NOT NULL
+);

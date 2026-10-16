@@ -23,11 +23,11 @@ import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runti
 import { servedContent } from "./pool.js";
 import { championSvg, shareLang, sharePng, unitSvg } from "./share.js";
 import { statsView } from "./stats.js";
-import { attachEmail, EMAIL_STARTS_PER_ADDRESS_HOUR, EMAIL_STARTS_PER_HOUR, EmailRefused, emailRequired, emailStatus, FakeMailer, startEmailLogin, verifyEmailLogin } from "./email.js";
+import { attachEmail, EMAIL_STARTS_PER_ADDRESS_HOUR, EMAIL_STARTS_PER_HOUR, EmailRefused, emailRequired, emailRequiredFor, emailStatus, FakeMailer, startEmailLogin, verifyEmailLogin } from "./email.js";
 import { FakeTelegram, pollTelegramLogin, startTelegramLogin, TELEGRAM_STARTS_PER_HOUR, TelegramRefused } from "./telegram.js";
 import { buildScene, sceneById, sceneDesigns, SceneMissing, sceneList } from "./scenes.js";
 import { withSceneFixtures } from "./scene-fixtures.js";
-import { CrazyGamesRefused, joinGuest, loginCrazyGames, verifyCgToken } from "./crazygames.js";
+import { CrazyGamesRefused, guestLimiter, joinGuest, loginCrazyGames, verifyCgToken } from "./crazygames.js";
 import { candidateScores, castVote, fakeVotes, nextCard, overnightCheck, seedCandidate, waitingForCheck } from "./votes.js";
 
 /** New players the open join link (R4-20) makes per hour, server-wide. */
@@ -79,7 +79,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
       await next();
     });
 
-  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: rt.content.version, invites: rt.invites, open: rt.open, codex: rt.codex, telegram: rt.telegram ? (rt.telegram instanceof FakeTelegram ? "fake" : "bot") : false, mail: rt.mail ? (rt.mail instanceof FakeMailer ? "fake" : "smtp") : false }));
+  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: rt.content.version, invites: rt.invites, open: rt.open, codex: rt.codex, cg: rt.cg, telegram: rt.telegram ? (rt.telegram instanceof FakeTelegram ? "fake" : "bot") : false, mail: rt.mail ? (rt.mail instanceof FakeMailer ? "fake" : "smtp") : false }));
   // A scenes server also serves the rules v2 fixtures' words (#1045, scene-fixtures.ts).
   api.get("/content", (c) => c.json(rt.scenes ? withSceneFixtures(servedContent(rt)) : servedContent(rt)));
 
@@ -140,7 +140,12 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     }
   });
 
+  // The client's address: the header the front proxy sets (ARENA_CLIENT_IP_HEADER,
+  // live: mcow's Caddy, since tailscale serve rewrites X-Forwarded-For), only
+  // when the server is told to trust it; else the nearest proxy's entry.
   const addressOf = (c: Context) => {
+    const told = rt.clientIpHeader ? c.req.header(rt.clientIpHeader)?.trim() : undefined;
+    if (told) return told;
     const hops = (c.req.header("x-forwarded-for") ?? "").split(",").map((h) => h.trim()).filter(Boolean);
     return hops.at(-1) ?? (c.env as { incoming?: { socket?: { remoteAddress?: string } } } | undefined)?.incoming?.socket?.remoteAddress ?? "local";
   };
@@ -208,37 +213,33 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     return p ? c.json(emailStatus(rt, p.id)) : unknownPlayer(c);
   });
 
-  // #1218: CrazyGames players (./crazygames.ts), on any server, whatever its
-  // invites: a guest at once, or the player of a verified CrazyGames account.
-  // New players here have their own hourly limits, per address and for the
-  // whole server (rt.guestJoins), apart from the join link's.
-  const guestJoins = new Map<string, number[]>();
-  let allGuestJoins: number[] = [];
-  const admitGuest = (c: Context) => {
-    const now = rt.now().getTime();
-    const key = addressOf(c);
-    const mine = hourOf(guestJoins.get(key) ?? [], now);
-    allGuestJoins = hourOf(allGuestJoins, now);
-    if (mine.length >= rt.guestJoins.perAddress || allGuestJoins.length >= rt.guestJoins.perHour) return false;
-    guestJoins.set(key, [...mine, now]);
-    allGuestJoins.push(now);
-    return true;
-  };
+  // #1218: CrazyGames players (./crazygames.ts), on a server with ARENA_CG=1
+  // (rt.cg), whatever its invites: a guest at once, or the player of a
+  // verified CrazyGames account. New players here have their own hourly
+  // limits, per address and for the whole server (rt.guestJoins), apart from
+  // the join link's.
+  const guestJoins = guestLimiter(rt.guestJoins);
+  const admitGuest = (c: Context) => guestJoins.admit(addressOf(c), rt.now().getTime());
   const tooManyGuests = (c: Context) => bad(c, 429, "Too many new players from here this hour. Try again later.");
-  api.post("/players/guest", (c) => (admitGuest(c) ? c.json(joinGuest(store, rt.now())) : tooManyGuests(c)));
+  const cgOff = (c: Context) => bad(c, 404, "CrazyGames play is off");
+  api.post("/players/guest", (c) => (!rt.cg ? cgOff(c) : admitGuest(c) ? c.json(joinGuest(store, rt.now())) : tooManyGuests(c)));
   api.post("/players/crazygames", async (c) => {
+    if (!rt.cg) return cgOff(c);
     const body = (await c.req.json().catch(() => null)) as { token?: unknown } | null;
     const token = str(body?.token);
     if (!token) return bad(c, 400, "token: the CrazyGames user token");
     let claims;
     try {
-      claims = await verifyCgToken(token, rt.cgKeys, rt.now());
+      claims = await verifyCgToken(token, rt.cgKeys, rt.now(), rt.cgGameId);
     } catch (err) {
       if (err instanceof CrazyGamesRefused) return bad(c, err.status, err.message);
       console.error("crazygames login:", err instanceof Error ? err.message : err);
       return bad(c, 502, "CrazyGames login is unavailable: try again later");
     }
-    const r = loginCrazyGames(store, claims, playerOf(c), rt.now(), () => admitGuest(c));
+    // This device's guest only by its session token: a bare player id
+    // (playerOf on an open server) is public and would hand over anyone's player.
+    const deviceToken = c.req.header(TOKEN_HEADER);
+    const r = loginCrazyGames(store, claims, deviceToken ? sessionPlayer(store, deviceToken) : undefined, rt.now(), () => admitGuest(c));
     return r ? c.json(r) : tooManyGuests(c);
   });
 
@@ -296,7 +297,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   api.post("/runs", (c) => {
     const p = playerOf(c);
     if (!p) return unknownPlayer(c);
-    if (emailRequired(rt) && !p.bot && !store.emailLink({ playerId: p.id })) return bad(c, 403, "Add your email first.");
+    if (emailRequiredFor(rt, p.id) && !p.bot && !store.emailLink({ playerId: p.id })) return bad(c, 403, "Add your email first.");
     return c.json(runView(startRun(rt, p)));
   });
 

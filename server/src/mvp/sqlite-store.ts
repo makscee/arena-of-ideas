@@ -232,6 +232,12 @@ export class SqliteMvpStore implements MvpStore {
       ? this.one("SELECT json FROM mvp_cg_links WHERE cg_user_id = ?", by.cgUserId)
       : this.one("SELECT json FROM mvp_cg_links WHERE player_id = ?", by.playerId);
   }
+  addGuest(playerId: string, at: string): void {
+    this.write("INSERT OR IGNORE INTO mvp_guests (player_id, created_at) VALUES (?, ?)", playerId, at);
+  }
+  isGuest(playerId: string): boolean {
+    return !!this.db.prepare("SELECT 1 FROM mvp_guests WHERE player_id = ?").get(playerId);
+  }
   unlinkTelegram(playerId: string): boolean { return this.db.prepare("DELETE FROM mvp_telegram_links WHERE player_id = ?").run(playerId).changes > 0; }
   linkEmail(l: EmailLink): void {
     // Both keys are unique: a second email of either side fails here.

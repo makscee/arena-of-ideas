@@ -9,16 +9,43 @@ import type { PlayerRef, PlayerSession } from "../../../src/mvp/contract.js";
 import { hashToken, isCrudePlayerName, NAME_RE } from "./invites.js";
 import { nameKey, type MvpStore } from "./store.js";
 
-/** New guest and CrazyGames players an hour: per address (the nearest
- * proxy's X-Forwarded-For entry) and for the whole server. The open join's
- * JOINS_PER_HOUR (./app.ts) stays apart. */
+/** New guest and CrazyGames players an hour: per address (ARENA_CLIENT_IP_HEADER's,
+ * else the nearest proxy's X-Forwarded-For entry) and for the whole server.
+ * The open join's JOINS_PER_HOUR (./app.ts) stays apart. */
 export const GUEST_JOINS = { perAddress: 5, perHour: 300 };
+
+const HOUR = 3_600_000;
+const inHour = (ts: readonly number[], now: number) => ts.filter((t) => now - t < HOUR);
+
+/** The hourly counts of new guest and CrazyGames players, in memory. An
+ * address with no join in the last hour is forgotten. */
+export function guestLimiter(limits: { perAddress: number; perHour: number }) {
+  const byAddress = new Map<string, number[]>();
+  let all: number[] = [];
+  return {
+    admit(address: string, now: number): boolean {
+      for (const [a, ts] of byAddress) {
+        const kept = inHour(ts, now);
+        if (kept.length) byAddress.set(a, kept);
+        else byAddress.delete(a);
+      }
+      all = inHour(all, now);
+      const mine = byAddress.get(address) ?? [];
+      if (mine.length >= limits.perAddress || all.length >= limits.perHour) return false;
+      byAddress.set(address, [...mine, now]);
+      all.push(now);
+      return true;
+    },
+    /** Addresses counted now (tests). */
+    addresses: () => byAddress.size,
+  };
+}
 
 export const CG_PUBLIC_KEY_URL = "https://sdk.crazygames.com/publicKey.json";
 
-/** A CrazyGames login refused: 401 a token that doesn't verify, 409 a player linked to another account. */
+/** A CrazyGames login refused (401): a token that doesn't verify. */
 export class CrazyGamesRefused extends Error {
-  constructor(readonly status: 401 | 409, message: string) {
+  constructor(readonly status: 401, message: string) {
     super(message);
   }
 }
@@ -31,16 +58,18 @@ export interface CgClaims {
 /** CrazyGames' public key (PEM). `fresh` skips any cache: the key may have rotated. */
 export type CgKeySource = (fresh: boolean) => Promise<string>;
 
-/** The public key from CrazyGames, cached for an hour; a failed verify asks again once. */
-export function cgKeyFromWeb(url = CG_PUBLIC_KEY_URL, fetcher: typeof fetch = fetch): CgKeySource {
+/** The public key from CrazyGames, cached for an hour. A failed verify asks
+ * again, but at most once a minute: bad tokens can't make every request a fetch. */
+export function cgKeyFromWeb(url = CG_PUBLIC_KEY_URL, fetcher: typeof fetch = fetch, clock: () => number = Date.now): CgKeySource {
   let cached: { pem: string; at: number } | undefined;
   return async (fresh) => {
-    if (!fresh && cached && Date.now() - cached.at < 3_600_000) return cached.pem;
+    const age = cached ? clock() - cached.at : Infinity;
+    if (cached && age < (fresh ? 60_000 : HOUR)) return cached.pem;
     const res = await fetcher(url, { signal: AbortSignal.timeout(5_000) });
     if (!res.ok) throw new Error(`CrazyGames public key: HTTP ${res.status}`);
     const pem = ((await res.json()) as { publicKey?: unknown }).publicKey;
     if (typeof pem !== "string" || !pem.includes("PUBLIC KEY")) throw new Error("CrazyGames public key: no publicKey");
-    cached = { pem, at: Date.now() };
+    cached = { pem, at: clock() };
     return pem;
   };
 }
@@ -54,8 +83,9 @@ const b64json = (part: string): Record<string, unknown> | undefined => {
   }
 };
 
-/** The claims of a token signed RS256 by `key`, unexpired at `now`; throws CrazyGamesRefused(401) otherwise. */
-export function verifyCgJwt(token: string, key: KeyObject | string, now: Date): CgClaims {
+/** The claims of a token signed RS256 by `key`, unexpired at `now` and, when
+ * `gameId` is given, of that game; throws CrazyGamesRefused(401) otherwise. */
+export function verifyCgJwt(token: string, key: KeyObject | string, now: Date, gameId?: string): CgClaims {
   const parts = token.split(".");
   if (parts.length !== 3) throw new CrazyGamesRefused(401, "CrazyGames login: not a token");
   const [head, body, sig] = parts as [string, string, string];
@@ -70,16 +100,17 @@ export function verifyCgJwt(token: string, key: KeyObject | string, now: Date): 
   if (typeof claims.iat === "number" && claims.iat > sec + 300) throw new CrazyGamesRefused(401, "CrazyGames login: token from the future");
   const userId = typeof claims.userId === "string" ? claims.userId.trim() : "";
   if (!userId) throw new CrazyGamesRefused(401, "CrazyGames login: no userId");
+  if (gameId !== undefined && claims.gameId !== gameId) throw new CrazyGamesRefused(401, "CrazyGames login: a token of another game");
   return { userId, username: typeof claims.username === "string" ? claims.username : "" };
 }
 
 /** Verifies with the cached key, then once more with a fresh one (a rotated key). */
-export async function verifyCgToken(token: string, keys: CgKeySource, now: Date): Promise<CgClaims> {
+export async function verifyCgToken(token: string, keys: CgKeySource, now: Date, gameId?: string): Promise<CgClaims> {
   try {
-    return verifyCgJwt(token, await keys(false), now);
+    return verifyCgJwt(token, await keys(false), now, gameId);
   } catch (err) {
     if (!(err instanceof CrazyGamesRefused) || !err.message.endsWith("bad signature")) throw err;
-    return verifyCgJwt(token, await keys(true), now);
+    return verifyCgJwt(token, await keys(true), now, gameId);
   }
 }
 
@@ -115,10 +146,11 @@ function newSession(store: MvpStore, player: PlayerRef, now: Date): PlayerSessio
   return { player, token };
 }
 
-/** A new guest player and a session for this device. */
+/** A new guest player, marked as one, and a session for this device. */
 export function joinGuest(store: MvpStore, now: Date, rnd?: (n: number) => number): PlayerSession {
   const player: PlayerRef = { id: randomUUID(), name: freeName(store, undefined, rnd), bot: false };
   store.addPlayer(player);
+  store.addGuest(player.id, now.toISOString());
   return newSession(store, player, now);
 }
 
@@ -128,15 +160,15 @@ export interface CgLogin extends PlayerSession {
 }
 
 /** The player of this CrazyGames account, and a session for this device:
- * the linked one; else `guest` (this device's player) when it has no link
- * yet, renamed to the CrazyGames username; else a new player, after `admit`
+ * the linked one; else `guest` (this device's player, by its session token)
+ * when a guest join made it and it has no link yet, renamed to the CrazyGames username; else a new player, after `admit`
  * (the signup limit) says yes (false: undefined). */
 export function loginCrazyGames(store: MvpStore, claims: CgClaims, guest: PlayerRef | undefined, now: Date, admit: () => boolean): CgLogin | undefined {
   const link = store.crazyGamesLink({ cgUserId: claims.userId });
   const linked = link && store.player(link.playerId);
   if (linked) return { ...newSession(store, linked, now), via: "found" };
   const at = now.toISOString();
-  if (guest && !guest.bot && !store.crazyGamesLink({ playerId: guest.id })) {
+  if (guest && !guest.bot && store.isGuest(guest.id) && !store.crazyGamesLink({ playerId: guest.id })) {
     const named = nameKey(guest.name) === nameKey(claims.username.trim()) ? guest : { ...guest, name: freeName(store, claims.username) };
     store.linkCrazyGames({ cgUserId: claims.userId, playerId: guest.id, linkedAt: at });
     if (named !== guest) store.addPlayer(named);
@@ -148,3 +180,7 @@ export function loginCrazyGames(store: MvpStore, claims: CgClaims, guest: Player
   store.linkCrazyGames({ cgUserId: claims.userId, playerId: player.id, linkedAt: at });
   return { ...newSession(store, player, now), via: "new" };
 }
+
+/** Players from CrazyGames (a guest join or a linked account) play without
+ * the email an invite-only server asks of the others. */
+export const isCrazyGamesPlayer = (store: MvpStore, playerId: string) => store.isGuest(playerId) || !!store.crazyGamesLink({ playerId });

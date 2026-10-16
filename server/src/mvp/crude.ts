@@ -259,10 +259,25 @@ export function isCrudeRuLine(text: string): boolean {
   return ruWords(text).some(ruCrudeWord);
 }
 
-/** #1218: true when a player's idea text has a crude word, English (each
- * word on its own, by isCrudeName) or Russian (isCrudeRuLine). Words are
- * checked one at a time, never glued: in a sentence "an alpha" is not crude. */
+// Idea text is checked by whole words: a stem inside a longer word is an
+// ordinary word in a sentence ("drapery", "Sussex", "skyscraper"), so only a
+// word that is a stem, with one ending off, is crude; these few also as the
+// start of a word ("fucking", "shithead"), the words named below aside.
+const TEXT_ENDINGS = ["", "s", "es", "ed", "ing", "er", "ers", "y"];
+const TEXT_PREFIXES = ["fuck", "shit", "cunt"];
+const TEXT_REAL = new Set(["shitake", "shitakes", "shiitake", "shiitakes"]);
+const TEXT_STEMS = new Set([...CRUDE_STEMS.anywhere, ...CRUDE_STEMS.edge, ...CRUDE_STEMS.tail]);
+
+function crudeTextWord(word: string): boolean {
+  const w = fold(word);
+  if (!w || TEXT_REAL.has(w)) return false;
+  if (TEXT_PREFIXES.some((p) => w.startsWith(p))) return true;
+  return TEXT_ENDINGS.some((end) => w.endsWith(end) && TEXT_STEMS.has(w.slice(0, w.length - end.length)));
+}
+
+/** #1218: true when a player's idea text has a crude word, English (whole
+ * words, above) or Russian (isCrudeRuLine). */
 export function isCrudeText(text: string): boolean {
   if (isCrudeRuLine(text)) return true;
-  return text.split(/[^\p{L}\p{N}'’-]+/u).filter(Boolean).some((w) => isCrudeName(w));
+  return text.split(/[^\p{L}\p{N}]+/u).some(crudeTextWord);
 }

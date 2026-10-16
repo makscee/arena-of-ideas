@@ -43,6 +43,14 @@
  *   ARENA_CG_PUBLIC_KEY  a PEM file (with MVP_DEV=1 only): CrazyGames login
  *               tokens are checked with this test key instead of CrazyGames'
  *               own (#1218, ./crazygames.ts; a mocked SDK user signs with it)
+ *   ARENA_CG=1  guest and CrazyGames joins (POST /players/guest and
+ *               /players/crazygames, #1218); off, both answer 404
+ *   ARENA_CG_GAME_ID  CrazyGames login tokens must carry this gameId (unset:
+ *               any game's, with a warning at start)
+ *   ARENA_CLIENT_IP_HEADER  the header the front proxy writes the client's
+ *               address to (live: X-Arena-Client-IP from mcow's Caddy); unset,
+ *               the nearest X-Forwarded-For entry. Set it only behind a proxy
+ *               that overwrites it: a client could send it too
  *   ARENA_GUEST_JOINS_PER_IP, ARENA_GUEST_JOINS_PER_HOUR  new guest and
  *               CrazyGames players an hour per address and for the server
  *               (default 5 and 300; the join link keeps its own 30)
@@ -93,7 +101,11 @@ if (cgKeyFile && !dev) throw new Error("ARENA_CG_PUBLIC_KEY needs MVP_DEV=1");
 const cgKey = cgKeyFile ? readFileSync(cgKeyFile, "utf8") : undefined;
 const envCount = (name: string, fallback: number) => (Number.isInteger(Number(process.env[name])) && Number(process.env[name]) > 0 ? Number(process.env[name]) : fallback);
 const guestJoins = { perAddress: envCount("ARENA_GUEST_JOINS_PER_IP", GUEST_JOINS.perAddress), perHour: envCount("ARENA_GUEST_JOINS_PER_HOUR", GUEST_JOINS.perHour) };
-const rt = mvpRuntime({ guestJoins, ...(cgKey ? { cgKeys: async () => cgKey } : {}),  content, store, dev, scenes, ...(rules ? { rules } : {}), ...(tuner ? { tuner } : {}), invites: process.env.MVP_INVITES === "1", open: process.env.MVP_OPEN === "1", rotation: process.env.MVP_ROTATION === "1", codex: process.env.ARENA_CODEX === "1", ...(telegram ? { telegram } : {}), ...(mail ? { mail } : {}) });
+const cg = process.env.ARENA_CG === "1";
+const cgGameId = process.env.ARENA_CG_GAME_ID?.trim() || undefined;
+if (cg && !cgGameId) console.warn("ARENA_CG=1 without ARENA_CG_GAME_ID: CrazyGames logins from any CrazyGames game are accepted");
+const clientIpHeader = process.env.ARENA_CLIENT_IP_HEADER?.trim() || undefined;
+const rt = mvpRuntime({ guestJoins, cg, cgGameId, clientIpHeader, ...(cgKey ? { cgKeys: async () => cgKey } : {}), content, store, dev, scenes, ...(rules ? { rules } : {}), ...(tuner ? { tuner } : {}), invites: process.env.MVP_INVITES === "1", open: process.env.MVP_OPEN === "1", rotation: process.env.MVP_ROTATION === "1", codex: process.env.ARENA_CODEX === "1", ...(telegram ? { telegram } : {}), ...(mail ? { mail } : {}) });
 const build = buildOf();
 const publicUrl = (process.env.ARENA_PUBLIC_URL ?? "https://arena.makscee.ru/arena").replace(/\/$/, "");
 const app = mvpServerApp(createMvpApp(rt), { staticRoot: root, build, corsOrigins: corsOriginsFromEnv(), pageMeta: (url, lang) => shareMeta(rt, url, publicUrl, lang) });
@@ -101,4 +113,4 @@ const app = mvpServerApp(createMvpApp(rt), { staticRoot: root, build, corsOrigin
 serve({ port, hostname: host, fetch: underBasePath(app, basePath) });
 startMvpJobs(rt, rt.scenes ? SCENE_JOBS : undefined);
 if (rt.scenes) void warmScenes(rt);
-console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""}${rt.scenes ? ", scenes" : ""}${tuner ? ", instant tuner" : ""}${rt.rotation ? ", rotation on" : ""}${rt.invites ? (rt.open ? ", open to all" : ", invite-only") : ""}${telegram ? (telegram instanceof FakeTelegram ? ", fake telegram" : `, telegram @${telegram.bot}`) : ""}${mail ? (mail instanceof FakeMailer ? ", fake mail" : ", mail") : ""}${cgKey ? ", test CrazyGames key" : ""})`);
+console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""}${rt.scenes ? ", scenes" : ""}${tuner ? ", instant tuner" : ""}${rt.rotation ? ", rotation on" : ""}${rt.invites ? (rt.open ? ", open to all" : ", invite-only") : ""}${telegram ? (telegram instanceof FakeTelegram ? ", fake telegram" : `, telegram @${telegram.bot}`) : ""}${mail ? (mail instanceof FakeMailer ? ", fake mail" : ", mail") : ""}${cg ? ", crazygames" : ""}${cgKey ? ", test CrazyGames key" : ""})`);

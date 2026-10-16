@@ -54,7 +54,7 @@ const mockSdk = (token) => `(() => {
 })();`;
 
 const api = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], {
-  env: { ...process.env, PORT: String(apiPort), MVP_DB: ":memory:", MVP_INVITES: "1", MVP_DEV: "1", ARENA_CG_PUBLIC_KEY: join(keyDir, "cg.pem"), MVP_CORS_ORIGINS: pageOrigin },
+  env: { ...process.env, PORT: String(apiPort), MVP_DB: ":memory:", MVP_INVITES: "1", MVP_DEV: "1", ARENA_CG: "1", ARENA_CG_PUBLIC_KEY: join(keyDir, "cg.pem"), MVP_CORS_ORIGINS: pageOrigin },
   stdio: ["ignore", "inherit", "inherit"],
 });
 const MIME = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".woff2": "font/woff2", ".m4a": "audio/mp4", ".mp3": "audio/mpeg", ".ogg": "audio/ogg", ".wav": "audio/wav", ".svg": "image/svg+xml" };

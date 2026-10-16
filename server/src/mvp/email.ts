@@ -15,6 +15,7 @@ import { createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto
 import { readFileSync } from "node:fs";
 import nodemailer from "nodemailer";
 import type { EmailStatus, EmailVerify, PlayerRef, PlayerSession } from "../../../src/mvp/contract.js";
+import { isCrazyGamesPlayer } from "./crazygames.js";
 import { createInvite, CRUDE_NAME, hashToken, isCrudePlayerName, JoinRefused, NAME_RE, redeemInvite } from "./invites.js";
 import type { MvpRuntime } from "./runtime.js";
 import { nameKey, type EmailCode, type MvpStore } from "./store.js";
@@ -52,8 +53,11 @@ export const codeHash = (key: string, code: string) => createHash("sha256").upda
  * adds it before playing. */
 export const emailRequired = (rt: Pick<MvpRuntime, "invites" | "mail">) => rt.invites && !!rt.mail;
 
+/** Is it required of this player? Not of a guest or a CrazyGames player (#1218). */
+export const emailRequiredFor = (rt: Pick<MvpRuntime, "invites" | "mail" | "store">, playerId: string) => emailRequired(rt) && !isCrazyGamesPlayer(rt.store, playerId);
+
 export function emailStatus(rt: Pick<MvpRuntime, "invites" | "mail" | "store">, playerId: string): EmailStatus {
-  return { enabled: !!rt.mail, required: emailRequired(rt), address: rt.store.emailLink({ playerId })?.emailKey ?? null };
+  return { enabled: !!rt.mail, required: emailRequiredFor(rt, playerId), address: rt.store.emailLink({ playerId })?.emailKey ?? null };
 }
 
 // ---------- mail ----------
