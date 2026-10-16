@@ -1703,6 +1703,7 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
 .bv-unit-body { display: none; }
 /* The opponent's name is on the Them label, phone and desktop (the track cut it to "vs @bo…" at 1440, #893); the bar keeps the turn. */
 #app[data-screen="battle"] .bv-screen > .hud:has(> .run-bar) > .who { display: none; }
+.bv-lab-them .report-link { margin-left: 4px; text-transform: none; vertical-align: baseline; }
 .bv-lab-who { text-transform: none; }
 @media (max-width: 1023.98px) {
   /* The phone's HUD row holds the bar: one row, so the fight keeps its height at 360×640. */
@@ -1891,8 +1892,10 @@ button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padd
   #app[data-screen="shop"] .line-panel { grid-area: line; }
   #app[data-screen="shop"] .actions { grid-area: act; }
   #app[data-screen="shop"] .hint-slot { grid-area: hint; }
-  #app[data-screen="shop"] .shop-panel { grid-area: shop; align-self: start; max-height: 100%; overflow-y: auto; }
-  #app[data-screen="shop"] [data-testid="offers"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  #app[data-screen="shop"] .shop-panel { grid-area: shop; align-self: stretch; display: flex; flex-direction: column; min-height: 0; max-height: 100%; overflow-y: auto; }
+  /* #1271. Three offers a row, the rows growing into the panel's height (up to 190 px each):
+   * 3 offers made one short row and left the lower part of the play area empty. */
+  #app[data-screen="shop"] [data-testid="offers"] { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: minmax(104px, 190px); flex: 1 1 auto; min-height: 0; align-content: start; gap: 8px; }
   #app[data-screen="shop"] > .spacer { display: none; }
   #app[data-screen="shop"] > .error { grid-area: err; }
   #app[data-screen="shop"] .shop-foot { grid-area: foot; }
@@ -1923,6 +1926,16 @@ button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padd
   .codex-filters button.chip.icon svg { width: 18px; height: 18px; }
   #app[data-screen="codex"] input[type="search"] { min-height: 36px; }
   /* The shop: the offers grow into the space under them. */
-  #app[data-screen="shop"] .shop-panel .card { height: 128px; }
+  #app[data-screen="shop"] .shop-panel .card { height: 100%; min-height: 104px; justify-content: space-evenly; }
+  #app[data-screen="shop"] .shop-panel .card .emoji { font-size: 40px; line-height: 44px; height: 44px; }
+  #app[data-screen="shop"] .shop-panel .card .name { font-size: 14px; line-height: 16px; }
+  #app[data-screen="shop"] .shop-panel .card .stats { font-size: 15px; }
   #app[data-screen="shop"] .line-panel .slots:not(.bench-row) .card { height: 104px; }
 }
+
+/* Report (#1271): a small dim link beside a player's name or a player-made unit's credit. It never
+ * takes a row of its own on a short screen: 24 px tall, and the sheet's tap area is the whole link. */
+button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; border: 0; background: none; box-shadow: none; font-size: 11px; line-height: 14px; text-decoration: underline; opacity: 0.85; }
+.throne-hero button.link.report-link { color: inherit; align-self: flex-start; margin-top: -8px; }
+.report-sheet .report-about { font-weight: 700; word-break: break-word; }
+.report-sheet input { min-height: 44px; }

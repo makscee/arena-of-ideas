@@ -191,6 +191,8 @@ export const api = {
   },
   /** M4-6: a Telegram login code and its t.me link, for this player (Link
    * Telegram) or for none (Log in with Telegram). */
+  /** #1271: reports a player's name (`id` is the player's) or a player-made unit. */
+  report: (r: { kind: "name" | "unit"; id: string; reason?: string }) => call<{ ok: true }>("POST", "/reports", r),
   telegramStart: () => call<TelegramStart>("POST", "/auth/telegram/start"),
   /** M4-6: "waiting" until the bot accepts the code; then this device becomes
    * the player it names (404 ApiError: expired or used). */

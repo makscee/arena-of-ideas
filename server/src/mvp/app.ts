@@ -28,6 +28,7 @@ import { FakeTelegram, pollTelegramLogin, startTelegramLogin, TELEGRAM_STARTS_PE
 import { buildScene, sceneById, sceneDesigns, SceneMissing, sceneList } from "./scenes.js";
 import { withSceneFixtures } from "./scene-fixtures.js";
 import { CrazyGamesRefused, guestLimiter, joinGuest, loginCrazyGames, verifyCgToken } from "./crazygames.js";
+import { fileReport, ReportRefused } from "./reports.js";
 import { candidateScores, castVote, fakeVotes, nextCard, overnightCheck, seedCandidate, waitingForCheck } from "./votes.js";
 
 /** New players the open join link (R4-20) makes per hour, server-wide. */
@@ -241,6 +242,19 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     const deviceToken = c.req.header(TOKEN_HEADER);
     const r = loginCrazyGames(store, claims, deviceToken ? sessionPlayer(store, deviceToken) : undefined, rt.now(), () => admitGuest(c));
     return r ? c.json(r) : tooManyGuests(c);
+  });
+
+  // #1271: a report of a player's name or a player-made unit (./reports.ts): stored, nothing hidden.
+  api.post("/reports", async (c) => {
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    try {
+      fileReport(rt, p, (await c.req.json().catch(() => null)) as { kind?: unknown; id?: unknown; reason?: unknown } | null);
+      return c.json({ ok: true });
+    } catch (err) {
+      if (err instanceof ReportRefused) return bad(c, err.status, err.message);
+      throw err;
+    }
   });
 
   // M4-6: log in with Telegram (./telegram.ts). Starts are counted per player,

@@ -8,6 +8,7 @@
 // Only a server with MVP_DEV=1, ARENA_SCENES=1 and MVP_DB=:memory: serves them
 // (main.ts refuses anything else), so a fixture never touches a real world.
 import { randomUUID } from "node:crypto";
+import { freeName } from "./crazygames.js";
 import { benchSizeOf, type LineUnit, type PlayerRef, type RunView, type UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
 import { botDecision, seedChampion } from "./bots.js";
@@ -65,9 +66,9 @@ export interface Scene {
 /** No such fixture after the tries (a rare state the bot's runs didn't reach). */
 export class SceneMissing extends Error {}
 
-let n = 0;
+/** A fixture player is named by the guest name generator, as a real guest is (#1271): scene shots and the store videos show these names. */
 function fixturePlayer(rt: MvpRuntime): PlayerRef {
-  const p: PlayerRef = { id: randomUUID(), name: `Tester ${++n}`, bot: false };
+  const p: PlayerRef = { id: randomUUID(), name: freeName(rt.store, undefined), bot: false };
   rt.store.addPlayer(p);
   return p;
 }

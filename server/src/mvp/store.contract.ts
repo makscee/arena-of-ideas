@@ -330,6 +330,20 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
       expect(s.foundWords()).toEqual([f("kim", "2026-10-14T01:00:00.000Z")]);
     });
 
+    it("keeps reports (#1271): one per reporter and target, counted by reporter and time", () => {
+      const s = make();
+      const r = (id: string, reporterId: string, targetId: string, at: string) => ({ id, reporterId, kind: "name" as const, targetId, at, status: "open" as const });
+      expect(s.addReport(r("a", "kim", "lee", "2026-10-16T10:00:00.000Z"))).toBe(true);
+      expect(s.addReport({ ...r("b", "kim", "lee", "2026-10-16T11:00:00.000Z"), reason: "rude" })).toBe(false);
+      expect(s.addReport({ ...r("c", "kim", "sam", "2026-10-16T12:00:00.000Z"), reason: "rude" })).toBe(true);
+      expect(s.addReport({ ...r("d", "lee", "sam", "2026-10-16T13:00:00.000Z"), kind: "unit" })).toBe(true);
+      expect(s.reports().map((x) => x.id)).toEqual(["a", "c", "d"]);
+      expect(s.reports({ open: true })[1]).toEqual({ ...r("c", "kim", "sam", "2026-10-16T12:00:00.000Z"), reason: "rude" });
+      expect(s.reportsBy("kim", "2026-10-16T10:30:00.000Z")).toBe(1);
+      expect(s.reportsBy("kim", "2026-10-16T00:00:00.000Z")).toBe(2);
+      expect(s.reportsBy("nobody", "2026-10-16T00:00:00.000Z")).toBe(0);
+    });
+
     it("claims a day's post message once (M4-8), and records how it went", () => {
       const s = make();
       const at = "2026-10-09T01:00:00.000Z";
