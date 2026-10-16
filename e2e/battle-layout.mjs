@@ -63,12 +63,11 @@ const watch = (boxes) => {
         if (!a || !b || a.some((x, i) => Math.abs(x - b[i]) > 0.6)) L.moved.push({ box: k, was: a, now: b, at: L.frames, t: Math.round(performance.now()) });
       }
     }
-    // The strip is one line: its text's height is its line's.
+    // The caption sits in the rail (#1294): it may wrap, but its words fit its fixed box.
     const strip = document.querySelector(boxes.strip);
     if (strip) {
       const line = strip.querySelector(".bv-strip-line");
-      if (line && line.scrollWidth > line.clientWidth + 1 && getComputedStyle(line).whiteSpace !== "nowrap") L.wrapped++;
-      if (line && line.getBoundingClientRect().height > 30) L.wrapped++;
+      if (line && line.getBoundingClientRect().bottom > strip.getBoundingClientRect().bottom + 1) L.wrapped++;
     }
     // While playing, no change pill shows on a card.
     // (Reduced motion has no floats: the pills keep the numbers there.)
@@ -87,7 +86,7 @@ const report = async (page, label) => {
   const L = await page.evaluate(() => window.__layout);
   const first = new Map();
   for (const m of L.moved) if (!first.has(m.box)) first.set(m.box, m);
-  const line = `${label}: ${L.frames} frames, ${L.moved.length} box moves${[...first.values()].map((m) => ` [${m.box} ${JSON.stringify(m.was)} → ${JSON.stringify(m.now)} at frame ${m.at}]`).join("")}, ${L.wrapped} wrapped strip frames, ${L.pills} pill frames while playing`;
+  const line = `${label}: ${L.frames} frames, ${L.moved.length} box moves${[...first.values()].map((m) => ` [${m.box} ${JSON.stringify(m.was)} → ${JSON.stringify(m.now)} at frame ${m.at}]`).join("")}, ${L.wrapped} overflowing caption frames, ${L.pills} pill frames while playing`;
   console.log(line);
   if (L.moved.length || L.wrapped || L.pills || L.frames < 5) bad++;
 };
