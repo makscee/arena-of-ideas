@@ -30,6 +30,7 @@ import { DEFAULT_SEED, META_FULL, META_QUICK, metaHealth, type MetaResult } from
 import { ROWS_V2, type V2Row } from "../src/mvp/units-v2.js";
 import { contentOf } from "../server/src/mvp/content.js";
 import { measureTeam, slugOf, TUNE_DEFAULT } from "../src/mvp/tune.js";
+import { TIER_STATS, ZERO_PWR } from "../src/mvp/tier-stats.js";
 
 /** The awoken knob's step and cap: HP first, then PWR for units that strike.
  * At most +4 HP / +1 PWR (#1047); an awoken form earns the rest by its upgraded clause. */
@@ -48,11 +49,13 @@ const CHECKS = arg("--checks", 12);
 const BAND = 0.08;
 /** Far out: HP moves by 2. */
 const FAR = 0.16;
-/** Sleeping numbers: HP at most 12 (main's units: HP 4-12; Maks's note on
- * batch 1, #1047: awoken Medic had 33 HP), widened down to HP 2 and PWR 0-6
- * so the units at the old floor can still move (Maks's (a), 10-14). */
+/** Sleeping numbers: PWR 0-6, HP from 2 (Maks's (a), 10-14); the top of HP
+ * is the tier's stat range now (#1048), no longer a flat 12. */
 const PWR = { min: 0, max: 6 };
-const HP = { min: 2, max: 12 };
+const HP = { min: 2 };
+/** Inside its tier's stat range (Maks, 10-17, #1048): PWR+HP stays within
+ * TIER_STATS, which replaces the HP cap of 12 (a tier-4 range reaches 29). */
+const hpBounds = (row: V2Row, pwr: number) => ({ min: Math.max(HP.min, TIER_STATS[row.tier].min - pwr), max: TIER_STATS[row.tier].max - pwr });
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const median = (xs: number[]) => {
@@ -104,12 +107,24 @@ const USES_HALF_PWR = new Set(
       return names.some((n) => JSON.stringify(abilities[n] ?? null).includes('{"kind":"half","of":{"kind":"stat","stat":"pwr","of":"holder"}}'));
     }))(contentOf(ROWS_V2).abilities).map((r) => r.name),
 );
-const pwrMin = (name: string): number => (USES_HALF_PWR.has(name) ? Math.max(2, PWR.min) : USES_PWR.has(name) ? Math.max(1, PWR.min) : PWR.min);
-/** Units that strike: PWR moves for them. A unit on the power floor strikes too, even if an earlier tune left it at 0 (#1063: Sniper, Medic, Archmage). */
-const STRIKES = new Set(ROWS_V2.filter((r) => r.pwr > 0 || USES_PWR.has(r.name)).map((r) => r.name));
+/** PWR at least 1 (Maks, 10-17), 2 for half-power rules; 0 only for the units
+ * built around it (ZERO_PWR, the report says why). */
+const pwrMin = (name: string): number => (name in ZERO_PWR ? 0 : USES_HALF_PWR.has(name) ? Math.max(2, PWR.min) : Math.max(1, PWR.min));
+/** Units that strike: PWR moves for them. Every unit but ZERO_PWR's (#1048). */
+const STRIKES = new Set(ROWS_V2.filter((r) => !(r.name in ZERO_PWR)).map((r) => r.name));
+/** Into the tier's range: HP moves first (the fine knob), then PWR. */
+const intoRange = (r: V2Row): V2Row => {
+  const pwrB = { min: pwrMin(r.name), max: STRIKES.has(r.name) ? PWR.max : 0 };
+  let pwr = clamp(r.pwr, pwrB);
+  let hp = clamp(r.hp, hpBounds(r, pwr));
+  const range = TIER_STATS[r.tier];
+  while (pwr + hp < range.min && pwr < pwrB.max) hp = clamp(r.hp, hpBounds(r, ++pwr));
+  while (pwr + hp > range.max && pwr > pwrB.min) hp = clamp(r.hp, hpBounds(r, --pwr));
+  return { ...r, pwr, hp };
+};
 let rows: V2Row[] = ROWS_V2.map((r) => {
   const a = r.awoken ?? { pwr: 0, hp: 0 };
-  return { ...r, pwr: r.pwr > 0 || USES_PWR.has(r.name) ? clamp(r.pwr, { ...PWR, min: pwrMin(r.name) }) : 0, hp: clamp(r.hp, HP), awoken: { pwr: Math.min(a.pwr, AWOKEN.pwr), hp: Math.min(a.hp, AWOKEN.hp) } };
+  return { ...intoRange(r), awoken: { pwr: Math.min(a.pwr, AWOKEN.pwr), hp: Math.min(a.hp, AWOKEN.hp) } };
 });
 const t0 = Date.now();
 const rounds: { round: number; median: number; inBand: number; scores: Record<string, number>; moves: string[]; healthy: boolean }[] = [];
@@ -182,6 +197,7 @@ for (let round = 1; round <= ROUNDS; round++) {
   const avgMargin = avgOf((m) => m.margins);
   const margins = new Map([...avgMargin].map(([k, v]) => [k, { score: v, sleeping: 0 }]));
   const moves: string[] = [];
+  const edges: string[] = [];
   rows = rows.map((row, i) => {
     const id = slugOf(row.name);
     const s = scores.get(id) ?? mid;
@@ -200,18 +216,25 @@ for (let round = 1; round <= ROUNDS; round++) {
     }
     lastDir.set(id, d);
     const far = Math.abs(off) > FAR;
-    const hp = Math.max(HP.min, Math.min(HP.max, row.hp + d * (far ? 2 : 1)));
+    let hp = clamp(row.hp + d * (far ? 2 : 1), hpBounds(row, row.pwr));
     // PWR is the coarse knob (one point moves a unit's every strike): it
     // turns when HP is at its bound, or with HP when the unit is far out.
+    // Both stay inside the tier's range.
     const pwrMoves = STRIKES.has(row.name) && (hp === row.hp || far);
-    const pwr = pwrMoves ? Math.max(pwrMin(row.name), Math.min(PWR.max, row.pwr + d)) : row.pwr;
-    if (hp === row.hp && pwr === row.pwr) return next;
+    let pwr = pwrMoves ? clamp(row.pwr + d, { min: pwrMin(row.name), max: PWR.max }) : row.pwr;
+    if (pwr + hp > TIER_STATS[row.tier].max || pwr + hp < TIER_STATS[row.tier].min) pwr = row.pwr;
+    hp = clamp(hp, hpBounds(row, pwr));
+    if (hp === row.hp && pwr === row.pwr) {
+      edges.push(`${row.name} ${pct(s)} ${row.pwr}/${row.hp}`);
+      return next;
+    }
     moves.push(`${row.name} ${pct(s)}: ${row.pwr}/${row.hp}→${pwr}/${hp}`);
     return { ...next, pwr, hp };
   });
   rounds.push({ round, median: +mid.toFixed(3), inBand, scores: Object.fromEntries([...scores].map(([k, v]) => [k, +v.toFixed(3)])), moves, healthy: r.healthy });
   console.error(`round ${round} (${SEEDS} seeds): median ${pct(mid)}, ${inBand}/${rows.length} in band, ${misses} short of the gate, worst ${pct(worst)}, ${moves.length} moves, quick meta ${r.healthy ? "healthy" : "not healthy"}  ${((Date.now() - t0) / 1000).toFixed(0)}s`);
   for (const m of moves) console.error(`  ${m}`);
+  if (edges.length) console.error(`  at the tier's edge: ${edges.join(", ")}`);
   if (!moves.length) {
     best = { rows: rows.map((x) => ({ ...x })), misses, inBand, worst, round };
     break;
@@ -292,7 +315,11 @@ const units = rows.map((r) => {
   const id = slugOf(r.name);
   const s = scores.get(id) ?? 0;
   const m = margins.get(id)!;
-  return { name: r.name, emoji: r.emoji, tier: r.tier, pwr: r.pwr, hp: r.hp, awoken: r.awoken!, fieldScore: +s.toFixed(3), awokenMargin: +(m.score - m.sleeping).toFixed(3), share: +share(id).toFixed(3), inBand: Math.abs(s - mid) <= BAND, team: m.team };
+  const range = TIER_STATS[r.tier];
+  const total = r.pwr + r.hp;
+  // out of band with its stats at the range's edge the tune would move them past: its rule's numbers change instead
+  const edge = Math.abs(s - mid) > BAND && (s > mid ? total <= range.min || (r.pwr <= pwrMin(r.name) && r.hp <= hpBounds(r, r.pwr).min) : total >= range.max || (r.pwr >= (STRIKES.has(r.name) ? PWR.max : 0) && r.hp >= hpBounds(r, r.pwr).max));
+  return { name: r.name, emoji: r.emoji, tier: r.tier, pwr: r.pwr, hp: r.hp, total, range, atEdge: edge, zeroPwr: ZERO_PWR[r.name] ?? null, awoken: r.awoken!, fieldScore: +s.toFixed(3), awokenMargin: +(m.score - m.sleeping).toFixed(3), share: +share(id).toFixed(3), inBand: Math.abs(s - mid) <= BAND, team: m.team };
 });
 const report = { seconds: Math.round((Date.now() - t0) / 1000), band: BAND, median: +mid.toFixed(3), healthy: final.healthy, checks: final.checks, healthChecks: healthChecks.map((h) => ({ seed: h.seed, healthy: h.healthy })), units, rounds };
 mkdirSync("docs/mvp", { recursive: true });
@@ -308,9 +335,11 @@ writeFileSync(
     "",
     `Each unit's best team's field score, averaged over ${CHECKS} quick meta checks; the band is the median ${pct(mid)} ± ${pct(BAND)}. Awoken adds: that team's field score awoken minus with the unit asleep. Share: the unit's share of play in the equilibrium.`,
     "",
-    "| Unit | Tier | PWR/HP | Awoken +PWR/+HP | Field score | Awoken adds | Share | |",
-    "|---|---|---|---|---|---|---|---|",
-    ...units.map((u) => `| ${u.emoji} ${u.name} | ${u.tier} | ${u.pwr}/${u.hp} | +${u.awoken.pwr}/+${u.awoken.hp} | ${pct(u.fieldScore)} | ${u.awokenMargin >= 0 ? "+" : ""}${pct(u.awokenMargin)} | ${pct(u.share)} | ${u.inBand ? "in band" : u.fieldScore > mid ? "strong" : "weak"} |`),
+    `Total: PWR+HP asleep, inside its tier's range (${Object.entries(TIER_STATS).map(([t, r]) => `T${t} ${r.min}–${r.max}`).join(", ")}). At the edge: out of band with its stats at the range's edge; its rule's numbers change, not its stats.`,
+    "",
+    "| Unit | Tier | PWR/HP | Total (range) | Awoken +PWR/+HP | Field score | Awoken adds | Share | |",
+    "|---|---|---|---|---|---|---|---|---|",
+    ...units.map((u) => `| ${u.emoji} ${u.name} | ${u.tier} | ${u.pwr}/${u.hp} | ${u.total} (${u.range.min}–${u.range.max}) | +${u.awoken.pwr}/+${u.awoken.hp} | ${pct(u.fieldScore)} | ${u.awokenMargin >= 0 ? "+" : ""}${pct(u.awokenMargin)} | ${pct(u.share)} | ${u.inBand ? "in band" : u.fieldScore > mid ? "strong" : "weak"}${u.atEdge ? ", at the edge" : ""} |`),
     "",
     "## Rounds",
     "",
@@ -318,4 +347,5 @@ writeFileSync(
     "",
   ].join("\n"),
 );
+console.error(`at the range's edge, out of band (rule numbers to change): ${units.filter((u) => u.atEdge).map((u) => `${u.name} ${pct(u.fieldScore)} ${u.pwr}/${u.hp}`).join(", ") || "none"}`);
 console.error(`final: ${final.healthy ? "healthy" : "not healthy"}, ${units.filter((u) => u.inBand).length}/${units.length} in band; wrote src/mvp/units-v2-numbers.ts, docs/mvp/tune-v2.md`);

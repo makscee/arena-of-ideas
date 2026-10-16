@@ -1,7 +1,7 @@
 {
-  "seconds": 1632,
+  "seconds": 2774,
   "band": 0.08,
-  "median": 0.516,
+  "median": 0.52,
   "healthy": true,
   "checks": {
     "teamsInEquilibrium": {
@@ -10,12 +10,12 @@
       "rule": "≥5 teams with ≥2% share"
     },
     "largestShare": {
-      "value": 0.36,
+      "value": 0.199,
       "pass": true,
       "rule": "largest share ≤40%"
     },
     "topTeamsBeaten": {
-      "value": 12,
+      "value": 13,
       "pass": true,
       "rule": "every top team beaten ≥60% by ≥3 others"
     }
@@ -31,7 +31,7 @@
     },
     {
       "seed": 24303,
-      "healthy": true
+      "healthy": false
     }
   ],
   "units": [
@@ -39,22 +39,29 @@
       "name": "Hourglass",
       "emoji": "⏳",
       "tier": 2,
-      "pwr": 6,
-      "hp": 12,
+      "pwr": 5,
+      "hp": 9,
+      "total": 14,
+      "range": {
+        "min": 11,
+        "max": 17
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.52,
-      "awokenMargin": 0.043,
-      "share": 0.342,
+      "fieldScore": 0.51,
+      "awokenMargin": 0.071,
+      "share": 0.071,
       "inBand": true,
       "team": [
-        "kraken",
+        "reaper",
         "hourglass",
         "coin-thief",
-        "plague-rat",
-        "puppeteer"
+        "conductor",
+        "kraken"
       ]
     },
     {
@@ -62,21 +69,28 @@
       "emoji": "🪞",
       "tier": 2,
       "pwr": 4,
-      "hp": 7,
+      "hp": 9,
+      "total": 13,
+      "range": {
+        "min": 11,
+        "max": 17
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
         "hp": 2
       },
-      "fieldScore": 0.494,
-      "awokenMargin": 0.05,
-      "share": 0.026,
+      "fieldScore": 0.521,
+      "awokenMargin": 0.06,
+      "share": 0,
       "inBand": true,
       "team": [
         "mirror",
-        "phoenix",
-        "frost-witch",
-        "reaper",
-        "siphon"
+        "coin-thief",
+        "plague-rat",
+        "kraken",
+        "broodmother"
       ]
     },
     {
@@ -84,21 +98,28 @@
       "emoji": "🕯️",
       "tier": 3,
       "pwr": 4,
-      "hp": 7,
+      "hp": 10,
+      "total": 14,
+      "range": {
+        "min": 13,
+        "max": 23
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.511,
-      "awokenMargin": 0.038,
-      "share": 0.162,
+      "fieldScore": 0.489,
+      "awokenMargin": 0.04,
+      "share": 0,
       "inBand": true,
       "team": [
-        "phoenix",
+        "martyr",
+        "leech",
         "candle",
         "aegis",
-        "volcano",
-        "martyr"
+        "chrysalis"
       ]
     },
     {
@@ -106,21 +127,28 @@
       "emoji": "🎲",
       "tier": 1,
       "pwr": 2,
-      "hp": 9,
+      "hp": 10,
+      "total": 12,
+      "range": {
+        "min": 8,
+        "max": 12
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.423,
-      "awokenMargin": 0.095,
+      "fieldScore": 0.441,
+      "awokenMargin": 0.118,
       "share": 0,
-      "inBand": false,
+      "inBand": true,
       "team": [
         "ox",
         "hydra",
         "gambler",
-        "gravedigger",
-        "phoenix"
+        "trickster",
+        "sniper"
       ]
     },
     {
@@ -128,21 +156,28 @@
       "emoji": "🐚",
       "tier": 1,
       "pwr": 4,
-      "hp": 11,
+      "hp": 8,
+      "total": 12,
+      "range": {
+        "min": 8,
+        "max": 12
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.515,
-      "awokenMargin": 0.087,
+      "fieldScore": 0.591,
+      "awokenMargin": 0.048,
       "share": 0,
       "inBand": true,
       "team": [
         "nautilus",
-        "thornback",
-        "avenger",
+        "martyr",
+        "conductor",
         "coin-thief",
-        "mirror"
+        "archmage"
       ]
     },
     {
@@ -150,21 +185,28 @@
       "emoji": "🧲",
       "tier": 3,
       "pwr": 6,
-      "hp": 12,
+      "hp": 13,
+      "total": 19,
+      "range": {
+        "min": 13,
+        "max": 23
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.494,
-      "awokenMargin": 0.034,
-      "share": 0,
-      "inBand": true,
+      "fieldScore": 0.407,
+      "awokenMargin": 0.038,
+      "share": 0.123,
+      "inBand": false,
       "team": [
-        "gravecaller",
+        "martyr",
         "aegis",
+        "magnet",
         "chrysalis",
-        "hexer",
-        "magnet"
+        "gravecaller"
       ]
     },
     {
@@ -172,21 +214,28 @@
       "emoji": "🐦‍⬛",
       "tier": 4,
       "pwr": 2,
-      "hp": 5,
+      "hp": 13,
+      "total": 15,
+      "range": {
+        "min": 15,
+        "max": 29
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.523,
-      "awokenMargin": 0.167,
-      "share": 0.394,
+      "fieldScore": 0.498,
+      "awokenMargin": 0.073,
+      "share": 0.237,
       "inBand": true,
       "team": [
-        "dragon",
-        "gravecaller",
         "raven",
-        "coin-thief",
-        "battery"
+        "fortune-teller",
+        "duelist",
+        "vulture",
+        "puppeteer"
       ]
     },
     {
@@ -194,21 +243,28 @@
       "emoji": "🌱",
       "tier": 2,
       "pwr": 0,
-      "hp": 9,
+      "hp": 11,
+      "total": 11,
+      "range": {
+        "min": 11,
+        "max": 17
+      },
+      "atEdge": false,
+      "zeroPwr": "a seed that sleeps two turns, then grows: it doesn't strike until it has grown",
       "awoken": {
         "pwr": 0,
         "hp": 4
       },
-      "fieldScore": 0.428,
-      "awokenMargin": 0.055,
+      "fieldScore": 0.527,
+      "awokenMargin": 0.025,
       "share": 0,
-      "inBand": false,
+      "inBand": true,
       "team": [
-        "siphon",
-        "duelist",
-        "nautilus",
         "seed",
-        "aegis"
+        "mirror",
+        "siphon",
+        "comet",
+        "reaper"
       ]
     },
     {
@@ -216,21 +272,28 @@
       "emoji": "🎯",
       "tier": 1,
       "pwr": 1,
-      "hp": 2,
+      "hp": 7,
+      "total": 8,
+      "range": {
+        "min": 8,
+        "max": 12
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
         "hp": 4
       },
-      "fieldScore": 0.744,
-      "awokenMargin": 0.23,
-      "share": 0.087,
-      "inBand": false,
+      "fieldScore": 0.562,
+      "awokenMargin": 0.089,
+      "share": 0,
+      "inBand": true,
       "team": [
-        "berserker",
+        "gambler",
+        "phoenix",
+        "seed",
         "sniper",
-        "kraken",
-        "puppeteer",
-        "trickster"
+        "volcano"
       ]
     },
     {
@@ -238,21 +301,28 @@
       "emoji": "💉",
       "tier": 1,
       "pwr": 1,
-      "hp": 3,
+      "hp": 8,
+      "total": 9,
+      "range": {
+        "min": 8,
+        "max": 12
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.56,
-      "awokenMargin": 0.128,
-      "share": 0,
+      "fieldScore": 0.598,
+      "awokenMargin": 0.089,
+      "share": 0.216,
       "inBand": true,
       "team": [
-        "hornet",
+        "hydra",
         "thornback",
-        "medic",
-        "comet",
-        "frost-witch"
+        "gravedigger",
+        "broodmother",
+        "medic"
       ]
     },
     {
@@ -260,21 +330,28 @@
       "emoji": "🧛",
       "tier": 1,
       "pwr": 5,
-      "hp": 9,
+      "hp": 7,
+      "total": 12,
+      "range": {
+        "min": 8,
+        "max": 12
+      },
+      "atEdge": true,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.462,
-      "awokenMargin": 0.132,
-      "share": 0.462,
-      "inBand": true,
+      "fieldScore": 0.37,
+      "awokenMargin": 0.079,
+      "share": 0,
+      "inBand": false,
       "team": [
+        "dynamo",
+        "hexer",
         "leech",
-        "aegis",
-        "kraken",
-        "heckler",
-        "thornback"
+        "chrysalis",
+        "puppeteer"
       ]
     },
     {
@@ -282,20 +359,27 @@
       "emoji": "🐺",
       "tier": 2,
       "pwr": 6,
-      "hp": 12,
+      "hp": 11,
+      "total": 17,
+      "range": {
+        "min": 11,
+        "max": 17
+      },
+      "atEdge": true,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.542,
-      "awokenMargin": 0.052,
-      "share": 0.087,
-      "inBand": true,
+      "fieldScore": 0.422,
+      "awokenMargin": 0.047,
+      "share": 0,
+      "inBand": false,
       "team": [
+        "ox",
+        "phoenix",
+        "chrysalis",
         "lone-wolf",
-        "puppeteer",
-        "priest",
-        "executioner",
         "avenger"
       ]
     },
@@ -304,21 +388,28 @@
       "emoji": "🥁",
       "tier": 2,
       "pwr": 5,
-      "hp": 11,
+      "hp": 10,
+      "total": 15,
+      "range": {
+        "min": 11,
+        "max": 17
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.569,
-      "awokenMargin": 0.076,
+      "fieldScore": 0.523,
+      "awokenMargin": 0.046,
       "share": 0,
       "inBand": true,
       "team": [
-        "drummer",
-        "lone-wolf",
-        "avenger",
-        "comet",
-        "oracle"
+        "dragon",
+        "frostling",
+        "siphon",
+        "kraken",
+        "drummer"
       ]
     },
     {
@@ -327,20 +418,27 @@
       "tier": 2,
       "pwr": 6,
       "hp": 11,
+      "total": 17,
+      "range": {
+        "min": 11,
+        "max": 17
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.552,
-      "awokenMargin": 0.052,
+      "fieldScore": 0.507,
+      "awokenMargin": 0.037,
       "share": 0,
       "inBand": true,
       "team": [
-        "leech",
-        "chrysalis",
+        "dragon",
         "bodyguard",
-        "hourglass",
-        "volcano"
+        "chrysalis",
+        "raven",
+        "seed"
       ]
     },
     {
@@ -348,43 +446,57 @@
       "emoji": "🐛",
       "tier": 3,
       "pwr": 0,
-      "hp": 2,
+      "hp": 13,
+      "total": 13,
+      "range": {
+        "min": 13,
+        "max": 23
+      },
+      "atEdge": false,
+      "zeroPwr": "a cocoon: it doesn't strike, it becomes a Butterfly that does",
       "awoken": {
         "pwr": 0,
         "hp": 4
       },
-      "fieldScore": 0.594,
-      "awokenMargin": 0.107,
-      "share": 0,
+      "fieldScore": 0.503,
+      "awokenMargin": 0.137,
+      "share": 0.249,
       "inBand": true,
       "team": [
-        "leech",
-        "conductor",
-        "fortune-teller",
-        "seed",
-        "chrysalis"
+        "heckler",
+        "raven",
+        "oracle",
+        "chrysalis",
+        "witch-doctor"
       ]
     },
     {
       "name": "Trickster",
       "emoji": "🃏",
       "tier": 3,
-      "pwr": 0,
-      "hp": 3,
+      "pwr": 1,
+      "hp": 12,
+      "total": 13,
+      "range": {
+        "min": 13,
+        "max": 23
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.529,
-      "awokenMargin": 0.021,
-      "share": 0.216,
+      "fieldScore": 0.573,
+      "awokenMargin": 0.02,
+      "share": 0.072,
       "inBand": true,
       "team": [
-        "trickster",
         "dragon",
-        "archmage",
-        "bully",
-        "raven"
+        "plague-rat",
+        "comet",
+        "trickster",
+        "phoenix"
       ]
     },
     {
@@ -392,21 +504,28 @@
       "emoji": "⚰️",
       "tier": 4,
       "pwr": 2,
-      "hp": 4,
+      "hp": 13,
+      "total": 15,
+      "range": {
+        "min": 15,
+        "max": 29
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
         "hp": 4
       },
-      "fieldScore": 0.599,
-      "awokenMargin": 0.197,
-      "share": 0.206,
-      "inBand": false,
+      "fieldScore": 0.56,
+      "awokenMargin": 0.164,
+      "share": 0.156,
+      "inBand": true,
       "team": [
-        "berserker",
-        "coin-thief",
-        "sniper",
-        "conductor",
-        "gravedigger"
+        "candle",
+        "vulture",
+        "gravedigger",
+        "chrysalis",
+        "kraken"
       ]
     },
     {
@@ -414,21 +533,28 @@
       "emoji": "🎼",
       "tier": 4,
       "pwr": 5,
-      "hp": 11,
+      "hp": 10,
+      "total": 15,
+      "range": {
+        "min": 15,
+        "max": 29
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
         "hp": 4
       },
-      "fieldScore": 0.474,
-      "awokenMargin": 0.062,
-      "share": 0.075,
-      "inBand": true,
+      "fieldScore": 0.424,
+      "awokenMargin": 0.049,
+      "share": 0.364,
+      "inBand": false,
       "team": [
-        "frost-witch",
-        "berserker",
+        "hydra",
+        "medic",
+        "hexer",
         "conductor",
-        "martyr",
-        "paladin"
+        "volcano"
       ]
     },
     {
@@ -436,20 +562,27 @@
       "emoji": "🦔",
       "tier": 1,
       "pwr": 3,
-      "hp": 3,
+      "hp": 5,
+      "total": 8,
+      "range": {
+        "min": 8,
+        "max": 12
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
         "hp": 4
       },
-      "fieldScore": 0.545,
-      "awokenMargin": 0.129,
-      "share": 0,
+      "fieldScore": 0.518,
+      "awokenMargin": 0.096,
+      "share": 0.241,
       "inBand": true,
       "team": [
-        "ox",
-        "gravecaller",
-        "sniper",
         "lone-wolf",
+        "vulture",
+        "avenger",
+        "comet",
         "thornback"
       ]
     },
@@ -457,21 +590,28 @@
       "name": "Coin Thief",
       "emoji": "🪙",
       "tier": 1,
-      "pwr": 0,
-      "hp": 2,
+      "pwr": 1,
+      "hp": 7,
+      "total": 8,
+      "range": {
+        "min": 8,
+        "max": 12
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
         "hp": 4
       },
-      "fieldScore": 0.651,
-      "awokenMargin": 0.104,
-      "share": 0.027,
-      "inBand": false,
+      "fieldScore": 0.552,
+      "awokenMargin": 0.119,
+      "share": 0,
+      "inBand": true,
       "team": [
-        "bully",
-        "siphon",
         "coin-thief",
-        "medic",
+        "gravedigger",
+        "broodmother",
+        "conductor",
         "archmage"
       ]
     },
@@ -480,21 +620,28 @@
       "emoji": "🏮",
       "tier": 1,
       "pwr": 5,
-      "hp": 8,
+      "hp": 7,
+      "total": 12,
+      "range": {
+        "min": 8,
+        "max": 12
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.496,
-      "awokenMargin": 0.069,
+      "fieldScore": 0.522,
+      "awokenMargin": 0.034,
       "share": 0,
       "inBand": true,
       "team": [
-        "plague-rat",
-        "gravecaller",
-        "berserker",
+        "trickster",
+        "dragon",
+        "puppeteer",
         "lantern",
-        "trickster"
+        "war-horn"
       ]
     },
     {
@@ -502,21 +649,28 @@
       "emoji": "🐝",
       "tier": 1,
       "pwr": 4,
-      "hp": 7,
+      "hp": 5,
+      "total": 9,
+      "range": {
+        "min": 8,
+        "max": 12
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.355,
-      "awokenMargin": 0.083,
+      "fieldScore": 0.496,
+      "awokenMargin": 0.124,
       "share": 0,
-      "inBand": false,
+      "inBand": true,
       "team": [
+        "leech",
         "hornet",
-        "sniper",
-        "bodyguard",
-        "priest",
-        "lone-wolf"
+        "lone-wolf",
+        "kraken",
+        "gravedigger"
       ]
     },
     {
@@ -524,43 +678,57 @@
       "emoji": "🔮",
       "tier": 2,
       "pwr": 6,
-      "hp": 12,
+      "hp": 11,
+      "total": 17,
+      "range": {
+        "min": 11,
+        "max": 17
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.411,
-      "awokenMargin": 0.058,
+      "fieldScore": 0.454,
+      "awokenMargin": 0.048,
       "share": 0,
-      "inBand": false,
+      "inBand": true,
       "team": [
-        "hourglass",
         "hexer",
-        "candle",
-        "chrysalis",
-        "prism"
+        "prism",
+        "kraken",
+        "comet",
+        "gambler"
       ]
     },
     {
       "name": "War Horn",
       "emoji": "📯",
       "tier": 2,
-      "pwr": 5,
-      "hp": 9,
+      "pwr": 6,
+      "hp": 11,
+      "total": 17,
+      "range": {
+        "min": 11,
+        "max": 17
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.475,
-      "awokenMargin": 0.082,
-      "share": 0.034,
+      "fieldScore": 0.512,
+      "awokenMargin": 0.064,
+      "share": 0,
       "inBand": true,
       "team": [
-        "dragon",
-        "trickster",
-        "war-horn",
-        "volcano",
-        "frost-witch"
+        "executioner",
+        "martyr",
+        "nautilus",
+        "archmage",
+        "war-horn"
       ]
     },
     {
@@ -568,19 +736,26 @@
       "emoji": "🦅",
       "tier": 2,
       "pwr": 6,
-      "hp": 9,
+      "hp": 11,
+      "total": 17,
+      "range": {
+        "min": 11,
+        "max": 17
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
         "hp": 0
       },
-      "fieldScore": 0.516,
-      "awokenMargin": 0.106,
+      "fieldScore": 0.527,
+      "awokenMargin": 0.113,
       "share": 0,
       "inBand": true,
       "team": [
-        "trickster",
-        "phoenix",
-        "coin-thief",
+        "prism",
+        "mirror",
+        "frost-witch",
         "vulture",
         "kraken"
       ]
@@ -589,44 +764,58 @@
       "name": "Hexer",
       "emoji": "🧿",
       "tier": 3,
-      "pwr": 0,
-      "hp": 2,
+      "pwr": 1,
+      "hp": 12,
+      "total": 13,
+      "range": {
+        "min": 13,
+        "max": 23
+      },
+      "atEdge": true,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
         "hp": 2
       },
-      "fieldScore": 0.663,
-      "awokenMargin": 0.105,
-      "share": 0.233,
+      "fieldScore": 0.621,
+      "awokenMargin": 0.08,
+      "share": 0.285,
       "inBand": false,
       "team": [
-        "hourglass",
-        "hexer",
-        "duelist",
-        "sniper",
-        "conductor"
+        "ox",
+        "priest",
+        "conductor",
+        "kraken",
+        "hexer"
       ]
     },
     {
       "name": "Fortune Teller",
       "emoji": "🪬",
       "tier": 3,
-      "pwr": 0,
-      "hp": 4,
+      "pwr": 1,
+      "hp": 13,
+      "total": 14,
+      "range": {
+        "min": 13,
+        "max": 23
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
         "hp": 0
       },
-      "fieldScore": 0.637,
-      "awokenMargin": 0.065,
-      "share": 0.36,
-      "inBand": false,
+      "fieldScore": 0.561,
+      "awokenMargin": 0.075,
+      "share": 0,
+      "inBand": true,
       "team": [
-        "prism",
-        "dragon",
+        "hornet",
+        "ox",
+        "lantern",
         "fortune-teller",
-        "medic",
-        "puppeteer"
+        "alchemist"
       ]
     },
     {
@@ -634,21 +823,28 @@
       "emoji": "🛡️",
       "tier": 3,
       "pwr": 2,
-      "hp": 9,
+      "hp": 11,
+      "total": 13,
+      "range": {
+        "min": 13,
+        "max": 23
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.584,
-      "awokenMargin": 0.06,
-      "share": 0.027,
+      "fieldScore": 0.558,
+      "awokenMargin": 0.063,
+      "share": 0.086,
       "inBand": true,
       "team": [
-        "ox",
-        "leech",
-        "hexer",
-        "coin-thief",
-        "aegis"
+        "trickster",
+        "priest",
+        "kraken",
+        "aegis",
+        "comet"
       ]
     },
     {
@@ -656,42 +852,56 @@
       "emoji": "💀",
       "tier": 3,
       "pwr": 6,
-      "hp": 12,
+      "hp": 17,
+      "total": 23,
+      "range": {
+        "min": 13,
+        "max": 23
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.505,
+      "fieldScore": 0.528,
       "awokenMargin": 0.059,
-      "share": 0,
+      "share": 0.133,
       "inBand": true,
       "team": [
-        "lone-wolf",
-        "medic",
-        "dynamo",
         "gravecaller",
-        "battery"
+        "ox",
+        "conductor",
+        "sniper",
+        "war-horn"
       ]
     },
     {
       "name": "Hydra",
       "emoji": "🐉",
       "tier": 4,
-      "pwr": 4,
-      "hp": 10,
+      "pwr": 5,
+      "hp": 14,
+      "total": 19,
+      "range": {
+        "min": 15,
+        "max": 29
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.464,
+      "fieldScore": 0.541,
       "awokenMargin": 0.033,
-      "share": 0.028,
+      "share": 0.156,
       "inBand": true,
       "team": [
-        "gambler",
-        "trickster",
+        "puppeteer",
+        "comet",
         "conductor",
-        "avenger",
+        "broodmother",
         "hydra"
       ]
     },
@@ -700,21 +910,28 @@
       "emoji": "🧙",
       "tier": 4,
       "pwr": 1,
-      "hp": 2,
+      "hp": 14,
+      "total": 15,
+      "range": {
+        "min": 15,
+        "max": 29
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
         "hp": 2
       },
-      "fieldScore": 0.555,
-      "awokenMargin": 0.091,
-      "share": 0.028,
+      "fieldScore": 0.59,
+      "awokenMargin": 0.111,
+      "share": 0.041,
       "inBand": true,
       "team": [
-        "battery",
-        "conductor",
+        "frostling",
+        "prism",
+        "kraken",
         "archmage",
-        "broodmother",
-        "aegis"
+        "coin-thief"
       ]
     },
     {
@@ -722,21 +939,28 @@
       "emoji": "👁️",
       "tier": 4,
       "pwr": 1,
-      "hp": 7,
+      "hp": 17,
+      "total": 18,
+      "range": {
+        "min": 15,
+        "max": 29
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
         "hp": 4
       },
-      "fieldScore": 0.507,
-      "awokenMargin": 0.069,
-      "share": 0,
+      "fieldScore": 0.512,
+      "awokenMargin": 0.046,
+      "share": 0.176,
       "inBand": true,
       "team": [
-        "berserker",
-        "oracle",
+        "priest",
+        "vulture",
         "broodmother",
-        "kraken",
-        "priest"
+        "oracle",
+        "reaper"
       ]
     },
     {
@@ -744,21 +968,28 @@
       "emoji": "🪓",
       "tier": 4,
       "pwr": 2,
-      "hp": 9,
+      "hp": 13,
+      "total": 15,
+      "range": {
+        "min": 15,
+        "max": 29
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.559,
-      "awokenMargin": 0.101,
+      "fieldScore": 0.465,
+      "awokenMargin": 0.113,
       "share": 0,
       "inBand": true,
       "team": [
-        "hydra",
-        "sniper",
-        "medic",
         "frost-witch",
-        "berserker"
+        "chrysalis",
+        "berserker",
+        "kraken",
+        "heckler"
       ]
     },
     {
@@ -766,65 +997,86 @@
       "emoji": "❄️",
       "tier": 1,
       "pwr": 3,
-      "hp": 11,
+      "hp": 9,
+      "total": 12,
+      "range": {
+        "min": 8,
+        "max": 12
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.635,
-      "awokenMargin": 0.054,
-      "share": 0.24,
-      "inBand": false,
+      "fieldScore": 0.531,
+      "awokenMargin": 0.049,
+      "share": 0,
+      "inBand": true,
       "team": [
-        "magnet",
-        "frostling",
-        "volcano",
-        "kraken",
-        "hydra"
+        "frost-witch",
+        "vulture",
+        "sniper",
+        "berserker",
+        "frostling"
       ]
     },
     {
       "name": "Priest",
       "emoji": "✨",
       "tier": 2,
-      "pwr": 1,
-      "hp": 5,
+      "pwr": 2,
+      "hp": 13,
+      "total": 15,
+      "range": {
+        "min": 11,
+        "max": 17
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
-        "pwr": 0,
+        "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.52,
-      "awokenMargin": 0.067,
-      "share": 0,
+      "fieldScore": 0.504,
+      "awokenMargin": 0.068,
+      "share": 0.364,
       "inBand": true,
       "team": [
         "magnet",
         "priest",
         "conductor",
         "comet",
-        "fortune-teller"
+        "squire"
       ]
     },
     {
       "name": "Battery",
       "emoji": "🔋",
       "tier": 2,
-      "pwr": 2,
-      "hp": 12,
+      "pwr": 1,
+      "hp": 10,
+      "total": 11,
+      "range": {
+        "min": 11,
+        "max": 17
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
         "hp": 4
       },
-      "fieldScore": 0.507,
-      "awokenMargin": 0.041,
-      "share": 0.116,
-      "inBand": true,
+      "fieldScore": 0.369,
+      "awokenMargin": 0.046,
+      "share": 0,
+      "inBand": false,
       "team": [
+        "magnet",
+        "trickster",
+        "puppeteer",
         "battery",
-        "hexer",
-        "leech",
-        "archmage",
-        "nautilus"
+        "siphon"
       ]
     },
     {
@@ -832,20 +1084,27 @@
       "emoji": "🧊",
       "tier": 3,
       "pwr": 1,
-      "hp": 6,
+      "hp": 12,
+      "total": 13,
+      "range": {
+        "min": 13,
+        "max": 23
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
-        "pwr": 0,
+        "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.559,
-      "awokenMargin": 0.065,
-      "share": 0.026,
+      "fieldScore": 0.569,
+      "awokenMargin": 0.058,
+      "share": 0.071,
       "inBand": true,
       "team": [
-        "dragon",
-        "priest",
-        "berserker",
-        "fortune-teller",
+        "hourglass",
+        "volcano",
+        "kraken",
+        "comet",
         "frost-witch"
       ]
     },
@@ -854,21 +1113,28 @@
       "emoji": "🥊",
       "tier": 2,
       "pwr": 4,
-      "hp": 12,
+      "hp": 13,
+      "total": 17,
+      "range": {
+        "min": 11,
+        "max": 17
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.498,
-      "awokenMargin": 0.09,
+      "fieldScore": 0.521,
+      "awokenMargin": 0.094,
       "share": 0,
       "inBand": true,
       "team": [
-        "hydra",
+        "daredevil",
+        "berserker",
         "bully",
-        "reaper",
-        "oracle",
-        "vulture"
+        "frost-witch",
+        "magnet"
       ]
     },
     {
@@ -876,21 +1142,28 @@
       "emoji": "⚗️",
       "tier": 3,
       "pwr": 6,
-      "hp": 12,
+      "hp": 10,
+      "total": 16,
+      "range": {
+        "min": 13,
+        "max": 23
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.552,
-      "awokenMargin": 0.05,
+      "fieldScore": 0.505,
+      "awokenMargin": 0.029,
       "share": 0,
       "inBand": true,
       "team": [
+        "ox",
+        "candle",
         "alchemist",
-        "prism",
-        "gravecaller",
-        "siphon",
-        "battery"
+        "hydra",
+        "magnet"
       ]
     },
     {
@@ -898,21 +1171,28 @@
       "emoji": "🗡️",
       "tier": 3,
       "pwr": 4,
-      "hp": 12,
+      "hp": 15,
+      "total": 19,
+      "range": {
+        "min": 13,
+        "max": 23
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.462,
-      "awokenMargin": 0.045,
-      "share": 0.108,
+      "fieldScore": 0.552,
+      "awokenMargin": 0.037,
+      "share": 0,
       "inBand": true,
       "team": [
-        "vulture",
-        "executioner",
-        "dynamo",
-        "coin-thief",
-        "oracle"
+        "phoenix",
+        "witch-doctor",
+        "seed",
+        "dragon",
+        "executioner"
       ]
     },
     {
@@ -920,21 +1200,28 @@
       "emoji": "🐀",
       "tier": 1,
       "pwr": 1,
-      "hp": 4,
+      "hp": 11,
+      "total": 12,
+      "range": {
+        "min": 8,
+        "max": 12
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
-        "hp": 0
+        "hp": 4
       },
-      "fieldScore": 0.515,
-      "awokenMargin": 0.063,
-      "share": 0.034,
+      "fieldScore": 0.475,
+      "awokenMargin": 0.059,
+      "share": 0,
       "inBand": true,
       "team": [
-        "war-horn",
+        "frost-witch",
         "plague-rat",
-        "frostling",
-        "raven",
-        "trickster"
+        "thornback",
+        "comet",
+        "oracle"
       ]
     },
     {
@@ -943,18 +1230,25 @@
       "tier": 1,
       "pwr": 2,
       "hp": 6,
+      "total": 8,
+      "range": {
+        "min": 8,
+        "max": 12
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
         "hp": 0
       },
-      "fieldScore": 0.495,
+      "fieldScore": 0.455,
       "awokenMargin": 0.066,
-      "share": 0.075,
+      "share": 0.102,
       "inBand": true,
       "team": [
-        "avenger",
         "martyr",
-        "war-horn",
+        "priest",
+        "conductor",
         "archmage",
         "comet"
       ]
@@ -964,21 +1258,28 @@
       "emoji": "🐂",
       "tier": 1,
       "pwr": 1,
-      "hp": 6,
+      "hp": 7,
+      "total": 8,
+      "range": {
+        "min": 8,
+        "max": 12
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
-        "pwr": 0,
+        "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.514,
-      "awokenMargin": 0.059,
-      "share": 0.027,
+      "fieldScore": 0.532,
+      "awokenMargin": 0.112,
+      "share": 0.272,
       "inBand": true,
       "team": [
-        "executioner",
-        "coin-thief",
+        "hydra",
         "ox",
-        "vulture",
-        "avenger"
+        "bodyguard",
+        "chrysalis",
+        "comet"
       ]
     },
     {
@@ -987,20 +1288,27 @@
       "tier": 1,
       "pwr": 3,
       "hp": 9,
+      "total": 12,
+      "range": {
+        "min": 8,
+        "max": 12
+      },
+      "atEdge": true,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.437,
-      "awokenMargin": 0.031,
+      "fieldScore": 0.374,
+      "awokenMargin": 0.03,
       "share": 0,
-      "inBand": true,
+      "inBand": false,
       "team": [
-        "frostling",
-        "hydra",
         "daredevil",
-        "volcano",
-        "sniper"
+        "raven",
+        "martyr",
+        "chrysalis",
+        "aegis"
       ]
     },
     {
@@ -1008,87 +1316,115 @@
       "emoji": "🤺",
       "tier": 1,
       "pwr": 3,
-      "hp": 12,
+      "hp": 9,
+      "total": 12,
+      "range": {
+        "min": 8,
+        "max": 12
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
-        "pwr": 0,
+        "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.451,
-      "awokenMargin": 0.079,
+      "fieldScore": 0.442,
+      "awokenMargin": 0.042,
       "share": 0,
       "inBand": true,
       "team": [
-        "gravecaller",
+        "phoenix",
         "duelist",
-        "hexer",
-        "chrysalis",
-        "oracle"
+        "heckler",
+        "puppeteer",
+        "reaper"
       ]
     },
     {
       "name": "Paladin",
       "emoji": "⚜️",
       "tier": 2,
-      "pwr": 2,
-      "hp": 9,
+      "pwr": 4,
+      "hp": 13,
+      "total": 17,
+      "range": {
+        "min": 11,
+        "max": 17
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.491,
-      "awokenMargin": 0.034,
+      "fieldScore": 0.577,
+      "awokenMargin": 0.035,
       "share": 0,
       "inBand": true,
       "team": [
-        "paladin",
+        "fortune-teller",
         "bodyguard",
-        "aegis",
-        "gravedigger",
-        "sniper"
+        "paladin",
+        "priest",
+        "war-horn"
       ]
     },
     {
       "name": "Squire",
       "emoji": "🛡",
       "tier": 2,
-      "pwr": 1,
-      "hp": 8,
+      "pwr": 3,
+      "hp": 14,
+      "total": 17,
+      "range": {
+        "min": 11,
+        "max": 17
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.46,
-      "awokenMargin": 0.074,
-      "share": 0,
+      "fieldScore": 0.484,
+      "awokenMargin": 0.068,
+      "share": 0.123,
       "inBand": true,
       "team": [
+        "hourglass",
+        "seed",
         "dragon",
-        "gravecaller",
-        "mirror",
-        "squire",
-        "puppeteer"
+        "priest",
+        "squire"
       ]
     },
     {
       "name": "Dynamo",
       "emoji": "⚙️",
       "tier": 2,
-      "pwr": 3,
-      "hp": 10,
+      "pwr": 4,
+      "hp": 13,
+      "total": 17,
+      "range": {
+        "min": 11,
+        "max": 17
+      },
+      "atEdge": true,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.484,
-      "awokenMargin": 0.026,
+      "fieldScore": 0.424,
+      "awokenMargin": 0.034,
       "share": 0,
-      "inBand": true,
+      "inBand": false,
       "team": [
-        "bodyguard",
-        "hydra",
-        "dynamo",
-        "chrysalis",
-        "sniper"
+        "phoenix",
+        "hexer",
+        "volcano",
+        "coin-thief",
+        "dynamo"
       ]
     },
     {
@@ -1096,20 +1432,27 @@
       "emoji": "⚔️",
       "tier": 2,
       "pwr": 2,
-      "hp": 10,
+      "hp": 9,
+      "total": 11,
+      "range": {
+        "min": 11,
+        "max": 17
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.54,
-      "awokenMargin": 0.046,
+      "fieldScore": 0.481,
+      "awokenMargin": 0.036,
       "share": 0,
       "inBand": true,
       "team": [
-        "hornet",
+        "priest",
         "vulture",
-        "alchemist",
-        "coin-thief",
+        "sniper",
+        "archmage",
         "avenger"
       ]
     },
@@ -1117,43 +1460,57 @@
       "name": "Siphon",
       "emoji": "🌀",
       "tier": 2,
-      "pwr": 2,
-      "hp": 10,
+      "pwr": 3,
+      "hp": 11,
+      "total": 14,
+      "range": {
+        "min": 11,
+        "max": 17
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.547,
-      "awokenMargin": 0.045,
-      "share": 0.026,
+      "fieldScore": 0.515,
+      "awokenMargin": 0.033,
+      "share": 0,
       "inBand": true,
       "team": [
         "dragon",
-        "plague-rat",
         "siphon",
-        "comet",
-        "vulture"
+        "coin-thief",
+        "lone-wolf",
+        "frost-witch"
       ]
     },
     {
       "name": "Comet",
       "emoji": "☄️",
       "tier": 3,
-      "pwr": 0,
-      "hp": 4,
+      "pwr": 1,
+      "hp": 12,
+      "total": 13,
+      "range": {
+        "min": 13,
+        "max": 23
+      },
+      "atEdge": true,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
         "hp": 2
       },
-      "fieldScore": 0.634,
-      "awokenMargin": 0.085,
-      "share": 0.108,
+      "fieldScore": 0.622,
+      "awokenMargin": 0.09,
+      "share": 0.321,
       "inBand": false,
       "team": [
-        "dynamo",
+        "lone-wolf",
         "hourglass",
-        "puppeteer",
-        "candle",
+        "heckler",
+        "priest",
         "comet"
       ]
     },
@@ -1162,43 +1519,57 @@
       "emoji": "🌾",
       "tier": 3,
       "pwr": 2,
-      "hp": 8,
+      "hp": 11,
+      "total": 13,
+      "range": {
+        "min": 13,
+        "max": 23
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
-        "hp": 2
+        "hp": 4
       },
-      "fieldScore": 0.556,
-      "awokenMargin": 0.087,
-      "share": 0.026,
-      "inBand": true,
+      "fieldScore": 0.35,
+      "awokenMargin": 0.035,
+      "share": 0,
+      "inBand": false,
       "team": [
-        "duelist",
-        "bodyguard",
         "reaper",
-        "archmage",
-        "sniper"
+        "fortune-teller",
+        "trickster",
+        "conductor",
+        "archmage"
       ]
     },
     {
       "name": "Heckler",
       "emoji": "📣",
       "tier": 3,
-      "pwr": 1,
-      "hp": 7,
+      "pwr": 4,
+      "hp": 19,
+      "total": 23,
+      "range": {
+        "min": 13,
+        "max": 23
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.437,
-      "awokenMargin": 0.024,
-      "share": 0,
+      "fieldScore": 0.535,
+      "awokenMargin": 0.043,
+      "share": 0.176,
       "inBand": true,
       "team": [
-        "aegis",
-        "heckler",
+        "seed",
+        "dragon",
+        "battery",
         "hexer",
-        "volcano",
-        "broodmother"
+        "heckler"
       ]
     },
     {
@@ -1206,21 +1577,28 @@
       "emoji": "🪶",
       "tier": 3,
       "pwr": 2,
-      "hp": 9,
+      "hp": 13,
+      "total": 15,
+      "range": {
+        "min": 13,
+        "max": 23
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
-        "pwr": 0,
+        "pwr": 1,
         "hp": 4
       },
-      "fieldScore": 0.47,
-      "awokenMargin": 0.039,
-      "share": 0,
-      "inBand": true,
+      "fieldScore": 0.415,
+      "awokenMargin": 0.047,
+      "share": 0.176,
+      "inBand": false,
       "team": [
-        "magnet",
-        "vulture",
-        "frost-witch",
-        "trickster",
-        "witch-doctor"
+        "dragon",
+        "bully",
+        "oracle",
+        "witch-doctor",
+        "bodyguard"
       ]
     },
     {
@@ -1228,21 +1606,28 @@
       "emoji": "🕷️",
       "tier": 3,
       "pwr": 1,
-      "hp": 6,
+      "hp": 12,
+      "total": 13,
+      "range": {
+        "min": 13,
+        "max": 23
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
-        "hp": 0
+        "hp": 2
       },
-      "fieldScore": 0.531,
-      "awokenMargin": 0.107,
-      "share": 0.206,
+      "fieldScore": 0.56,
+      "awokenMargin": 0.123,
+      "share": 0.241,
       "inBand": true,
       "team": [
+        "aegis",
         "hexer",
-        "drummer",
-        "paladin",
-        "comet",
-        "broodmother"
+        "vulture",
+        "broodmother",
+        "archmage"
       ]
     },
     {
@@ -1250,21 +1635,28 @@
       "emoji": "🐲",
       "tier": 4,
       "pwr": 2,
-      "hp": 7,
+      "hp": 13,
+      "total": 15,
+      "range": {
+        "min": 15,
+        "max": 29
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
         "hp": 0
       },
-      "fieldScore": 0.509,
-      "awokenMargin": 0.126,
-      "share": 0.36,
+      "fieldScore": 0.547,
+      "awokenMargin": 0.107,
+      "share": 0.061,
       "inBand": true,
       "team": [
-        "fortune-teller",
-        "priest",
+        "plague-rat",
         "dragon",
-        "candle",
-        "coin-thief"
+        "priest",
+        "vulture",
+        "sniper"
       ]
     },
     {
@@ -1272,43 +1664,57 @@
       "emoji": "🦑",
       "tier": 4,
       "pwr": 1,
-      "hp": 8,
+      "hp": 14,
+      "total": 15,
+      "range": {
+        "min": 15,
+        "max": 29
+      },
+      "atEdge": true,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
         "hp": 0
       },
-      "fieldScore": 0.59,
-      "awokenMargin": 0.145,
-      "share": 0.389,
-      "inBand": true,
+      "fieldScore": 0.685,
+      "awokenMargin": 0.108,
+      "share": 0.27,
+      "inBand": false,
       "team": [
-        "dragon",
-        "leech",
-        "raven",
+        "hexer",
         "kraken",
-        "fortune-teller"
+        "gravedigger",
+        "broodmother",
+        "war-horn"
       ]
     },
     {
       "name": "Puppeteer",
       "emoji": "🪆",
       "tier": 4,
-      "pwr": 0,
-      "hp": 3,
+      "pwr": 1,
+      "hp": 14,
+      "total": 15,
+      "range": {
+        "min": 15,
+        "max": 29
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
-        "hp": 2
+        "hp": 4
       },
-      "fieldScore": 0.568,
-      "awokenMargin": 0.068,
-      "share": 0.195,
+      "fieldScore": 0.575,
+      "awokenMargin": 0.065,
+      "share": 0.072,
       "inBand": true,
       "team": [
-        "lone-wolf",
-        "candle",
-        "battery",
+        "hydra",
+        "vulture",
         "puppeteer",
-        "sniper"
+        "oracle",
+        "magnet"
       ]
     },
     {
@@ -1316,21 +1722,28 @@
       "emoji": "🐦‍🔥",
       "tier": 4,
       "pwr": 2,
-      "hp": 7,
+      "hp": 13,
+      "total": 15,
+      "range": {
+        "min": 15,
+        "max": 29
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
         "hp": 0
       },
-      "fieldScore": 0.489,
-      "awokenMargin": 0.132,
-      "share": 0.026,
+      "fieldScore": 0.463,
+      "awokenMargin": 0.087,
+      "share": 0,
       "inBand": true,
       "team": [
-        "hornet",
+        "bodyguard",
         "phoenix",
-        "sniper",
         "archmage",
-        "conductor"
+        "conductor",
+        "oracle"
       ]
     },
     {
@@ -1338,283 +1751,667 @@
       "emoji": "🌋",
       "tier": 4,
       "pwr": 1,
-      "hp": 7,
+      "hp": 14,
+      "total": 15,
+      "range": {
+        "min": 15,
+        "max": 29
+      },
+      "atEdge": false,
+      "zeroPwr": null,
       "awoken": {
         "pwr": 0,
         "hp": 0
       },
-      "fieldScore": 0.543,
-      "awokenMargin": 0.202,
-      "share": 0,
+      "fieldScore": 0.557,
+      "awokenMargin": 0.221,
+      "share": 0.071,
       "inBand": true,
       "team": [
         "dragon",
-        "nautilus",
+        "berserker",
         "volcano",
-        "fortune-teller",
-        "medic"
+        "gravedigger",
+        "fortune-teller"
       ]
     }
   ],
   "rounds": [
     {
       "round": 1,
-      "median": 0.523,
-      "inBand": 38,
+      "median": 0.519,
+      "inBand": 32,
       "scores": {
-        "hourglass": 0.528,
-        "mirror": 0.485,
-        "candle": 0.416,
-        "gambler": 0.475,
-        "nautilus": 0.431,
-        "magnet": 0.273,
-        "raven": 0.671,
-        "seed": 0.404,
-        "sniper": 0.81,
-        "medic": 0.443,
-        "leech": 0.562,
-        "lone-wolf": 0.433,
-        "drummer": 0.526,
-        "bodyguard": 0.379,
-        "chrysalis": 0.629,
-        "trickster": 0.556,
-        "gravedigger": 0.488,
-        "conductor": 0.527,
-        "thornback": 0.636,
-        "coin-thief": 0.611,
-        "lantern": 0.612,
-        "hornet": 0.567,
-        "prism": 0.474,
-        "war-horn": 0.467,
-        "vulture": 0.543,
-        "hexer": 0.597,
-        "fortune-teller": 0.352,
-        "aegis": 0.665,
-        "gravecaller": 0.562,
-        "hydra": 0.628,
-        "archmage": 0.548,
-        "oracle": 0.449,
-        "berserker": 0.504,
-        "frostling": 0.539,
-        "priest": 0.489,
-        "battery": 0.521,
-        "frost-witch": 0.531,
-        "bully": 0.418,
-        "alchemist": 0.538,
-        "executioner": 0.375,
-        "plague-rat": 0.467,
-        "martyr": 0.57,
-        "ox": 0.547,
-        "daredevil": 0.385,
-        "duelist": 0.401,
-        "paladin": 0.275,
-        "squire": 0.462,
-        "dynamo": 0.261,
-        "avenger": 0.474,
-        "siphon": 0.593,
-        "comet": 0.682,
-        "reaper": 0.601,
-        "heckler": 0.465,
-        "witch-doctor": 0.459,
-        "broodmother": 0.602,
-        "dragon": 0.558,
-        "kraken": 0.457,
-        "puppeteer": 0.592,
-        "phoenix": 0.581,
-        "volcano": 0.448
+        "hourglass": 0.724,
+        "mirror": 0.515,
+        "candle": 0.399,
+        "gambler": 0.381,
+        "nautilus": 0.453,
+        "magnet": 0.519,
+        "raven": 0.484,
+        "seed": 0.438,
+        "sniper": 0.682,
+        "medic": 0.701,
+        "leech": 0.674,
+        "lone-wolf": 0.324,
+        "drummer": 0.541,
+        "bodyguard": 0.385,
+        "chrysalis": 0.55,
+        "trickster": 0.566,
+        "gravedigger": 0.556,
+        "conductor": 0.677,
+        "thornback": 0.519,
+        "coin-thief": 0.55,
+        "lantern": 0.565,
+        "hornet": 0.44,
+        "prism": 0.429,
+        "war-horn": 0.537,
+        "vulture": 0.608,
+        "hexer": 0.503,
+        "fortune-teller": 0.445,
+        "aegis": 0.467,
+        "gravecaller": 0.303,
+        "hydra": 0.451,
+        "archmage": 0.725,
+        "oracle": 0.524,
+        "berserker": 0.439,
+        "frostling": 0.52,
+        "priest": 0.498,
+        "battery": 0.711,
+        "frost-witch": 0.569,
+        "bully": 0.404,
+        "alchemist": 0.459,
+        "executioner": 0.548,
+        "plague-rat": 0.397,
+        "martyr": 0.604,
+        "ox": 0.394,
+        "daredevil": 0.358,
+        "duelist": 0.376,
+        "paladin": 0.307,
+        "squire": 0.347,
+        "dynamo": 0.221,
+        "avenger": 0.488,
+        "siphon": 0.579,
+        "comet": 0.645,
+        "reaper": 0.738,
+        "heckler": 0.289,
+        "witch-doctor": 0.581,
+        "broodmother": 0.576,
+        "dragon": 0.52,
+        "kraken": 0.531,
+        "puppeteer": 0.712,
+        "phoenix": 0.468,
+        "volcano": 0.533
       },
       "moves": [
-        "Candle 42%: 4/6→4/7",
-        "Nautilus 43%: 4/10→4/11",
-        "Raven 67%: 2/6→2/5",
-        "Seed 40%: 0/8→0/9",
-        "Lone Wolf 43%: 5/11→5/12",
-        "Bodyguard 38%: 6/10→6/11",
-        "Thornback 64%: 3/4→3/3",
-        "Coin Thief 61%: 1/3→1/2",
-        "Lantern 61%: 5/9→5/8",
-        "Fortune Teller 35%: 0/2→0/4",
-        "Aegis 67%: 2/10→2/9",
-        "Hydra 63%: 4/11→4/10",
-        "Bully 42%: 3/11→3/12",
-        "Executioner 38%: 3/11→3/12",
-        "Daredevil 39%: 3/8→3/9",
-        "Duelist 40%: 3/10→3/11",
-        "Paladin 27%: 1/6→2/8",
-        "Dynamo 26%: 2/7→3/9",
-        "Comet 68%: 0/5→0/4",
-        "Puppeteer awoken adds 2%: +0/+0→+0/+2"
+        "Hourglass 72%: 6/11→5/9",
+        "Candle 40%: 4/9→4/10",
+        "Gambler 38%: 2/9→2/10",
+        "Seed 44%: 0/11→0/12",
+        "Leech 67%: 5/7→5/6",
+        "Conductor 68%: 5/11→5/10",
+        "Vulture 61%: 6/9→6/8",
+        "Gravecaller 30%: 6/12→6/14",
+        "Battery 71%: 2/12→1/10",
+        "Bully 40%: 4/12→4/13",
+        "Plague Rat awoken adds 1%: +0/+0→+0/+2",
+        "Plague Rat 40%: 1/7→1/8",
+        "Ox awoken adds 1%: +0/+4→+1/+4",
+        "Ox 39%: 1/7→1/8",
+        "Paladin 31%: 2/9→3/11",
+        "Squire 35%: 1/10→2/12",
+        "Dynamo 22%: 3/10→4/12",
+        "Heckler 29%: 1/12→2/14"
       ],
       "healthy": true
     },
     {
       "round": 2,
-      "median": 0.525,
-      "inBand": 38,
+      "median": 0.501,
+      "inBand": 27,
       "scores": {
-        "hourglass": 0.566,
-        "mirror": 0.537,
-        "candle": 0.519,
-        "gambler": 0.461,
-        "nautilus": 0.608,
-        "magnet": 0.475,
-        "raven": 0.493,
-        "seed": 0.525,
-        "sniper": 0.524,
-        "medic": 0.628,
-        "leech": 0.548,
-        "lone-wolf": 0.278,
-        "drummer": 0.357,
-        "bodyguard": 0.607,
-        "chrysalis": 0.561,
-        "trickster": 0.574,
-        "gravedigger": 0.479,
-        "conductor": 0.544,
-        "thornback": 0.549,
-        "coin-thief": 0.637,
-        "lantern": 0.537,
-        "hornet": 0.47,
-        "prism": 0.484,
-        "war-horn": 0.634,
-        "vulture": 0.531,
-        "hexer": 0.576,
-        "fortune-teller": 0.543,
-        "aegis": 0.599,
-        "gravecaller": 0.572,
-        "hydra": 0.423,
-        "archmage": 0.666,
-        "oracle": 0.456,
-        "berserker": 0.489,
-        "frostling": 0.404,
-        "priest": 0.594,
-        "battery": 0.499,
-        "frost-witch": 0.528,
-        "bully": 0.443,
-        "alchemist": 0.547,
-        "executioner": 0.375,
-        "plague-rat": 0.524,
-        "martyr": 0.407,
-        "ox": 0.521,
-        "daredevil": 0.501,
-        "duelist": 0.391,
-        "paladin": 0.437,
-        "squire": 0.416,
-        "dynamo": 0.394,
-        "avenger": 0.595,
-        "siphon": 0.434,
-        "comet": 0.537,
-        "reaper": 0.512,
-        "heckler": 0.459,
-        "witch-doctor": 0.576,
-        "broodmother": 0.605,
-        "dragon": 0.404,
-        "kraken": 0.476,
-        "puppeteer": 0.614,
-        "phoenix": 0.671,
-        "volcano": 0.588
+        "hourglass": 0.474,
+        "mirror": 0.432,
+        "candle": 0.484,
+        "gambler": 0.39,
+        "nautilus": 0.342,
+        "magnet": 0.372,
+        "raven": 0.598,
+        "seed": 0.57,
+        "sniper": 0.612,
+        "medic": 0.596,
+        "leech": 0.579,
+        "lone-wolf": 0.475,
+        "drummer": 0.487,
+        "bodyguard": 0.568,
+        "chrysalis": 0.664,
+        "trickster": 0.591,
+        "gravedigger": 0.64,
+        "conductor": 0.446,
+        "thornback": 0.611,
+        "coin-thief": 0.517,
+        "lantern": 0.569,
+        "hornet": 0.488,
+        "prism": 0.414,
+        "war-horn": 0.57,
+        "vulture": 0.45,
+        "hexer": 0.65,
+        "fortune-teller": 0.404,
+        "aegis": 0.514,
+        "gravecaller": 0.369,
+        "hydra": 0.482,
+        "archmage": 0.691,
+        "oracle": 0.515,
+        "berserker": 0.619,
+        "frostling": 0.38,
+        "priest": 0.318,
+        "battery": 0.659,
+        "frost-witch": 0.531,
+        "bully": 0.37,
+        "alchemist": 0.468,
+        "executioner": 0.353,
+        "plague-rat": 0.401,
+        "martyr": 0.416,
+        "ox": 0.606,
+        "daredevil": 0.6,
+        "duelist": 0.463,
+        "paladin": 0.526,
+        "squire": 0.339,
+        "dynamo": 0.381,
+        "avenger": 0.646,
+        "siphon": 0.375,
+        "comet": 0.756,
+        "reaper": 0.469,
+        "heckler": 0.319,
+        "witch-doctor": 0.463,
+        "broodmother": 0.717,
+        "dragon": 0.461,
+        "kraken": 0.76,
+        "puppeteer": 0.556,
+        "phoenix": 0.559,
+        "volcano": 0.573
       },
       "moves": [
-        "Medic 63%: 1/4→1/3",
-        "Lone Wolf 28%: 5/12→6/12",
-        "Drummer 36%: 4/9→5/11",
-        "Coin Thief 64%: 1/2→0/2",
-        "War Horn 63%: 5/10→5/9",
-        "Frostling 40%: 3/10→3/11",
-        "Bully 44%: 3/12→4/12",
-        "Executioner 38%: 3/12→4/12",
-        "Martyr 41%: 2/5→2/6",
-        "Duelist 39%: 3/11→3/12",
-        "Paladin 44%: 2/8→2/9",
-        "Squire awoken adds 1%: +0/+4→+1/+4",
-        "Squire 42%: 1/7→1/8",
-        "Dynamo 39%: 3/9→3/10",
-        "Siphon 43%: 2/9→2/10",
-        "Broodmother 61%: 1/7→1/6",
-        "Dragon 40%: 2/6→2/7",
-        "Puppeteer 61%: 0/4→0/3",
-        "Phoenix 67%: 2/8→2/7"
+        "Magnet 37%: 6/12→6/13",
+        "Fortune Teller 40%: 1/12→1/13",
+        "Gravecaller 37%: 6/14→6/15",
+        "Priest 32%: 1/10→2/12",
+        "Executioner 35%: 4/12→4/13",
+        "Plague Rat 40%: 1/8→1/9",
+        "Squire 34%: 2/12→3/14",
+        "Dynamo 38%: 4/12→4/13",
+        "Avenger 65%: 2/10→2/9",
+        "Siphon 37%: 2/10→2/11",
+        "Heckler 32%: 2/14→3/16",
+        "Witch Doctor awoken adds 1%: +0/+4→+1/+4"
       ],
       "healthy": true
     },
     {
       "round": 3,
-      "median": 0.529,
-      "inBand": 42,
+      "median": 0.507,
+      "inBand": 31,
       "scores": {
-        "hourglass": 0.488,
-        "mirror": 0.465,
-        "candle": 0.487,
-        "gambler": 0.415,
-        "nautilus": 0.564,
-        "magnet": 0.405,
-        "raven": 0.656,
-        "seed": 0.538,
-        "sniper": 0.692,
-        "medic": 0.542,
-        "leech": 0.601,
-        "lone-wolf": 0.578,
-        "drummer": 0.524,
-        "bodyguard": 0.437,
-        "chrysalis": 0.755,
-        "trickster": 0.518,
-        "gravedigger": 0.642,
-        "conductor": 0.498,
-        "thornback": 0.545,
-        "coin-thief": 0.575,
-        "lantern": 0.482,
-        "hornet": 0.399,
-        "prism": 0.498,
-        "war-horn": 0.662,
-        "vulture": 0.355,
-        "hexer": 0.576,
-        "fortune-teller": 0.534,
-        "aegis": 0.589,
-        "gravecaller": 0.43,
-        "hydra": 0.443,
-        "archmage": 0.554,
-        "oracle": 0.593,
-        "berserker": 0.504,
-        "frostling": 0.367,
-        "priest": 0.554,
-        "battery": 0.574,
-        "frost-witch": 0.604,
-        "bully": 0.496,
-        "alchemist": 0.53,
-        "executioner": 0.45,
-        "plague-rat": 0.456,
-        "martyr": 0.673,
-        "ox": 0.523,
-        "daredevil": 0.452,
-        "duelist": 0.672,
-        "paladin": 0.534,
-        "squire": 0.53,
-        "dynamo": 0.439,
-        "avenger": 0.485,
-        "siphon": 0.543,
-        "comet": 0.528,
-        "reaper": 0.577,
-        "heckler": 0.412,
-        "witch-doctor": 0.387,
-        "broodmother": 0.464,
-        "dragon": 0.584,
-        "kraken": 0.472,
-        "puppeteer": 0.602,
-        "phoenix": 0.531,
-        "volcano": 0.499
+        "hourglass": 0.441,
+        "mirror": 0.529,
+        "candle": 0.698,
+        "gambler": 0.291,
+        "nautilus": 0.389,
+        "magnet": 0.527,
+        "raven": 0.446,
+        "seed": 0.432,
+        "sniper": 0.553,
+        "medic": 0.754,
+        "leech": 0.372,
+        "lone-wolf": 0.347,
+        "drummer": 0.484,
+        "bodyguard": 0.494,
+        "chrysalis": 0.753,
+        "trickster": 0.653,
+        "gravedigger": 0.555,
+        "conductor": 0.61,
+        "thornback": 0.473,
+        "coin-thief": 0.695,
+        "lantern": 0.552,
+        "hornet": 0.622,
+        "prism": 0.391,
+        "war-horn": 0.46,
+        "vulture": 0.366,
+        "hexer": 0.634,
+        "fortune-teller": 0.674,
+        "aegis": 0.584,
+        "gravecaller": 0.525,
+        "hydra": 0.302,
+        "archmage": 0.519,
+        "oracle": 0.475,
+        "berserker": 0.494,
+        "frostling": 0.326,
+        "priest": 0.573,
+        "battery": 0.644,
+        "frost-witch": 0.718,
+        "bully": 0.439,
+        "alchemist": 0.481,
+        "executioner": 0.422,
+        "plague-rat": 0.52,
+        "martyr": 0.442,
+        "ox": 0.696,
+        "daredevil": 0.485,
+        "duelist": 0.532,
+        "paladin": 0.224,
+        "squire": 0.581,
+        "dynamo": 0.356,
+        "avenger": 0.545,
+        "siphon": 0.296,
+        "comet": 0.681,
+        "reaper": 0.375,
+        "heckler": 0.46,
+        "witch-doctor": 0.371,
+        "broodmother": 0.549,
+        "dragon": 0.48,
+        "kraken": 0.655,
+        "puppeteer": 0.641,
+        "phoenix": 0.566,
+        "volcano": 0.482
       },
       "moves": [
-        "Gambler 42%: 2/9→2/10",
-        "Raven 66%: 2/5→2/4",
-        "Bodyguard 44%: 6/11→6/12",
-        "Gravedigger 64%: 2/4→2/3",
-        "Hornet 40%: 4/7→4/8",
-        "War Horn 66%: 5/9→5/8",
-        "Vulture 35%: 6/9→6/11",
-        "Hydra 44%: 4/10→4/11",
-        "Frostling 37%: 3/11→4/12",
-        "Dynamo 44%: 3/10→3/11",
-        "Heckler 41%: 1/7→1/8",
-        "Witch Doctor 39%: 2/9→2/10"
+        "Hornet 62%: 4/7→4/6",
+        "Hydra 30%: 4/11→5/13",
+        "Executioner 42%: 4/13→4/14",
+        "Ox 70%: 1/8→1/7",
+        "Paladin 22%: 3/11→4/13",
+        "Siphon 30%: 2/11→3/13",
+        "Witch Doctor 37%: 2/11→2/12",
+        "Broodmother awoken adds 0%: +0/+0→+0/+2"
+      ],
+      "healthy": true
+    },
+    {
+      "round": 4,
+      "median": 0.523,
+      "inBand": 25,
+      "scores": {
+        "hourglass": 0.523,
+        "mirror": 0.432,
+        "candle": 0.459,
+        "gambler": 0.371,
+        "nautilus": 0.463,
+        "magnet": 0.445,
+        "raven": 0.579,
+        "seed": 0.434,
+        "sniper": 0.679,
+        "medic": 0.629,
+        "leech": 0.317,
+        "lone-wolf": 0.537,
+        "drummer": 0.601,
+        "bodyguard": 0.291,
+        "chrysalis": 0.605,
+        "trickster": 0.585,
+        "gravedigger": 0.637,
+        "conductor": 0.555,
+        "thornback": 0.464,
+        "coin-thief": 0.525,
+        "lantern": 0.274,
+        "hornet": 0.444,
+        "prism": 0.439,
+        "war-horn": 0.529,
+        "vulture": 0.258,
+        "hexer": 0.53,
+        "fortune-teller": 0.736,
+        "aegis": 0.436,
+        "gravecaller": 0.404,
+        "hydra": 0.656,
+        "archmage": 0.744,
+        "oracle": 0.469,
+        "berserker": 0.419,
+        "frostling": 0.495,
+        "priest": 0.459,
+        "battery": 0.543,
+        "frost-witch": 0.612,
+        "bully": 0.418,
+        "alchemist": 0.624,
+        "executioner": 0.463,
+        "plague-rat": 0.524,
+        "martyr": 0.663,
+        "ox": 0.304,
+        "daredevil": 0.384,
+        "duelist": 0.44,
+        "paladin": 0.355,
+        "squire": 0.421,
+        "dynamo": 0.322,
+        "avenger": 0.534,
+        "siphon": 0.658,
+        "comet": 0.648,
+        "reaper": 0.583,
+        "heckler": 0.413,
+        "witch-doctor": 0.487,
+        "broodmother": 0.538,
+        "dragon": 0.608,
+        "kraken": 0.706,
+        "puppeteer": 0.583,
+        "phoenix": 0.655,
+        "volcano": 0.619
+      },
+      "moves": [
+        "Mirror 43%: 4/7→4/8",
+        "Seed 43%: 0/12→0/13",
+        "Leech 32%: 5/6→5/7",
+        "Vulture 26%: 6/8→6/10",
+        "Fortune Teller 74%: 1/13→1/12",
+        "Aegis 44%: 2/11→2/12",
+        "Gravecaller 40%: 6/15→6/16",
+        "Alchemist 62%: 6/12→6/11",
+        "Plague Rat awoken adds 2%: +0/+2→+0/+4",
+        "Heckler 41%: 3/16→3/17"
+      ],
+      "healthy": true
+    },
+    {
+      "round": 5,
+      "median": 0.501,
+      "inBand": 30,
+      "scores": {
+        "hourglass": 0.42,
+        "mirror": 0.553,
+        "candle": 0.454,
+        "gambler": 0.445,
+        "nautilus": 0.485,
+        "magnet": 0.559,
+        "raven": 0.738,
+        "seed": 0.646,
+        "sniper": 0.479,
+        "medic": 0.414,
+        "leech": 0.437,
+        "lone-wolf": 0.308,
+        "drummer": 0.643,
+        "bodyguard": 0.574,
+        "chrysalis": 0.686,
+        "trickster": 0.409,
+        "gravedigger": 0.651,
+        "conductor": 0.708,
+        "thornback": 0.502,
+        "coin-thief": 0.405,
+        "lantern": 0.493,
+        "hornet": 0.47,
+        "prism": 0.388,
+        "war-horn": 0.488,
+        "vulture": 0.727,
+        "hexer": 0.54,
+        "fortune-teller": 0.455,
+        "aegis": 0.647,
+        "gravecaller": 0.501,
+        "hydra": 0.573,
+        "archmage": 0.698,
+        "oracle": 0.382,
+        "berserker": 0.424,
+        "frostling": 0.348,
+        "priest": 0.391,
+        "battery": 0.475,
+        "frost-witch": 0.533,
+        "bully": 0.398,
+        "alchemist": 0.602,
+        "executioner": 0.544,
+        "plague-rat": 0.57,
+        "martyr": 0.501,
+        "ox": 0.632,
+        "daredevil": 0.306,
+        "duelist": 0.455,
+        "paladin": 0.321,
+        "squire": 0.467,
+        "dynamo": 0.576,
+        "avenger": 0.443,
+        "siphon": 0.653,
+        "comet": 0.684,
+        "reaper": 0.443,
+        "heckler": 0.528,
+        "witch-doctor": 0.444,
+        "broodmother": 0.586,
+        "dragon": 0.492,
+        "kraken": 0.667,
+        "puppeteer": 0.601,
+        "phoenix": 0.589,
+        "volcano": 0.608
+      },
+      "moves": [
+        "Drummer 64%: 5/11→5/10",
+        "Oracle 38%: 1/14→1/15",
+        "Priest 39%: 2/12→2/13",
+        "Alchemist 60%: 6/11→6/10",
+        "Siphon 65%: 3/13→3/12",
+        "Reaper awoken adds 1%: +0/+2→+0/+4"
+      ],
+      "healthy": true
+    },
+    {
+      "round": 6,
+      "median": 0.509,
+      "inBand": 27,
+      "scores": {
+        "hourglass": 0.471,
+        "mirror": 0.414,
+        "candle": 0.548,
+        "gambler": 0.308,
+        "nautilus": 0.466,
+        "magnet": 0.567,
+        "raven": 0.642,
+        "seed": 0.512,
+        "sniper": 0.571,
+        "medic": 0.54,
+        "leech": 0.489,
+        "lone-wolf": 0.354,
+        "drummer": 0.514,
+        "bodyguard": 0.509,
+        "chrysalis": 0.462,
+        "trickster": 0.464,
+        "gravedigger": 0.521,
+        "conductor": 0.67,
+        "thornback": 0.523,
+        "coin-thief": 0.669,
+        "lantern": 0.179,
+        "hornet": 0.378,
+        "prism": 0.545,
+        "war-horn": 0.309,
+        "vulture": 0.36,
+        "hexer": 0.647,
+        "fortune-teller": 0.41,
+        "aegis": 0.64,
+        "gravecaller": 0.35,
+        "hydra": 0.527,
+        "archmage": 0.664,
+        "oracle": 0.367,
+        "berserker": 0.673,
+        "frostling": 0.498,
+        "priest": 0.447,
+        "battery": 0.658,
+        "frost-witch": 0.454,
+        "bully": 0.697,
+        "alchemist": 0.348,
+        "executioner": 0.35,
+        "plague-rat": 0.434,
+        "martyr": 0.66,
+        "ox": 0.617,
+        "daredevil": 0.42,
+        "duelist": 0.401,
+        "paladin": 0.464,
+        "squire": 0.5,
+        "dynamo": 0.423,
+        "avenger": 0.546,
+        "siphon": 0.585,
+        "comet": 0.707,
+        "reaper": 0.43,
+        "heckler": 0.339,
+        "witch-doctor": 0.368,
+        "broodmother": 0.623,
+        "dragon": 0.598,
+        "kraken": 0.56,
+        "puppeteer": 0.698,
+        "phoenix": 0.509,
+        "volcano": 0.784
+      },
+      "moves": [
+        "Mirror 41%: 4/8→4/9",
+        "War Horn 31%: 5/9→6/11",
+        "Vulture 36%: 6/10→6/11",
+        "Aegis 64%: 2/12→2/11",
+        "Gravecaller 35%: 6/16→6/17",
+        "Oracle 37%: 1/15→1/16",
+        "Frost Witch awoken adds 1%: +0/+4→+1/+4",
+        "Executioner 35%: 4/14→4/15",
+        "Heckler 34%: 3/17→4/19",
+        "Witch Doctor 37%: 2/12→2/13",
+        "Puppeteer awoken adds 2%: +0/+2→+0/+4"
+      ],
+      "healthy": false
+    },
+    {
+      "round": 7,
+      "median": 0.499,
+      "inBand": 32,
+      "scores": {
+        "hourglass": 0.5,
+        "mirror": 0.513,
+        "candle": 0.563,
+        "gambler": 0.407,
+        "nautilus": 0.475,
+        "magnet": 0.474,
+        "raven": 0.492,
+        "seed": 0.717,
+        "sniper": 0.456,
+        "medic": 0.418,
+        "leech": 0.712,
+        "lone-wolf": 0.561,
+        "drummer": 0.317,
+        "bodyguard": 0.493,
+        "chrysalis": 0.549,
+        "trickster": 0.689,
+        "gravedigger": 0.508,
+        "conductor": 0.579,
+        "thornback": 0.394,
+        "coin-thief": 0.529,
+        "lantern": 0.434,
+        "hornet": 0.638,
+        "prism": 0.411,
+        "war-horn": 0.512,
+        "vulture": 0.528,
+        "hexer": 0.718,
+        "fortune-teller": 0.364,
+        "aegis": 0.609,
+        "gravecaller": 0.688,
+        "hydra": 0.346,
+        "archmage": 0.713,
+        "oracle": 0.396,
+        "berserker": 0.441,
+        "frostling": 0.406,
+        "priest": 0.419,
+        "battery": 0.557,
+        "frost-witch": 0.636,
+        "bully": 0.466,
+        "alchemist": 0.481,
+        "executioner": 0.492,
+        "plague-rat": 0.317,
+        "martyr": 0.509,
+        "ox": 0.436,
+        "daredevil": 0.517,
+        "duelist": 0.397,
+        "paladin": 0.599,
+        "squire": 0.442,
+        "dynamo": 0.42,
+        "avenger": 0.566,
+        "siphon": 0.631,
+        "comet": 0.592,
+        "reaper": 0.455,
+        "heckler": 0.531,
+        "witch-doctor": 0.498,
+        "broodmother": 0.39,
+        "dragon": 0.363,
+        "kraken": 0.688,
+        "puppeteer": 0.789,
+        "phoenix": 0.474,
+        "volcano": 0.675
+      },
+      "moves": [
+        "Seed 72%: 0/13→0/11",
+        "Medic 42%: 1/7→1/8",
+        "Hornet 64%: 4/6→4/5",
+        "Fortune Teller 36%: 1/12→1/13",
+        "Hydra 35%: 5/13→5/14",
+        "Oracle 40%: 1/16→1/17",
+        "Priest awoken adds 2%: +0/+4→+1/+4",
+        "Plague Rat 32%: 1/9→1/11",
+        "Duelist awoken adds 2%: +0/+4→+1/+4",
+        "Siphon 63%: 3/12→3/11"
+      ],
+      "healthy": true
+    },
+    {
+      "round": 8,
+      "median": 0.524,
+      "inBand": 35,
+      "scores": {
+        "hourglass": 0.519,
+        "mirror": 0.453,
+        "candle": 0.499,
+        "gambler": 0.452,
+        "nautilus": 0.514,
+        "magnet": 0.455,
+        "raven": 0.346,
+        "seed": 0.439,
+        "sniper": 0.623,
+        "medic": 0.625,
+        "leech": 0.366,
+        "lone-wolf": 0.441,
+        "drummer": 0.525,
+        "bodyguard": 0.576,
+        "chrysalis": 0.564,
+        "trickster": 0.581,
+        "gravedigger": 0.617,
+        "conductor": 0.491,
+        "thornback": 0.446,
+        "coin-thief": 0.327,
+        "lantern": 0.416,
+        "hornet": 0.553,
+        "prism": 0.676,
+        "war-horn": 0.586,
+        "vulture": 0.629,
+        "hexer": 0.531,
+        "fortune-teller": 0.447,
+        "aegis": 0.636,
+        "gravecaller": 0.389,
+        "hydra": 0.301,
+        "archmage": 0.561,
+        "oracle": 0.578,
+        "berserker": 0.377,
+        "frostling": 0.396,
+        "priest": 0.537,
+        "battery": 0.646,
+        "frost-witch": 0.677,
+        "bully": 0.479,
+        "alchemist": 0.525,
+        "executioner": 0.501,
+        "plague-rat": 0.421,
+        "martyr": 0.6,
+        "ox": 0.481,
+        "daredevil": 0.546,
+        "duelist": 0.314,
+        "paladin": 0.557,
+        "squire": 0.539,
+        "dynamo": 0.557,
+        "avenger": 0.572,
+        "siphon": 0.454,
+        "comet": 0.654,
+        "reaper": 0.281,
+        "heckler": 0.522,
+        "witch-doctor": 0.23,
+        "broodmother": 0.585,
+        "dragon": 0.665,
+        "kraken": 0.546,
+        "puppeteer": 0.593,
+        "phoenix": 0.524,
+        "volcano": 0.357
+      },
+      "moves": [
+        "Hydra 30%: 5/14→6/16",
+        "Reaper 28%: 2/11→3/13",
+        "Witch Doctor 23%: 2/13→3/15"
       ],
       "healthy": true
     }
