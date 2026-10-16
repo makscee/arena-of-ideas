@@ -5,7 +5,11 @@
 // 1280×720 and 390×844 too, to compare (no checks there: those layouts are
 // the desktop's and the phone's, unchanged).
 // Without --url it builds the client and starts its own scenes server.
-//   npm run mvp:cg-layout -- [--url http://127.0.0.1:PORT/arena/] [--out e2e/.shots/cg-layout] [--only shop,home]
+// Keys at 821×462 (a window with a mouse): the shop takes them by their place
+// on the keyboard (KeyboardEvent.code), as a Russian or AZERTY layout sends
+// them: 1 buys, R rerolls, Space fights. Esc opens the run's menu; with --cg
+// (a client built with VITE_CG=1) Esc does nothing and Backspace opens it.
+//   npm run mvp:cg-layout -- [--url http://127.0.0.1:PORT/arena/] [--out e2e/.shots/cg-layout] [--only shop,home,keys] [--cg]
 import { spawn, execFileSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { createServer } from "node:net";
@@ -15,12 +19,13 @@ const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : undefined; };
 const out = opt("out") ?? "e2e/.shots/cg-layout";
 const only = opt("only")?.split(",");
+const cg = args.includes("--cg");
 mkdirSync(out, { recursive: true });
 
 let url = opt("url");
 let child = null;
 if (!url) {
-  execFileSync("npm", ["run", "-s", "mvp:build"], { stdio: "inherit" });
+  execFileSync("npm", ["run", "-s", "mvp:build"], { stdio: "inherit", env: { ...process.env, ...(cg ? { VITE_CG: "1" } : {}) } });
   const port = await new Promise((r) => { const s = createServer().listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => r(p)); }); });
   child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1", ARENA_SCENES: "1", MVP_DB: ":memory:", ARENA_TUNER: "instant", ARENA_CODEX: "1" }, stdio: ["ignore", "inherit", "inherit"] });
   url = `http://127.0.0.1:${port}/arena/`;
@@ -80,9 +85,50 @@ try {
       await ctx.close();
     }
   }
+  if (!only || only.includes("keys")) await keys();
 } finally {
   await browser.close();
   child?.kill();
+}
+/** The shop's keys at 821×462, sent as another layout would (key ≠ code). */
+async function keys() {
+  const ctx = await browser.newContext({ viewport: { width: 821, height: 462 }, deviceScaleFactor: 1 });
+  const page = await ctx.newPage();
+  const why = [];
+  page.on("pageerror", (e) => why.push(`pageerror: ${e.message}`));
+  await page.goto(`${url}#scene=shop-r1&lang=en`, { timeout: 120_000 });
+  await page.waitForSelector('[data-testid="fight"]', { timeout: 60_000 });
+  await page.waitForTimeout(800);
+  const send = (key, code) => page.evaluate(([key, code]) => document.body.dispatchEvent(new KeyboardEvent("keydown", { key, code, bubbles: true, cancelable: true })), [key, code]);
+  const gold = () => page.evaluate(() => Number(document.querySelector('[data-testid="gold"]')?.textContent?.replace(/\D/g, "") ?? NaN));
+  const idle = () => page.waitForFunction(() => !document.getElementById("app").classList.contains("busy"), null, { timeout: 30_000 }).then(() => page.waitForTimeout(400));
+  const sheet = () => page.evaluate(() => !!document.querySelector('[data-testid="run-menu"]'));
+  const g0 = await gold();
+  await send("&", "Digit1"); // AZERTY's 1
+  await idle();
+  const g1 = await gold();
+  if (!(g1 < g0)) why.push(`Digit1 (key "&") bought nothing: gold ${g0} → ${g1}`);
+  await send("к", "KeyR"); // Russian R
+  await idle();
+  const g2 = await gold();
+  if (!(g2 < g1)) why.push(`KeyR (key "к") did not reroll: gold ${g1} → ${g2}`);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(400);
+  if ((await sheet()) === cg) why.push(cg ? "Esc opened the run menu in the cg build" : "Esc did not open the run menu");
+  if (cg) {
+    await page.keyboard.press("Backspace");
+    await page.waitForTimeout(400);
+    if (!(await sheet())) why.push("Backspace did not open the run menu in the cg build");
+  }
+  if (await sheet()) await page.keyboard.press(cg ? "Backspace" : "Escape"), await page.waitForTimeout(400);
+  if (await sheet()) why.push("the run menu did not close");
+  await page.screenshot({ path: `${out}/keys-821x462${cg ? "-cg" : ""}.png` });
+  await send(" ", "Space");
+  const fought = await page.waitForSelector('[data-testid="battle-you"]', { timeout: 30_000 }).then(() => true, () => false);
+  if (!fought) why.push("Space did not fight");
+  console.log(`${why.length ? "FAIL" : "ok  "} keys 821x462${cg ? " cg" : ""}${why.length ? ": " + why.join("; ") : ""}`);
+  if (why.length) failures.push(`keys: ${why.join("; ")}`);
+  await ctx.close();
 }
 console.log(`${SCREENS.length} screens × ${SIZES.length} sizes, ${failures.length} failing; screenshots in ${out}`);
 if (failures.length) process.exit(1);

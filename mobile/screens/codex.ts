@@ -37,7 +37,7 @@ import { api } from "../api";
 import { t } from "../i18n";
 import type { Key } from "../i18n/en";
 import { card, creditOf, formRich, liveIdOf, roman, setCardAbilities, summonCard, tierClass, summonSheet, unitSheet, withPip } from "../ui/card";
-import { actionable, app, button, closable, h, isDesktop, onKeys, rememberFocus, screen, show, who, withKey } from "../ui/dom";
+import { actionable, app, button, closable, h, isDesktop, keyOf, onKeys, rememberFocus, screen, show, who, withKey } from "../ui/dom";
 import { icon } from "../ui/icon";
 import { loadUnitRates, pct } from "../ui/unit-stats";
 import { ideaWhy, proposeScreen } from "./ideas";
@@ -258,13 +258,13 @@ export async function codexScreen(a: {
   // Esc (after a sheet, closed in ui/dom.ts): clears the inspector, then Back.
   // Keys (#1064): 1–6 the tabs (their number is on them), / the search.
   onKeys((e) => {
-    const tab = /^[1-6]$/.test(e.key) ? TAB_ORDER[Number(e.key) - 1] : undefined;
+    const tab = /^[1-6]$/.test(keyOf(e)) ? TAB_ORDER[Number(keyOf(e)) - 1] : undefined;
     if (tab) return document.querySelector<HTMLElement>(`[data-testid="codex-tab-${tab}"]`)?.click(), true;
-    if (e.key === "/") {
+    if (keyOf(e) === "/") {
       const q = document.querySelector<HTMLElement>('[data-testid="codex-search"]');
       return q ? (q.focus(), true) : false;
     }
-    if (e.key !== "Escape") return false;
+    if (keyOf(e) !== "Escape") return false;
     if (inspected) idle();
     else a.onBack();
     return true;

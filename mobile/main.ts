@@ -26,7 +26,7 @@ import { card, formRich, roman, setCardCredits, unitSheet, type CardUnit } from 
 import { previewName } from "./ui/fusion";
 import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
-import { actionable, app, button, closable, desktopQuery, dismissable, h, isDesktop, keepFocus, keepScreen, keyboardLost, onKeys, onRestore, overlay, screen, show, who, withKey } from "./ui/dom";
+import { actionable, app, button, closable, desktopQuery, dismissable, h, hasKeys, isDesktop, keepFocus, keepScreen, keyboardLost, keyLabel, keyOf, onKeys, onRestore, overlay, screen, show, who, withKey } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
 import { telegramSheet } from "./screens/telegram";
 import { emailAttach, emailSignIn, emailSignUp } from "./screens/email";
@@ -500,7 +500,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
   const press = (id: string) => document.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`);
   const letters: Record<string, string> = { c: "codex", f: "forge-open", d: "dictionary-open", s: "stats", i: "ideas", g: "settings" };
   onKeys((e) => {
-    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    const k = keyOf(e);
     const b = k === "Enter" ? press("play") : press(letters[k] ?? "");
     if (!b || b.disabled) return false;
     b.click();
@@ -1250,8 +1250,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }
     // Keys (#1064): 1–3 look at the sealed design with that number.
     body.addEventListener("keydown", (e) => {
-      if (slot.state !== "ready" || e.ctrlKey || e.metaKey || e.altKey || !/^[1-3]$/.test(e.key)) return;
-      const b = body.querySelector<HTMLButtonElement>(`[data-testid="forge-card-${Number(e.key) - 1}"]`);
+      if (slot.state !== "ready" || e.ctrlKey || e.metaKey || e.altKey || !/^[1-3]$/.test(keyOf(e))) return;
+      const b = body.querySelector<HTMLButtonElement>(`[data-testid="forge-card-${Number(keyOf(e)) - 1}"]`);
       if (b) (e.preventDefault(), e.stopPropagation(), b.click());
     });
     pick = { mode: "none" };
@@ -1559,8 +1559,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     // Keys (#1064): 1–3 pick the card with that number (it is on its button).
     document.querySelector<HTMLElement>('[data-testid="gift-title"]')?.closest(".sheet")?.addEventListener("keydown", (e) => {
       const ev = e as KeyboardEvent;
-      if (ev.ctrlKey || ev.metaKey || ev.altKey || !/^[1-9]$/.test(ev.key)) return;
-      const b = document.querySelector<HTMLButtonElement>(`[data-testid="gift-pick-${Number(ev.key) - 1}"]`);
+      if (ev.ctrlKey || ev.metaKey || ev.altKey || !/^[1-9]$/.test(keyOf(ev))) return;
+      const b = document.querySelector<HTMLButtonElement>(`[data-testid="gift-pick-${Number(keyOf(ev)) - 1}"]`);
       if (b && !b.disabled) (ev.preventDefault(), b.click());
     });
   }
@@ -1626,8 +1626,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   screen("shop");
   // The keyboard stays with the unit in hand (#1064): a move or a merge redraws the
   // shop, and the focus that was on a board card follows the selection.
-  if (desk && pick.mode === "none" && keyboardLost()) document.querySelector<HTMLElement>('[data-testid="line-0"], [data-testid="bench-0"], [data-testid="offer-0"]')?.focus({ preventScroll: true });
-  if (desk && pick.mode === "picked") {
+  if (hasKeys() && pick.mode === "none" && keyboardLost()) document.querySelector<HTMLElement>('[data-testid="line-0"], [data-testid="bench-0"], [data-testid="offer-0"]')?.focus({ preventScroll: true });
+  if (hasKeys() && pick.mode === "picked") {
     const on = document.activeElement;
     if (on === document.body || (on instanceof HTMLElement && /^(line|bench)-\d+$/.test(on.dataset.testid ?? ""))) {
       const at = pick.index;
@@ -1644,7 +1644,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   // Desktop: 1–7 buy, R reroll, L lock the chosen or hovered offer, Space
   // fight, ← → move the selected unit, F fuse, S sell.
   onKeys((e) => {
-    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    const k = keyOf(e);
     const sel = pick.mode === "picked" ? pick.index : -1;
     if (k === "Escape") {
       if (fuseView) fuseView = null;
@@ -1654,7 +1654,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       renderLine();
       return true;
     }
-    if (!desk) return false;
+    if (!hasKeys()) return false;
     if (k === " ") {
       if (!fight.disabled) void decide({ kind: "fight" });
       return true;
@@ -1724,7 +1724,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       }),
     );
   }
-  if (!desk) return;
+  if (!hasKeys()) return;
   // ← / → pressed while the last move was out: the unit goes on by as many slots.
   const queued = moveQueue;
   moveQueue = 0;
@@ -1746,7 +1746,7 @@ let giftAside: { key: string; full: boolean } | null = null;
 let moveQueue = 0;
 
 /** A key, drawn as a keycap (the desktop shop). */
-const kbd = (k: string) => h("kbd", {}, k);
+const kbd = (k: string) => h("kbd", {}, keyLabel(k));
 
 /** Redraws the shop when the width crosses 1024px: its desktop layout is
  * more than CSS (the inspector, the keys). Other screens only restyle. */
@@ -1916,7 +1916,7 @@ function runOverScreen(run: RunView, content: MvpContent, notice = "", newRun = 
   );
   screen("over");
   music("shop", run.runId);
-  onKeys((e) => (e.key === "Enter" ? ((newRun ? next : home)(), true) : e.key === "Escape" ? (home(), true) : false));
+  onKeys((e) => (keyOf(e) === "Enter" ? ((newRun ? next : home)(), true) : keyOf(e) === "Escape" ? (home(), true) : false));
   (document.querySelector<HTMLElement>('[data-testid="new-run-start"], [data-testid="home"]'))?.focus({ preventScroll: true });
 }
 
@@ -2100,7 +2100,7 @@ function joinSwitchScreen(code: string, mine: PlayerRef): void {
     h("p", { class: "dim" }, t("join.needsLink", { name: mine.name })),
     h("div", { class: "row footer" }, button(t("join.stay"), stay, "grow", "join-stay"), button(t("join.newPlayer"), () => joinForm(code), "primary grow", "join-new")),
   );
-  onKeys((e) => (e.key === "Escape" ? (stay(), true) : false));
+  onKeys((e) => (keyOf(e) === "Escape" ? (stay(), true) : false));
 }
 /** The join link's sign-up: by email (#929) when the server has it, else a name. */
 function joinForm(code: string, tg: HTMLElement | null = null): void {
@@ -2148,7 +2148,7 @@ function switchScreen(code: string, mine: PlayerRef, theirs: PlayerRef): void {
     h("p", { class: "dim" }, t("switch.then", { theirs: theirs.name, mine: mine.name })),
     h("div", { class: "row footer" }, button(t("join.stay"), stay, "grow", "invite-stay"), button(t("switch.go"), go, "primary grow", "invite-switch-go")),
   );
-  onKeys((e) => (e.key === "Escape" ? (stay(), true) : false));
+  onKeys((e) => (keyOf(e) === "Escape" ? (stay(), true) : false));
 }
 
 document.documentElement.lang = uiLang();
