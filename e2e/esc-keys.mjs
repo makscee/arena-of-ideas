@@ -99,6 +99,7 @@ export async function escPass(browser, url, { label, viewport, touch = false, er
     // A fight: Esc opens the menu (the battle pauses), Esc resumes play.
     if (mobile) {
       await tid("offer-0").click();
+      await tid("offer-0").click();
       await tid("buy").click();
     } else await page.keyboard.press("1");
     await tid("line").locator(".card").first().waitFor().catch(() => {});
