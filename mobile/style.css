@@ -1909,4 +1909,20 @@ button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padd
   /* The Codex: its six tabs on one row, Back stays in view. */
   .codex-main .tabs { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .codex-main > .footer { position: sticky; bottom: -8px; padding-bottom: 8px; background: var(--ground); }
+  /* #1220. The Settings sheet: the whole viewport's height less a margin, the rows scrolling
+   * inside it above a Close that stays put (the sticky Close covered "How to play"). */
+  .sheet:has(> .settings) { display: flex; flex-direction: column; gap: 0; max-height: calc(100dvh - 8px); overflow: hidden; padding-top: 10px; padding-bottom: 0; }
+  .sheet:has(> .settings) > .settings { flex: 1 1 auto; min-height: 0; overflow-y: auto; gap: 6px; }
+  .sheet:has(> .settings) > .sheet-actions { position: static; flex: none; margin: 0; padding: 6px 0 calc(6px + env(safe-area-inset-bottom)); }
+  /* The Codex's filters: one strip that scrolls sideways (tier, trigger, sort), smaller chips,
+   * so the unit grid keeps two rows or more. */
+  .codex-filters { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; overflow-x: auto; flex: none; padding-bottom: 2px; scrollbar-width: thin; }
+  .codex-filters > .codex-filter { flex: none; flex-wrap: nowrap; gap: 4px; align-items: center; }
+  .codex-filters button.chip { min-height: 34px; min-width: 34px; padding: 0 8px; font-size: 13px; }
+  .codex-filters button.chip.icon { padding: 0; }
+  .codex-filters button.chip.icon svg { width: 18px; height: 18px; }
+  #app[data-screen="codex"] input[type="search"] { min-height: 36px; }
+  /* The shop: the offers grow into the space under them. */
+  #app[data-screen="shop"] .shop-panel .card { height: 128px; }
+  #app[data-screen="shop"] .line-panel .slots:not(.bench-row) .card { height: 104px; }
 }

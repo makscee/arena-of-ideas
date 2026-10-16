@@ -398,7 +398,7 @@ function unitsTab(
         ? h("div", { class: "dim small" }, t("codex.ratesNote"))
         : h("div", { class: "row dim small", "data-testid": "codex-rates-error" }, t("codex.ratesError"), button(t("codex.tryAgain"), retry, "small", "codex-rates-retry"))
       : null;
-  return [search, tierRow, trigRow, sortRow, picked ? h("div", { class: "dim small" }, t("codex.whenFilter", { label: picked.label })) : null, count, note, grid].filter((n): n is NonNullable<typeof n> => n !== null);
+  return [search, h("div", { class: "contents codex-filters" }, tierRow, trigRow, sortRow), picked ? h("div", { class: "dim small" }, t("codex.whenFilter", { label: picked.label })) : null, count, note, grid].filter((n): n is NonNullable<typeof n> => n !== null);
 }
 
 // ---------- fusions ----------
