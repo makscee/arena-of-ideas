@@ -25,10 +25,10 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "Когда в союзника летит Яд, Проклятие или Заморозка, они попадают в Магнит, и он каждый раз получает 1 Щит.",
   ],
   Raven: () => [
-    "When an ally dies, Raven uses that ally's rule once, right away.",
-    "When an ally dies, Raven uses that ally's rule once, right away, and keeps it as a second rule of its own for the rest of the battle.",
-    "Когда союзник погибает, Ворон сразу один раз использует его правило.",
-    "Когда союзник погибает, Ворон сразу один раз использует его правило и до конца боя оставляет его себе как второе правило.",
+    "The first time an ally dies in a battle, Raven uses that ally's rule once, right away.",
+    "The first time an ally dies in a battle, Raven uses that ally's rule once, right away, and keeps it as a second rule of its own for the rest of the battle.",
+    "Когда в бою впервые погибает союзник, Ворон сразу один раз использует его правило.",
+    "Когда в бою впервые погибает союзник, Ворон сразу один раз использует его правило и до конца боя оставляет его себе как второе правило.",
   ],
   Seed: () => [
     "It does nothing on turns 1 and 2. From turn 3 on, at each turn start, it gains 2 HP and gives the ally behind it 1 Strength.",
@@ -37,16 +37,16 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "На 1-м ходу ничего не делает. Со 2-го хода в начале каждого хода получает 2 ОЗ и даёт союзнику позади 1 Силу.",
   ],
   "Lone Wolf": () => [
-    "While it has no allies left, its strikes deal double.",
-    "While it has no allies left, its strikes deal double and it strikes twice.",
-    "Пока у него не осталось союзников, его атаки наносят двойной урон.",
-    "Пока у него не осталось союзников, его атаки наносят двойной урон, и он бьёт дважды.",
+    "While it has 1 ally or none left, its strikes deal double.",
+    "While it has 1 ally or none left, its strikes deal double and it strikes twice.",
+    "Пока у него остался 1 союзник или ни одного, его атаки наносят двойной урон.",
+    "Пока у него остался 1 союзник или ни одного, его атаки наносят двойной урон, и он бьёт дважды.",
   ],
   Drummer: () => [
     "When an ally strikes, it gains 1 Charge. At 3 Charge, it spends them and every ally behind it gains 1 Strength.",
     "When an ally strikes, it gains 1 Charge. At 3 Charge, it spends them and every ally gains 1 Strength.",
-    "Когда союзник атакует, получает 1 Заряд. При 3 Зарядах тратит их, и все союзники позади получают 1 Силу.",
-    "Когда союзник атакует, получает 1 Заряд. При 3 Зарядах тратит их, и все союзники получают 1 Силу.",
+    "Когда союзник атакует, Барабанщик получает 1 Заряд. При 3 Зарядах тратит их, и все союзники позади получают 1 Силу.",
+    "Когда союзник атакует, Барабанщик получает 1 Заряд. При 3 Зарядах тратит их, и все союзники получают 1 Силу.",
   ],
   Gravedigger: () => [
     "At each turn start, it hits the enemy in front for 1 per ally that has fallen this battle.",
@@ -133,16 +133,16 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "Каждый раз, когда его бьют, получает 2 Щита.",
   ],
   Sniper: () => [
-    "At each turn start, shoots the enemy at the back for its power.",
-    "At each turn start, shoots the enemies at the back and at the front for its power.",
-    "В начале каждого хода стреляет в заднего врага на свою АТК.",
-    "В начале каждого хода стреляет в заднего и переднего врага на свою АТК.",
+    "At the start of turns 2, 4, 6…, shoots the enemy at the back for its power.",
+    "At the start of turns 2, 4, 6…, shoots the enemies at the back and at the front for its power.",
+    "В начале 2-го, 4-го, 6-го… хода стреляет в заднего врага на свою АТК.",
+    "В начале 2-го, 4-го, 6-го… хода стреляет в заднего и переднего врага на свою АТК.",
   ],
   Medic: () => [
     "When an ally is hit, heals it by its power.",
     "When an ally is hit, heals it by its power and gives it 1 Shield.",
-    "Когда союзника бьют, лечит его на свою АТК.",
-    "Когда союзника бьют, лечит его на свою АТК и даёт ему 1 Щит.",
+    "Когда союзника бьют, Медик лечит его на свою АТК.",
+    "Когда союзника бьют, Медик лечит его на свою АТК и даёт ему 1 Щит.",
   ],
   Leech: () => [
     "Each of its strikes heals it by half its power.",
@@ -227,8 +227,8 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
   Battery: () => [
     "When an ally is hit, it gains 1 Charge. At 3 Charge, it spends them and every ally gains 1 Shield.",
     "When an ally is hit, it gains 1 Charge. At 3 Charge, it spends them and every ally gains 1 Shield and heals 1 HP.",
-    "Когда союзника бьют, получает 1 Заряд. При 3 Зарядах тратит их, и все союзники получают 1 Щит.",
-    "Когда союзника бьют, получает 1 Заряд. При 3 Зарядах тратит их, и все союзники получают 1 Щит и лечатся на 1 ОЗ.",
+    "Когда союзника бьют, Батарея получает 1 Заряд. При 3 Зарядах тратит их, и все союзники получают 1 Щит.",
+    "Когда союзника бьют, Батарея получает 1 Заряд. При 3 Зарядах тратит их, и все союзники получают 1 Щит и лечатся на 1 ОЗ.",
   ],
   "Frost Witch": () => [
     "At the start of turn 2, every enemy gets 1 Freeze.",
@@ -274,10 +274,10 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "Его атаки наносят урон, равный его текущим ОЗ плюс его АТК.",
   ],
   Daredevil: () => [
-    "While it has lost no HP, its strikes deal double.",
     "While it has lost no HP, its strikes deal triple.",
-    "Пока он не потерял ни одного ОЗ, его атаки наносят двойной урон.",
+    "While it has lost no HP, its strikes deal four times its power.",
     "Пока он не потерял ни одного ОЗ, его атаки наносят тройной урон.",
+    "Пока он не потерял ни одного ОЗ, его атаки наносят урон в четыре раза больше его АТК.",
   ],
   Duelist: () => [
     "Its strikes deal damage equal to the struck enemy's power instead of its own.",
@@ -294,8 +294,8 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
   Squire: () => [
     "When an ally gains Shield, it gains 1 Strength.",
     "When an ally gains Shield, it and that ally each gain 1 Strength.",
-    "Когда союзник получает Щит, получает 1 Силу.",
-    "Когда союзник получает Щит, он и этот союзник получают по 1 Силе.",
+    "Когда союзник получает Щит, Оруженосец получает 1 Силу.",
+    "Когда союзник получает Щит, Оруженосец и этот союзник получают по 1 Силе.",
   ],
   Dynamo: () => [
     "When it strikes, it gains 1 Charge. At 3 Charge, it spends them and strikes the same enemy again.",
@@ -306,8 +306,8 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
   Avenger: () => [
     "When an ally dies, it hits the enemy in front for that ally's power.",
     "When an ally dies, it hits the enemy in front for that ally's power and gains 1 Strength.",
-    "Когда союзник погибает, бьёт переднего врага на АТК павшего союзника.",
-    "Когда союзник погибает, бьёт переднего врага на АТК павшего союзника и получает 1 Силу.",
+    "Когда союзник погибает, Мститель бьёт переднего врага на АТК павшего союзника.",
+    "Когда союзник погибает, Мститель бьёт переднего врага на АТК павшего союзника и получает 1 Силу.",
   ],
   Siphon: () => [
     "When an enemy would heal, Siphon gets the heal instead.",
@@ -322,16 +322,16 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "В начале 3-го, 6-го, 9-го… хода бьёт всех врагов на номер хода (3 на 3-м ходу, 6 на 6-м…).",
   ],
   Reaper: () => [
+    "At each turn start, if only 1 enemy is left, it hits that enemy for its power.",
     "At each turn start, if 2 or fewer enemies are left, it hits every enemy for its power.",
-    "At each turn start, if 3 or fewer enemies are left, it hits every enemy for its power.",
+    "В начале каждого хода, если остался только 1 враг, бьёт его на свою АТК.",
     "В начале каждого хода, если осталось не больше 2 врагов, бьёт всех врагов на свою АТК.",
-    "В начале каждого хода, если осталось не больше 3 врагов, бьёт всех врагов на свою АТК.",
   ],
   Heckler: () => [
     "When the enemy in front uses its rule, it hits that enemy for its power.",
-    "When the enemy in front uses its rule, it hits that enemy for its power and curses it (−1 power).",
-    "Когда передний враг использует своё правило, бьёт его на свою АТК.",
-    "Когда передний враг использует своё правило, бьёт его на свою АТК и проклинает (−1 АТК).",
+    "When the enemy in front uses its rule, it hits that enemy for its power and gives it 1 Curse.",
+    "Когда передний враг использует своё правило, Крикун бьёт его на свою АТК.",
+    "Когда передний враг использует своё правило, Крикун бьёт его на свою АТК и даёт ему 1 Проклятие.",
   ],
   "Witch Doctor": () => [
     "When an enemy gains Poison, Curse or Freeze, it gains 1 Charge. At 3 Charge, it spends them and heals every ally for its power.",
@@ -352,10 +352,10 @@ export const V2_SAY: Record<string, () => [string, string, string, string]> = {
     "Когда атакует, все враги также получают урон, равный его АТК.",
   ],
   Kraken: () => [
-    "At each turn end, it hits the enemy in front for 1 per hit it has taken this battle.",
-    "At each turn end, it hits every enemy for 1 per hit it has taken this battle.",
-    "В конце каждого хода бьёт переднего врага на 1 за каждый удар, полученный им в этом бою.",
-    "В конце каждого хода бьёт всех врагов на 1 за каждый удар, полученный им в этом бою.",
+    "When it is hit, it gains 1 Charge, then hits the enemy in front for 1 per Charge it has.",
+    "When it is hit, it gains 1 Charge, then hits every enemy for 1 per Charge it has.",
+    "Когда Кракена бьют, он получает 1 Заряд, затем бьёт переднего врага на 1 за каждый свой Заряд.",
+    "Когда Кракена бьют, он получает 1 Заряд, затем бьёт всех врагов на 1 за каждый свой Заряд.",
   ],
   Puppeteer: () => [
     "On turns 2, 4, 6…, the first time an enemy strikes, the strike hits the enemy at the back instead.",

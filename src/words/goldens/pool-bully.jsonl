@@ -1,26 +1,57 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Bully","name":"Bully","hp":12,"pwr":4},{"id":"A2:Plague Rat","name":"Plague Rat","hp":4,"pwr":1}],"B":[{"id":"B1:Duelist","name":"Duelist","hp":12,"pwr":3},{"id":"B2:Avenger","name":"Avenger","hp":10,"pwr":2},{"id":"B3:Comet","name":"Comet","hp":4,"pwr":0}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Bully","name":"Bully","hp":13,"pwr":4},{"id":"A2:Plague Rat","name":"Plague Rat","hp":11,"pwr":1}],"B":[{"id":"B1:Duelist","name":"Duelist","hp":9,"pwr":3},{"id":"B2:Avenger","name":"Avenger","hp":9,"pwr":2},{"id":"B3:Comet","name":"Comet","hp":12,"pwr":1}]}}
 {"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":2,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Bully","b":"B1:Duelist","first":"B1:Duelist"}
 {"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Duelist","defender":"A1:Bully","amount":4}
-{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"Hurt","unit":"A1:Bully","amount":4,"hpAfter":8}
+{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"Hurt","unit":"A1:Bully","amount":4,"hpAfter":9}
 {"id":5,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Bully","defender":"B1:Duelist"}
-{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"B1:Duelist","amount":4,"hpAfter":8}
+{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"B1:Duelist","amount":4,"hpAfter":5}
 {"id":7,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":8,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":9,"turn":2,"causedBy":8,"source":"kernel","type":"Strike","striker":"B1:Duelist","defender":"A1:Bully","amount":4}
-{"id":10,"turn":2,"causedBy":9,"source":"kernel","type":"Hurt","unit":"A1:Bully","amount":4,"hpAfter":4}
+{"id":10,"turn":2,"causedBy":9,"source":"kernel","type":"Hurt","unit":"A1:Bully","amount":4,"hpAfter":5}
 {"id":11,"turn":2,"causedBy":8,"source":"kernel","type":"Strike","striker":"A1:Bully","defender":"B1:Duelist"}
-{"id":12,"turn":2,"causedBy":11,"source":"kernel","type":"Hurt","unit":"B1:Duelist","amount":4,"hpAfter":4}
+{"id":12,"turn":2,"causedBy":11,"source":"kernel","type":"Hurt","unit":"B1:Duelist","amount":4,"hpAfter":1}
 {"id":13,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":14,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":15,"turn":3,"causedBy":14,"source":"kernel","type":"Strike","striker":"B1:Duelist","defender":"A1:Bully","amount":4}
-{"id":16,"turn":3,"causedBy":15,"source":"kernel","type":"Hurt","unit":"A1:Bully","amount":4,"hpAfter":0}
-{"id":17,"turn":3,"causedBy":16,"source":"kernel","type":"Death","unit":"A1:Bully"}
-{"id":18,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":19,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":20,"turn":4,"causedBy":19,"source":{"unit":"B3:Comet","ability":0,"when":0},"type":"Hurt","unit":"A2:Plague Rat","amount":4,"hpAfter":0}
-{"id":21,"turn":4,"causedBy":20,"source":"kernel","type":"Death","unit":"A2:Plague Rat"}
-{"id":22,"turn":4,"causedBy":21,"source":{"unit":"A2:Plague Rat","ability":0,"when":0},"type":"StatusApplied","unit":"B1:Duelist","status":"Poison","stacks":1,"total":1}
-{"id":23,"turn":4,"causedBy":21,"source":{"unit":"A2:Plague Rat","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Avenger","status":"Poison","stacks":1,"total":1}
-{"id":24,"turn":4,"causedBy":21,"source":{"unit":"A2:Plague Rat","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Comet","status":"Poison","stacks":1,"total":1}
-{"id":25,"turn":4,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":4}
+{"id":16,"turn":3,"causedBy":15,"source":"kernel","type":"Hurt","unit":"A1:Bully","amount":4,"hpAfter":1}
+{"id":17,"turn":3,"causedBy":14,"source":"kernel","type":"Strike","striker":"A1:Bully","defender":"B1:Duelist"}
+{"id":18,"turn":3,"causedBy":17,"source":"kernel","type":"Hurt","unit":"B1:Duelist","amount":4,"hpAfter":-3}
+{"id":19,"turn":3,"causedBy":18,"source":"kernel","type":"Death","unit":"B1:Duelist"}
+{"id":20,"turn":3,"causedBy":19,"source":{"unit":"B2:Avenger","ability":0,"when":0},"type":"Hurt","unit":"A1:Bully","amount":3,"hpAfter":-2}
+{"id":21,"turn":3,"causedBy":20,"source":"kernel","type":"Death","unit":"A1:Bully"}
+{"id":22,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":23,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":24,"turn":4,"causedBy":23,"source":{"unit":"B3:Comet","ability":0,"when":0},"type":"Hurt","unit":"A2:Plague Rat","amount":4,"hpAfter":7}
+{"id":25,"turn":4,"causedBy":23,"source":"kernel","type":"PairFaced","a":"A2:Plague Rat","b":"B2:Avenger","first":"A2:Plague Rat"}
+{"id":26,"turn":4,"causedBy":23,"source":"kernel","type":"Strike","striker":"A2:Plague Rat","defender":"B2:Avenger"}
+{"id":27,"turn":4,"causedBy":26,"source":"kernel","type":"Hurt","unit":"B2:Avenger","amount":1,"hpAfter":8}
+{"id":28,"turn":4,"causedBy":23,"source":"kernel","type":"Strike","striker":"B2:Avenger","defender":"A2:Plague Rat"}
+{"id":29,"turn":4,"causedBy":28,"source":"kernel","type":"Hurt","unit":"A2:Plague Rat","amount":2,"hpAfter":5}
+{"id":30,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":31,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":32,"turn":5,"causedBy":31,"source":"kernel","type":"Strike","striker":"A2:Plague Rat","defender":"B2:Avenger"}
+{"id":33,"turn":5,"causedBy":32,"source":"kernel","type":"Hurt","unit":"B2:Avenger","amount":1,"hpAfter":7}
+{"id":34,"turn":5,"causedBy":31,"source":"kernel","type":"Strike","striker":"B2:Avenger","defender":"A2:Plague Rat"}
+{"id":35,"turn":5,"causedBy":34,"source":"kernel","type":"Hurt","unit":"A2:Plague Rat","amount":2,"hpAfter":3}
+{"id":36,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":37,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":38,"turn":6,"causedBy":37,"source":"kernel","type":"Strike","striker":"A2:Plague Rat","defender":"B2:Avenger"}
+{"id":39,"turn":6,"causedBy":38,"source":"kernel","type":"Hurt","unit":"B2:Avenger","amount":1,"hpAfter":6}
+{"id":40,"turn":6,"causedBy":37,"source":"kernel","type":"Strike","striker":"B2:Avenger","defender":"A2:Plague Rat"}
+{"id":41,"turn":6,"causedBy":40,"source":"kernel","type":"Hurt","unit":"A2:Plague Rat","amount":2,"hpAfter":1}
+{"id":42,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":43,"turn":7,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":44,"turn":7,"causedBy":43,"source":"kernel","type":"Strike","striker":"A2:Plague Rat","defender":"B2:Avenger"}
+{"id":45,"turn":7,"causedBy":44,"source":"kernel","type":"Hurt","unit":"B2:Avenger","amount":1,"hpAfter":5}
+{"id":46,"turn":7,"causedBy":43,"source":"kernel","type":"Strike","striker":"B2:Avenger","defender":"A2:Plague Rat"}
+{"id":47,"turn":7,"causedBy":46,"source":"kernel","type":"Hurt","unit":"A2:Plague Rat","amount":2,"hpAfter":-1}
+{"id":48,"turn":7,"causedBy":47,"source":"kernel","type":"Death","unit":"A2:Plague Rat"}
+{"id":49,"turn":7,"causedBy":48,"source":{"unit":"A2:Plague Rat","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Avenger","status":"Poison","stacks":1,"total":1}
+{"id":50,"turn":7,"causedBy":48,"source":{"unit":"A2:Plague Rat","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Comet","status":"Poison","stacks":1,"total":1}
+{"id":51,"turn":7,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":52,"turn":7,"causedBy":51,"source":{"unit":"B2:Avenger","status":"Poison","ability":0,"when":0},"type":"Hurt","unit":"B2:Avenger","amount":1,"hpAfter":4}
+{"id":53,"turn":7,"causedBy":51,"source":{"unit":"B2:Avenger","status":"Poison","ability":0,"when":0},"type":"StatusRemoved","unit":"B2:Avenger","status":"Poison","stacks":1,"remaining":0}
+{"id":54,"turn":7,"causedBy":51,"source":{"unit":"B3:Comet","status":"Poison","ability":0,"when":0},"type":"Hurt","unit":"B3:Comet","amount":1,"hpAfter":11}
+{"id":55,"turn":7,"causedBy":51,"source":{"unit":"B3:Comet","status":"Poison","ability":0,"when":0},"type":"StatusRemoved","unit":"B3:Comet","status":"Poison","stacks":1,"remaining":0}
+{"id":56,"turn":7,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":7}

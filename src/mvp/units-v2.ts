@@ -172,6 +172,7 @@ export const V2_ABILITIES: AbilityRegistry = {
   InspireHalf: { name: "InspireHalf", family: "Control", effects: [{ kind: "applyStatus", status: "Strength", stacks: { kind: "half", of: pwrOfHolder } }] },
   Trample: { name: "Trample", family: "Strike", effects: [{ kind: "replaceAmount", amount: { kind: "stat", stat: "hp", of: "holder" } }] },
   TrampleAwoken: { name: "TrampleAwoken", family: "Strike", effects: [{ kind: "replaceAmount", amount: { kind: "plus", a: { kind: "stat", stat: "hp", of: "holder" }, b: pwrOfHolder } }] },
+  Fury4: { name: "Fury4", family: "Strike", effects: [{ kind: "replaceAmount", amount: { kind: "twice", of: { kind: "twice", of: pwrOfHolder } } }] },
   Fury3: { name: "Fury3", family: "Strike", effects: [{ kind: "replaceAmount", amount: { kind: "plus", a: { kind: "twice", of: pwrOfHolder }, b: pwrOfHolder } }] },
   Match: { name: "Match", family: "Strike", effects: [{ kind: "replaceAmount", amount: { kind: "statOf", stat: "pwr", of: "target" } }] },
   MatchAwoken: { name: "MatchAwoken", family: "Strike", effects: [{ kind: "replaceAmount", amount: { kind: "plus", a: { kind: "statOf", stat: "pwr", of: "target" }, b: pwrOfHolder } }] },
@@ -184,7 +185,7 @@ export const V2_ABILITIES: AbilityRegistry = {
   MendGuardAllCharged: { name: "MendGuardAllCharged", family: "Heal", effects: [whenCharged([{ kind: "heal", amount: pwrOfHolder }, { kind: "applyStatus", status: "Shield", stacks: c(1) }])] },
   Brood: { name: "Brood", family: "Summon", effects: [{ kind: "summon", unit: spiderling }] },
   Scorch: { name: "Scorch", family: "Strike", effects: [{ kind: "damage", amount: { kind: "half", of: pwrOfHolder } }] },
-  Grudge: { name: "Grudge", family: "Strike", effects: [{ kind: "damage", amount: { kind: "count", fact: "hitsTaken" } }] },
+  GrudgeCharge: { name: "GrudgeCharge", family: "Strike", effects: [{ kind: "damage", amount: { kind: "stacksOf", status: "Charge", of: "holder" } }] },
   Puppet: { name: "Puppet", family: "Control", effects: [{ kind: "redirect", to: { kind: "lastEnemy" } }] },
   Rebirth: { name: "Rebirth", family: "Summon", effects: [{ kind: "resurrect", hp: pwrOfHolder }] },
 };
@@ -230,17 +231,20 @@ const Magnet = sleeping(
   "Pull",
 );
 // #1063: no memory list; uses the fallen ally's rule once, right away (awoken: and keeps it)
-const Raven = sleeping(trig({ on: "Death", unit: "otherAlly" }), [{ kind: "eventUnit" }], "RecallNow");
+// #1048 tier ranges: strong at its floor, so the first ally's death only
+const Raven = sleeping(trig({ on: "Death", unit: "otherAlly" }), [{ kind: "eventUnit" }], "RecallNow", { condition: { kind: "onceHolder" } });
 // #1063: no Tree; from turn 3 on it grows and feeds the ally behind
 const Seed = sleeping(trig({ on: "TurnStart" }), me, "Grow2", { condition: { kind: "turnAtLeast", n: 3 }, also: [{ who: [{ kind: "allyBehind" }], does: ["Grow"] }] });
 
 // The twelve after the eight: every shape class and tier again, higher tiers
 // with more clauses (page §8).
-const Sniper = sleeping(trig({ on: "TurnStart" }), [{ kind: "lastEnemy" }], "Smite");
+// #1048 tier ranges: strong at its floor, so turns 2, 4, 6… only
+const Sniper = sleeping(trig({ on: "TurnStart" }), [{ kind: "lastEnemy" }], "Smite", { condition: { kind: "turnEvery", n: 2 } });
 const Medic = sleeping(trig({ on: "Hurt", unit: "otherAlly" }), [{ kind: "eventUnit" }], "Mend");
 const Leech = sleeping(trig({ on: "Strike", striker: "holder" }), me, "Sip");
 // #1063: alliesAlive counts the holder, so "no allies left" is 1 (it was 0 and never fired)
-const LoneWolf = sleeping(intercept({ on: "Strike", striker: "holder" }), me, "Fury", { condition: { kind: "alliesAlive", op: "=", n: 1 } });
+// #1048 tier ranges: weak at its ceiling, so 2 or fewer on its side, not alone
+const LoneWolf = sleeping(intercept({ on: "Strike", striker: "holder" }), me, "Fury", { condition: { kind: "alliesAlive", op: "<=", n: 2 } });
 const Drummer = sleeping(trig({ on: "Strike", striker: "otherAlly" }), me, "Spark", { also: [{ who: [{ kind: "alliesBehind" }], does: ["RallyCharged"] }, { who: me, does: ["Spend"] }] });
 const Bodyguard = sleeping(intercept({ on: "Hurt", unit: "otherAlly" }), me, "Pull", { condition: { kind: "oncePerTurn" } });
 const Chrysalis = sleeping(trig({ on: "TurnStart" }), me, "Emerge", { condition: { kind: "turnIs", n: 3 } });
@@ -294,7 +298,8 @@ const PlagueRat = sleeping(trig({ on: "Death", unit: "holder" }), [{ kind: "allE
 // its place in the line is gone once it dies, so it feeds the whole line
 const Martyr = sleeping(trig({ on: "Death", unit: "holder" }), [{ kind: "allAllies" }], "InspireHalf");
 const Ox = sleeping(intercept({ on: "Strike", striker: "holder" }), me, "Trample");
-const Daredevil = sleeping(intercept({ on: "Strike", striker: "holder" }), me, "Fury", { condition: { kind: "unhurt" } });
+// #1048 tier ranges: weak at its ceiling, so triple asleep, quadruple awoken
+const Daredevil = sleeping(intercept({ on: "Strike", striker: "holder" }), me, "Fury3", { condition: { kind: "unhurt" } });
 const Duelist = sleeping(intercept({ on: "Strike", striker: "holder" }), [{ kind: "eventTarget" }], "Match");
 const Paladin = sleeping(intercept({ on: "Strike", striker: "holder" }), me, "Bash");
 const Squire = sleeping(trig({ on: "StatusApplied", unit: "otherAlly", status: "Shield" }), me, "Rally");
@@ -303,7 +308,8 @@ const Avenger = sleeping(trig({ on: "Death", unit: "otherAlly" }), [{ kind: "fro
 const Siphon = sleeping(intercept({ on: "Heal", unit: "enemy" }), me, "Steal");
 // no random target (#1063's rule): a comet falls on every enemy, on turns 4, 8, 12… (#1048: was every 3rd, too strong at 0/2)
 const Comet = sleeping(trig({ on: "TurnStart" }), [{ kind: "allEnemies" }], "Comet", { condition: { kind: "turnEvery", n: 4 } });
-const Reaper = sleeping(trig({ on: "TurnStart" }), [{ kind: "allEnemies" }], "Smite", { condition: { kind: "enemiesAlive", op: "<=", n: 2 } });
+// #1048 tier ranges: strong at its floor, so 1 enemy left (awoken 2), was 2 (3)
+const Reaper = sleeping(trig({ on: "TurnStart" }), [{ kind: "allEnemies" }], "Smite", { condition: { kind: "enemiesAlive", op: "<=", n: 1 } });
 const Heckler = sleeping(trig({ on: "Acted", unit: "enemy", front: true }), [{ kind: "eventUnit" }], "Spine");
 const WitchDoctor = sleeping(
   [
@@ -317,7 +323,8 @@ const WitchDoctor = sleeping(
 );
 const Broodmother = sleeping(trig({ on: "TurnStart" }), me, "Brood", { condition: { kind: "turnEvery", n: 2 } });
 const Dragon = sleeping(trig({ on: "Strike", striker: "holder" }), [{ kind: "allEnemies" }], "Scorch");
-const Kraken = sleeping(trig({ on: "TurnEnd" }), [{ kind: "frontEnemy" }], "Grudge");
+// the seat's check (10-14): Charge, not a private count of hits taken
+const Kraken = sleeping(trig({ on: "Hurt", unit: "holder" }), me, "Spark", { also: [{ who: [{ kind: "frontEnemy" }], does: ["GrudgeCharge"] }] });
 // #1048 second tune: once a turn on even turns only; it stayed strong at 0/4
 const Puppeteer = sleeping(intercept({ on: "Strike", striker: "enemy" }), me, "Puppet", { condition: { kind: "and", all: [{ kind: "turnEvery", n: 2 }, { kind: "oncePerTurn" }] } });
 const Phoenix = sleeping(trig({ on: "Death", unit: "holder" }), me, "Rebirth", { condition: { kind: "onceHolder" } });
@@ -373,7 +380,7 @@ export const ROWS_V2: V2Row[] = [
   v2("Plague Rat",   "🐀", 1, "position",    1,  5, "Its death poisons the whole enemy line.",                               PlagueRat,   { does: "Sting2" }),
   v2("Martyr",       "⚱️", 1, "position",    2,  5, "Falls so the whole line hits harder.",                                  Martyr,      { does: "Inspire" }),
   v2("Ox",           "🐂", 1, "replacement", 1,  6, "Strikes with its HP, not its power.",                                   Ox,          { does: "TrampleAwoken" }),
-  v2("Daredevil",    "🏍️", 1, "swing",       2,  5, "Hits for double until it gets hurt.",                                   Daredevil,   { does: "Fury3" }),
+  v2("Daredevil",    "🏍️", 1, "swing",       2,  5, "Hits for double until it gets hurt.",                                   Daredevil,   { does: "Fury4" }),
   v2("Duelist",      "🤺", 1, "copy",        1,  6, "Strikes with the power of whoever it fights.",                          Duelist,     { does: "MatchAwoken" }),
   v2("Paladin",      "⚜️", 2, "scaling",     1,  7, "Its Shield is also its weapon.",                                        Paladin,     { statuses: [{ status: "Shield", stacks: 2 }] }),
   v2("Squire",       "🛡", 2, "scaling",     1,  7, "Grows stronger each time an ally gains Shield.",                        Squire,      { also: [{ who: [{ kind: "eventUnit" }], does: ["Rally"] }] }),
@@ -381,12 +388,12 @@ export const ROWS_V2: V2Row[] = [
   v2("Avenger",      "⚔️", 2, "memory",      1,  7, "Answers each fallen ally with that ally's power.",                      Avenger,     { also: [{ who: me, does: ["Rally"] }] }),
   v2("Siphon",       "🌀", 2, "redirect",    1,  7, "Every heal meant for an enemy comes to it instead.",                    Siphon,      { also: [{ who: me, does: ["Rally"] }] }),
   v2("Comet",        "☄️", 3, "scaling",     1,  7, "Every fourth turn, falls on the whole enemy line, harder each time.",     Comet,       { condition: { kind: "turnEvery", n: 3 } }),
-  v2("Reaper",       "🌾", 3, "condition",   2,  7, "When the enemy line runs thin, it cuts through all of it.",             Reaper,      { condition: { kind: "enemiesAlive", op: "<=", n: 3 } }),
+  v2("Reaper",       "🌾", 3, "condition",   2,  7, "When the enemy line runs thin, it cuts through all of it.",             Reaper,      { condition: { kind: "enemiesAlive", op: "<=", n: 2 } }),
   v2("Heckler",      "📣", 3, "rule",        1,  7, "Punishes the front enemy every time it uses its rule.",                 Heckler,     { also: [{ who: [{ kind: "eventUnit" }], does: ["Hex"] }] }),
   v2("Witch Doctor", "🪶", 3, "counter",     1,  7, "Each Poison, Curse or Freeze on an enemy builds its Charge; at 3, it heals every ally.", WitchDoctor, { also: [{ who: [{ kind: "allAllies" }], does: ["MendGuardAllCharged"] }, { who: me, does: ["Spend"] }] }),
   v2("Broodmother",  "🕷️", 3, "form",        1,  7, "Lays a poisoning Spiderling at the front every other turn.",            Broodmother, { condition: { kind: "turnAtLeast", n: 1 } }),
   v2("Dragon",       "🐲", 4, "position",    2,  8, "Every strike it makes scorches the whole enemy line.",                  Dragon,      { does: "Spine" }),
-  v2("Kraken",       "🦑", 4, "scaling",     1,  9, "Pays back every hit it has taken, each turn end.",                      Kraken,      { who: [{ kind: "allEnemies" }] }),
+  v2("Kraken",       "🦑", 4, "scaling",     1,  9, "Pays back every hit it takes, harder each time.",                         Kraken,      { also: [{ who: [{ kind: "allEnemies" }], does: ["GrudgeCharge"] }] }),
   v2("Puppeteer",    "🪆", 4, "redirect",    1,  8, "On even turns, once a turn, turns an enemy's strike onto the enemy at the back.",      Puppeteer,   { also: [{ who: me, does: ["Guard"] }] }),
   v2("Phoenix",      "🐦‍🔥", 4, "form",        2,  7, "Comes back once from death, at the back of its line.",                  Phoenix,     { also: [{ who: [{ kind: "allEnemies" }], does: ["Spine"] }] }),
   v2("Volcano",      "🌋", 4, "rule",        2,  9, "Burns every unit on the field every other turn, its own side included.",       Volcano,     { also: [{ who: [{ kind: "allAllies" }], does: ["Guard"] }] }),
