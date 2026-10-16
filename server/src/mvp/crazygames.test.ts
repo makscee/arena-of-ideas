@@ -291,8 +291,20 @@ describe("review of #786 (#1218)", () => {
     expect(verifyCgJwt(cgToken({ gameId: "x" }), KEY.publicKey, NOW).userId).toBe("cg-1");
   });
 
+  it("4b. gameId is compared as a string: a numeric or a string id of this game passes", async () => {
+    const { cg } = world({ cgGameId: "12345" });
+    expect((await cg(cgToken({ userId: "cg-n", gameId: 12345 }))).status).toBe(200);
+    expect((await cg(cgToken({ userId: "cg-s", gameId: "12345" }))).status).toBe(200);
+    expect((await cg(cgToken({ userId: "cg-o", gameId: 54321 }))).status).toBe(401);
+    expect((await cg(cgToken({ userId: "cg-u", gameId: undefined }))).status).toBe(401);
+    expect(() => verifyCgJwt(cgToken({ gameId: null }), KEY.publicKey, NOW, "null")).toThrow(CrazyGamesRefused);
+    expect(() => verifyCgJwt(cgToken({ gameId: undefined }), KEY.publicKey, NOW, "undefined")).toThrow(CrazyGamesRefused);
+  });
+
   it("5. idea text is checked word by word: normal words pass, crude ones don't", () => {
-    for (const w of ["drapery", "Hancock", "Sussex", "Essex", "skyscraper", "niggle", "snigger", "shitake", "Matsushita", "thorny", "knobby"])
+    for (const w of ["drapery", "Hancock", "Sussex", "Essex", "skyscraper", "niggle", "snigger", "shitake", "Matsushita", "thorny", "knobby",
+      "domination", "escort", "escorts", "erect", "erects", "erected", "cripple", "cripples", "swinger", "hardcore", "bondage", "hooker",
+      "knob", "knobs", "dong", "tit", "scum", "crap", "fart", "poop", "holocaust", "lynch"])
       expect([w, isCrudeText(`A wolf named ${w} that bites twice`)]).toEqual([w, false]);
     for (const w of ["fuck", "fucking", "motherfucker", "shit", "shits", "shitty", "bullshit", "cunt", "cunts", "bitch", "bitches", "ass", "asses", "dick", "nigger", "faggot", "whore", "slut", "nazi", "wanker", "Сука"])
       expect([w, isCrudeText(`A wolf that is a ${w} every turn`)]).toEqual([w, true]);
