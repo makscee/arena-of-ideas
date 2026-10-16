@@ -919,15 +919,24 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   /** Desktop: the keyboard goes to the fusion in the inspector (its primary button), as it does into a sheet. */
   const focusPreview = () => queueMicrotask(() => (fuseView?.querySelector<HTMLElement>("button.primary:not(:disabled)") ?? fuseView?.querySelector<HTMLElement>("button:not(:disabled)"))?.focus({ preventScroll: true }));
 
-  /** Move the unit at board slot `from` to `to` (a reorder), keeping it selected where it lands. */
-  const moveTo = (from: number, to: number) => {
-    if (from === to) return;
+  /** Where a unit at board slot `from` of run `r` lands when dropped on `to`, or null for no move. */
+  const destFor = (r: RunView, from: number, to: number): number | null => {
+    if (from === to) return null;
+    const lineLen = r.line.length;
+    const benchLen = r.bench.length;
+    const occupied = to < L ? to < lineLen : to - L < benchLen;
     const across = (from < L) !== (to < L);
+    const start = to < L ? 0 : L;
+    const len = to < L ? lineLen : benchLen;
     // Within a zone, a drop past its last unit moves to the end; across
     // zones, an empty slot takes the unit at that zone's end (packed).
-    const dest = across ? (unitAt(to) ? to : zoneStart(to) + zoneLen(to)) : Math.min(to, zoneStart(to) + zoneLen(to) - 1);
-    if (dest === from) return;
-    void decide({ kind: "reorder", from, to: dest }, dest);
+    const dest = across ? (occupied ? to : start + len) : Math.min(to, start + len - 1);
+    return dest === from ? null : dest;
+  };
+  /** Move the unit at board slot `from` to `to` (a reorder), keeping it selected where it lands. */
+  const moveTo = (from: number, to: number) => {
+    const dest = destFor(run, from, to);
+    if (dest !== null) void decide({ kind: "reorder", from, to: dest }, dest);
   };
   /** B, "To bench", "To line": into the other zone's first empty slot, else a
    * swap with its last unit. */
@@ -942,7 +951,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const id = onBench ? `bench-${slot - L}` : `line-${slot}`;
     if (!u) {
       const e = h("div", { class: "card empty", "data-testid": `${id}-empty` }, h("div", { class: "dim" }, onBench ? "" : `${slot + 1}`));
-      if (desk && !crown) dropOn(e, slot);
+      if (!crown) dropTarget(e, slot);
       return e;
     }
     const c = actionable(card(u, { side: "you", extra: [copiesBadge(u)], testid: id }), `${u.name}, ${onBench ? t("board.onBench", { n: slot - L + 1 }) : t("board.inLine", { n: slot + 1 })}`);
@@ -973,10 +982,18 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       renderLine();
     });
     if (desk) desktopCard(c, { kind: "line", index: slot });
+    if (!crown) {
+      dropTarget(c, slot);
+      dragCard(c, { kind: "board", slot });
+    }
     return c;
   };
 
-  const renderLine = () => keepFocus(drawLine);
+  // A redraw replaces the cards: one that lands under a press or a drag (the
+  // forge answering late) waits until it ends, or the pointer loses its card.
+  let pressing = false;
+  let redrawLater = false;
+  const renderLine = () => (pressing ? void (redrawLater = true) : keepFocus(drawLine));
   const drawLine = () => {
     line.replaceChildren(...Array.from({ length: L }, (_, i) => slotCard(i)));
     bench.replaceChildren(
@@ -989,32 +1006,127 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     hintSlot.replaceChildren(...[giftBanner() ?? shopHint()].filter((x): x is HTMLElement => x !== null));
   };
 
-  /** Desktop: hovering a card reads it in the inspector; a line card drags onto another to reorder. */
+  /** Desktop: hovering a card reads it in the inspector; the keyboard reads a card too. */
   const desktopCard = (c: HTMLElement, at: At) => {
     c.addEventListener("mouseenter", () => ((hover = at), renderInspector()));
     c.addEventListener("mouseleave", () => ((hover = null), renderInspector()));
     // The keyboard reads a card as the mouse does (#1064): Tab to it and the inspector shows it.
     c.addEventListener("focus", () => ((hover = at), renderInspector()));
     c.addEventListener("blur", () => ((hover = null), renderInspector()));
-    if (at.kind !== "line" || crown) return;
-    const i = at.index;
-    c.draggable = true;
-    c.addEventListener("dragstart", (e) => {
-      e.dataTransfer?.setData("text/plain", `board:${i}`);
-      c.classList.add("dragging");
-    });
-    c.addEventListener("dragend", () => c.classList.remove("dragging"));
-    dropOn(c, i);
   };
-  /** Desktop: a card or an empty slot of the line or the bench takes a dragged unit. */
-  const dropOn = (c: HTMLElement, slot: number) => {
-    c.addEventListener("dragover", (e) => (e.preventDefault(), c.classList.add("drop")));
-    c.addEventListener("dragleave", () => c.classList.remove("drop"));
-    c.addEventListener("drop", (e) => {
-      e.preventDefault();
-      c.classList.remove("drop");
-      const from = Number(/^board:(\d+)$/.exec(e.dataTransfer?.getData("text/plain") ?? "")?.[1] ?? NaN);
-      if (Number.isInteger(from) && from !== slot) moveTo(from, slot);
+
+  /** What a drag carries: a board unit (by slot) or a shop offer (by its slot). */
+  type Drag = { kind: "board"; slot: number } | { kind: "offer"; offer: Offer };
+  /** Drag with pointer events, at every size (mouse and touch alike): a move
+   * past ~6px starts it, a shorter one stays a tap. The card follows the
+   * pointer; the slots it can take light up; a sell zone appears under it. */
+  const dragCard = (c: HTMLElement, src: Drag) => {
+    c.classList.add("draggable");
+    c.addEventListener("pointerdown", (down) => {
+      if (!down.isPrimary || (down.pointerType === "mouse" && down.button !== 0)) return;
+      const x0 = down.clientX;
+      const y0 = down.clientY;
+      let ghost: HTMLElement | null = null;
+      let sellZone: HTMLElement | null = null;
+      let over: HTMLElement | null = null;
+      const targets = () => [...line.querySelectorAll<HTMLElement>("[data-drop-slot]"), ...bench.querySelectorAll<HTMLElement>("[data-drop-slot]")];
+      const at = (e: PointerEvent) => document.elementsFromPoint(e.clientX, e.clientY).find((el): el is HTMLElement => el instanceof HTMLElement && (el.dataset.dropSlot !== undefined || el.dataset.dropSell !== undefined));
+      const place = (e: PointerEvent) => {
+        const r = c.getBoundingClientRect();
+        ghost!.style.transform = `translate(${e.clientX - r.width / 2}px, ${e.clientY - r.height / 2}px)`;
+      };
+      const finish = () => {
+        pressing = false;
+        c.removeEventListener("pointermove", move);
+        c.removeEventListener("pointerup", up);
+        c.removeEventListener("pointercancel", cancel);
+        window.removeEventListener("keydown", esc, true);
+        try { c.releasePointerCapture(down.pointerId); } catch {}
+        ghost?.remove();
+        sellZone?.remove();
+        c.classList.remove("dragging");
+        app.classList.remove("drag-on");
+        for (const el of targets()) el.classList.remove("drop-ok", "drop");
+        if (ghost) c.addEventListener("click", (e) => (e.stopImmediatePropagation(), e.preventDefault()), { capture: true, once: true });
+        if (redrawLater) ((redrawLater = false), renderLine());
+      };
+      const move = (e: PointerEvent) => {
+        if (!ghost) {
+          if (Math.hypot(e.clientX - x0, e.clientY - y0) < 6) return;
+          const r = c.getBoundingClientRect();
+          ghost = c.cloneNode(true) as HTMLElement;
+          ghost.removeAttribute("data-testid");
+          ghost.className = `${c.className} drag-ghost`;
+          ghost.style.width = `${r.width}px`;
+          ghost.style.height = `${r.height}px`;
+          document.body.append(ghost);
+          c.classList.add("dragging");
+          app.classList.add("drag-on");
+          const value = src.kind === "board" ? sellValue(rules, unitAt(src.slot)!) : 0;
+          if (src.kind === "board") {
+            sellZone = h("div", { class: "sell-zone", "data-drop-sell": "1", "data-testid": "sell-zone" }, t("board.sell", { n: value }));
+            document.body.append(sellZone);
+          }
+          for (const el of targets()) if (src.kind !== "board" || Number(el.dataset.dropSlot) !== src.slot) el.classList.add("drop-ok");
+          sellZone?.classList.add("drop-ok");
+        }
+        place(e);
+        const now = at(e);
+        if (now !== over) {
+          over?.classList.remove("drop");
+          over = now ?? null;
+          over?.classList.add("drop");
+        }
+      };
+      const up = (e: PointerEvent) => {
+        const hit = ghost ? at(e) : undefined;
+        finish();
+        if (!hit) return;
+        if (hit.dataset.dropSell !== undefined) {
+          if (src.kind === "board") void decide({ kind: "sell", index: src.slot });
+          return;
+        }
+        const to = Number(hit.dataset.dropSlot);
+        if (src.kind === "board") moveTo(src.slot, to);
+        else buyAt(src.offer, to);
+      };
+      const cancel = () => finish();
+      const esc = (e: KeyboardEvent) => e.key === "Escape" && (e.stopPropagation(), finish());
+      pressing = true;
+      c.setPointerCapture(down.pointerId);
+      c.addEventListener("pointermove", move);
+      c.addEventListener("pointerup", up);
+      c.addEventListener("pointercancel", cancel);
+      window.addEventListener("keydown", esc, true);
+    });
+  };
+  /** A card or an empty slot of the line or the bench takes a dragged unit or offer. */
+  const dropTarget = (c: HTMLElement, slot: number) => {
+    c.dataset.dropSlot = String(slot);
+  };
+  /** An offer dropped on a slot: buy it, then move the new unit there (a twin merges where it stands). */
+  const buyAt = (o: Offer, to: number) => {
+    const why = buyBlock(o);
+    if (why) return void ((err.textContent = why), play("wrong"));
+    const d = { kind: "buy", slot: o.slot } as const;
+    void guarded(err, async () => {
+      await Promise.allSettled([...previewsOut]);
+      let res = await api.decide(run.runId, d);
+      if (res.fight) return fightScreens(res.run, res.fight, content, run);
+      const had = new Set(board.map((u) => u.uid));
+      const now = [...res.run.line, ...res.run.bench];
+      const i = now.findIndex((u) => !had.has(u.uid));
+      let sel = -1;
+      if (i >= 0) {
+        const from = i < res.run.line.length ? i : L + i - res.run.line.length;
+        const dest = destFor(res.run, from, to);
+        if (dest !== null) {
+          res = await api.decide(run.runId, { kind: "reorder", from, to: dest });
+          sel = dest;
+        }
+      }
+      play(shopSound(d, run, res.run));
+      shopScreen(res.run, content, "", sel, -1);
     });
   };
 
@@ -1391,6 +1503,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       if (run.gold < o.cost) c.classList.add("poor");
       if (o.locked) c.classList.add("locked");
       if (owned) c.classList.add("owned");
+      if (!crown) dragCard(c, { kind: "offer", offer: o });
       if (!desk) c.addEventListener("click", () => (play("click"), void offerSheet(o)));
       else {
         // Click selects it (the inspector holds it), double-click buys it.

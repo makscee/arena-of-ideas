@@ -1945,3 +1945,12 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 .throne-hero button.link.report-link { color: inherit; align-self: flex-start; margin-top: -8px; }
 .report-sheet .report-about { font-weight: 700; word-break: break-word; }
 .report-sheet input { min-height: 44px; }
+
+/* Drag at every size (pointer events, main.ts dragCard): the card under the pointer is a ghost; slots it can take light up. */
+#app[data-screen="shop"] .card.draggable { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: grab; }
+#app[data-screen="shop"] .card.dragging { opacity: 0.4; }
+#app.drag-on .card.drop-ok { outline: 2px dashed var(--you); outline-offset: -2px; }
+#app.drag-on .card.drop { outline: 3px solid var(--you); outline-offset: -3px; }
+.drag-ghost { position: fixed; left: 0; top: 0; z-index: 1000; pointer-events: none; opacity: 0.9; margin: 0; box-shadow: 0 6px 18px color-mix(in srgb, var(--outline) 60%, transparent); }
+.sell-zone { position: fixed; left: 0; right: 0; bottom: 0; z-index: 999; display: flex; align-items: center; justify-content: center; min-height: 56px; background: color-mix(in srgb, var(--loss) 75%, var(--outline)); color: var(--paper); font-weight: 700; border-top: 3px dashed var(--paper); }
+.sell-zone.drop { background: var(--loss); outline: none; }
