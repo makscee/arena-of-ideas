@@ -85,6 +85,7 @@
   const gameBase = q.get("game") || `${location.protocol}//${location.hostname}:8444/arena-cg/game/index.html`;
   const gameUrl = new URL(gameBase, location.href);
   gameUrl.searchParams.set("playtest", "1");
+  for (const k of ["cguser", "muteAudio", "disableChat"]) if (q.has(k)) gameUrl.searchParams.set(k, q.get(k));
   const frame = document.getElementById("game");
   const box = document.getElementById("box");
   const log = document.getElementById("log");

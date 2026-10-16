@@ -8,7 +8,9 @@
 // frame's page (postMessage), which lists them in order. The frame's buttons
 // reach it by message: login, ad is asked by the game, mute, new-guest.
 // The login's token is signed RS256 with a test key (cg-mock-key.js) the
-// workshop server trusts (ARENA_CG_PUBLIC_KEY), claims as CrazyGames' own.
+// workshop server trusts (ARENA_CG_PUBLIC_KEY), claims as CrazyGames' own. The
+// user is always the same account (userId "playtest-cg-user-1", so a second
+// browser is the same player); `?cguser=<id>` on the frame's page picks another.
 (() => {
   const q = new URLSearchParams(location.search);
   const store = (k, v) => { try { return v === undefined ? localStorage.getItem(k) : v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch { return null; } };
@@ -28,7 +30,7 @@
     if (!jwk) throw new Error("no test key");
     const key = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
     const now = Math.floor(Date.now() / 1000);
-    const body = `${b64json({ alg: "RS256", typ: "JWT" })}.${b64json({ userId: "playtest-cg-user-1", username: "PlaytestUser", gameId: "playtest", profilePictureUrl: "", iat: now, exp: now + 3600 })}`;
+    const body = `${b64json({ alg: "RS256", typ: "JWT" })}.${b64json({ userId: q.get("cguser") || "playtest-cg-user-1", username: "PlaytestUser", gameId: "playtest", profilePictureUrl: "", iat: now, exp: now + 3600 })}`;
     return `${body}.${b64(await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(body)))}`;
   }
 
