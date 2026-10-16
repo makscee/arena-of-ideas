@@ -192,6 +192,36 @@ try {
           if ((await gold()) >= g5) fail("tap-tap offer → twin: gold did not drop");
         }
       }
+      // The hint (#1293 reopened): below desktop it is the shop head's one line, never
+      // clipped, inside the shop panel; it says what the next tap does; a buy moves nothing.
+      if (v.viewport.width < 1024) {
+        await open("shop-r1");
+        const hintBox = () => page.evaluate(() => {
+          const el = document.querySelector('[data-testid="hint"]');
+          if (!el) return null;
+          const r = el.getBoundingClientRect(), panel = el.closest(".shop-panel");
+          return { text: el.textContent, h: r.height, fits: el.scrollHeight <= el.clientHeight + 1, inPanel: !!panel && panel.contains(el), shopTop: Math.round(document.querySelector(".shop-panel").getBoundingClientRect().top) };
+        });
+        const h0 = await hintBox();
+        if (!h0) fail("hint: round 1 shows no hint");
+        else {
+          if (!h0.inPanel) fail("hint: not inside the shop panel");
+          if (!h0.fits || h0.h < 14) fail(`hint: clipped (height ${h0.h})`);
+          if (!/lit slot/.test(h0.text ?? "")) fail(`hint: round 1 says "${h0.text}"`);
+          const o = page.locator('[data-testid^="offer-"]:not(.poor)').first();
+          await tap(`[data-testid="${await o.getAttribute("data-testid")}"]`);
+          const h1 = await hintBox();
+          if (h1?.text !== "Tap a lit slot to buy it there.") fail(`hint: with an offer in hand it says "${h1?.text}"`);
+          const before = await sig();
+          await tap('[data-testid="line-0-empty"]');
+          for (let i = 0; i < 30 && (await sig()) === before; i++) await page.waitForTimeout(100);
+          const top1 = await page.evaluate(() => Math.round(document.querySelector(".shop-panel").getBoundingClientRect().top));
+          if (top1 !== h0.shopTop) fail(`hint: the shop moved after a buy (${h0.shopTop} → ${top1})`);
+          await tap('[data-testid="line-0"]');
+          const h2 = await hintBox();
+          if (h2?.text !== "Tap a lit slot to move it there.") fail(`hint: with a unit in hand it says "${h2?.text}"`);
+        }
+      }
       // A second tap on the offer in hand reads it (the phone's sheet, Buy in it).
       if (v.touch) {
         await open("shop-r3");
