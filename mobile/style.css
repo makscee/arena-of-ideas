@@ -1439,6 +1439,12 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-compact .bv-card .emoji { margin-top: 38px; font-size: 16px; line-height: 18px; height: 18px; }
   /* A phone on its side is wide (~75 px a card): PWR and HP stay side by side. */
   #app[data-screen="battle"] .bv-compact .bv-card .stats.big { flex-direction: row; justify-content: space-around; font-size: 14px; line-height: 15px; }
+  /* #1271: 6–8 cards on a short screen (800×450) keep their names, and PWR/HP
+   * stay on one line; if the row is tight it is the art that gives way (a
+   * smaller emoji, a smaller name), never the name. */
+  #app[data-screen="battle"] .bv-compact .bv-card .name { display: block; font-size: 11px; line-height: 12px; height: 12px; letter-spacing: -0.04em; white-space: nowrap; overflow: visible; text-overflow: clip; }
+  #app[data-screen="battle"] .bv-compact .bv-card .emoji { margin-top: 22px; font-size: 16px; line-height: 18px; height: 18px; }
+  #app[data-screen="battle"] .bv-compact .bv-changes { top: 14px; }
 }
 @media (min-width: 1024px) {
   #app[data-screen="battle"] .bv-compact .bv-card .emoji { font-size: 26px; line-height: 30px; height: 30px; margin-top: 82px; }

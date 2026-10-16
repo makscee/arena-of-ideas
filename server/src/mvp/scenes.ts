@@ -24,6 +24,7 @@ import { poolBattle, poolBattleId } from "../../../src/mvp/pool-battles.js";
 import { ROWS_V2 } from "../../../src/mvp/units-v2.js";
 import { codexPair, pairState, sortPair, type FusionDesign, type PairState } from "../../../src/mvp/codex.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
+import { fightLines } from "../../../src/mvp/fight.js";
 import { codexForged, forgeOf } from "./codex.js";
 import { claimFixture, forgeFixture, type ClaimView, type ForgeView } from "../../../src/mvp/forge-view.js";
 import { instantTuner, nextCard, overnightCheck, seedCandidate } from "./votes.js";
@@ -225,6 +226,25 @@ const fusionMarks = (kind: "none" | "now" | "shop") => async (rt: MvpRuntime): P
 
 let dayEnded: number | null = null;
 
+/** A battle where the player's line of five grows to six (a summon, R4-11):
+ * the first pool lineup and seed in which a Summon lands on the player's side.
+ * The card names that must stay visible at CrazyGames' 800×450 (#1271). */
+const sixBattle = (rt: MvpRuntime): SceneBuilt => {
+  const player = fixturePlayer(rt);
+  const units = rt.content.units, n = units.length;
+  for (let off = 0; off < n; off++) {
+    for (let seed = 1; seed <= 4; seed++) {
+      const mine = [0, 1, 2, 3, 4].map((k) => lineUnitOf(units[(off + k * 3) % n]!, `a${k + 1}`));
+      const foes = [0, 1, 2, 3, 4].map((k) => lineUnitOf(units[(off + 1 + k * 7) % n]!, `b${k + 1}`));
+      const rec = fightLines({ player, line: mine }, { player: { id: "bot", name: "bot-Six", bot: true }, line: foes }, { battleId: "six-cards", seed, kind: "round", round: 3, runId: null, at: rt.now().toISOString(), content: rt.content, rules: rt.rules });
+      if (!rec.log.some((e) => e.type === "Summon" && e.side === "A")) continue;
+      rt.store.putBattle(rec);
+      return { player, entry: { screen: "battle", battleId: rec.battleId } };
+    }
+  }
+  throw new SceneMissing("no pool lineup summons a sixth card");
+};
+
 /** A rules v2 fixture battle (#1045): the golden battle of src/words/fixtures.ts, stored and opened as a replay. */
 const v2 = (name: string) => (rt: MvpRuntime): SceneBuilt => {
   const player = fixturePlayer(rt);
@@ -279,6 +299,7 @@ export const SCENES: Scene[] = [
   { id: "battle-win", keep: true, group: "Battle", title: "A battle you win", look: "Pacing, the current beam, step numbers and spent cards, the end card", desktop: true, build: battleOf("round", "win") },
   { id: "battle-loss", keep: true, group: "Battle", title: "A battle you lose", look: "The loss end card, hearts lost", desktop: true, build: battleOf("round", "loss") },
   { id: "battle-draw", keep: true, group: "Battle", title: "A draw", look: "The draw end card", desktop: true, build: battleOf("round", "draw") },
+  { id: "battle-six", keep: true, group: "Battle", title: "Six cards on a side", look: "A line grown past five (R4-11): every card keeps its name and PWR/HP on one line, at 800×450 too (#1271)", desktop: true, build: sixBattle },
   { id: "battle-chain-once", keep: true, group: "Battle", title: "A unit acts once per chain", look: "A chain where a unit would have acted twice before #1030: step numbers, spent cards fade, big numbers", desktop: true, build: chainOnce },
   { id: "battle-ledger", keep: true, group: "Battle", title: "Paused mid-battle", look: "Stepped a few beats and paused: the turn bar, the board", desktop: true, build: battleOf("round", "win", ["Space", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight"]) },
 

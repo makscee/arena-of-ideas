@@ -41,6 +41,8 @@ const SCREENS = [
   { name: "shop", scene: "shop-r8", ready: "fight", must: ["fight", "line", "offers", "gold"] },
   { name: "shop-bench", scene: "shop-bench-full", ready: "fight", must: ["fight", "line", "offers", "bench"] },
   { name: "battle", scene: "battle-win", ready: "battle-you", must: ["battle-you", "battle-them"] },
+  // Six cards on a side (a summon grew the line past five): every card keeps its name, unclipped, and PWR/HP side by side (#1271).
+  { name: "battle-six", scene: "battle-six", ready: "battle-you", must: ["battle-you", "battle-them"], names: true },
   { name: "codex", scene: "codex-units", ready: "codex-units", must: ["codex-search"] },
   { name: "forge", scene: "forge-ready", ready: "forge-ready", must: ["forge-card-0"] },
   // The gear's sheet: every row reachable and uncovered (rules-open was cut off by Close).
@@ -118,6 +120,32 @@ try {
         if (m.sh > m.H + 1) why.push(`page scrolls: ${m.sh} px tall in ${m.H}`);
         if (m.sw > m.W + 1) why.push(`page scrolls sideways: ${m.sw} px wide in ${m.W}`);
         why.push(...m.off);
+      }
+      if (v.check && s.names) {
+        // Pause, then step to the beat where a line has six cards.
+        const six = () => page.evaluate(() => [...document.querySelectorAll(".bv-line")].some((l) => l.querySelectorAll(".bv-card:not(.dead)").length >= 6));
+        await page.keyboard.press("Space");
+        for (let i = 0; i < 300 && !(await six()); i++) { await page.keyboard.press("ArrowRight"); await page.waitForTimeout(60); }
+        await page.waitForTimeout(600);
+        const bad = await page.evaluate(() => {
+          const res = [];
+          const cards = [...document.querySelectorAll(".bv-card:not(.dead)")];
+          if (![...document.querySelectorAll(".bv-line")].some((l) => l.querySelectorAll(".bv-card:not(.dead)").length >= 6)) res.push("no line ever reached six cards");
+          for (const card of cards) {
+            const n = card.querySelector(".name");
+            const who = card.dataset.unit ?? "card";
+            if (!n) { res.push(`${who}: no name`); continue; }
+            const r = n.getBoundingClientRect();
+            if (getComputedStyle(n).display === "none" || r.width < 1 || r.height < 1) { res.push(`${who}: name hidden`); continue; }
+            if (n.scrollWidth > n.clientWidth + 1) res.push(`${who}: name "${n.textContent}" clipped (${n.scrollWidth} > ${n.clientWidth})`);
+            const cr = card.getBoundingClientRect();
+            if (r.left < cr.left - 1 || r.right > cr.right + 1) res.push(`${who}: name pokes out of its card`);
+            const st = card.querySelector(".stats.big");
+            if (st && getComputedStyle(st).flexDirection !== "row") res.push(`${who}: PWR/HP stacked`);
+          }
+          return res;
+        });
+        why.push(...bad);
       }
       await page.screenshot({ path: `${out}/${s.name}-${v.name}.png` });
       console.log(`${why.length ? "FAIL" : "ok  "} ${s.name} ${v.name}${why.length ? ": " + why.join("; ") : ""}`);
