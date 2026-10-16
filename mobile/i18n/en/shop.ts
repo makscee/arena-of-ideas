@@ -128,6 +128,14 @@ export const shop = {
   "line.phone": "Your line · front first",
   "shop.offersDesk": { one: "Shop · {n} offer", other: "Shop · {n} offers" },
   "shop.offersPhone": "Shop",
+  // The shop's one line of how (mission #1286 slice 2): drag, or tap-tap.
+  "shop.howWide": "drag to a slot, or tap it then tap a slot",
+  "shop.howPhone": "tap, then tap a slot · or drag",
+  // A slot lit for the offer in hand: its twin merges it in.
+  "slot.awakens": "awakens ★",
+  "slot.merges": "+1 copy",
+  "slot.sell": "Sell +{n}",
+  "slot.tapLit": "tap a lit slot",
   "shop.selectFirst": "Select a unit first: click it in your line or bench.",
   "copies.fused": "FUSED ",
   "copies.awoken": "AWOKEN ",

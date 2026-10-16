@@ -38,7 +38,7 @@ try {
     await page.getByTestId("name-input").fill(`TimeUp${i}`);
     await page.getByTestId("name-submit").click();
     await page.getByTestId("play").click();
-    await page.getByTestId("offer-0").click();
+    await page.getByTestId("offer-0").click(); await page.getByTestId("offer-0").click();
     await page.getByTestId("buy").click();
     await page.getByTestId("fight").click();
     await page.getByTestId("caption").waitFor();

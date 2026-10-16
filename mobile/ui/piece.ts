@@ -49,6 +49,8 @@ export interface PieceOptions {
   /** Overrides the face box's side (the anatomy's hero, the detail sheet). */
   px?: number;
   testid?: string;
+  /** Shows the when tab's word (default: L, M and a px override); off keeps its icon only (a narrow row). */
+  word?: boolean;
 }
 
 /** The when tab's colour, by its icon's family; a new icon gets the plain one. */
@@ -178,7 +180,7 @@ export function piece(u: PieceUnit, o: PieceOptions): HTMLElement {
     return root;
   }
 
-  const showWord = o.size === "L" || o.size === "M" || o.px !== undefined;
+  const showWord = o.word ?? (o.size === "L" || o.size === "M" || o.px !== undefined);
   const showName = o.size === "L" || o.size === "M";
   const showMeta = o.size === "L";
   const tabH = Math.round(Math.max(20, s * 0.27));
@@ -253,7 +255,7 @@ export function piece(u: PieceUnit, o: PieceOptions): HTMLElement {
   }
   if (showName) {
     const nf = Math.round(Math.max(12, s * 0.2));
-    root.append(h("div", { class: "pc-nm", "data-k": "name", style: css({ top: y + 3, "font-size": nf }) }, u.name));
+    root.append(h("div", { class: "pc-nm name", "data-k": "name", style: css({ top: y + 3, "font-size": nf }) }, u.name));
     y += 3 + nf;
   }
   if (showMeta) {
@@ -268,7 +270,7 @@ export function piece(u: PieceUnit, o: PieceOptions): HTMLElement {
       for (let i = 0; i < 3; i++) pips.append(h("u", i < c ? {} : { class: "o" }));
       meta.append(pips);
     }
-    if (o.lock) meta.append(h("span", { class: "pc-lock" }, "🔒"));
+    if (o.lock) meta.append(h("span", { class: "pc-lock lock-mark" }, "🔒"));
     root.append(meta);
   }
   return root;

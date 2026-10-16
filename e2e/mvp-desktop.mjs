@@ -93,7 +93,7 @@ try {
     if (await page.getByTestId("overlay").count()) errors.push(`${name}: a pop-up sheet in the shop (the inspector reads cards on desktop)`);
   };
   const gold = async () => Number(((await page.getByTestId("gold").textContent().catch(() => "0")) ?? "0").replace("g", ""));
-  const lineCount = () => page.getByTestId("line").locator(".card.you").count();
+  const lineCount = () => page.getByTestId("line").locator(".cell.you").count();
   /** Waits until the shop is drawn again after a decision (the gold or the line changed). */
   const settle = async () => { await page.waitForTimeout(150); await page.waitForFunction(() => !document.getElementById("app").classList.contains("busy")); };
   /** A gift the run's own buys brought (an awakening copy, R3-15): skip it, so
@@ -202,7 +202,7 @@ try {
     await page.getByTestId("fight").waitFor({ timeout: 10_000 });
     round++;
     const crown = (await page.getByTestId("gold").count()) === 0;
-    if (round === 2 && !crown && (await gold()) >= 1 && (await page.getByTestId("offers").locator(".card").count()) >= 2) {
+    if (round === 2 && !crown && (await gold()) >= 1 && (await page.getByTestId("offers").locator(".cell").count()) >= 2) {
       // Lock (R3-12): click offer 2, L locks it and it stays chosen; R keeps it
       // at the left, still locked; right-click unlocks it.
       const offer = (s) => page.getByTestId(`offer-${s}`);
@@ -230,12 +230,13 @@ try {
     }
     if (round === 1) {
       await shot("shop"); await noHScroll("shop"); await wide("shop", W - 1);
-      await cardSize("shop offers", "offers");
+      // The offers are pieces in cells (#1293): one row, each at least 112 px wide.
+      { const box = await page.getByTestId("offers").locator(".cell").first().boundingBox(); if (!box || box.width < 112) errors.push(`shop offers: cell ${box ? Math.round(box.width) : "missing"}px wide, want ≥ 112`); }
       await onScreen("shop: Fight", page.getByTestId("fight"));
       await onScreen("shop: inspector", page.getByTestId("inspector"));
-      await onScreen("shop: last offer", page.getByTestId("offers").locator(".card").last());
+      await onScreen("shop: last offer", page.getByTestId("offers").locator(".cell").last());
       // Hover reads an offer in the inspector, with its Buy.
-      await page.getByTestId("offers").locator(".card").first().hover();
+      await page.getByTestId("offers").locator(".cell").first().hover();
       await page.getByTestId("inspector").getByTestId("unit-sheet").waitFor();
       await page.getByTestId("inspector").getByTestId("buy").waitFor();
       await shot("shop-hover-offer"); await noOverlay("hover");
@@ -245,7 +246,7 @@ try {
       if (Math.abs(insp.width - 380) > 2) errors.push(`shop: inspector ${Math.round(insp.width)}px wide, want 380`);
       // Double-click buys the first offer.
       const before = await lineCount();
-      await page.getByTestId("offers").locator(".card").first().dblclick();
+      await page.getByTestId("offers").locator(".cell").first().dblclick();
       await settle();
       if ((await lineCount()) !== before + 1) errors.push("shop: double-click didn't buy");
       await dropOwnGift();
@@ -253,7 +254,7 @@ try {
     // Buy with the number keys while gold lasts (and the line has room).
     for (let k = 0; k < 4 && !crown; k++) {
       const g = await gold();
-      const offers = await page.getByTestId("offers").locator(".card").count();
+      const offers = await page.getByTestId("offers").locator(".cell").count();
       if (g < 3 || offers === 0) break;
       const n = await lineCount();
       if (n >= 5) {
@@ -314,7 +315,7 @@ try {
       if (!(await page.getByTestId("line-0").evaluate((el) => el.classList.contains("selected")))) errors.push("the moved unit isn't selected anymore");
       // Esc deselects.
       await page.keyboard.press("Escape");
-      if (await page.locator('[data-testid="line"] .card.selected').count()) errors.push("Esc didn't deselect");
+      if (await page.locator('[data-testid="line"] .cell.selected').count()) errors.push("Esc didn't deselect");
       // With nothing left to step back from, Esc opens the ☰ run menu (R2-10); Esc again closes it.
       await page.keyboard.press("Escape");
       await page.getByTestId("run-menu").waitFor({ timeout: 2_000 }).catch(() => errors.push("Esc didn't open the run menu"));
@@ -482,7 +483,7 @@ try {
     const second = run.line.findIndex((u) => u.uid === almost.uid) - (run.line.findIndex((u) => u.uid === almost.uid) > awake ? 1 : 0);
     await page.getByTestId("inspector").getByTestId("fuse").waitFor();
     await page.keyboard.press("f");
-    await page.locator(".card.fusable").first().waitFor();
+    await page.locator(".cell.fusable").first().waitFor();
     await shot("fuse-pick");
     await page.getByTestId(`line-${second}`).click();
     await page.getByTestId("inspector").getByTestId("forge-discovered").waitFor();
@@ -491,7 +492,7 @@ try {
     if ((await page.getByTestId("inspector").locator('[data-testid="preview-swap"], [data-testid="fusion-recipe"]').count()) > 0) errors.push("fusion: the forge shows a splice recipe or Swap");
     await shot("fusion-forge");
     await page.getByTestId("preview-confirm").click();
-    await page.getByTestId("line").locator(".card.fused").waitFor();
+    await page.getByTestId("line").locator(".cell.fused").waitFor();
     if (!/\bfuse\b/.test((await page.evaluate(() => window.__sfx ?? [])).slice(-2).join(" "))) errors.push("sound: the fuse made no sound");
     // A pair nobody had made reveals its name (R2-5); Esc closes it.
     if (await page.getByTestId("fusion-reveal").isVisible().catch(() => false)) {
@@ -500,10 +501,10 @@ try {
       await page.keyboard.press("Escape");
       await page.getByTestId("fusion-reveal").waitFor({ state: "detached" });
     }
-    await page.getByTestId("line").locator(".card.fused").hover();
+    await page.getByTestId("line").locator(".cell.fused").hover();
     await page.getByTestId("inspector").getByTestId("unit-sheet").waitFor();
     if (!/discovered by (you|@\S+)/.test(await page.getByTestId("inspector").textContent())) errors.push("fused: no discovery credit in the inspector");
-    if ((await page.getByTestId("bench").locator(".card.you").count()) !== 0) errors.push("bench: the fused bench unit is still on the bench");
+    if ((await page.getByTestId("bench").locator(".cell.you").count()) !== 0) errors.push("bench: the fused bench unit is still on the bench");
     await shot("fused");
     // Drag between line and bench (R3-14): line-0 onto the bench's empty slot, then back onto the line's.
     const front = await page.getByTestId("line-0").locator(".name").textContent();
@@ -511,9 +512,9 @@ try {
     await page.getByTestId("bench-0").waitFor();
     if ((await page.getByTestId("bench-0").locator(".name").textContent()) !== front) errors.push(`bench: dragging line-0 to the bench put "${await page.getByTestId("bench-0").locator(".name").textContent()}" there, not "${front}"`);
     await shot("bench-dragged");
-    await page.getByTestId("bench-0").dragTo(page.getByTestId("line").locator(".card.empty").first());
+    await page.getByTestId("bench-0").dragTo(page.getByTestId("line").locator(".cell.empty").first());
     await page.getByTestId("bench-0-empty").waitFor();
-    const back = await page.getByTestId("line").locator(".card.you").last().locator(".name").textContent();
+    const back = await page.getByTestId("line").locator(".cell.you").last().locator(".name").textContent();
     if (back !== front) errors.push(`bench: dragging back put "${back}" at the line's end, not "${front}"`);
   }
 
@@ -526,7 +527,7 @@ try {
   if (!(await page.getByTestId("inspector").count())) errors.push("1024px: no inspector");
   const w1024 = await page.evaluate(() => document.documentElement.scrollWidth);
   if (w1024 > 1024) errors.push(`1024px: horizontal scroll (${w1024}px)`);
-  const line1024 = await page.getByTestId("line").locator(".card").evaluateAll((els) => new Set(els.map((e) => Math.round(e.getBoundingClientRect().top))).size);
+  const line1024 = await page.getByTestId("line").locator(".cell").evaluateAll((els) => new Set(els.map((e) => Math.round(e.getBoundingClientRect().top))).size);
   if (line1024 !== 1) errors.push("1024px: the line wraps");
   await page.setViewportSize({ width: 1023, height: 768 });
   await page.waitForTimeout(200);

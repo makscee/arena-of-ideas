@@ -127,6 +127,14 @@ export const shop = {
   "line.phone": "Строй · первый впереди",
   "shop.offersDesk": { one: "Лавка · {n} карта", few: "Лавка · {n} карты", many: "Лавка · {n} карт", other: "Лавка · {n} карты" },
   "shop.offersPhone": "Лавка",
+  // The shop's one line of how (mission #1286 slice 2): drag, or tap-tap.
+  "shop.howWide": "перетащи в слот или коснись, затем слота",
+  "shop.howPhone": "коснись, затем слота · или тяни",
+  // A slot lit for the offer in hand: its twin merges it in.
+  "slot.awakens": "пробудит ★",
+  "slot.merges": "+1 копия",
+  "slot.sell": "Продать +{n}",
+  "slot.tapLit": "коснись подсвеченного слота",
   "shop.selectFirst": "Сначала выбери юнита: щёлкни его в строю или запасе.",
   "copies.fused": "СЛИТ ",
   "copies.awoken": "ПРОБУЖД. ",

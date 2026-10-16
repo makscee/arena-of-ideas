@@ -92,9 +92,9 @@ const scrolls = (page) => page.evaluate(() => ({ x: document.documentElement.scr
 async function battleMs(page) {
   await page.getByTestId("play").click();
   await page.getByTestId("fight").waitFor({ timeout: 20_000 });
-  await page.getByTestId("offer-0").click();
+  await page.getByTestId("offer-0").click(); await page.getByTestId("offer-0").click();
   await page.getByTestId("buy").click();
-  await page.getByTestId("line").locator(".card.you").first().waitFor({ timeout: 10_000 });
+  await page.getByTestId("line").locator(".cell.you").first().waitFor({ timeout: 10_000 });
   await page.getByTestId("fight").click();
   await page.getByTestId("battle-done").waitFor({ timeout: 120_000 });
   // The same battle replayed, once at 60 Hz and once at 144 Hz.
