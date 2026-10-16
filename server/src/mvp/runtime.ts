@@ -19,6 +19,7 @@ import { poolBook } from "./pool.js";
 import type { RunDeps, RunHooks } from "./runs.js";
 import { statsHooks } from "./stats.js";
 import type { Mailer } from "./email.js";
+import { cgKeyFromWeb, GUEST_JOINS, type CgKeySource } from "./crazygames.js";
 import type { TelegramApi } from "./telegram.js";
 import { MemoryMvpStore, type MvpStore } from "./store.js";
 import { childTuner, type Tuner } from "./votes.js";
@@ -66,6 +67,19 @@ export interface MvpDeps {
    * it there is no email login. On an invite-only server it makes the email
    * required: new players sign up with one, others add one before playing. */
   mail?: Mailer;
+  /** #1218: CrazyGames' public key for its login tokens (default: fetched
+   * from CrazyGames and cached; main.ts ARENA_CG_PUBLIC_KEY, dev only, a test key). */
+  cgKeys?: CgKeySource;
+  /** #1218: new guest and CrazyGames players an hour, per address and for
+   * the whole server (main.ts ARENA_GUEST_JOINS_PER_IP, ARENA_GUEST_JOINS_PER_HOUR). */
+  guestJoins?: { perAddress: number; perHour: number };
+  /** #1218: guest and CrazyGames joins are on (main.ts ARENA_CG=1); off, both routes answer 404. */
+  cg?: boolean;
+  /** #1218: CrazyGames login tokens must carry this gameId (main.ts ARENA_CG_GAME_ID); unset, any game's. */
+  cgGameId?: string | undefined;
+  /** #1218: the request header holding the client's address, set by the front
+   * proxy (main.ts ARENA_CLIENT_IP_HEADER); unset, the X-Forwarded-For entry. */
+  clientIpHeader?: string | undefined;
 }
 
 export interface MvpRuntime extends RunDeps {
@@ -77,6 +91,11 @@ export interface MvpRuntime extends RunDeps {
   rotation: boolean;
   telegram: TelegramApi | undefined;
   mail: Mailer | undefined;
+  cgKeys: CgKeySource;
+  guestJoins: { perAddress: number; perHour: number };
+  cg: boolean;
+  cgGameId: string | undefined;
+  clientIpHeader: string | undefined;
 }
 
 /** A background job: starts on the runtime, returns its stop function. */
@@ -109,6 +128,11 @@ export function mvpRuntime(deps: MvpDeps): MvpRuntime {
     rotation: deps.rotation ?? false,
     telegram: deps.telegram,
     mail: deps.mail,
+    cgKeys: deps.cgKeys ?? cgKeyFromWeb(),
+    guestJoins: deps.guestJoins ?? GUEST_JOINS,
+    cg: deps.cg ?? false,
+    cgGameId: deps.cgGameId,
+    clientIpHeader: deps.clientIpHeader,
   };
   return rt;
 }

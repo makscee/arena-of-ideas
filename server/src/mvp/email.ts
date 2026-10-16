@@ -15,7 +15,8 @@ import { createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto
 import { readFileSync } from "node:fs";
 import nodemailer from "nodemailer";
 import type { EmailStatus, EmailVerify, PlayerRef, PlayerSession } from "../../../src/mvp/contract.js";
-import { createInvite, hashToken, JoinRefused, NAME_RE, redeemInvite } from "./invites.js";
+import { isCrazyGamesPlayer } from "./crazygames.js";
+import { createInvite, CRUDE_NAME, hashToken, isCrudePlayerName, JoinRefused, NAME_RE, redeemInvite } from "./invites.js";
 import type { MvpRuntime } from "./runtime.js";
 import { nameKey, type EmailCode, type MvpStore } from "./store.js";
 import { readEnvFile } from "./telegram.js";
@@ -52,8 +53,11 @@ export const codeHash = (key: string, code: string) => createHash("sha256").upda
  * adds it before playing. */
 export const emailRequired = (rt: Pick<MvpRuntime, "invites" | "mail">) => rt.invites && !!rt.mail;
 
+/** Is it required of this player? Not of a guest or a CrazyGames player (#1218). */
+export const emailRequiredFor = (rt: Pick<MvpRuntime, "invites" | "mail" | "store">, playerId: string) => emailRequired(rt) && !isCrazyGamesPlayer(rt.store, playerId);
+
 export function emailStatus(rt: Pick<MvpRuntime, "invites" | "mail" | "store">, playerId: string): EmailStatus {
-  return { enabled: !!rt.mail, required: emailRequired(rt), address: rt.store.emailLink({ playerId })?.emailKey ?? null };
+  return { enabled: !!rt.mail, required: emailRequiredFor(rt, playerId), address: rt.store.emailLink({ playerId })?.emailKey ?? null };
 }
 
 // ---------- mail ----------
@@ -259,6 +263,7 @@ export function verifyEmailLogin(store: MvpStore, email: string, code: string, n
   if (!n) return { status: "needsName" };
   if (!opts.canSignUp) throw new EmailRefused(403, "Arena is invite-only for now: open a join link to sign up.");
   if (!NAME_RE.test(n)) throw new EmailRefused(400, "name: 1–24 letters, digits, spaces, _ or -");
+  if (isCrudePlayerName(n)) throw new EmailRefused(400, CRUDE_NAME);
   if (nameKey(n).startsWith("bot-") || store.playersNamed(n, { bots: true }).some((p) => p.bot)) throw new EmailRefused(409, `${n} is a bot's name: pick another`);
   if (store.playersNamed(n).length || store.invites().some((i) => nameKey(i.name) === nameKey(n))) throw new EmailRefused(409, `${n} is taken: pick another name`);
   if (opts.admit && !opts.admit()) throw new EmailRefused(429, "Too many new players this hour. Try again later.");

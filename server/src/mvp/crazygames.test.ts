@@ -1,0 +1,360 @@
+// #1218: guests, CrazyGames logins (a test key signs the tokens), the
+// per-address limit and the name and idea filter.
+import { generateKeyPairSync, sign } from "node:crypto";
+import { describe, expect, it } from "vitest";
+import type { HomeView, PlayerSession, RunView } from "../../../src/mvp/contract.js";
+import { createMvpApp } from "./app.js";
+import { mvpContent } from "./content.js";
+import { cgKeyFromWeb, CrazyGamesRefused, freeName, guestLimiter, verifyCgJwt, verifyCgToken, type CgLogin } from "./crazygames.js";
+import { isCrudeText } from "./crude.js";
+import { FakeMailer } from "./email.js";
+import { createInvite, InviteError, openJoin, redeemInvite } from "./invites.js";
+import { mvpRuntime, type MvpDeps } from "./runtime.js";
+import { SqliteMvpStore } from "./sqlite-store.js";
+import { MemoryMvpStore } from "./store.js";
+
+const pair = () => generateKeyPairSync("rsa", { modulusLength: 2048, publicKeyEncoding: { type: "spki", format: "pem" }, privateKeyEncoding: { type: "pkcs8", format: "pem" } });
+const KEY = pair();
+const OTHER = pair();
+const NOW = new Date("2026-10-16T12:00:00Z");
+const sec = NOW.getTime() / 1000;
+
+const b64 = (x: unknown) => Buffer.from(JSON.stringify(x)).toString("base64url");
+/** A token as CrazyGames signs it (RS256), with these claims over the usual ones. */
+function cgToken(claims: Record<string, unknown>, key = KEY.privateKey, alg = "RS256"): string {
+  const head = b64({ alg, typ: "JWT" });
+  const body = b64({ userId: "cg-1", gameId: "arena", username: "NightOwl", profilePictureUrl: "", iat: sec - 60, exp: sec + 3600, ...claims });
+  return `${head}.${body}.${sign("RSA-SHA256", Buffer.from(`${head}.${body}`), key).toString("base64url")}`;
+}
+
+function world(extra: Partial<MvpDeps> = {}) {
+  const store = extra.store ?? new MemoryMvpStore();
+  let now = NOW;
+  const rt = mvpRuntime({ content: mvpContent(), store, invites: true, cg: true, now: () => now, cgKeys: async () => KEY.publicKey, ...extra });
+  const app = createMvpApp(rt);
+  const call = async <T>(method: string, path: string, headers: Record<string, string> = {}, body?: unknown) => {
+    const res = await app.request(`/api/v1${path}`, { method, headers: { "content-type": "application/json", "x-forwarded-for": "10.0.0.1", ...headers }, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
+    return { status: res.status, json: (await res.json()) as T & { error?: string } };
+  };
+  const guest = (ip = "10.0.0.1") => call<PlayerSession>("POST", "/players/guest", { "x-forwarded-for": ip });
+  const cg = (token: string, device?: PlayerSession, ip = "10.0.0.1") => call<CgLogin>("POST", "/players/crazygames", { "x-forwarded-for": ip, ...(device ? { "X-Arena-Token": device.token } : {}) }, { token });
+  return { rt, store, call, guest, cg, later: (ms: number) => (now = new Date(now.getTime() + ms)) };
+}
+const tok = (s: PlayerSession) => ({ "X-Arena-Token": s.token });
+
+describe("CrazyGames token check (#1218)", () => {
+  it("reads userId and username from a valid token", () => {
+    expect(verifyCgJwt(cgToken({}), KEY.publicKey, NOW)).toEqual({ userId: "cg-1", username: "NightOwl" });
+  });
+  it("refuses an expired token, a wrong signature, no userId, another algorithm and junk", () => {
+    const refused = (token: string, why: RegExp) => expect(() => verifyCgJwt(token, KEY.publicKey, NOW)).toThrow(why);
+    refused(cgToken({ exp: sec - 1 }), /expired/);
+    refused(cgToken({ exp: undefined }), /expired/);
+    refused(cgToken({}, OTHER.privateKey), /bad signature/);
+    refused(cgToken({ userId: undefined }), /no userId/);
+    refused(cgToken({ userId: "  " }), /no userId/);
+    refused(cgToken({}, KEY.privateKey, "none"), /RS256/);
+    refused(cgToken({}, KEY.privateKey, "HS256"), /RS256/);
+    // A signed token whose claims were swapped afterwards
+    const [h, , s] = cgToken({}).split(".");
+    refused(`${h}.${b64({ userId: "cg-2", exp: sec + 60 })}.${s}`, /bad signature/);
+    refused("not.a", /not a token/);
+    try {
+      verifyCgJwt(cgToken({ exp: sec - 1 }), KEY.publicKey, NOW);
+    } catch (err) {
+      expect(err).toBeInstanceOf(CrazyGamesRefused);
+      expect((err as CrazyGamesRefused).status).toBe(401);
+    }
+  });
+  it("asks for a fresh key once when the cached one doesn't verify (a rotated key)", async () => {
+    const asked: boolean[] = [];
+    const keys = async (fresh: boolean) => (asked.push(fresh), fresh ? KEY.publicKey : OTHER.publicKey);
+    expect((await verifyCgToken(cgToken({}), keys, NOW)).userId).toBe("cg-1");
+    expect(asked).toEqual([false, true]);
+  });
+});
+
+describe("guests and CrazyGames players (#1218)", () => {
+  it("a guest plays at once on an invite-only server, with a generated name", async () => {
+    const { guest, call } = world();
+    const g = await guest();
+    expect(g.status).toBe(200);
+    expect(g.json.player.name).toMatch(/^\p{L}+ \p{L}+ \d+$/u);
+    expect(g.json.player.bot).toBe(false);
+    expect((await call<RunView>("POST", "/runs", tok(g.json))).status).toBe(200);
+    const home = await call<HomeView>("GET", "/home", tok(g.json));
+    expect(home.json.activeRunId).not.toBeNull();
+  });
+
+  it("a guest who logs in keeps their run and gets the CrazyGames name", async () => {
+    const { guest, cg, call, store } = world();
+    const g = (await guest()).json;
+    const run = await call<RunView>("POST", "/runs", tok(g));
+    const login = await cg(cgToken({}), g);
+    expect(login.status).toBe(200);
+    expect(login.json.via).toBe("linked");
+    expect(login.json.player).toEqual({ id: g.player.id, name: "NightOwl", bot: false });
+    expect(store.crazyGamesLink({ cgUserId: "cg-1" })?.playerId).toBe(g.player.id);
+    const home = await call<HomeView>("GET", "/home", tok(login.json));
+    expect(home.json.activeRunId).toBe(run.json.runId);
+    // The guest token keeps working too.
+    expect((await call<HomeView>("GET", "/home", tok(g))).json.activeRunId).toBe(run.json.runId);
+  });
+
+  it("the same CrazyGames user on a second device is the same player", async () => {
+    const { guest, cg, call } = world();
+    const first = (await cg(cgToken({}), (await guest()).json)).json;
+    const run = await call<RunView>("POST", "/runs", tok(first));
+    // Device 2: its own guest first, then the same account.
+    const other = (await guest("10.0.0.2")).json;
+    const second = await cg(cgToken({ iat: sec }), other, "10.0.0.2");
+    expect(second.json.via).toBe("found");
+    expect(second.json.player.id).toBe(first.player.id);
+    expect((await call<HomeView>("GET", "/home", tok(second.json))).json.activeRunId).toBe(run.json.runId);
+    // With no device player at all, too.
+    const third = await cg(cgToken({}), undefined, "10.0.0.3");
+    expect(third.json.player.id).toBe(first.player.id);
+  });
+
+  it("finds by userId, never by username", async () => {
+    const { cg } = world();
+    const a = (await cg(cgToken({ userId: "u-a", username: "Twin" }))).json;
+    const b = (await cg(cgToken({ userId: "u-b", username: "Twin" }))).json;
+    expect(b.player.id).not.toBe(a.player.id);
+    expect(a.player.name).toBe("Twin");
+    expect(b.player.name).toMatch(/^Twin \d+$/);
+  });
+
+  it("a guest already linked to one account doesn't move to another", async () => {
+    const { guest, cg } = world();
+    const g = (await guest()).json;
+    await cg(cgToken({ userId: "u-a" }), g);
+    const b = await cg(cgToken({ userId: "u-b", username: "Other" }), g);
+    expect(b.json.via).toBe("new");
+    expect(b.json.player.id).not.toBe(g.player.id);
+  });
+
+  it("refuses a bad token with 401 and makes no player", async () => {
+    const { cg, store } = world();
+    expect((await cg(cgToken({}, OTHER.privateKey))).status).toBe(401);
+    expect((await cg(cgToken({ exp: sec - 5 }))).status).toBe(401);
+    expect(store.crazyGamesLink({ cgUserId: "cg-1" })).toBeUndefined();
+  });
+
+  it("answers 502 when CrazyGames' key can't be fetched", async () => {
+    const { cg } = world({ cgKeys: async () => Promise.reject(new Error("offline")) });
+    expect((await cg(cgToken({}))).status).toBe(502);
+  });
+
+  it("a stale token on this device doesn't stop a guest or a login", async () => {
+    const { call, cg } = world();
+    expect((await call("POST", "/players/guest", { "X-Arena-Token": "gone" })).status).toBe(200);
+    expect((await call("POST", "/players/crazygames", { "X-Arena-Token": "gone" }, { token: cgToken({}) })).status).toBe(200);
+    expect((await cg(cgToken({}))).json.via).toBe("found");
+  });
+
+  it("keeps the links in SQLite", async () => {
+    const store = new SqliteMvpStore(":memory:");
+    const { guest, cg } = world({ store });
+    const g = (await guest()).json;
+    await cg(cgToken({}), g);
+    expect(store.crazyGamesLink({ playerId: g.player.id })?.cgUserId).toBe("cg-1");
+    expect(() => store.linkCrazyGames({ cgUserId: "cg-1", playerId: "x", linkedAt: NOW.toISOString() })).toThrow();
+  });
+});
+
+describe("new players per address (#1218)", () => {
+  it("the 6th guest from one address in an hour is refused politely; others and later ones aren't", async () => {
+    const { guest, later } = world();
+    for (let i = 0; i < 5; i++) expect((await guest()).status).toBe(200);
+    const sixth = await guest();
+    expect(sixth.status).toBe(429);
+    expect(sixth.json.error).toMatch(/Too many new players from here this hour/);
+    expect((await guest("10.0.0.9")).status).toBe(200);
+    later(3_600_001);
+    expect((await guest()).status).toBe(200);
+  });
+
+  it("a new CrazyGames player counts; an existing one logging in doesn't", async () => {
+    const { guest, cg } = world({ guestJoins: { perAddress: 2, perHour: 100 } });
+    expect((await cg(cgToken({ userId: "a" }))).status).toBe(200);
+    expect((await guest()).status).toBe(200);
+    expect((await cg(cgToken({ userId: "b" }))).status).toBe(429);
+    expect((await cg(cgToken({ userId: "a" }))).status).toBe(200);
+  });
+
+  it("has a server-wide ceiling", async () => {
+    const { guest } = world({ guestJoins: { perAddress: 5, perHour: 3 } });
+    for (const ip of ["1.1.1.1", "2.2.2.2", "3.3.3.3"]) expect((await guest(ip)).status).toBe(200);
+    expect((await guest("4.4.4.4")).status).toBe(429);
+  });
+
+  it("leaves the join link's own limit apart", async () => {
+    const { guest, call, store } = world({ open: true });
+    openJoin(store);
+    for (let i = 0; i < 5; i++) await guest();
+    expect((await call("POST", "/join", {}, { code: "", name: "Rook" })).status).toBe(200);
+  });
+});
+
+describe("names and ideas pass the crude filter (#1218)", () => {
+  it("a crude CrazyGames username is replaced by a generated name", async () => {
+    const { cg } = world();
+    const r = await cg(cgToken({ username: "FuckFace" }));
+    expect(r.json.player.name).not.toMatch(/fuck/i);
+    expect(r.json.player.name).toMatch(/^\p{L}+ \p{L}+ \d+$/u);
+  });
+  it("a username is cut to fit and stripped of what a name can't hold", () => {
+    const store = new MemoryMvpStore();
+    expect(freeName(store, "Mr.Owl!!")).toBe("MrOwl");
+    expect(freeName(store, "A".repeat(40))).toBe("A".repeat(19));
+    expect(freeName(store, "bot-Ash")).toMatch(/^\p{L}+ \p{L}+ \d+$/u);
+  });
+  it("generated names skip taken ones", () => {
+    const store = new MemoryMvpStore();
+    store.addPlayer({ id: "p1", name: "Amber Badger 1", bot: false });
+    let i = 0;
+    // The first guess is taken; the next free one is used.
+    expect(freeName(store, undefined, (n) => (i++ < 3 ? 0 : Math.min(1, n - 1)))).not.toBe("Amber Badger 1");
+  });
+  it("every join path refuses a crude name", async () => {
+    const { call, store } = world({ open: true });
+    openJoin(store);
+    const join = await call("POST", "/join", {}, { code: "", name: "Big Shit" });
+    expect(join.status).toBe(400);
+    expect(join.json.error).toMatch(/isn't allowed/);
+    expect(() => createInvite(store, { name: "Сука", now: NOW })).toThrow(InviteError);
+    const openWorld = world({ invites: false });
+    expect((await openWorld.call("POST", "/players", {}, { name: "Nazi Lord" })).status).toBe(400);
+    expect((await openWorld.call("POST", "/players", {}, { name: "Night Lord" })).status).toBe(200);
+  });
+  it("idea text with a crude word is refused with 'try other words'", async () => {
+    const { guest, call } = world();
+    const g = (await guest()).json;
+    const crude = await call("POST", "/ideas", tok(g), { text: "A wolf that shits on its enemies every turn" });
+    expect(crude.status).toBe(400);
+    expect(crude.json.error).toBe("Try other words.");
+    expect(isCrudeText("Сука волк")).toBe(true);
+    expect(isCrudeText("A classic assassin that strikes twice at night")).toBe(false);
+    expect(isCrudeText("Цапля, которая лечит союзников")).toBe(false);
+  });
+});
+
+// The orchestrator's strict review of PR #786 (74bb342), each fix a case.
+describe("review of #786 (#1218)", () => {
+  it("1. reads the client address from ARENA_CLIENT_IP_HEADER when set; a client-sent one is ignored when not", async () => {
+    // Live: every visitor reaches :8791 from mcow's tailnet address.
+    const viaProxy = world({ clientIpHeader: "X-Arena-Client-IP" });
+    for (let i = 0; i < 5; i++) expect((await viaProxy.call("POST", "/players/guest", { "X-Arena-Client-IP": "203.0.113.1" })).status).toBe(200);
+    expect((await viaProxy.call("POST", "/players/guest", { "X-Arena-Client-IP": "203.0.113.1" })).status).toBe(429);
+    expect((await viaProxy.call("POST", "/players/guest", { "X-Arena-Client-IP": "203.0.113.2" })).status).toBe(200);
+    // Unset: the header is a client's word, never trusted.
+    const plain = world();
+    for (let i = 0; i < 5; i++) expect((await plain.call("POST", "/players/guest", { "X-Arena-Client-IP": `198.51.100.${i}` })).status).toBe(200);
+    expect((await plain.call("POST", "/players/guest", { "X-Arena-Client-IP": "198.51.100.9" })).status).toBe(429);
+  });
+
+  it("2. a guest and a CrazyGames player start runs on an invite-only server with email required", async () => {
+    const { guest, cg, call, store } = world({ mail: new FakeMailer(false) });
+    const g = (await guest()).json;
+    expect((await call<HomeView>("GET", "/home", tok(g))).json.email?.required).toBe(false);
+    expect((await call("GET", "/auth/email", tok(g))).json).toMatchObject({ required: false });
+    expect((await call<RunView>("POST", "/runs", tok(g))).status).toBe(200);
+    const fresh = (await cg(cgToken({ userId: "cg-new" }))).json;
+    expect((await call<RunView>("POST", "/runs", tok(fresh))).status).toBe(200);
+    // An invite's player still adds an email first.
+    const inv = createInvite(store, { name: "Rook", now: NOW });
+    const s = redeemInvite(store, inv.code, NOW)!;
+    expect((await call<HomeView>("GET", "/home", tok(s))).json.email?.required).toBe(true);
+    expect((await call("POST", "/runs", tok(s))).status).toBe(403);
+  });
+
+  it("3. both routes are off without ARENA_CG, and /health says so", async () => {
+    const off = world({ cg: false });
+    for (const path of ["/players/guest", "/players/crazygames"]) {
+      const r = await off.call("POST", path, {}, { token: cgToken({}) });
+      expect(r.status).toBe(404);
+      expect(r.json.error).toBe("CrazyGames play is off");
+    }
+    expect((await off.call("GET", "/health")).json).toMatchObject({ cg: false });
+    expect((await world().call("GET", "/health")).json).toMatchObject({ cg: true });
+  });
+
+  it("4. with ARENA_CG_GAME_ID set, a token of another game or of none is refused", async () => {
+    const { cg } = world({ cgGameId: "arena" });
+    expect((await cg(cgToken({ gameId: "arena" }))).status).toBe(200);
+    const other = await cg(cgToken({ userId: "cg-2", gameId: "other-game" }));
+    expect(other.status).toBe(401);
+    expect(other.json.error).toMatch(/another game/);
+    expect((await cg(cgToken({ userId: "cg-3", gameId: undefined }))).status).toBe(401);
+    expect(() => verifyCgJwt(cgToken({ gameId: "x" }), KEY.publicKey, NOW, "arena")).toThrow(CrazyGamesRefused);
+    expect(verifyCgJwt(cgToken({ gameId: "x" }), KEY.publicKey, NOW).userId).toBe("cg-1");
+  });
+
+  it("4b. gameId is compared as a string: a numeric or a string id of this game passes", async () => {
+    const { cg } = world({ cgGameId: "12345" });
+    expect((await cg(cgToken({ userId: "cg-n", gameId: 12345 }))).status).toBe(200);
+    expect((await cg(cgToken({ userId: "cg-s", gameId: "12345" }))).status).toBe(200);
+    expect((await cg(cgToken({ userId: "cg-o", gameId: 54321 }))).status).toBe(401);
+    expect((await cg(cgToken({ userId: "cg-u", gameId: undefined }))).status).toBe(401);
+    expect(() => verifyCgJwt(cgToken({ gameId: null }), KEY.publicKey, NOW, "null")).toThrow(CrazyGamesRefused);
+    expect(() => verifyCgJwt(cgToken({ gameId: undefined }), KEY.publicKey, NOW, "undefined")).toThrow(CrazyGamesRefused);
+  });
+
+  it("5. idea text is checked word by word: normal words pass, crude ones don't", () => {
+    for (const w of ["drapery", "Hancock", "Sussex", "Essex", "skyscraper", "niggle", "snigger", "shitake", "Matsushita", "thorny", "knobby",
+      "domination", "escort", "escorts", "erect", "erects", "erected", "cripple", "cripples", "swinger", "hardcore", "bondage", "hooker",
+      "knob", "knobs", "dong", "tit", "scum", "crap", "fart", "poop", "holocaust", "lynch"])
+      expect([w, isCrudeText(`A wolf named ${w} that bites twice`)]).toEqual([w, false]);
+    for (const w of ["fuck", "fucking", "motherfucker", "shit", "shits", "shitty", "bullshit", "cunt", "cunts", "bitch", "bitches", "ass", "asses", "dick", "nigger", "faggot", "whore", "slut", "nazi", "wanker", "Сука"])
+      expect([w, isCrudeText(`A wolf that is a ${w} every turn`)]).toEqual([w, true]);
+  });
+
+  it("6. links a guest only by its session token, never a bare player id", async () => {
+    const { store, call, cg } = world({ invites: false });
+    const g = (await call<PlayerSession>("POST", "/players/guest")).json;
+    const r = await call<CgLogin>("POST", "/players/crazygames", { "X-Arena-Player": g.player.id }, { token: cgToken({}) });
+    expect(r.json.via).toBe("new");
+    expect(store.crazyGamesLink({ playerId: g.player.id })).toBeUndefined();
+    expect((await cg(cgToken({ userId: "cg-2" }), g)).json.via).toBe("linked");
+  });
+
+  it("7. links only a guest-made player, never an invite's or an admin's", async () => {
+    const { store, cg } = world();
+    for (const admin of [false, true]) {
+      const inv = createInvite(store, { name: admin ? "Boss" : "Rook", admin, now: NOW });
+      const s = redeemInvite(store, inv.code, NOW)!;
+      const r = await cg(cgToken({ userId: `cg-${inv.name}` }), s);
+      expect(r.json.via).toBe("new");
+      expect(r.json.player.id).not.toBe(s.player.id);
+      expect(store.crazyGamesLink({ playerId: s.player.id })).toBeUndefined();
+    }
+  });
+
+  it("8. a bad signature refetches the key at most once a minute", async () => {
+    let at = 1_000_000;
+    let fetches = 0;
+    const fetcher = (async () => (fetches++, new Response(JSON.stringify({ publicKey: KEY.publicKey })))) as unknown as typeof fetch;
+    const keys = cgKeyFromWeb("https://key.test", fetcher, () => at);
+    const bad = cgToken({}, OTHER.privateKey);
+    for (let i = 0; i < 5; i++) await expect(verifyCgToken(bad, keys, NOW)).rejects.toThrow(/bad signature/);
+    expect(fetches).toBe(1);
+    at += 61_000;
+    await expect(verifyCgToken(bad, keys, NOW)).rejects.toThrow(/bad signature/);
+    expect(fetches).toBe(2);
+    expect((await verifyCgToken(cgToken({}), keys, NOW)).userId).toBe("cg-1");
+    expect(fetches).toBe(2);
+  });
+
+  it("9. the per-address counts forget addresses with no joins in the last hour", () => {
+    const limit = guestLimiter({ perAddress: 5, perHour: 300 });
+    for (const ip of ["a", "b", "c"]) expect(limit.admit(ip, 0)).toBe(true);
+    expect(limit.addresses()).toBe(3);
+    expect(limit.admit("d", 3_600_001)).toBe(true);
+    expect(limit.addresses()).toBe(1);
+  });
+
+  it("refuses a numeric userId", () => {
+    expect(() => verifyCgJwt(cgToken({ userId: 12345 }), KEY.publicKey, NOW)).toThrow(/no userId/);
+  });
+});

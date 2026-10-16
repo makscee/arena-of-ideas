@@ -11,6 +11,7 @@
 // author may take a `written` one back, which refunds it. M2-5's reader
 // (./idea-reading.ts) refunds one it couldn't make. M3-4: a proposal for a new
 // version of a Library unit is written, spent and refunded the same way.
+import { isCrudeText } from "./crude.js";
 import { randomUUID } from "node:crypto";
 import { IDEA_TEXT_MAX, IDEA_TEXT_MIN, type Idea, type IdeasView, type MvpRules, type MyIdeasView, type UnitId } from "../../../src/mvp/contract.js";
 import type { RunDeps } from "./runs.js";
@@ -117,6 +118,7 @@ export function writeIdea(deps: WriteDeps, playerId: string, text: string, evolv
   const t = text.trim();
   const chars = [...t].length;
   if (chars < IDEA_TEXT_MIN || chars > IDEA_TEXT_MAX) throw new IdeaRefused(400, `An idea is ${IDEA_TEXT_MIN}–${IDEA_TEXT_MAX} characters.`);
+  if (isCrudeText(t)) throw new IdeaRefused(400, "Try other words.");
   if (!spendIdea(deps, playerId)) throw new IdeaRefused(409, "You have no ideas left today. They come back at the day's end.");
   const idea: Idea = { ideaId: randomUUID(), playerId, text: t, state: "written", createdAt: deps.now().toISOString(), data: evolve ? { kind: "evolve", target: evolve.target } : {} };
   deps.store.putIdea(idea);

@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, Idea, IdeaState, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { CodexClaim, CodexPair } from "../../../src/mvp/codex.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
-import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type TelegramCode, type TelegramLink, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally, type Vote, type WordRequest, type CodexWish, type FoundWord, type DailyPost, type EmailCode, type EmailLink } from "./store.js";
+import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type TelegramCode, type CrazyGamesLink, type TelegramLink, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally, type Vote, type WordRequest, type CodexWish, type FoundWord, type DailyPost, type EmailCode, type EmailLink } from "./store.js";
 
 const SQL_DIR = fileURLToPath(new URL("./sql/", import.meta.url));
 
@@ -223,6 +223,20 @@ export class SqliteMvpStore implements MvpStore {
     return "tgUserId" in by
       ? this.one("SELECT json FROM mvp_telegram_links WHERE tg_user_id = ?", by.tgUserId)
       : this.one("SELECT json FROM mvp_telegram_links WHERE player_id = ?", by.playerId);
+  }
+  linkCrazyGames(l: CrazyGamesLink): void {
+    this.write("INSERT INTO mvp_cg_links (cg_user_id, player_id, json) VALUES (?, ?, ?)", l.cgUserId, l.playerId, JSON.stringify(l));
+  }
+  crazyGamesLink(by: { cgUserId: string } | { playerId: string }): CrazyGamesLink | undefined {
+    return "cgUserId" in by
+      ? this.one("SELECT json FROM mvp_cg_links WHERE cg_user_id = ?", by.cgUserId)
+      : this.one("SELECT json FROM mvp_cg_links WHERE player_id = ?", by.playerId);
+  }
+  addGuest(playerId: string, at: string): void {
+    this.write("INSERT OR IGNORE INTO mvp_guests (player_id, created_at) VALUES (?, ?)", playerId, at);
+  }
+  isGuest(playerId: string): boolean {
+    return !!this.db.prepare("SELECT 1 FROM mvp_guests WHERE player_id = ?").get(playerId);
   }
   unlinkTelegram(playerId: string): boolean { return this.db.prepare("DELETE FROM mvp_telegram_links WHERE player_id = ?").run(playerId).changes > 0; }
   linkEmail(l: EmailLink): void {
