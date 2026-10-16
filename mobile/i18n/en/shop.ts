@@ -18,7 +18,10 @@ export const shop = {
   "hint.moveToLine": "Move a unit to your line: only the line fights.",
   "hint.noGold": "No gold for a unit. Fight to move on: an empty line loses, and costs a heart.",
   "hint.buyDesk": "Double-click an offer, or press its number, to buy it. Tab reaches every card.",
-  "hint.buyPhone": "Tap an offer to read it and buy it.",
+  "hint.buyPhone": "Tap an offer, then a lit slot to buy it there.",
+  // Tap-tap's second step (#1293): what the next tap on a lit slot does.
+  "hint.tapSlotBuy": "Tap a lit slot to buy it there.",
+  "hint.tapSlotMove": "Tap a lit slot to move it there.",
   "hint.outOfGold": "Out of gold for units. Fight when ready.",
   "hint.moveDesk": "Drag a unit to move it, or click it (Tab, Enter): ← → move it, S sells it.",
   "hint.movePhone": "Tap a unit in your line to move, sell or read it.",
