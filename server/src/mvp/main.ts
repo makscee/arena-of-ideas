@@ -40,12 +40,18 @@
  *               links); refuses to start without MVP_DEV=1 and MVP_DB=:memory:
  *   MVP_CORS_ORIGINS  comma-separated origins besides CrazyGames' that may call
  *               the API from another site (the cg build's local Try, ./cors.ts)
+ *   ARENA_CG_PUBLIC_KEY  a PEM file (with MVP_DEV=1 only): CrazyGames login
+ *               tokens are checked with this test key instead of CrazyGames'
+ *               own (#1218, ./crazygames.ts; a mocked SDK user signs with it)
+ *   ARENA_GUEST_JOINS_PER_IP, ARENA_GUEST_JOINS_PER_HOUR  new guest and
+ *               CrazyGames players an hour per address and for the server
+ *               (default 5 and 300; the join link keeps its own 30)
  *   MVP_BUILD   the deployed commit, `build` on /api/v1/health (default: the
  *               checkout's HEAD); scripts/mvp-redeploy.sh sets it
  * Run: npm run mvp:server
  */
 import { serve } from "@hono/node-server";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { createMvpApp } from "./app.js";
 import { SCENE_JOBS, startMvpJobs } from "./jobs.js";
@@ -60,6 +66,7 @@ import { SqliteMvpStore } from "./sqlite-store.js";
 import { FakeMailer, mailFromEnv } from "./email.js";
 import { FakeTelegram, telegramFromEnv } from "./telegram.js";
 import { instantTuner } from "./votes.js";
+import { GUEST_JOINS } from "./crazygames.js";
 
 const port = Number(process.env.PORT ?? 8791);
 const host = process.env.HOST ?? "127.0.0.1";
@@ -81,7 +88,12 @@ const voteMin = Number(process.env.MVP_VOTE_MIN);
 const rules = Number.isInteger(voteMin) && voteMin > 0 ? { ...MVP_RULES, voteMin } : undefined;
 const telegram = telegramFromEnv(process.env, dev);
 const mail = mailFromEnv(process.env, dev);
-const rt = mvpRuntime({ content, store, dev, scenes, ...(rules ? { rules } : {}), ...(tuner ? { tuner } : {}), invites: process.env.MVP_INVITES === "1", open: process.env.MVP_OPEN === "1", rotation: process.env.MVP_ROTATION === "1", codex: process.env.ARENA_CODEX === "1", ...(telegram ? { telegram } : {}), ...(mail ? { mail } : {}) });
+const cgKeyFile = process.env.ARENA_CG_PUBLIC_KEY;
+if (cgKeyFile && !dev) throw new Error("ARENA_CG_PUBLIC_KEY needs MVP_DEV=1");
+const cgKey = cgKeyFile ? readFileSync(cgKeyFile, "utf8") : undefined;
+const envCount = (name: string, fallback: number) => (Number.isInteger(Number(process.env[name])) && Number(process.env[name]) > 0 ? Number(process.env[name]) : fallback);
+const guestJoins = { perAddress: envCount("ARENA_GUEST_JOINS_PER_IP", GUEST_JOINS.perAddress), perHour: envCount("ARENA_GUEST_JOINS_PER_HOUR", GUEST_JOINS.perHour) };
+const rt = mvpRuntime({ guestJoins, ...(cgKey ? { cgKeys: async () => cgKey } : {}),  content, store, dev, scenes, ...(rules ? { rules } : {}), ...(tuner ? { tuner } : {}), invites: process.env.MVP_INVITES === "1", open: process.env.MVP_OPEN === "1", rotation: process.env.MVP_ROTATION === "1", codex: process.env.ARENA_CODEX === "1", ...(telegram ? { telegram } : {}), ...(mail ? { mail } : {}) });
 const build = buildOf();
 const publicUrl = (process.env.ARENA_PUBLIC_URL ?? "https://arena.makscee.ru/arena").replace(/\/$/, "");
 const app = mvpServerApp(createMvpApp(rt), { staticRoot: root, build, corsOrigins: corsOriginsFromEnv(), pageMeta: (url, lang) => shareMeta(rt, url, publicUrl, lang) });
@@ -89,4 +101,4 @@ const app = mvpServerApp(createMvpApp(rt), { staticRoot: root, build, corsOrigin
 serve({ port, hostname: host, fetch: underBasePath(app, basePath) });
 startMvpJobs(rt, rt.scenes ? SCENE_JOBS : undefined);
 if (rt.scenes) void warmScenes(rt);
-console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""}${rt.scenes ? ", scenes" : ""}${tuner ? ", instant tuner" : ""}${rt.rotation ? ", rotation on" : ""}${rt.invites ? (rt.open ? ", open to all" : ", invite-only") : ""}${telegram ? (telegram instanceof FakeTelegram ? ", fake telegram" : `, telegram @${telegram.bot}`) : ""}${mail ? (mail instanceof FakeMailer ? ", fake mail" : ", mail") : ""})`);
+console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""}${rt.scenes ? ", scenes" : ""}${tuner ? ", instant tuner" : ""}${rt.rotation ? ", rotation on" : ""}${rt.invites ? (rt.open ? ", open to all" : ", invite-only") : ""}${telegram ? (telegram instanceof FakeTelegram ? ", fake telegram" : `, telegram @${telegram.bot}`) : ""}${mail ? (mail instanceof FakeMailer ? ", fake mail" : ", mail") : ""}${cgKey ? ", test CrazyGames key" : ""})`);
