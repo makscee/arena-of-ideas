@@ -15,6 +15,7 @@ import type { AbilityRegistry, Stats, StatusRegistry } from "../../src/types";
 import { t } from "../i18n";
 import { actionable, closable, h, who } from "./dom";
 import { discoveredLine } from "./fusion";
+import { isMine, reportLink } from "./report";
 import { icon } from "./icon";
 import { roman } from "./roman";
 import { markChangedPieces, richText } from "./term";
@@ -88,6 +89,13 @@ export function creditText(c: VersionCredit & { isNew?: boolean; liveDays: numbe
     ...(c.isNew ? [h("span", { class: "new-badge inline", "data-testid": "sheet-new" }, t("card.new"))] : []),
     ...parts.flatMap((p, i) => (i ? [" · ", ...p] : p)),
   );
+}
+
+/** "Report" for a player-made unit (an idea's author or an evolver, not you); none for a seed unit. */
+function reportUnit(c: VersionCredit | undefined, unitId: string, name: string): HTMLElement | null {
+  const authors = c ? [c.by, c.evolvedBy].filter((p) => p && !p.bot) : [];
+  if (!c || !authors.length || authors.every((p) => isMine(p!.id))) return null;
+  return reportLink("unit", c.versions[c.version - 1]?.unitId ?? unitId, unitName(unitId, name));
 }
 
 /** A pool unit's sheet line (creditText); none before the credits load. */
@@ -324,6 +332,8 @@ export function unitSheet(
     c?.archetype ? h("div", { class: "archetype", "data-testid": "sheet-archetype" }, c.archetype) : null,
     // opts.credit: a Library unit's own (M3-8), not a live version's that shares its id.
     fused ? null : opts.credit ? creditText(opts.credit) : creditLine(unitId),
+    // #1271: a unit a player made can be reported (not your own).
+    fused ? null : reportUnit(opts.credit ?? creditOf(unitId), unitId, u.name),
     "forms" in u ? null : discoveredLine(u, { preview: opts.preview ?? false }),
     opts.candidate ? h("div", { class: "dim small", "data-testid": "sheet-unset" }, SET_BY_SIM()) : "stats" in u ? statsLine(u.stats) : sheetStats(u.base.pwr, u.base.hp),
     opts.from ? h("div", { class: "dim small" }, t("card.yourCopyNow")) : null,

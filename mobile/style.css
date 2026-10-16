@@ -1931,3 +1931,10 @@ button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padd
   #app[data-screen="shop"] .shop-panel .card .stats { font-size: 15px; }
   #app[data-screen="shop"] .line-panel .slots:not(.bench-row) .card { height: 104px; }
 }
+
+/* Report (#1271): a small dim link beside a player's name or a player-made unit's credit. It never
+ * takes a row of its own on a short screen: 24 px tall, and the sheet's tap area is the whole link. */
+button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; border: 0; background: none; box-shadow: none; font-size: 11px; line-height: 14px; text-decoration: underline; opacity: 0.85; }
+.throne-hero button.link.report-link { color: inherit; align-self: flex-start; margin-top: -8px; }
+.report-sheet .report-about { font-weight: 700; word-break: break-word; }
+.report-sheet input { min-height: 44px; }

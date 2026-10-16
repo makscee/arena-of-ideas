@@ -25,6 +25,7 @@ import { ideasScreen, refillTime } from "./screens/ideas";
 import { votePanel } from "./screens/vote";
 import { pickScreen } from "./screens/pick";
 import { card, formRich, roman, setCardCredits, unitSheet, type CardUnit } from "./ui/card";
+import { isMine, reportLink, setReporter } from "./ui/report";
 import { previewName } from "./ui/fusion";
 import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
@@ -471,6 +472,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
         h("div", { class: "crown-badge", "aria-hidden": "true" }, CROWN_SVG()),
         h("div", { class: "hero-label" }, t("home.champion")),
         champ ? h("h2", { class: "hero-name" }, whoMark(champ.player)) : h("div", {}, t("home.noChampion")),
+        champ && !champ.player.bot && !isMine(champ.player.id) ? reportLink("name", champ.player.id, `@${champ.player.name}`) : null,
         own ? h("div", { class: "hero-day", "data-testid": "own-team" }, t("home.ownTeam")) : null,
         h("div", { class: "hero-day", "data-testid": "slayers" }, champ ? slayersLine(home.day.slayers) : t("home.newChampionAt", { at: rules.dayEndsAt })),
         champ ? h("div", { class: "hero-team" }, team(champ.line, "ghost", content)) : null,
@@ -683,6 +685,7 @@ async function openCodex(state?: Partial<CodexState>): Promise<void> {
  * server runs the Codex (/health), so its links show only then. */
 let codexOn = false;
 void api.health().then((h) => (codexOn = !!h.codex), () => undefined);
+setReporter((r) => api.report(r), () => api.player?.id ?? savedPlayer()?.id ?? "");
 async function openForge(tab: ForgeTab = "units"): Promise<void> {
   const back = keepScreen();
   let view = await api.codex();

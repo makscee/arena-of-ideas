@@ -25,6 +25,7 @@ import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { summonId } from "../../src/describe";
 import { card, formRich, summonById, summonSheet, summonText, unitSheet } from "../ui/card";
+import { isMine, reportLink } from "../ui/report";
 import { actionable, app, button, closable, fitText, h, isDesktop, keyLabel, keyOf, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
 import { t as tr } from "../i18n";
 import { icon } from "../ui/icon";
@@ -1361,6 +1362,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       // The run bar names the round itself.
       ...(a.outro?.bar ? [] : [h("span", {}, battle.kind === "crown" ? tr("battle.hud.crown") : battle.kind === "playoff" ? tr("battle.hud.playoff") : tr("battle.hud.round", { n: battle.round }))]),
       h("span", { class: "dim who", "data-testid": "battle-vs", title: battle.opponent.name }, tr("battle.hud.vs", { name: battle.opponent.name })),
+      ...(battle.opponent.bot || isMine(battle.opponent.id) ? [] : [reportLink("name", battle.opponent.id, `@${battle.opponent.name}`)]),
       // A repeat turn's ⏩ is drawn by CSS, so the label's text stays "T7" and the row keeps its spacing.
       h("span", { "data-testid": "battle-turn", ...(repeating ? { class: "bv-repeat", title: tr("battle.repeat"), "aria-label": `${turnLabel(hudTurn ?? turn)} · ${tr("battle.repeat")}` } : {}) }, turnLabel(hudTurn ?? turn)),
     );
