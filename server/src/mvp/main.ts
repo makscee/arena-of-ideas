@@ -38,6 +38,8 @@
  *               default (dry run: npm run mvp:post -- --db <file> --dry-run)
  *   ARENA_SCENES 1 serves the test scenes (#1026, ./scenes.ts: #scene=<id>
  *               links); refuses to start without MVP_DEV=1 and MVP_DB=:memory:
+ *   MVP_CORS_ORIGINS  comma-separated origins besides CrazyGames' that may call
+ *               the API from another site (the cg build's local Try, ./cors.ts)
  *   MVP_BUILD   the deployed commit, `build` on /api/v1/health (default: the
  *               checkout's HEAD); scripts/mvp-redeploy.sh sets it
  * Run: npm run mvp:server
@@ -50,6 +52,7 @@ import { SCENE_JOBS, startMvpJobs } from "./jobs.js";
 import { poolContent, seedUnits } from "./pool.js";
 import { MVP_RULES } from "../../../src/mvp/contract.js";
 import { mvpRuntime } from "./runtime.js";
+import { corsOriginsFromEnv } from "./cors.js";
 import { buildOf, mvpServerApp, underBasePath } from "./server.js";
 import { shareMeta } from "./share.js";
 import { checkScenesEnv, warmScenes } from "./scenes.js";
@@ -81,7 +84,7 @@ const mail = mailFromEnv(process.env, dev);
 const rt = mvpRuntime({ content, store, dev, scenes, ...(rules ? { rules } : {}), ...(tuner ? { tuner } : {}), invites: process.env.MVP_INVITES === "1", open: process.env.MVP_OPEN === "1", rotation: process.env.MVP_ROTATION === "1", codex: process.env.ARENA_CODEX === "1", ...(telegram ? { telegram } : {}), ...(mail ? { mail } : {}) });
 const build = buildOf();
 const publicUrl = (process.env.ARENA_PUBLIC_URL ?? "https://arena.makscee.ru/arena").replace(/\/$/, "");
-const app = mvpServerApp(createMvpApp(rt), { staticRoot: root, build, pageMeta: (url, lang) => shareMeta(rt, url, publicUrl, lang) });
+const app = mvpServerApp(createMvpApp(rt), { staticRoot: root, build, corsOrigins: corsOriginsFromEnv(), pageMeta: (url, lang) => shareMeta(rt, url, publicUrl, lang) });
 
 serve({ port, hostname: host, fetch: underBasePath(app, basePath) });
 startMvpJobs(rt, rt.scenes ? SCENE_JOBS : undefined);

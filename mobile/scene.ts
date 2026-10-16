@@ -3,10 +3,12 @@
 // is main.ts's first import: on a scene link it swaps localStorage for one in
 // memory before api.ts, lang.ts or theme.ts read it, so a scene's fixture
 // player, language and palette never touch the browser's saved ones.
+import { CG } from "./cg";
+
 const params = new URLSearchParams(location.hash.slice(1));
 
 /** The scene's id, or null on any other address. */
-export const sceneId: string | null = params.get("scene");
+export const sceneId: string | null = CG ? null : params.get("scene");
 
 class MemoryStorage implements Storage {
   private m = new Map<string, string>();

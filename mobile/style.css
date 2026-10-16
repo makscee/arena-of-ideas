@@ -152,7 +152,9 @@
 * { box-sizing: border-box; }
 /* The ground: a faint dot grid, as on the Toybox boards. */
 html, body { margin: 0; background-color: var(--ground); background-image: radial-gradient(var(--dots) 1.6px, transparent 1.6px); background-size: 22px 22px; color: var(--text); }
-body { min-height: 100dvh; font-size: 16px; font-weight: 500; -webkit-tap-highlight-color: transparent; }
+body { min-height: 100dvh; font-size: 16px; font-weight: 500; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+/* Text the player types or copies stays selectable under body's none (CrazyGames asks for none on body). */
+input, textarea { -webkit-user-select: text; user-select: text; }
 #app { max-width: 480px; margin: 0 auto; padding: 12px 12px calc(16px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; min-height: 100dvh; }
 h1, h2, .display { font-family: var(--font-head); font-weight: var(--head-weight); letter-spacing: 0.01em; margin: 0; }
 h1 { font-size: 30px; color: var(--action); text-shadow: 0 3px 0 var(--outline); }

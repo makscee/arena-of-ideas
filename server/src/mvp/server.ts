@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { MVP_API_PREFIX } from "../../../src/mvp/contract.js";
+import { cors } from "./cors.js";
 
 export interface MvpServerOptions {
   /** The built client: serveStatic's root, relative to the cwd. */
@@ -17,10 +18,14 @@ export interface MvpServerOptions {
   /** M4-7: Open Graph tags for the game's page opened from a shared link
    * (share.ts shareMeta), or null for an ordinary page. */
   pageMeta?: (url: URL, acceptLanguage: string | undefined) => string | null;
+  /** Extra origins allowed to call the API from another site (MVP_CORS_ORIGINS,
+   * ./cors.ts); CrazyGames' own are always allowed. */
+  corsOrigins?: readonly string[];
 }
 
 export function mvpServerApp(api: Hono, o: MvpServerOptions): Hono {
   const app = new Hono();
+  app.use(`${MVP_API_PREFIX}/*`, cors(o.corsOrigins ?? []));
   // GET /health is app.ts's; this adds the build to whatever it answers.
   app.use(`${MVP_API_PREFIX}/health`, async (c, next) => {
     await next();
