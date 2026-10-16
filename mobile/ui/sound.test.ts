@@ -1,7 +1,7 @@
 // Sound settings survive a storage that throws (round 3, note 16).
 import { expect, test } from "vitest";
 import { existsSync } from "node:fs";
-import { HOME_TRACK, SOUND_DEFAULTS, SOUND_STORE, THEMES, loadSettings, saveSettings, sceneTrack, themeFor } from "./sound";
+import { HOME_TRACK, SOUND_DEFAULTS, SOUND_STORE, THEMES, loadSettings, onAdFinished, onAdStarted, play, saveSettings, sceneTrack, setPortalMute, themeFor } from "./sound";
 
 const broken = () => {
   throw new Error("SecurityError");
@@ -56,5 +56,37 @@ test("tracks.json: four themes, each with a measured beat and a loop inside its 
     expect(t.gain).toBeGreaterThan(0.7);
     expect(t.gain).toBeLessThan(1.42);
     expect(existsSync(new URL(`../public/music/${t.file}`, import.meta.url))).toBe(true);
+  }
+});
+
+test("the portal's muteAudio and an ad break silence the game, and give it back (#1219)", () => {
+  const g = globalThis as unknown as { window?: { __sfx?: string[] } | undefined; document?: { hidden: boolean } | undefined };
+  const had = { window: g.window, document: g.document };
+  g.window = {};
+  g.document = { hidden: false };
+  try {
+    const heard = () => (g.window!.__sfx ?? []).splice(0);
+    play("click");
+    expect(heard()).toEqual(["click"]);
+    setPortalMute(true);
+    play("click");
+    expect(heard()).toEqual(["click (muted)"]);
+    // An ad ending can't unmute what the portal still mutes.
+    onAdStarted();
+    onAdFinished();
+    play("click");
+    expect(heard()).toEqual(["click (muted)"]);
+    setPortalMute(false);
+    play("click");
+    expect(heard()).toEqual(["click"]);
+    onAdStarted();
+    play("click");
+    expect(heard()).toEqual(["click (muted)"]);
+    onAdFinished();
+    play("click");
+    expect(heard()).toEqual(["click"]);
+  } finally {
+    g.window = had.window;
+    g.document = had.document;
   }
 });

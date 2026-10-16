@@ -66,11 +66,38 @@ declare global {
     /** The last 50 sounds asked for, "key" or "key (muted)": e2e reads it. */
     __sfx?: string[];
     /** What the music does now: e2e reads it. */
-    __music?: () => { track: string | null; muffled: boolean; playing: boolean; time: number; filterHz: number };
+    __music?: () => { track: string | null; muffled: boolean; playing: boolean; time: number; filterHz: number; master: number };
   }
 }
 
-const masterGain = () => (settings.on ? settings.volume * settings.volume : 0);
+/** The portal's muteAudio setting and an ad break (the cg build, #1219): each
+ * keeps everything silent without touching the player's saved settings. */
+let portalMuted = false;
+let adPlaying = false;
+const audible = () => settings.on && !portalMuted && !adPlaying;
+const masterGain = () => (audible() ? settings.volume * settings.volume : 0);
+
+function applyMaster(): void {
+  if (master && ctx) master.gain.setValueAtTime(masterGain(), ctx.currentTime);
+}
+
+/** CrazyGames' muteAudio: on keeps the game silent, off gives the player's own settings back. */
+export function setPortalMute(on: boolean): void {
+  portalMuted = on;
+  applyMaster();
+}
+
+/** An ad break starts: mute. */
+export function onAdStarted(): void {
+  adPlaying = true;
+  applyMaster();
+}
+
+/** The ad break ended (or failed): back to what it was. */
+export function onAdFinished(): void {
+  adPlaying = false;
+  applyMaster();
+}
 
 function unlock(): void {
   const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -116,7 +143,7 @@ export function initSound(): void {
   window.__sfx = window.__sfx ?? [];
   window.__music = () => {
     const el = playing ? elements.get(playing.file) : undefined;
-    return { track: playing?.file ?? null, muffled: want?.muffled ?? false, playing: !!el && !el.paused, time: el?.currentTime ?? 0, filterHz: musicFilter?.frequency.value ?? 0 };
+    return { track: playing?.file ?? null, muffled: want?.muffled ?? false, playing: !!el && !el.paused, time: el?.currentTime ?? 0, filterHz: musicFilter?.frequency.value ?? 0, master: master?.gain.value ?? 0 };
   };
   const first = () => {
     removeEventListener("pointerdown", first, true);
@@ -142,7 +169,7 @@ export const soundSettings = (): SoundSettings => ({ ...settings });
 export function setSound(next: Partial<SoundSettings>): void {
   settings = { ...settings, ...next };
   saveSettings(settings);
-  if (master && ctx) master.gain.setValueAtTime(masterGain(), ctx.currentTime);
+  applyMaster();
   if (musicGain && ctx) musicGain.gain.setTargetAtTime(musicLevel(), ctx.currentTime, 0.05);
   if (ctx && settings.on && !document.hidden) void ctx.resume().catch(() => {});
   applyMusic();
@@ -165,9 +192,9 @@ export function play(c: Cue | SoundKey | null | undefined): void {
   const q = typeof c === "string" ? cue(c) : c;
   if (q.delay) return void setTimeout(() => play({ ...q, delay: 0 }), q.delay);
   const log = (window.__sfx ??= []);
-  log.push(settings.on ? q.key : `${q.key} (muted)`);
+  log.push(audible() ? q.key : `${q.key} (muted)`);
   if (log.length > LOG_MAX) log.splice(0, log.length - LOG_MAX);
-  if (!settings.on || document.hidden || !ctx || !master) return;
+  if (!audible() || document.hidden || !ctx || !master) return;
   const buf = buffers.get(q.file);
   if (!buf) return;
   const now = performance.now();
@@ -272,7 +299,7 @@ function log(entry: string): void {
  * never breaks. Before the first tap it is only remembered. */
 export function music(scene: MusicScene, runId = ""): void {
   const next = sceneTrack(scene, runId);
-  if (want?.track.file !== next.track.file) log(`music:${next.track.file.replace(/\.m4a$/, "")}${settings.on && settings.music ? "" : " (muted)"}`);
+  if (want?.track.file !== next.track.file) log(`music:${next.track.file.replace(/\.m4a$/, "")}${audible() && settings.music ? "" : " (muted)"}`);
   want = next;
   applyMusic();
 }

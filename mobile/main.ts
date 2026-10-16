@@ -8,7 +8,7 @@
 // now" under "Dev". The shop's ☰ (Esc on desktop) is the in-run menu.
 import { sceneId } from "./scene";
 import { CG } from "./cg";
-import { cgInit, cgUserToken, onCgLogin } from "./crazygames";
+import { cgApplySettings, cgInit, cgLoading, cgPlaytestHooks, cgUserToken, cgWatchGameplay, onCgLogin } from "./crazygames";
 import type { BattleRecord, CandidateScore, DayView, FightResult, HomeView, IdeasView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView, UnitContent } from "../src/mvp/contract";
 import { benchSizeOf, lockedFull, MVP_RULES, offersAt, sellValue } from "../src/mvp/contract";
 import { mergeTarget } from "../src/mvp/forms";
@@ -2181,6 +2181,12 @@ if (sceneId) {
 async function cgBoot(): Promise<void> {
   show(h("h1", {}, t("name.title")));
   await cgInit();
+  // #1219: loading runs from here until Home (or the error) shows; gameplay
+  // follows the screen from then on.
+  cgLoading(true);
+  cgApplySettings();
+  cgPlaytestHooks();
+  cgWatchGameplay(app);
   const login = async () => {
     const token = await cgUserToken();
     if (!token) return false;
@@ -2198,6 +2204,7 @@ async function cgBoot(): Promise<void> {
     if (!(await login()) && !api.hasToken) await api.guest();
     await homeScreen();
   });
+  cgLoading(false);
   if (err.textContent) show(h("h1", {}, t("name.title")), err, button(t("invite.retry"), () => location.reload(), "primary"));
 }
 function boot(): void {
