@@ -6,9 +6,14 @@
 // its one text) on the Night Plum ground. Each video opens on its cover, which
 // fades into the same shop: buy an offer, Fight, the battle plays (speed 2).
 // Frames come from Chromium's screencast (headless: no cursor), ffmpeg makes the mp4.
+// Emoji render in Noto Color Emoji (SIL OFL 1.1, fetched pinned into e2e/.cache, for
+// the render only: the game zip keeps the system emoji). The system's emoji art
+// (Apple's on a Mac) is not ours to put in store media: a glyph drawn in any
+// other emoji font fails the run.
 //   AOI_E2E_BROWSER_PATH=<playwright headless shell> npm run mvp:cg-store-kit -- [--url http://127.0.0.1:PORT/arena/] [--out DIR] [--seconds 18] [--only covers|videos]
 import { spawn, execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { join, resolve } from "node:path";
 import { launchChromium } from "./browser.mjs";
@@ -33,6 +38,60 @@ for (let i = 0; i < 300; i++) {
   try { if ((await fetch(url + "api/v1/health")).ok) break; } catch {}
   await new Promise((r) => setTimeout(r, 200));
 }
+
+const EMOJI_FONT = {
+  url: "https://raw.githubusercontent.com/googlefonts/noto-emoji/v2.051/fonts/Noto-COLRv1.ttf",
+  sha256: "0ae57fe58645638523ba35f388d93739d292539a9acb84df5700c81b1e1a28d2",
+  file: "e2e/.cache/Noto-COLRv1-v2.051.ttf",
+};
+const sha = (b) => createHash("sha256").update(b).digest("hex");
+if (!existsSync(EMOJI_FONT.file) || sha(readFileSync(EMOJI_FONT.file)) !== EMOJI_FONT.sha256) {
+  mkdirSync("e2e/.cache", { recursive: true });
+  const res = await fetch(EMOJI_FONT.url);
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (!res.ok || sha(buf) !== EMOJI_FONT.sha256) throw new Error(`Noto Color Emoji: ${res.status} from ${EMOJI_FONT.url}, or its sha256 changed`);
+  writeFileSync(EMOJI_FONT.file, buf);
+}
+const emojiFont = readFileSync(EMOJI_FONT.file);
+const EMOJI_PATH = "__store-kit/noto-color-emoji.ttf";
+// "Store Emoji" sits in every stack before the generic family, so no emoji falls through to the system's.
+const EMOJI_CSS = `@font-face { font-family: "Store Emoji"; src: url("${EMOJI_PATH}") format("truetype"); }
+:root:root, :root:root:lang(ru) {
+  --font-head: "Lilita One", "Store Emoji", sans-serif;
+  --font-body: "Rubik", "Store Emoji", sans-serif;
+  --font-num: "Rubik", "Store Emoji", sans-serif;
+}
+:root:root:lang(ru) { --font-head: "Rubik", "Store Emoji", sans-serif; }
+body, .emoji, .emoji * { font-family: var(--font-body); }
+.emoji, .emoji * { font-family: "Store Emoji", sans-serif !important; }
+.tier, button.chip.tier-chip { font-family: Georgia, "Times New Roman", "Store Emoji", serif; }`;
+const useNotoEmoji = async (page) => {
+  await page.addStyleTag({ content: EMOJI_CSS });
+  await page.evaluate(async () => { await document.fonts.load('40px "Store Emoji"', "🤡"); await document.fonts.ready; });
+};
+/** Emoji drawn in a system emoji font, not our Noto: [{ text, fonts }] for every element on screen. */
+const foreignEmoji = async (cdp) => {
+  await cdp.send("DOM.enable");
+  await cdp.send("CSS.enable");
+  const { root } = await cdp.send("DOM.getDocument", { depth: -1 });
+  const bad = [];
+  const walk = async (n) => {
+    const text = (n.children ?? []).filter((c) => c.nodeType === 3).map((c) => c.nodeValue).join("");
+    if (n.nodeType === 1 && /\p{Extended_Pictographic}/u.test(text)) {
+      const { fonts } = await cdp.send("CSS.getPlatformFontsForNode", { nodeId: n.nodeId }).catch(() => ({ fonts: [] }));
+      const other = fonts.filter((f) => !f.isCustomFont && /emoji/i.test(f.familyName));
+      if (other.length) bad.push({ text: text.trim().slice(0, 20), fonts: other.map((f) => f.familyName).join(", ") });
+    }
+    for (const c of n.children ?? []) await walk(c);
+  };
+  await walk(root);
+  return bad;
+};
+const checkEmoji = async (cdp, where) => {
+  const bad = await foreignEmoji(cdp);
+  if (bad.length) errors.push(`${where}: emoji drawn in ${[...new Set(bad.map((b) => b.fonts))].join("; ")}, not Noto: ${bad.slice(0, 5).map((b) => b.text).join(" ")}`);
+  else console.log(`${where}: every emoji in Noto Color Emoji`);
+};
 
 /** The cover: the game's own unit cards (icons and art, no names or numbers) on
  * the Night Plum ground, your line facing theirs, and the title above: the
@@ -103,13 +162,16 @@ try {
     const video = s.video && only !== "covers";
     if (!video && only === "videos") continue;
     const ctx = await browser.newContext({ viewport: s.viewport, deviceScaleFactor: video ? s.videoScale : s.coverScale });
+    await ctx.route(`**/${EMOJI_PATH}`, (r) => r.fulfill({ body: emojiFont, contentType: "font/ttf" }));
     const page = await ctx.newPage();
+    const cdp = await ctx.newCDPSession(page);
     await page.goto(`${url}#scene=${scene}&lang=en&theme=plum&speed=2`);
     await page.getByTestId("fight").waitFor({ timeout: 30_000 });
-    await page.evaluate(() => document.fonts.ready);
+    await useNotoEmoji(page);
     await page.waitForTimeout(800);
     await page.evaluate(COVER);
     await page.waitForTimeout(300);
+    await checkEmoji(cdp, `${s.name} cover`);
     if (only !== "videos") {
       const shot = join(out, s.cover);
       await page.screenshot({ path: shot });
@@ -126,7 +188,6 @@ try {
     const frames = join(out, `frames-${s.name}`);
     rmSync(frames, { recursive: true, force: true });
     mkdirSync(frames, { recursive: true });
-    const cdp = await ctx.newCDPSession(page);
     const got = [];
     cdp.on("Page.screencastFrame", (f) => {
       const file = join(frames, `${String(got.length).padStart(5, "0")}.jpg`);
@@ -155,6 +216,8 @@ try {
       await at(4600);
       await page.getByTestId("fight").click();
       await page.getByTestId("battle-you").waitFor({ timeout: 10_000 });
+      await page.waitForTimeout(1500);
+      await checkEmoji(cdp, `${s.name} battle`);
     } catch (e) {
       errors.push(`${s.name}: the scripted run broke: ${String(e.message).split("\n").slice(0, 12).join("\n")}`);
     }
