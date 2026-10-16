@@ -168,6 +168,27 @@ export const api = {
     saveOwnInvite(s.invite);
     return s;
   },
+  /** #1218 (the cg build): this device becomes a new guest player, no form. */
+  async guest(): Promise<PlayerRef> {
+    const s = await call<PlayerSession>("POST", "/players/guest");
+    saveOwnInvite(null);
+    player = s.player;
+    token = s.token;
+    savePlayer(player);
+    saveToken(token);
+    return player;
+  },
+  /** #1218: a CrazyGames login (the SDK's user token): this device becomes
+   * that account's player; a guest without an account keeps their progress. */
+  async crazyGames(cgToken: string): Promise<PlayerRef> {
+    const s = await call<PlayerSession>("POST", "/players/crazygames", { token: cgToken });
+    if (s.player.id !== player?.id) saveOwnInvite(null);
+    player = s.player;
+    token = s.token;
+    savePlayer(player);
+    saveToken(token);
+    return player;
+  },
   /** M4-6: a Telegram login code and its t.me link, for this player (Link
    * Telegram) or for none (Log in with Telegram). */
   telegramStart: () => call<TelegramStart>("POST", "/auth/telegram/start"),

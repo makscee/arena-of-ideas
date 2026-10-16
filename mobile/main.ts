@@ -8,6 +8,7 @@
 // now" under "Dev". The shop's ☰ (Esc on desktop) is the in-run menu.
 import { sceneId } from "./scene";
 import { CG } from "./cg";
+import { cgInit, cgUserToken, onCgLogin } from "./crazygames";
 import type { BattleRecord, CandidateScore, DayView, FightResult, HomeView, IdeasView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView, UnitContent } from "../src/mvp/contract";
 import { benchSizeOf, lockedFull, MVP_RULES, offersAt, sellValue } from "../src/mvp/contract";
 import { mergeTarget } from "../src/mvp/forms";
@@ -55,6 +56,8 @@ async function guarded(err: HTMLElement, fn: () => Promise<void>): Promise<void>
   } catch (e) {
     if (e instanceof ApiError && e.status === 401 && e.message.startsWith("unknown player")) {
       api.forget();
+      // The cg build has no name screen: a new guest (#1218), once this call settles.
+      if (CG) return void setTimeout(() => void cgBoot());
       return nameScreen();
     }
     if (e instanceof ApiError && e.status === 409) play("wrong");
@@ -2171,7 +2174,36 @@ if (sceneId) {
     () => boot(),
   );
 }
+/** #1218, the cg build: the SDK inits on the loading screen; a device with
+ * no player becomes a guest at once, and a logged-in CrazyGames user (now or
+ * later) becomes their account's player, a guest's progress kept. */
+async function cgBoot(): Promise<void> {
+  show(h("h1", {}, t("name.title")));
+  await cgInit();
+  const login = async () => {
+    const token = await cgUserToken();
+    if (!token) return false;
+    try {
+      await api.crazyGames(token);
+      return true;
+    } catch (err) {
+      console.warn("CrazyGames login:", err);
+      return false;
+    }
+  };
+  onCgLogin(() => void login().then((ok) => { if (ok) void homeScreen(); }));
+  const err = errorLine();
+  await guarded(err, async () => {
+    if (!(await login()) && !api.hasToken) await api.guest();
+    await homeScreen();
+  });
+  if (err.textContent) show(h("h1", {}, t("name.title")), err, button(t("invite.retry"), () => location.reload(), "primary"));
+}
 function boot(): void {
+  if (CG && !battleLink) {
+    void cgBoot();
+    return;
+  }
   if (battleLink) {
     openBattleLink(battleLink);
   } else if (inviteCode) {

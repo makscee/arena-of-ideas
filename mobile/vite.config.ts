@@ -7,7 +7,7 @@ import { defineConfig } from "vite";
 // `--mode cg` (npm run mvp:build:cg, mission #1214) is the CrazyGames zip: a
 // relative base so it runs from any folder or host, VITE_CG=1 for the client's
 // cg flag (./cg.ts), the API at VITE_API_ORIGIN (from the environment), output
-// to dist-cg.
+// to dist-cg, and the CrazyGames SDK v3 in <head> (#1218, ./crazygames.ts).
 const server = process.env.MVP_SERVER_URL ?? "http://127.0.0.1:8791";
 
 export default defineConfig(({ mode }) => {
@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => {
     base: cg ? "./" : "/arena/",
     build: { outDir: cg ? "dist-cg" : "dist", emptyOutDir: true, target: "es2022" },
     ...(cg ? { define: { "import.meta.env.VITE_CG": JSON.stringify("1") } } : {}),
+    plugins: cg ? [{ name: "crazygames-sdk", transformIndexHtml: () => [{ tag: "script", attrs: { src: "https://sdk.crazygames.com/crazygames-sdk-v3.js" }, injectTo: "head-prepend" as const }] }] : [],
     server: { proxy: { "/arena/api": server } },
   };
 });
