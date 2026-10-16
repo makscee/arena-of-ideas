@@ -2111,7 +2111,7 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 #app[data-screen="battle"] .bv-v3 .bv-line.mine .bv-changes { top: auto; bottom: calc(100% + 2px); }
 #app[data-screen="battle"] .bv-v3 button.bv-badge { display: none; }
 /* The rail: the event on screen big, the last few small, the ledger, the controls. */
-#app[data-screen="battle"] .bv-v3 button.bv-caption { flex: none; width: 100%; height: auto; min-height: 64px; max-height: 40%; translate: none; margin: 0; padding: 8px 10px; align-items: flex-start; border: 3px solid var(--action); border-radius: 12px; background: var(--pc-face-hi); color: var(--pc-ink); text-shadow: none; font-size: 15px; line-height: 1.25; white-space: normal; overflow: hidden; }
+#app[data-screen="battle"] .bv-v3 button.bv-caption { flex: none; width: 100%; height: 96px; min-height: 96px; max-height: 96px; translate: none; margin: 0; padding: 8px 10px; align-items: flex-start; border: 3px solid var(--action); border-radius: 12px; background: var(--pc-face-hi); color: var(--pc-ink); text-shadow: none; font-size: 15px; line-height: 1.25; white-space: normal; overflow: hidden; }
 #app[data-screen="battle"] .bv-v3 button.bv-caption * { text-shadow: none; }
 #app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line { flex-wrap: wrap; white-space: normal; row-gap: 2px; }
 #app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line > * { flex: none !important; width: auto !important; max-width: 100%; white-space: normal; overflow: visible; text-overflow: clip; }
@@ -2142,7 +2142,7 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
   #app[data-screen="battle"] .bv-v3 .bv-line.mine .bv-changes { top: 20px; bottom: auto; right: calc(100% - 8px); left: auto; width: max-content; justify-content: flex-end; }
   #app[data-screen="battle"] .bv-v3 > .bv-rail { flex-direction: column; margin: 0; }
   #app[data-screen="battle"] .bv-v3 .bv-recent, #app[data-screen="battle"] .bv-v3 .bv-rail > .bv-below { display: none; }
-  #app[data-screen="battle"] .bv-v3 button.bv-caption { min-height: 56px; max-height: 96px; }
+  #app[data-screen="battle"] .bv-v3 button.bv-caption { height: 76px; min-height: 76px; max-height: 76px; }
   #app[data-screen="battle"] .bv-v3 .bv-controls { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   #app[data-screen="battle"] .bv-v3 .bv-controls button { min-height: 44px; }
 }
@@ -2151,4 +2151,7 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 #app[data-screen="battle"] .bv-v3 .bv-rail > .bv-below:not(:has(button)):has(.bv-ledger-foot:empty) { display: none; }
 @media (max-width: 599.98px) and (orientation: portrait) {
   #app[data-screen="battle"] .bv-v3 .bv-line.theirs .bv-changes, #app[data-screen="battle"] .bv-v3 .bv-line.mine .bv-changes { top: auto; bottom: 0; }
+}
+@media (max-width: 379.98px) and (orientation: portrait) {
+  #app[data-screen="battle"] .bv-v3 button.bv-caption { font-size: 13px; line-height: 1.2; padding: 6px 8px; }
 }
