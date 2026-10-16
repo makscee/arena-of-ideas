@@ -2098,7 +2098,7 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 #app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.dead { opacity: 0.42; filter: grayscale(1); transform: none; }
 #app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.dead.bv-dying { filter: none; opacity: 1; }
 #app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.silenced .pc-em { filter: grayscale(1); }
-#app[data-screen="battle"] .bv-v3 .pc-b.h.hurt { color: #fff; background: var(--k-dmg); }
+#app[data-screen="battle"] .bv-v3 .pc-b.h.hurt { color: var(--pc-num); background: var(--k-dmg); }
 /* The when tab lights up when its rule fires. */
 #app[data-screen="battle"] .bv-v3 .pc-tab.bv-fired { animation: bv-tab-fired calc(0.6s / var(--bv-sp, 1)) ease-out calc(var(--bv-ftt, 0s) / var(--bv-sp, 1)) both; }
 #app[data-screen="battle"] .bv-v3 .pc-tab.bv-fired.still { animation: none; box-shadow: 0 0 0 3px var(--action), 0 0 12px var(--action); scale: 1.12; }
@@ -2111,7 +2111,7 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 #app[data-screen="battle"] .bv-v3 .bv-line.mine .bv-changes { top: auto; bottom: calc(100% + 2px); }
 #app[data-screen="battle"] .bv-v3 button.bv-badge { display: none; }
 /* The rail: the event on screen big, the last few small, the ledger, the controls. */
-#app[data-screen="battle"] .bv-v3 button.bv-caption { flex: none; width: 100%; height: auto; min-height: 64px; max-height: 40%; translate: none; margin: 0; padding: 8px 10px; align-items: flex-start; border: 3px solid var(--action); border-radius: 12px; background: var(--paper, #fbf6ea); color: var(--ink, #2a2238); text-shadow: none; font-size: 15px; line-height: 1.25; white-space: normal; overflow: hidden; }
+#app[data-screen="battle"] .bv-v3 button.bv-caption { flex: none; width: 100%; height: auto; min-height: 64px; max-height: 40%; translate: none; margin: 0; padding: 8px 10px; align-items: flex-start; border: 3px solid var(--action); border-radius: 12px; background: var(--pc-face-hi); color: var(--pc-ink); text-shadow: none; font-size: 15px; line-height: 1.25; white-space: normal; overflow: hidden; }
 #app[data-screen="battle"] .bv-v3 button.bv-caption * { text-shadow: none; }
 #app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line { flex-wrap: wrap; white-space: normal; row-gap: 2px; }
 #app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line > * { flex: none !important; width: auto !important; max-width: 100%; white-space: normal; overflow: visible; text-overflow: clip; }
@@ -2149,3 +2149,6 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 /* The ledger in the rail shows only a chain's Skip and a turn's bottom line. */
 #app[data-screen="battle"] .bv-v3 .bv-ledger-head:not(:has(button)) { display: none; }
 #app[data-screen="battle"] .bv-v3 .bv-rail > .bv-below:not(:has(button)):has(.bv-ledger-foot:empty) { display: none; }
+@media (max-width: 599.98px) and (orientation: portrait) {
+  #app[data-screen="battle"] .bv-v3 .bv-line.theirs .bv-changes, #app[data-screen="battle"] .bv-v3 .bv-line.mine .bv-changes { top: auto; bottom: 0; }
+}

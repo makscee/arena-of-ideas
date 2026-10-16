@@ -1686,11 +1686,12 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         const theirs = sides.get(unit) !== you;
         const upright = innerWidth < 600 && innerHeight > innerWidth;
         const x = upright ? (theirs ? card.right + 16 : card.left - 12) : card.left + card.width / 2;
-        const y = upright ? card.top + card.height / 2 : theirs ? whole.bottom + 2 : whole.top - 2;
+        // On the phone the arrows run across at the faces' middles: the rows sit by the face's top.
+        const y = upright ? card.top + 2 : theirs ? whole.bottom + 2 : whole.top - 2;
         b.el.style.left = `${Math.round(x)}px`;
         b.el.style.top = `${Math.round(y)}px`;
         b.el.dataset.tx = upright ? (theirs ? "0%" : "-100%") : "-50%";
-        b.el.dataset.ty = upright ? "-50%" : theirs ? "0%" : "-100%";
+        b.el.dataset.ty = upright ? "0%" : theirs ? "0%" : "-100%";
         b.el.style.translate = `${b.el.dataset.tx} ${b.el.dataset.ty}`;
         b.el.style.flexDirection = theirs && !upright ? "column" : "";
         b.el.style.maxHeight = "";
@@ -1738,8 +1739,12 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       if (!el || !slot || !box || box.width <= 0) return null;
       // A summon still sliding in (.bv-enter's translate): its final box.
       const [tx = 0, ty = 0] = (getComputedStyle(slot).translate.match(/-?[\d.]+/g) ?? []).map(Number);
-      const r = tx || ty ? new DOMRect(box.left - tx, box.top - ty, box.width, box.height) : box;
-      return { r, row: enemy.contains(el) ? "them" : "you" };
+      const at = tx || ty ? new DOMRect(box.left - tx, box.top - ty, box.width, box.height) : box;
+      // The piece (#1294): its whole box (tab to name) and its face, from offsets inside the slot.
+      const pc = el.firstElementChild as HTMLElement | null;
+      const r = pc?.classList.contains("pc") ? new DOMRect(at.left + el.offsetLeft, at.top + el.offsetTop, el.offsetWidth, el.offsetHeight) : at;
+      const f = pc?.classList.contains("pc") ? new DOMRect(r.left + pc.offsetLeft, r.top + pc.offsetTop, pc.offsetWidth, pc.offsetHeight) : r;
+      return { r, f, row: enemy.contains(el) ? "them" : "you" };
     };
     const clashAt = (): { x: number; y: number } => {
       const c = clash.getBoundingClientRect();
@@ -1765,7 +1770,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         const colour = beamColour(b);
         const g = svg("g", { class: cls, style: `--bv-bc:${colour};${delay ? `--bv-bt:${delay}` : ""}`, "data-from": b.from, "data-to": b.to, "data-kind": b.kind });
         if (b.from === b.to) {
-          const r = to.r;
+          const r = to.f;
           g.classList.add("ring");
           g.append(svg("rect", { x: r.left - 3, y: r.top - 3, width: r.width + 6, height: r.height + 6, rx: 6 }));
           kids.push(g);
@@ -1775,7 +1780,24 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         if (b.from !== "clash" && !from) continue;
         const cx = (r: DOMRect) => r.left + r.width / 2;
         let p0: { x: number; y: number }, p1: { x: number; y: number }, c: { x: number; y: number };
-        if (stacked && (!from || from.row !== to.row)) {
+        const columns = !stacked && innerWidth < 600 && innerHeight > innerWidth;
+        if (columns) {
+          // The phone's two columns (#1294): across, facing edges at the faces' middles;
+          // within a column, a bow on its outer side.
+          const mid = (r: DOMRect) => r.top + r.height / 2;
+          const right = (row: string) => row === "you";
+          if (from && from.row === to.row) {
+            const x = (r: DOMRect) => (right(to.row) ? r.right + 6 : r.left - 6);
+            p0 = { x: x(from.f), y: mid(from.f) };
+            p1 = { x: x(to.f), y: mid(to.f) };
+            c = { x: p0.x + (right(to.row) ? 34 : -34), y: (p0.y + p1.y) / 2 };
+          } else {
+            const toRight = from ? from.row === "them" : to.row === "you";
+            p0 = from ? { x: toRight ? from.f.right + 8 : from.f.left - 8, y: mid(from.f) } : clashAt();
+            p1 = { x: toRight ? to.f.left - 8 : to.f.right + 8, y: mid(to.f) };
+            c = { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 };
+          }
+        } else if (stacked && (!from || from.row !== to.row)) {
           // Across the clash on the phone: facing edges, a gentle sideways bow.
           const down = from ? from.row === "them" : to.row === "you";
           p0 = from ? { x: cx(from.r), y: down ? from.r.bottom : from.r.top } : clashAt();
