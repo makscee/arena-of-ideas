@@ -101,7 +101,7 @@ case "$ROTATION" in 0|1) ;; *) echo "ARENA_MVP_ROTATION is 0 or 1, not '$ROTATIO
 # #1218: CrazyGames players (guests and CrazyGames logins), off unless
 # ARENA_MVP_CG=1, Maks's step. With it: ARENA_MVP_CG_GAME_ID (CrazyGames'
 # id of Arena; tokens of other games are refused) and
-# ARENA_MVP_CLIENT_IP_HEADER=X-Arena-Client-IP once mcow's Caddy sets it
+# ARENA_MVP_CLIENT_IP_HEADER=X-Real-IP (mcow's Caddy sets it, arena_mvp snippet)
 # (tailscale serve rewrites X-Forwarded-For: one address for every visitor).
 CG="${ARENA_MVP_CG:-0}"
 case "$CG" in 0|1) ;; *) echo "ARENA_MVP_CG is 0 or 1, not '$CG'" >&2; exit 2 ;; esac

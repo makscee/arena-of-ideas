@@ -48,7 +48,7 @@
  *   ARENA_CG_GAME_ID  CrazyGames login tokens must carry this gameId (unset:
  *               any game's, with a warning at start)
  *   ARENA_CLIENT_IP_HEADER  the header the front proxy writes the client's
- *               address to (live: X-Arena-Client-IP from mcow's Caddy); unset,
+ *               address to (live: X-Real-IP from mcow's Caddy); unset,
  *               the nearest X-Forwarded-For entry. Set it only behind a proxy
  *               that overwrites it: a client could send it too
  *   ARENA_GUEST_JOINS_PER_IP, ARENA_GUEST_JOINS_PER_HOUR  new guest and
