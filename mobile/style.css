@@ -2155,3 +2155,7 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 @media (max-width: 379.98px) and (orientation: portrait) {
   #app[data-screen="battle"] .bv-v3 button.bv-caption { font-size: 13px; line-height: 1.2; padding: 6px 8px; }
 }
+/* An arrow lands on the middle of a piece: its result chip sits to the arrow's left, never over it. */
+@media not ((max-width: 599.98px) and (orientation: portrait)) {
+  #app[data-screen="battle"] .bv-v3 .bv-line .bv-changes { left: -40px; right: calc(50% + 6px); justify-content: flex-end; }
+}
