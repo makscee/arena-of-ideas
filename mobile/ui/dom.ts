@@ -41,7 +41,7 @@ export function actionable<T extends HTMLElement>(el: T, label = ""): T {
 /** Puts a key on a button, as a keycap after its label, on desktop (the shop's
  * "Reroll R"): the key is visible where it is used (#1064). */
 export function withKey<T extends HTMLElement>(el: T, key: string): T {
-  if (desktopQuery.matches) el.append(" ", h("kbd", {}, key));
+  if (keysQuery.matches) el.append(" ", h("kbd", {}, keyLabel(key)));
   return el;
 }
 
@@ -153,6 +153,34 @@ export function onGone(fn: () => void): void {
 export const desktopQuery = matchMedia("(min-width: 1024px)");
 export const isDesktop = (): boolean => desktopQuery.matches;
 
+/** Where the screens take keys (#1217): the desktop, and a landscape window
+ * with a mouse below it (CrazyGames' 821×462). A phone takes none. */
+const keysQuery = matchMedia("(min-width: 1024px), (orientation: landscape) and (pointer: fine)");
+export const hasKeys = (): boolean => keysQuery.matches;
+
+/** The CrazyGames build (VITE_CG, mission #1214): its fullscreen owns Esc,
+ * so Backspace (and the on-screen button) is Back there. */
+export const cgBuild = ((import.meta.env.VITE_CG as string | undefined) ?? "") !== "" && import.meta.env.VITE_CG !== "0";
+
+/** A key as the screens read it (#1217): by its place on the keyboard
+ * (KeyboardEvent.code), so WASD, the digits and the letters are the same
+ * keys on a Russian or an AZERTY layout. A key without a code (one a screen
+ * makes itself, the browser's Back) is its `key`. In the CrazyGames build
+ * Esc is nothing and Backspace outside a field is Esc. */
+export function keyOf(e: KeyboardEvent): string {
+  const c = e.code;
+  if (/^Key[A-Z]$/.test(c)) return c.slice(3).toLowerCase();
+  if (/^(Digit|Numpad)[0-9]$/.test(c)) return c.slice(-1);
+  if (c === "Space") return " ";
+  if (c === "Slash" || c === "NumpadDivide") return "/";
+  if (cgBuild && c === "Escape") return "";
+  if (cgBuild && c === "Backspace" && !textField(e.target)) return "Escape";
+  return e.key;
+}
+
+/** A key's name on a keycap: Esc is ⌫ in the CrazyGames build. */
+export const keyLabel = (k: string): string => (cgBuild && k === "Esc" ? "⌫" : k);
+
 /** Names the screen on #app (data-screen), which turns on its desktop layout
  * in style.css; a screen without a name (the name
  * screen) stays a phone column at every width. */
@@ -205,7 +233,7 @@ function escClose(field: HTMLElement | null): ReturnType<typeof escStep> {
 addEventListener(
   "keydown",
   (e) => {
-    if (e.key !== "Escape" || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+    if (keyOf(e) !== "Escape" || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
     const step = escClose(textField(e.target));
     if (step === "screen" || step === "native") return;
     e.preventDefault();
@@ -355,7 +383,7 @@ addEventListener("keydown", (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
   if (textField(e.target)) return;
   // M: sound on/off, on every screen (round 3, note 16).
-  if (e.key === "m" || e.key === "M") return void (toggleSound(), e.preventDefault());
+  if (keyOf(e) === "m") return void (toggleSound(), e.preventDefault());
   // Enter on a focused button, link or card presses it, before the screen's
   // own Enter (Continue and the like): the key does what the focus says.
   if (e.key === "Enter" && pressable(e.target)) {

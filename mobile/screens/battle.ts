@@ -25,7 +25,7 @@ import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { summonId } from "../../src/describe";
 import { card, formRich, summonById, summonSheet, summonText, unitSheet } from "../ui/card";
-import { actionable, app, button, closable, fitText, h, isDesktop, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
+import { actionable, app, button, closable, fitText, h, isDesktop, keyLabel, keyOf, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
 import { t as tr } from "../i18n";
 import { icon } from "../ui/icon";
 import { statusesShown, STATUS_ROW_FALLBACK } from "../ui/status-row";
@@ -372,7 +372,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const ledger = h("div", { class: "bv-ledger", "data-testid": "ledger" }, ledgerHead, ledgerBody);
   replayBtn.setAttribute("aria-label", tr("battle.replayAria"));
   // Desktop's keys, as the mockup lists them (the phone hides the line).
-  const kbd = (k: string) => h("kbd", {}, k);
+  const kbd = (k: string) => h("kbd", {}, keyLabel(k));
   const keys = h("div", { class: "bv-keys dim", "data-testid": "battle-keys", "aria-hidden": "true" }, kbd(tr("battle.keys.space")), tr("battle.keys.pause"), kbd("←"), kbd("→"), tr("battle.keys.beat"), kbd("R"), tr("battle.keys.replay"));
   const controls = h("div", { class: "row bv-controls" }, backBtn, playBtn, fwdBtn, speedBtn, endBtn, replayBtn, keys);
   // How long playback should take at 1× (the line-up plus every beat), for
@@ -2241,20 +2241,20 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     // The end card is the result: Enter (or Space) goes on, as the result
     // screen's did, from its main button or with nothing in the card focused.
     // A focused Replay, Why, key moment or Damage row acts instead (R2-17 batch F).
-    if (finished && !trace && (e.key === "Enter" || e.key === " ")) {
+    if (finished && !trace && (keyOf(e) === "Enter" || keyOf(e) === " ")) {
       const f = document.activeElement;
       if (f instanceof HTMLElement && f !== document.body && end.contains(f) && f.dataset.testid !== "battle-done") return false;
       return leave(), true;
     }
-    if (e.key === " ") return playing ? pause() : play(), true;
-    if (e.key === "ArrowLeft") return back(), true;
-    if (e.key === "ArrowRight") return forward(), true;
-    if (e.key.toLowerCase() === "r") return replay(), true;
-    if (e.key.toLowerCase() === "s" && inChain()) return skipChain(), true;
-    if (e.key === "Escape" && docked) return (docked = null), render(), true;
-    if (e.key === "Escape" && trace) return (trace = null), render(), true;
-    if (e.key === "Escape" && a.outro) return openMenu(), true;
-    if (e.key === "Escape") return leave(), true;
+    if (keyOf(e) === " ") return playing ? pause() : play(), true;
+    if (keyOf(e) === "ArrowLeft") return back(), true;
+    if (keyOf(e) === "ArrowRight") return forward(), true;
+    if (keyOf(e) === "r") return replay(), true;
+    if (keyOf(e) === "s" && inChain()) return skipChain(), true;
+    if (keyOf(e) === "Escape" && docked) return (docked = null), render(), true;
+    if (keyOf(e) === "Escape" && trace) return (trace = null), render(), true;
+    if (keyOf(e) === "Escape" && a.outro) return openMenu(), true;
+    if (keyOf(e) === "Escape") return leave(), true;
     return false;
   });
   // The Codex opened over the battle (a term's "Open in Codex") pauses it.

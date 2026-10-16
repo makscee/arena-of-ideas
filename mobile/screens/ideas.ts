@@ -14,7 +14,7 @@ import { getContent } from "../content";
 import { currentLang, t } from "../i18n";
 import type { Key } from "../i18n/en";
 import { unitSheet } from "../ui/card";
-import { button, closable, h, onGone, onKeys, overlay, screen, show } from "../ui/dom";
+import { button, closable, h, keyOf, onGone, onKeys, overlay, screen, show } from "../ui/dom";
 import { richText } from "../ui/term";
 import { pickScreen } from "./pick";
 import { rulesLangOpt } from "../lang";
@@ -52,7 +52,7 @@ const READ_POLL_MS = 10_000;
 /** My ideas; `notice` is what just happened (an idea sent, a pick made), said on top. */
 export async function ideasScreen(nav: IdeasNav, notice: string | null = null): Promise<void> {
   const back = button(t("ideas.back"), nav.onBack, "primary grow", "ideas-back");
-  const escBack = (e: KeyboardEvent) => (e.key === "Escape" ? (nav.onBack(), true) : false);
+  const escBack = (e: KeyboardEvent) => (keyOf(e) === "Escape" ? (nav.onBack(), true) : false);
   let view: MyIdeasView;
   let you: CreditsView["you"] = null;
   try {
@@ -295,6 +295,6 @@ function textScreen(o: TextScreen): void {
   );
   box.id = "idea-box";
   screen("ideas");
-  onKeys((e) => (e.key === "Escape" ? (o.onBack(), true) : false));
+  onKeys((e) => (keyOf(e) === "Escape" ? (o.onBack(), true) : false));
   box.focus();
 }

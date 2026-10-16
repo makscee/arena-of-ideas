@@ -18,7 +18,7 @@ import { api, ApiError } from "../api";
 import { getContent } from "../content";
 import { t } from "../i18n";
 import { card, setCardAbilities, unitSheet } from "../ui/card";
-import { button, fitText, h, isDesktop, onKeys, screen, show } from "../ui/dom";
+import { button, fitText, h, isDesktop, keyOf, onKeys, screen, show } from "../ui/dom";
 import { richText } from "../ui/term";
 import { rulesLangOpt } from "../lang";
 import { localArchetype, localUnit } from "../unit-names";
@@ -169,7 +169,7 @@ function archetypeScreen(idea: MyIdea, nav: PickNav): void {
     h("div", { class: "row footer" }, button(t("pick.back"), () => nav.toIdeas(), "grow", "pick-back"), confirm),
   );
   screen("ideas");
-  onKeys((e) => (e.key === "Escape" ? (nav.toIdeas(), true) : false));
+  onKeys((e) => (keyOf(e) === "Escape" ? (nav.toIdeas(), true) : false));
 }
 
 // ---------- the reading ----------
@@ -252,5 +252,5 @@ function readingScreen(idea: MyIdea, content0: MvpContent, nav: PickNav, current
   show(main, desk ? detail : null);
   screen(desk ? "codex" : "ideas");
   fitText();
-  onKeys((e) => (e.key === "Escape" ? (nav.toIdeas(), true) : false));
+  onKeys((e) => (keyOf(e) === "Escape" ? (nav.toIdeas(), true) : false));
 }

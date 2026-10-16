@@ -11,7 +11,7 @@
 // picks one, and it shows with their name on it.
 import type { Both, ClaimView, ForgeDesign, ForgePair, ForgeUnit, ForgeView, PairState } from "../../src/mvp/forge-view";
 import { currentLang, t } from "../i18n";
-import { actionable, button, h, isDesktop, keepFocus, onKeys, screen, show, withKey } from "../ui/dom";
+import { actionable, button, h, isDesktop, keepFocus, keyLabel, keyOf, onKeys, screen, show, withKey } from "../ui/dom";
 
 export type ForgeTab = "units" | "feed" | "words";
 
@@ -26,7 +26,7 @@ export interface ForgeArgs {
 }
 
 const TABS: ForgeTab[] = ["units", "feed", "words"];
-const kbd = (k: string) => h("kbd", {}, k);
+const kbd = (k: string) => h("kbd", {}, keyLabel(k));
 const tr = (s: Both): string => (currentLang() === "ru" ? s.ru : s.en);
 const day = (iso: string): string => new Date(iso.length <= 10 ? iso + "T12:00:00Z" : iso).toLocaleDateString(currentLang() === "ru" ? "ru-RU" : "en-GB", { day: "numeric", month: "short" });
 const unitOf = (v: { units: ForgeUnit[] }, id: string): ForgeUnit => v.units.find((u) => u.id === id)!;
@@ -164,12 +164,12 @@ export function forgeScreen(a: ForgeArgs): void {
   screen("forge");
   // Keys (#1064): Esc leaves, 1–3 the tabs, ← → the unit whose partners show.
   onKeys((e) => {
-    if (e.key === "Escape") return a.onBack(), true;
-    const n = Number(e.key);
+    if (keyOf(e) === "Escape") return a.onBack(), true;
+    const n = Number(keyOf(e));
     if (n >= 1 && n <= TABS.length) return ((tab = TABS[n - 1]!), keepFocus(draw)), true;
-    if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && tab === "units" && v.units.length > 1) {
+    if ((keyOf(e) === "ArrowLeft" || keyOf(e) === "ArrowRight") && tab === "units" && v.units.length > 1) {
       const i = v.units.findIndex((x) => x.id === unit);
-      unit = v.units[(i + (e.key === "ArrowLeft" ? -1 : 1) + v.units.length) % v.units.length]!.id;
+      unit = v.units[(i + (keyOf(e) === "ArrowLeft" ? -1 : 1) + v.units.length) % v.units.length]!.id;
       draw();
       document.querySelector<HTMLElement>('[data-testid="forge-picker"] button.on')?.focus({ preventScroll: true });
       return true;
@@ -222,8 +222,8 @@ export function claimScreen(a: ClaimArgs): void {
     screen("forge");
     // Keys (#1064): 1–3 pick a sealed card, Enter claims it (the focused button), Esc leaves.
     onKeys((e) => {
-      if (e.key === "Escape") return a.onDone(), true;
-      const card = /^[1-9]$/.test(e.key) ? cards[Number(e.key) - 1] : undefined;
+      if (keyOf(e) === "Escape") return a.onDone(), true;
+      const card = /^[1-9]$/.test(keyOf(e)) ? cards[Number(keyOf(e)) - 1] : undefined;
       return card ? (card.click(), card.focus({ preventScroll: true }), true) : false;
     });
     cards[0]?.focus({ preventScroll: true });
@@ -247,7 +247,7 @@ export function claimScreen(a: ClaimArgs): void {
       ),
     );
     screen("forge");
-    onKeys((e) => (e.key === "Escape" ? (a.onDone(), true) : false));
+    onKeys((e) => (keyOf(e) === "Escape" ? (a.onDone(), true) : false));
     document.querySelector<HTMLElement>('[data-testid="forge-done"]')?.focus({ preventScroll: true });
   };
 
