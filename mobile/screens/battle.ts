@@ -26,6 +26,8 @@ import type { Side } from "../../src/types";
 import { summonId } from "../../src/describe";
 import { card, formRich, summonById, summonSheet, summonText, unitSheet } from "../ui/card";
 import { isMine, reportLink } from "../ui/report";
+import { lineToPiece, piece, PIECE_PX, type PieceSize, type PieceUnit } from "../ui/piece";
+import { faceFallback, V2_FACE } from "../../src/mvp/face";
 import { actionable, app, button, closable, fitText, h, isDesktop, keyLabel, keyOf, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
 import { t as tr } from "../i18n";
 import { icon } from "../ui/icon";
@@ -135,6 +137,8 @@ export interface RunOutro {
 
 /** A line with more cards than this draws them compact (R4-11). */
 const COMPACT_OVER = 5;
+/** The rail's small rows under the event on screen (#1294). */
+const RECENT_ROWS = 4;
 /** A phone on its side: compact cards with one status row (style.css, R2-17 batch E). */
 const shortScreen = matchMedia("(max-width: 1023.98px) and (max-height: 520px)");
 
@@ -373,6 +377,12 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const ledgerFoot = h("div", { class: "bv-ledger-foot", "data-testid": "ledger-foot", role: "status" });
   const ledgerBody = h("div", { class: "bv-ledger-body" }, ledgerFoot);
   const ledger = h("div", { class: "bv-ledger", "data-testid": "ledger" }, ledgerHead, ledgerBody);
+  /** The rail's last few events, newest first, small under the one on screen (#1294). */
+  const recent = h("div", { class: "bv-recent", "data-testid": "recent" });
+  function drawRecent(): void {
+    const done = rowAt.filter((r) => r.beat < at).slice(-RECENT_ROWS).reverse();
+    recent.replaceChildren(...done.map((r) => h("div", { class: "bv-recent-row" }, ...richCaption(r.caption))));
+  }
   replayBtn.setAttribute("aria-label", tr("battle.replayAria"));
   // Desktop's keys, as the mockup lists them (the phone hides the line).
   const kbd = (k: string) => h("kbd", {}, keyLabel(k));
@@ -817,16 +827,58 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     a.onDone();
   }
 
-  function unitCard(u: BoardUnit, side: Side, v: View, stsWidth: number, compact: boolean): HTMLElement {
+  /** The piece's size on this screen (#1294): M on a landscape board, S on
+   * the phone's two columns; a line past five (R4-11) one size down. Below
+   * 520 px of height the M face shrinks so both lines and the gap fit. */
+  function pieceFit(compact: boolean): { size: PieceSize; px?: number } {
+    const phone = innerWidth < 600 && innerHeight > innerWidth;
+    if (phone) return compact ? { size: "XS" } : { size: "S" };
+    if (compact) return { size: "S", px: innerHeight < 520 ? 40 : 52 };
+    return innerHeight < 520 ? { size: "M", px: 46 } : innerHeight < 700 ? { size: "M", px: 56 } : { size: "M" };
+  }
+  /** The box a piece takes in its slot: its tab above, the rim's discs, a
+   * shelf row (kept when empty, so a status never moves the line) and the name below. */
+  function pieceBox(fit: { size: PieceSize; px?: number }): string {
+    const s = fit.px ?? PIECE_PX[fit.size];
+    if (fit.size === "XS") return `padding-top:2px;height:${s + 4}px`;
+    const tabH = Math.round(Math.max(20, s * 0.27));
+    const d = Math.round(Math.max(22, s * 0.37));
+    const top = Math.round(tabH * 0.62) + 2;
+    const name = fit.size === "M" ? 3 + Math.round(Math.max(12, s * 0.2)) : 0;
+    return `padding-top:${top}px;height:${top + s + Math.round(d * 0.3) + 31 + name}px`;
+  }
+  /** A unit as the piece (mobile/ui/piece.ts): its face, live stats, statuses on the shelf. */
+  function pieceOf(id: string, live: BoardUnit | null, side: Side, compact: boolean): HTMLElement {
+    const bu = units.get(id);
+    const sum = summoned.get(id);
+    const base: PieceUnit = bu
+      ? lineToPiece(bu, a.content)
+      : { name: live?.name ?? name(id), emoji: emojiOf(id), stats: { pwr: live?.pwr ?? 0, hp: live?.hp ?? 0 }, face: sum?.form ? faceFallback(sum.form) : { when: { icon: "✨", label: "" }, headline: { icon: "✨" } } };
+    // A v2 pool battle can field units the served content lacks: their face is by name (V2_FACE).
+    if (!bu || !a.content.units.some((x) => x.id === bu.unitId)) base.face = V2_FACE[base.name] ?? base.face;
+    const unit: PieceUnit = { ...base, name: live?.name ?? base.name, stats: { pwr: live?.pwr ?? base.stats.pwr, hp: live ? live.hp : 0 } };
+    const ring = unit.face.counter;
+    const statuses = live?.statuses ?? [];
+    const onShelf = statuses.filter((st) => st.stacks > 0 && st.status !== ring?.status);
+    const fit = pieceFit(compact);
+    const el = piece(unit, {
+      ...fit,
+      side: side === you ? "you" : "them",
+      statuses: onShelf.slice(0, compact ? 2 : 3),
+      ...(ring ? { counter: statuses.find((st) => st.status === ring.status)?.stacks ?? 0 } : {}),
+    });
+    if (live && live.hp < live.maxHp) el.querySelector<HTMLElement>(".pc-b.h")?.classList.add("hurt");
+    return el;
+  }
+  function unitCard(u: BoardUnit, side: Side, v: View, _stsWidth: number, compact: boolean): HTMLElement {
     const step = v.now;
     const changes = v.changes.filter((c) => c.unit === u.id);
-    const sum = summoned.get(u.id);
-    const el = card(units.get(u.id) ?? { emoji: emojiOf(u.id), name: u.name, stats: { pwr: u.pwr, hp: u.hp }, ...(sum?.form ? { recipe: sum.form } : {}) }, {
-      side: side === you ? "you" : "ghost",
-      live: { stats: { pwr: u.pwr, hp: u.hp }, maxHp: u.maxHp, acting: step?.actor === u.id },
-      extra: [statusChips(u, stsWidth, compact), !v.totals && changes.length ? h("div", { class: "bv-changes" }, changeBadge(changes, floatedOf(u.id, v))) : null],
-    });
-    el.classList.add("bv-card");
+    const el = h(
+      "div",
+      { class: `bv-card bv-pc ${side === you ? "you" : "ghost"}${step?.actor === u.id ? " acting" : ""}`, style: pieceBox(pieceFit(compact)), "data-testid": "card", "data-statuses": u.statuses.map((st) => `${st.status}:${st.stacks}`).join(" ") },
+      pieceOf(u.id, u, side, compact),
+      !v.totals && changes.length ? h("div", { class: "bv-changes" }, changeBadge(changes, floatedOf(u.id, v))) : null,
+    );
     el.dataset.unit = u.id;
     if (u.silenced) el.classList.add("silenced");
     motion(el, u.id, side, v);
@@ -1017,7 +1069,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * wave counts, not only the newest, as motion() does: a wave landing
    * within the 0.4 s rebuilds the card, and the flash must run on. */
   function triggerFlash(el: HTMLElement, id: string, v: View): void {
-    const ic = el.querySelector<HTMLElement>(".icons .ci:first-of-type");
+    const ic = el.querySelector<HTMLElement>(".pc-tab") ?? el.querySelector<HTMLElement>(".icons .ci:first-of-type");
     if (!ic) return;
     v.waves.forEach((w, i) => {
       const c = causeOf(log, w.step, whenOf);
@@ -1084,14 +1136,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const step = v.now;
     const death = v.changes.find((c) => c.unit === id && c.kind === "death");
     if (!showsDead(id, v)) return null;
+    const side = sides.get(id) ?? you;
     const el = h(
       "div",
-      { class: `card bv-card dead ${sides.get(id) === you ? "you" : "ghost"}` },
-      h("div", { class: "emoji" }, emojiOf(id)),
-      h("div", { class: "name" }, name(id)),
-      h("div", { class: "hpbar" }, h("i", { style: "width:0" })),
-      h("div", { class: "stats big" }, h("span", { class: "p" }, "✝")),
-      h("div", { class: "foot" }, h("div", { class: "bv-sts" })),
+      { class: `bv-card bv-pc dead ${side === you ? "you" : "ghost"}`, style: pieceBox(pieceFit(false)), "data-testid": "card" },
+      pieceOf(id, null, side, false),
       death ? h("div", { class: "bv-changes" }, changeBadge(v.changes.filter((c) => c.unit === id), floatedOf(id, v))) : null,
     );
     el.dataset.unit = id;
@@ -1229,8 +1278,12 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   }
   function cardBox(unit: string): { box: DOMRect; card: HTMLElement } | null {
     const card = [enemy, mine].map((r) => r.querySelector<HTMLElement>(`.bv-card[data-unit="${CSS.escape(unit)}"]`)).find((x) => x);
-    const box = (card?.parentElement ?? card)?.getBoundingClientRect();
-    return card && box && box.width > 0 ? { box, card } : null;
+    const slotBox = (card?.parentElement ?? card)?.getBoundingClientRect();
+    if (!card || !slotBox || slotBox.width <= 0) return null;
+    // The piece's face (#1294), from offsets so a lunge mid-way doesn't move it; the slot is taller than the piece.
+    const pc = card.firstElementChild as HTMLElement | null;
+    const box = pc?.classList.contains("pc") && pc.offsetWidth ? new DOMRect(slotBox.left + card.offsetLeft + pc.offsetLeft, slotBox.top + card.offsetTop + pc.offsetTop, pc.offsetWidth, pc.offsetHeight) : slotBox;
+    return { box, card };
   }
   function drawEffect(e: Effect, still: boolean, delay: string, from: string | null): void {
     const at0 = cardBox(e.unit);
@@ -1255,7 +1308,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     } else if (e.kind === "status" && e.status) {
       // The icon leaves the card that gave it and lands in this card's status row.
       const src = from && from !== e.unit ? cardBox(from) : null;
-      const row = card.querySelector<HTMLElement>(".bv-sts")?.getBoundingClientRect();
+      const row = (card.querySelector<HTMLElement>(".pc-shelf") ?? card.querySelector<HTMLElement>(".bv-sts"))?.getBoundingClientRect();
       const to = { x: (row && row.width > 0 ? row.left + row.width / 2 : box.left + box.width / 2), y: row && row.height > 0 ? row.top + row.height / 2 : box.bottom - 12 };
       const start = src ? { x: src.box.left + src.box.width / 2, y: src.box.top + src.box.height / 2 } : { x: to.x, y: to.y - 26 };
       const fly = h("span", { class: "bv-fxfly", style: `color:${STATUS_BEAM[e.status] ?? "var(--k-str)"}` }, statusMark(e.status), h("b", {}, e.text ?? ""));
@@ -1404,6 +1457,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       row.replaceChildren(...cards);
       // A falling card beside a full line widens the row instead of wrapping it.
       row.style.gridTemplateColumns = `repeat(${Math.max(5, cards.length)}, minmax(0, 1fr))`;
+      row.style.setProperty("--n", String(Math.max(5, cards.length)));
       row.classList.toggle("empty", !cards.length);
       if (!cards.length) row.append(h("div", { class: "dim" }, tr("battle.noOneStanding")));
     }
@@ -1452,6 +1506,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const chained = !sum && !!beat && isChain(beat);
     caption.replaceChildren(h("span", { class: "bv-strip-line bv-cap" }, ...(sum ? [h("span", { class: "bv-strip-text", "data-testid": "caption-turn-end" }, sum.turn >= 1 ? tr("battle.totals.turn", { n: sum.turn }) : tr("battle.totals.start"))] : stripKids(step))));
     caption.setAttribute("aria-label", sum ? tr("battle.totals.turn", { n: sum.turn }) : plainCaption(step));
+    drawRecent();
     fitStrip();
     // The ledger (below the board): the turn, Skip chain while a chain plays, a row per unit changed, a chain's summary or the turn's bottom line.
     ledgerHead.replaceChildren(h("span", { class: "bv-ledger-turn", "data-testid": "ledger-turn" }, turnLabel(shownTurn)), ...(inChain() ? [skipBtn] : []));
@@ -1616,13 +1671,40 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       const box = (el?.parentElement ?? el)?.getBoundingClientRect();
       if (!box || box.width <= 0) { b.el.style.visibility = "hidden"; continue; }
       b.el.style.visibility = "";
+      // #1294: the running rows sit in the gap between the lines, beside
+      // their card (theirs under or right of it, yours over or left of it),
+      // never on a piece's face.
+      // Measured from the slot (never moves) and offsets, not the card's own
+      // box: a lunge or shake mid-animation would carry the rows with it.
+      const pc = el?.firstElementChild as HTMLElement | null | undefined;
+      if (el && pc && pc.offsetWidth && el.parentElement) {
+        const sb = el.parentElement.getBoundingClientRect();
+        const top = sb.top + el.offsetTop;
+        const left = sb.left + el.offsetLeft;
+        const whole = { top, bottom: top + el.offsetHeight };
+        const card = { left: left + pc.offsetLeft, right: left + pc.offsetLeft + pc.offsetWidth, top: top + pc.offsetTop, width: pc.offsetWidth, height: pc.offsetHeight };
+        const theirs = sides.get(unit) !== you;
+        const upright = innerWidth < 600 && innerHeight > innerWidth;
+        const x = upright ? (theirs ? card.right + 16 : card.left - 12) : card.left + card.width / 2;
+        // On the phone the arrows run across at the faces' middles: the rows sit by the face's top.
+        const y = upright ? card.top + 2 : theirs ? whole.bottom + 2 : whole.top - 2;
+        b.el.style.left = `${Math.round(x)}px`;
+        b.el.style.top = `${Math.round(y)}px`;
+        b.el.dataset.tx = upright ? (theirs ? "0%" : "-100%") : "-50%";
+        b.el.dataset.ty = upright ? "0%" : theirs ? "0%" : "-100%";
+        b.el.style.translate = `${b.el.dataset.tx} ${b.el.dataset.ty}`;
+        b.el.style.flexDirection = theirs && !upright ? "column" : "";
+        b.el.style.maxHeight = "";
+        b.el.style.maxWidth = upright ? `${Math.round(theirs ? innerWidth - card.right : card.left) - 4}px` : `${Math.round(box.width)}px`;
+        continue;
+      }
       b.el.style.left = `${Math.round(box.left + box.width / 2)}px`;
       // M5-6: a phone has no room above or below a card (the side's label, the
       // caption sit there): the box sits on the card's face between its icon row
       // and its name, stacking down; rows past the name are clipped (the log and
       // Why keep every number), so the name and stats stay readable.
-      const icons = el?.querySelector<HTMLElement>(".icons")?.getBoundingClientRect();
-      const name = el?.querySelector<HTMLElement>(".name")?.getBoundingClientRect();
+      const icons = el?.querySelector<HTMLElement>(".pc-tab")?.getBoundingClientRect();
+      const name = el?.querySelector<HTMLElement>(".pc-nm")?.getBoundingClientRect();
       const top = isDesktop() ? box.top : icons?.height ? icons.bottom + 1 : box.top + PHONE_RUN_TOP;
       b.el.style.top = `${Math.round(top)}px`;
       b.el.style.maxHeight = !isDesktop() && name?.height ? `${Math.max(0, Math.floor(name.top - 1 - top))}px` : "";
@@ -1657,8 +1739,12 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       if (!el || !slot || !box || box.width <= 0) return null;
       // A summon still sliding in (.bv-enter's translate): its final box.
       const [tx = 0, ty = 0] = (getComputedStyle(slot).translate.match(/-?[\d.]+/g) ?? []).map(Number);
-      const r = tx || ty ? new DOMRect(box.left - tx, box.top - ty, box.width, box.height) : box;
-      return { r, row: enemy.contains(el) ? "them" : "you" };
+      const at = tx || ty ? new DOMRect(box.left - tx, box.top - ty, box.width, box.height) : box;
+      // The piece (#1294): its whole box (tab to name) and its face, from offsets inside the slot.
+      const pc = el.firstElementChild as HTMLElement | null;
+      const r = pc?.classList.contains("pc") ? new DOMRect(at.left + el.offsetLeft, at.top + el.offsetTop, el.offsetWidth, el.offsetHeight) : at;
+      const f = pc?.classList.contains("pc") ? new DOMRect(r.left + pc.offsetLeft, r.top + pc.offsetTop, pc.offsetWidth, pc.offsetHeight) : r;
+      return { r, f, row: enemy.contains(el) ? "them" : "you" };
     };
     const clashAt = (): { x: number; y: number } => {
       const c = clash.getBoundingClientRect();
@@ -1684,7 +1770,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         const colour = beamColour(b);
         const g = svg("g", { class: cls, style: `--bv-bc:${colour};${delay ? `--bv-bt:${delay}` : ""}`, "data-from": b.from, "data-to": b.to, "data-kind": b.kind });
         if (b.from === b.to) {
-          const r = to.r;
+          const r = to.f;
           g.classList.add("ring");
           g.append(svg("rect", { x: r.left - 3, y: r.top - 3, width: r.width + 6, height: r.height + 6, rx: 6 }));
           kids.push(g);
@@ -1694,7 +1780,24 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         if (b.from !== "clash" && !from) continue;
         const cx = (r: DOMRect) => r.left + r.width / 2;
         let p0: { x: number; y: number }, p1: { x: number; y: number }, c: { x: number; y: number };
-        if (stacked && (!from || from.row !== to.row)) {
+        const columns = !stacked && innerWidth < 600 && innerHeight > innerWidth;
+        if (columns) {
+          // The phone's two columns (#1294): across, facing edges at the faces' middles;
+          // within a column, a bow on its outer side.
+          const mid = (r: DOMRect) => r.top + r.height / 2;
+          const right = (row: string) => row === "you";
+          if (from && from.row === to.row) {
+            const x = (r: DOMRect) => (right(to.row) ? r.right + 6 : r.left - 6);
+            p0 = { x: x(from.f), y: mid(from.f) };
+            p1 = { x: x(to.f), y: mid(to.f) };
+            c = { x: p0.x + (right(to.row) ? 34 : -34), y: (p0.y + p1.y) / 2 };
+          } else {
+            const toRight = from ? from.row === "them" : to.row === "you";
+            p0 = from ? { x: toRight ? from.f.right + 8 : from.f.left - 8, y: mid(from.f) } : clashAt();
+            p1 = { x: toRight ? to.f.left - 8 : to.f.right + 8, y: mid(to.f) };
+            c = { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 };
+          }
+        } else if (stacked && (!from || from.row !== to.row)) {
           // Across the clash on the phone: facing edges, a gentle sideways bow.
           const down = from ? from.row === "them" : to.row === "you";
           p0 = from ? { x: cx(from.r), y: down ? from.r.bottom : from.r.top } : clashAt();
@@ -1751,7 +1854,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const hits = (r: DOMRect, padX = 4, padY = 2) => lines.filter((l) => l.pts.some((p) => p.x >= r.left - padX && p.x <= r.right + padX && p.y >= r.top - padY && p.y <= r.bottom + padY));
     // The strip sits over the beam (mission 1007): it is opaque and the beam passes behind it, never through its words.
     const boxes = [...runBoxes].filter(([, b]) => b.el.style.visibility !== "hidden");
-    for (const [, b] of boxes) { b.el.style.translate = ""; maskBeams(b.el, b.el.getBoundingClientRect(), [], 0); }
+    // The rows' own anchor (placeRuns, #1294): beside their card, toward the gap.
+    const at0 = (el: HTMLElement) => (el.dataset.tx ? `${el.dataset.tx} ${el.dataset.ty}` : "");
+    for (const [, b] of boxes) { b.el.style.translate = at0(b.el); maskBeams(b.el, b.el.getBoundingClientRect(), [], 0); }
     for (const [unit, b] of boxes) {
       const box = b.el.getBoundingClientRect();
       const on = hits(box);
@@ -1766,7 +1871,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         .filter(({ r }) => r.left >= 2 && r.right <= innerWidth - 2 && !hits(r, 2, 2).length && !others.some((o) => o.left < r.right && o.right > r.left && o.top < r.bottom && o.bottom > r.top))
         .map(({ dx, r }) => ({ dx, past: slot ? Math.max(0, slot.left - r.left, r.right - slot.right) : 0 }))
         .sort((p, q) => p.past - q.past || Math.abs(p.dx) - Math.abs(q.dx));
-      if (fits[0]) b.el.style.translate = `calc(-50% + ${Math.round(fits[0].dx)}px) -100%`;
+      if (fits[0]) b.el.style.translate = `calc(${b.el.dataset.tx ?? "-50%"} + ${Math.round(fits[0].dx)}px) ${b.el.dataset.ty ?? "-100%"}`;
       else maskBeams(b.el, box, on.map((l) => l.d), 6);
     }
   }
@@ -2006,23 +2111,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** Desktop (M5-5, the Simplify wireframe): the beat's caption sits under
    * the card acting, so the event reads where it happens; a turn's totals or
    * a beat with nobody acting keep it centred. It slides, never leaves the board. */
+  /** The caption sits in the rail (#1294): it no longer follows the acting card. */
   function placeCaption(): void {
     fitStrip();
     delete caption.dataset.at;
-    const card = isDesktop() && !finished ? [mine, enemy].map((r) => r.querySelector<HTMLElement>(".bv-card.acting")).find((x) => x) : undefined;
-    const board = caption.parentElement?.getBoundingClientRect();
-    const c = caption.getBoundingClientRect();
-    const k = card && (card.parentElement ?? card).getBoundingClientRect();
-    if (!card || !board || !k || !c.width || !k.width) {
-      caption.style.translate = "";
-      return;
-    }
-    // The caption's own place: its box minus the slide it's in (the translate
-    // transition is mid-way while it moves from the last beat's card).
-    const base = c.left - (parseFloat(getComputedStyle(caption).translate) || 0);
-    const x = Math.max(board.left, Math.min(board.right - c.width, k.left + k.width / 2 - c.width / 2));
-    caption.style.translate = `${Math.round(x - base)}px 0`;
-    caption.dataset.at = card.dataset.unit ?? "";
+    caption.style.translate = "";
   }
 
   function placeSheet(): void {
@@ -2195,7 +2288,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   show(
     h(
       "div",
-      { class: "bv-screen" },
+      { class: "bv-screen bv-v3" },
       hud,
       // On the phone .bv-board is display: contents (the stacked rows as before);
       // on desktop it lays your line left of the clash and theirs right, fronts in the middle.
@@ -2207,15 +2300,16 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         // On the phone a run's fight names them here: its HUD row holds the run bar (M5-4).
         h("div", { class: "label bv-lab-them" }, h("span", { class: "bv-dk" }, tr("battle.lab.frontLeft")), a.you ? tr("battle.them") : owner(them), a.outro?.bar ? h("span", { class: "bv-lab-who", "data-testid": "battle-them-who" }, ` · ${owner(them)}`) : null, ...(a.outro?.bar ? reportFoe() : []), h("span", { class: "bv-ph" }, tr("battle.lab.frontFirst"))),
         enemy,
-        caption,
+        h("div", { class: "bv-gap", "aria-hidden": "true" }),
         banner,
         clash,
         mine,
         h("div", { class: "label bv-lab-you" }, a.you ? tr("battle.you") : owner(you), h("span", { class: "bv-ph" }, tr("battle.lab.frontFirst")), h("span", { class: "bv-dk" }, tr("battle.lab.frontRight"))),
       ),
       timeline,
-      h("div", { class: "bv-below" }, ledger),
-      controls,
+      // The rail (#1294): the play-by-play (the event on screen big, the last
+      // few small) and the controls; on the phone it sits at the foot.
+      h("div", { class: "bv-rail" }, caption, recent, h("div", { class: "bv-below" }, ledger), controls),
     ),
     fx,
     fxNums,
@@ -2230,7 +2324,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   addEventListener("resize", placeSheet, { signal: freed.signal });
   addEventListener("resize", placeCaption, { signal: freed.signal });
   // A summon joining the line resizes every card in it.
-  const lineSize = new ResizeObserver(() => placeCaption());
+  const lineSize = new ResizeObserver(() => { placeCaption(); placeRuns(); });
   for (const r of [mine, enemy]) lineSize.observe(r);
   freed.signal.addEventListener("abort", () => lineSize.disconnect());
   addEventListener("resize", () => { drawBeams(fxWaves.map((w) => ({ ...w, age: null }))); clearBeams(); }, { signal: freed.signal });
