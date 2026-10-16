@@ -43,6 +43,8 @@ const SCREENS = [
   { name: "battle", scene: "battle-win", ready: "battle-you", must: ["battle-you", "battle-them"] },
   { name: "codex", scene: "codex-units", ready: "codex-units", must: ["codex-search"] },
   { name: "forge", scene: "forge-ready", ready: "forge-ready", must: ["forge-card-0"] },
+  // The gear's sheet: every row reachable and uncovered (rules-open was cut off by Close).
+  { name: "settings", scene: "home", ready: "home-actions", must: ["home-actions"], open: "settings", sheet: "settings-sheet" },
 ].filter((s) => !only || only.includes(s.name));
 const SIZES = [
   { name: "800x450", viewport: { width: 800, height: 450 }, isMobile: true, hasTouch: true, check: true },
@@ -63,7 +65,45 @@ try {
       await page.goto(`${url}#scene=${s.scene}&lang=en`, { timeout: 120_000 }).catch((e) => why.push(`load: ${e.message.split("\n")[0]}`));
       await page.waitForSelector(`[data-testid="${s.ready}"]`, { timeout: 60_000 }).catch(() => why.push(`never showed ${s.ready}`));
       await page.waitForTimeout(1200);
-      if (v.check) {
+      if (s.open) {
+        await page.click(`[data-testid="${s.open}"]`).catch((e) => why.push(`click ${s.open}: ${e.message.split("\n")[0]}`));
+        await page.waitForSelector(`[data-testid="${s.sheet}"]`, { timeout: 10_000 }).catch(() => why.push(`never showed ${s.sheet}`));
+        await page.waitForTimeout(500);
+      }
+      if (v.check && s.sheet) {
+        // Every row of the sheet, scrolled to if it must be, sits in the viewport with nothing over its centre.
+        const bad = await page.evaluate(async (sheetId) => {
+          const sheet = document.querySelector(`[data-testid="${sheetId}"]`);
+          const rows = [...(sheet?.children ?? [])];
+          const res = [];
+          for (const row of rows) {
+            row.scrollIntoView({ block: "nearest" });
+            await new Promise((r) => setTimeout(r, 50));
+            const r = row.getBoundingClientRect();
+            const x = (r.left + r.right) / 2, y = (r.top + r.bottom) / 2;
+            const top = document.elementFromPoint(x, y);
+            const name = row.dataset.testid ?? row.querySelector("[data-testid]")?.dataset.testid ?? row.tagName.toLowerCase();
+            if (r.top < -1 || r.bottom > innerHeight + 1) res.push(`${name} outside the viewport`);
+            else if (!top || !row.contains(top)) res.push(`${name} covered by ${top?.dataset?.testid ?? top?.tagName}`);
+          }
+          const rules = document.querySelector('[data-testid="rules-open"]');
+          const close = document.querySelector('[data-testid="sheet-close"]');
+          if (!rules) res.push("rules-open missing");
+          else if (!close) res.push("sheet-close missing");
+          else {
+            // Scrolled to the foot, Close must not overlap the last row.
+            const sc = rules.closest(".sheet") ?? sheet;
+            sc.scrollTop = sc.scrollHeight;
+            await new Promise((r) => setTimeout(r, 50));
+            const lastRow = rows[rows.length - 1].getBoundingClientRect(), c = close.getBoundingClientRect();
+            if (lastRow.bottom > c.top + 1 && lastRow.top < c.bottom) res.push("Close overlaps the last row at the foot");
+            sc.scrollTop = 0;
+          }
+          return res;
+        }, s.sheet);
+        why.push(...bad);
+      }
+      if (v.check && !s.sheet) {
         const m = await page.evaluate((must) => {
           const d = document.scrollingElement ?? document.documentElement;
           const W = innerWidth, H = innerHeight;
