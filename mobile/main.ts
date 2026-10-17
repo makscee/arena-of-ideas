@@ -881,6 +881,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const bench = h("div", { class: "slots bench-row", "data-testid": "bench" });
   const actions = h("div", { class: "row actions", "data-testid": "actions" });
   const hintSlot = h("div", { class: "hint-slot" });
+  // The shop head's line (phone, 800×450): how to buy, or the hint of the moment.
+  const how = h("span", { class: "dim how" });
   const awoken = board.filter((u) => u.kind === "unit" && u.form === "awoken").length;
   // Desktop: the inspector, the card under the mouse, an offer clicked, a fusion waiting for its Fuse.
   const inspector = h("aside", { class: "inspector stack", "data-testid": "inspector" });
@@ -1062,7 +1064,21 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     for (const o of offers.children) o.classList.toggle("selected", chosen !== null && (o as HTMLElement).dataset.testid === `offer-${chosen}`);
     if (desk) renderInspector(true);
     else actions.replaceChildren(...actionButtons());
-    hintSlot.replaceChildren(...[giftBanner() ?? shopHint()].filter((x): x is HTMLElement => x !== null));
+    const banner = giftBanner();
+    if (desk || crown) {
+      const said = banner ? null : shopHint();
+      return hintSlot.replaceChildren(...[banner ?? (said === null ? null : hint(said))].filter((x): x is HTMLElement => x !== null));
+    }
+    hintSlot.replaceChildren(...(banner ? [banner] : []));
+    // Phone and 800×450 (#1293 reopened): the hint is the shop head's one line, so
+    // nothing jumps when it changes, and with something in hand it says what a tap on a lit slot does.
+    const lit = line.querySelector(".lit") || bench.querySelector(".lit");
+    const step = !lit ? null : chosen !== null ? t("hint.tapSlotBuy") : pick.mode === "picked" ? t("hint.tapSlotMove") : null;
+    const said = (pick.mode === "picked" ? shopHint() : null) ?? step ?? (banner ? null : shopHint());
+    how.replaceChildren(said ?? (wideQuery.matches ? t("shop.howWide") : t("shop.howPhone")));
+    how.classList.toggle("on", said !== null);
+    if (said === null) (how.removeAttribute("data-testid"), how.removeAttribute("title"));
+    else (how.dataset.testid = "hint", (how.title = said));
   };
 
   /** Desktop: hovering a card reads it in the inspector; the keyboard reads a card too. */
@@ -1270,28 +1286,28 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   };
 
   /** The hint that matters most right now, or none. */
-  const shopHint = (): HTMLElement | null => {
-    if (!desk && !crown && pick.mode === "picked" && pick.index >= L && run.line.length >= L) return hint(t("hint.lineFullSwap"));
+  const shopHint = (): string | null => {
+    if (!desk && !crown && pick.mode === "picked" && pick.index >= L && run.line.length >= L) return t("hint.lineFullSwap");
     if (pick.mode !== "none") return null;
     // run.ts refuses every decision but the fight in the crown phase: the line is final.
-    if (crown) return hint(ownCrown ? t("hint.ownCrown") : t("hint.crown"));
+    if (crown) return ownCrown ? t("hint.ownCrown") : t("hint.crown");
     // Only a unit whose next copy is on offer right now.
     const almost = board.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === rules.copiesToAwaken - 1 && run.offers.some((o) => o.unitId === u.unitId));
     const canBuy = run.offers.some((o) => o.cost <= run.gold);
-    if (anyFuse()) return hint(desk ? t("hint.fuseDesk") : t("hint.fusePhone"));
-    if (almost && run.offers.some((o) => o.unitId === almost.unitId && o.cost <= run.gold)) return hint(t("hint.oneMore", { name: almost.name }));
-    if (run.line.length === 0 && run.bench.length > 0) return hint(t("hint.moveToLine"));
-    if (run.line.length === 0 && !canBuy) return hint(t("hint.noGold"));
-    if (run.line.length === 0) return hint(desk ? t("hint.buyDesk") : t("hint.buyPhone"));
-    if (run.round === 1 && run.line.length > 0 && run.gold < rules.unitCost) return hint(t("hint.outOfGold"));
-    if (run.line.length > 1 && run.round <= 2) return hint(desk ? t("hint.moveDesk") : t("hint.movePhone"));
+    if (anyFuse()) return desk ? t("hint.fuseDesk") : t("hint.fusePhone");
+    if (almost && run.offers.some((o) => o.unitId === almost.unitId && o.cost <= run.gold)) return t("hint.oneMore", { name: almost.name });
+    if (run.line.length === 0 && run.bench.length > 0) return t("hint.moveToLine");
+    if (run.line.length === 0 && !canBuy) return t("hint.noGold");
+    if (run.line.length === 0) return desk ? t("hint.buyDesk") : t("hint.buyPhone");
+    if (run.round === 1 && run.line.length > 0 && run.gold < rules.unitCost) return t("hint.outOfGold");
+    if (run.line.length > 1 && run.round <= 2) return desk ? t("hint.moveDesk") : t("hint.movePhone");
     if (almost) {
       const o = run.offers.find((o) => o.unitId === almost.unitId)!;
       const keep = !o.locked && !lastShop && o.cost > run.gold ? t("hint.lockToKeep") : "";
-      return hint(t("hint.oneMoreCost", { name: almost.name, cost: o.cost, keep }));
+      return t("hint.oneMoreCost", { name: almost.name, cost: o.cost, keep });
     }
     const keepIt = lastShop ? undefined : run.offers.find((o) => !o.locked && o.cost > run.gold && owns(o.unitId));
-    if (keepIt) return hint(t("hint.ownedCosts", { name: unitOf(keepIt.unitId)?.name ?? t("hint.yourUnit"), cost: keepIt.cost, gold: run.gold }));
+    if (keepIt) return t("hint.ownedCosts", { name: unitOf(keepIt.unitId)?.name ?? t("hint.yourUnit"), cost: keepIt.cost, gold: run.gold });
     return null;
   };
 
@@ -1771,7 +1787,6 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   // selected unit's buttons, Reroll and Fight. The phone stacks them.
   if (!desk) {
     const wide = wideQuery.matches;
-    const how = crown ? null : h("span", { class: "dim how" }, wide ? t("shop.howWide") : t("shop.howPhone"));
     show(
       h(
         "div",

@@ -2087,6 +2087,8 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 #app[data-screen="shop"] .run-panel > .label, #app[data-screen="shop"] .line-head .label, #app[data-screen="shop"] .shop-head .label { font: 400 15px/1 var(--font-head); letter-spacing: 0.5px; text-transform: uppercase; opacity: 0.8; }
 #app[data-screen="shop"] .shop-head { gap: 12px; align-items: baseline; flex-wrap: nowrap; min-width: 0; }
 #app[data-screen="shop"] .shop-head .how { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+/* The hint of the moment takes the how line's place (#1293 reopened): one line, it never moves the layout. */
+#app[data-screen="shop"] .shop-head .how.on { color: var(--you); font-weight: 700; }
 /* The sell zone, while a unit is dragged: a dashed red strip along the foot. */
 .sell-zone { min-height: 64px; margin: 0 12px 8px; border: 3px dashed var(--paper); border-radius: 18px; font: 400 20px/1 var(--font-head); background: color-mix(in srgb, var(--loss) 70%, var(--outline)); }
 /* Who's next, in full (no ellipsis): its name never shrinks. */
