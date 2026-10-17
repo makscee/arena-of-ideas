@@ -2280,3 +2280,15 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
   #app[data-screen="battle"] .bv-v3 .bv-line.theirs { align-items: end; }
   #app[data-screen="battle"] .bv-v3 .bv-line.mine { align-items: start; }
 }
+/* The phone's event card holds still (its box never moves the board): the when tab left, the sentence beside it on up to three lines. */
+@media (max-width: 599.98px) and (orientation: portrait) {
+  #app[data-screen="battle"] .bv-v3 button.bv-caption { height: 76px; min-height: 76px; max-height: 76px; overflow: hidden; font-size: 14px; line-height: 1.2; align-items: center; }
+  #app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line { flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 8px; }
+  #app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line > .bv-rail-line { flex: 1 1 auto !important; min-width: 0; }
+  #app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line > b { flex: none !important; }
+}
+/* The phone: a result tag stands in the gap past the rim's discs, under the arrow, never on a face. */
+@media (max-width: 599.98px) and (orientation: portrait) {
+  #app[data-screen="battle"] .bv-v3 .bv-line.theirs .bv-changes { left: calc(100% + 14px); right: auto; }
+  #app[data-screen="battle"] .bv-v3 .bv-line.mine .bv-changes { right: calc(100% + 14px); left: auto; }
+}

@@ -69,11 +69,12 @@ const watch = (boxes) => {
       const line = strip.querySelector(".bv-strip-line");
       if (line && line.getBoundingClientRect().bottom > strip.getBoundingClientRect().bottom + 1) L.wrapped++;
     }
-    // While playing, no change pill shows on a card.
-    // (Reduced motion has no floats: the pills keep the numbers there.)
+    // While playing, no result tag or running total sits on a piece's face
+    // (#1294: the event's tag shows while playing, beside the piece at the arrow).
     if (document.querySelector(".bv-playing") && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      // (A turn's totals, .bv-tot, are the turn-end summary until the ledger takes it over, slice 2.)
-      for (const p of document.querySelectorAll(".bv-card .bv-pill:not(.bv-tot), .bv-run-row")) if (getComputedStyle(p).visibility !== "hidden") L.pills++;
+      const faces = [...document.querySelectorAll(".bv-card .pc-face")].map((f) => f.getBoundingClientRect());
+      const over = (r) => faces.some((f) => r.left < f.right - 1 && r.right > f.left + 1 && r.top < f.bottom - 1 && r.bottom > f.top + 1);
+      for (const p of document.querySelectorAll(".bv-card .bv-pill:not(.bv-tot), .bv-run-row")) if (getComputedStyle(p).visibility !== "hidden" && p.getClientRects().length && over(p.getBoundingClientRect())) L.pills++;
     }
     requestAnimationFrame(tick);
   };
