@@ -82,7 +82,7 @@ try {
   /** Desktop cards are 132×172 at this width. */
   const cardSize = async (name, testid, nth = 0) => {
     const box = await page.getByTestId(testid).locator(".card").nth(nth).boundingBox();
-    if (!box || Math.abs(box.width - 132) > 1 || Math.abs(box.height - 172) > 1) errors.push(`${name}: card ${box ? `${Math.round(box.width)}×${Math.round(box.height)}` : "missing"}, want 132×172`);
+    if (!box || Math.abs(box.width - 132) > 1 || Math.abs(box.height - 124) > 1) errors.push(`${name}: card ${box ? `${Math.round(box.width)}×${Math.round(box.height)}` : "missing"}, want 132×124`);
   };
   /** Whole on screen, no scrolling. */
   const onScreen = async (name, locator) => {
@@ -129,7 +129,7 @@ try {
   await shot("settings");
   await page.getByTestId("sheet-close").click();
   await shot("home"); await noHScroll("home"); await wide("home", 1100); await onScreen("home: Play", page.getByTestId("play"));
-  await cardSize("home champion", "champion", 2); // the middle card of the fan: the others are tilted
+  await cardSize("home champion", "champion", 2); // the piece card (mission #1286): a level row, no fan
   // Home's two columns: Play sits right of the champion panel.
   const [champBox, playBox] = [await page.getByTestId("champion").boundingBox(), await page.getByTestId("play").boundingBox()];
   if (!(playBox.x > champBox.x + champBox.width)) errors.push("home: Play isn't in the right column");
@@ -137,7 +137,7 @@ try {
     // At 1024px the champion's 5 cards stay on one line (R2-10).
     const size = page.viewportSize();
     await page.setViewportSize({ width: 1024, height: size.height });
-    const tops = await page.getByTestId("champion").locator(".card").evaluateAll((els) => els.map((e) => e.offsetTop)); // the fan tilts them: layout, not the drawn box
+    const tops = await page.getByTestId("champion").locator(".card").evaluateAll((els) => els.map((e) => e.offsetTop));
     if (new Set(tops).size > 1) errors.push(`home at 1024px: the champion's cards wrap (${tops.join(",")})`);
     await shot("home-1024");
     await page.setViewportSize(size);

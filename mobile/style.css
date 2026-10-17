@@ -389,16 +389,12 @@ button.gear { width: 44px; height: 44px; padding: 0; border-radius: 22px; border
 .hero-name .who-mark > .who { flex: 0 1 auto; }
 :root:lang(ru) .hero-name { font-size: 26px; }
 .hero-day { font-size: 15px; }
-/* The champion's five cards, fanned like a hand (the same card as everywhere). */
+/* The champion's five units, each the plain piece on a level row, its name
+ * under it (mission #1286: the fan's tilt cut the names). */
 .hero-team { margin-top: 14px; }
 .throne-hero .hero-team .slots { margin: 0 -6px; gap: 2px; }
-.hero-team .card:nth-child(1) { rotate: -9deg; translate: 0 6px; }
-.hero-team .card:nth-child(2) { rotate: -4deg; }
-.hero-team .card:nth-child(3) { translate: 0 -6px; }
-.hero-team .card:nth-child(4) { rotate: 4deg; }
-.hero-team .card:nth-child(5) { rotate: 9deg; translate: 0 6px; }
-.hero-team .card { transition: rotate 0.12s, translate 0.12s; }
-.hero-team .card:hover { rotate: 0deg; translate: 0 -8px; z-index: 1; }
+.hero-team .card { transition: translate 0.12s; }
+.hero-team .card:hover { translate: 0 -4px; z-index: 1; }
 /* Play: the one big button, its line under it. */
 button.play-big { min-height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-width: 3px; border-radius: 38px; box-shadow: 0 7px 0 var(--outline); padding: 6px 16px; }
 button.play-big:active:not(:disabled) { translate: 0 4px; box-shadow: 0 3px 0 var(--outline); }
@@ -2293,6 +2289,7 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 @media (max-width: 599.98px) and (orientation: portrait) {
   #app[data-screen="battle"] .bv-v3 .bv-line.theirs .bv-changes { left: calc(100% + 14px); right: auto; }
   #app[data-screen="battle"] .bv-v3 .bv-line.mine .bv-changes { right: calc(100% + 14px); left: auto; }
+}
 
 /* The XL detail (mission #1286, slice 4, detail-800.png): the piece big on the
  * left with its shelf, the name / rule in words / sleeping vs awoken / what is

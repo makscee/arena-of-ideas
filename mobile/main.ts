@@ -123,9 +123,10 @@ function runTrack(run: RunView): HTMLElement {
 const hearts = (n: number) => h("span", { class: "hearts", "aria-label": t("run.hearts", { n }) }, "♥".repeat(n) + "♡".repeat(Math.max(0, rules.hearts - n)));
 const openSheet = (u: Parameters<typeof unitSheet>[0], content: MvpContent) => () => closable(unitSheet(u, content));
 
-/** A line of cards, each opening its unit sheet. */
-function team(line: LineUnit[], side: "you" | "ghost", content: MvpContent, testid = ""): HTMLElement {
-  return h("div", { class: "slots", ...(testid ? { "data-testid": testid } : {}) }, ...line.map((u) => card(u, { side, extra: [copiesBadge(u)], onOpen: openSheet(u, content) })));
+/** A line of cards, each opening its unit sheet. `plain` drops the copies
+ * badge: the piece's ★ / ✦ already says awoken / fused (Home's champion). */
+function team(line: LineUnit[], side: "you" | "ghost", content: MvpContent, testid = "", plain = false): HTMLElement {
+  return h("div", { class: "slots", ...(testid ? { "data-testid": testid } : {}) }, ...line.map((u) => card(u, { side, extra: plain ? [] : [copiesBadge(u)], onOpen: openSheet(u, content) })));
 }
 
 /** The Sound row of the title menu and the run menu (round 3, note 16): a
@@ -477,7 +478,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
         champ && !champ.player.bot && !isMine(champ.player.id) ? reportLink("name", champ.player.id, `@${champ.player.name}`) : null,
         own ? h("div", { class: "hero-day", "data-testid": "own-team" }, t("home.ownTeam")) : null,
         h("div", { class: "hero-day", "data-testid": "slayers" }, champ ? slayersLine(home.day.slayers) : t("home.newChampionAt", { at: rules.dayEndsAt })),
-        champ ? h("div", { class: "hero-team" }, team(champ.line, "ghost", content)) : null,
+        champ ? h("div", { class: "hero-team" }, team(champ.line, "ghost", content, "", true)) : null,
       ),
       justEnded ? null : playoff,
     ),
