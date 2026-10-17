@@ -57,7 +57,7 @@ try {
   // A guest run to the first battle.
   await game.getByTestId("play").click();
   await game.getByTestId("fight").waitFor({ timeout: 20_000 });
-  await game.getByTestId("offer-0").click();
+  await game.getByTestId("offer-0").click(); await game.getByTestId("offer-0").click();
   await game.getByTestId("buy").waitFor();
   await game.getByTestId("buy").click();
   await game.getByTestId("line").locator(".card.you").first().waitFor({ timeout: 10_000 });

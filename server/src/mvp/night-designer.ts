@@ -22,6 +22,8 @@ export const DESIGNER_RULES = [
   "Three candidates lean differently: lean A (toward the first parent), lean B (toward the second), and twist (reads as a third creature).",
   "Output is the v2 schema only. No stats: the fusion has the parents' summed HP and power; numbers inside the rule are a first guess the quick tune rescales.",
   // the units rethink (#1063): one shared vocabulary, one strong reading (#1065)
+  // the piece (#1291): free-form hints, never a trigger/target/effect grammar
+  "Give each candidate a `face` for its piece: `when` is any one emoji and a short word of at most 10 letters saying when it acts (\"Turn end\", \"When healed\", \"Every 3rd\"); `headline` is one emoji that sums up what it does, plus an optional `amount` of at most 2 characters (\"1\", \"×2\", \"T\"); `counter` only when it builds a counter such as Charge, with its max. The rule itself stays in words.",
   "Speak the shared vocabulary only: the statuses Strength, Vitality, Curse, Poison, Shield, Freeze, Blessing and the Charge counter, plus the turn number. Coin no status, counter or resource of your own, no coins or gold, and no hidden concept a card can't show. The rule has one strong reading: one idea, said once.",
 ];
 
@@ -87,6 +89,15 @@ export const DESIGN_SCHEMA = {
           abilities: OBJ,
           statuses: OBJ,
           wordRequest: { type: "object", properties: { word: { type: "string" }, meaning: { type: "string" } }, required: ["word", "meaning"] },
+          face: {
+            type: "object",
+            properties: {
+              when: { type: "object", properties: { icon: { type: "string" }, label: { type: "string" } }, required: ["icon", "label"] },
+              headline: { type: "object", properties: { icon: { type: "string" }, amount: { type: "string" } }, required: ["icon"] },
+              counter: { type: "object", properties: { status: { type: "string" }, max: { type: "integer" } }, required: ["status", "max"] },
+            },
+            required: ["when", "headline"],
+          },
         },
         required: ["lean", "intent", "rule", "abilities"],
       },

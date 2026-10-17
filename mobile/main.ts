@@ -29,10 +29,12 @@ import { isMine, reportLink, setReporter } from "./ui/report";
 import { previewName } from "./ui/fusion";
 import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
-import { actionable, app, button, closable, desktopQuery, dismissable, h, hasKeys, isDesktop, keepFocus, keepScreen, keyboardLost, keyLabel, keyOf, onKeys, onRestore, overlay, screen, show, who, withKey } from "./ui/dom";
+import { actionable, app, button, wideQuery, closable, desktopQuery, dismissable, h, hasKeys, isDesktop, keepFocus, keepScreen, keyboardLost, keyLabel, keyOf, onKeys, onRestore, overlay, screen, show, who, withKey } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
 import { telegramSheet } from "./screens/telegram";
 import { emailAttach, emailSignIn, emailSignUp } from "./screens/email";
+import { galleryScreen } from "./screens/gallery";
+import { faceOfUnit, lineToPiece, piece } from "./ui/piece";
 import { initSound, music, onSoundChange, play, setSound, soundSettings } from "./ui/sound";
 import { shopSound } from "./ui/sound-map";
 import { t, withNodes } from "./i18n";
@@ -124,6 +126,69 @@ const openSheet = (u: Parameters<typeof unitSheet>[0], content: MvpContent) => (
 /** A line of cards, each opening its unit sheet. */
 function team(line: LineUnit[], side: "you" | "ghost", content: MvpContent, testid = ""): HTMLElement {
   return h("div", { class: "slots", ...(testid ? { "data-testid": testid } : {}) }, ...line.map((u) => card(u, { side, extra: [copiesBadge(u)], onOpen: openSheet(u, content) })));
+}
+
+/** Where a piece reaches on screen: its box with the tab, badges, rim
+ * numbers and name hanging outside it. */
+function reachOf(pc: Element): { left: number; right: number; top: number; bottom: number } {
+  const rs = [pc, ...pc.querySelectorAll("*")].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
+  return { left: Math.min(...rs.map((r) => r.left)), right: Math.max(...rs.map((r) => r.right)), top: Math.min(...rs.map((r) => r.top)), bottom: Math.max(...rs.map((r) => r.bottom)) };
+}
+
+/** Home's champion (void-board#1295): plain pieces (the ★ says awoken), sized
+ * from the panel's width so each, with its when tab and its whole name, fits
+ * beside the next with a gap. The largest piece wins among: five in a row with
+ * the tabs' words; on a phone, 3 + 2 with the words; five with the tabs' icons
+ * (the word stays in the tab's title and the unit's sheet). */
+function heroTeam(line: LineUnit[], content: MvpContent): HTMLElement {
+  const box = h("div", { class: "hero-team" });
+  const gap = 5;
+  const draw = (cols: number, px: number, word: boolean) => {
+    // A name wraps at a space within its share of the row.
+    const nmw = Math.floor((box.clientWidth + 20) / cols - gap);
+    const cards = line.map((u) => card(u, { side: "ghost", piece: { px, word }, onOpen: openSheet(u, content) }));
+    // 3 + 2: a break after the third.
+    if (cols < line.length) cards.splice(cols, 0, h("i", { class: "row-break" }));
+    box.replaceChildren(h("div", { class: "slots", style: `--nmw:${nmw}px` }, ...cards));
+    // Each card is as wide as its piece reaches (tab, badges, name) plus the gap; every stage as tall as the lowest name.
+    const stages = [...box.querySelectorAll<HTMLElement>(".pcard-stage")];
+    const need = Math.max(...stages.map((st) => {
+      const pc = st.querySelector<HTMLElement>(".pc")!;
+      const r = reachOf(pc), b = pc.getBoundingClientRect();
+      pc.style.marginLeft = `${Math.ceil(b.left - r.left)}px`;
+      st.parentElement!.style.width = `${Math.ceil(r.right - r.left) + gap}px`;
+      return Math.ceil(r.bottom - st.getBoundingClientRect().top);
+    }));
+    for (const st of stages) st.style.height = `${need}px`;
+  };
+  const fits = (cols: number): boolean => {
+    // One row (or 3 + 2): a card the row pushed onto a line of its own doesn't fit.
+    const rows = new Set([...box.querySelectorAll<HTMLElement>(".card")].map((c) => c.offsetTop)).size;
+    if (rows !== (cols < line.length ? 2 : 1)) return false;
+    const lim = box.getBoundingClientRect();
+    const rs = [...box.querySelectorAll(".pc")].map(reachOf);
+    return rs.every((a, i) => a.left >= lim.left - 10 && a.right <= lim.right + 10 && rs.every((b, j) => j <= i || a.right + gap <= b.left || b.right + gap <= a.left || a.bottom + gap <= b.top || b.bottom + gap <= a.top));
+  };
+  let width = 0;
+  const fit = () => {
+    const w = box.clientWidth;
+    if (!w || w === width) return;
+    width = w;
+    const tries: [number, number, boolean][] = [
+      ...[84, 78, 72, 66, 62, 58, 54].map((px): [number, number, boolean] => [5, px, true]),
+      ...(window.innerWidth < 600 ? [78, 72, 66, 62, 58, 54].map((px): [number, number, boolean] => [3, px, true]) : []),
+      ...[78, 72, 68, 64, 62, 60, 58, 56, 54, 50, 46, 42].map((px): [number, number, boolean] => [5, px, false]),
+    ];
+    for (const [cols, px, word] of tries) {
+      draw(cols, px, word);
+      if (fits(cols)) return;
+    }
+  };
+  draw(5, window.innerWidth < 600 ? 46 : 60, window.innerWidth >= 600);
+  // Refit after layout (outside the observer's callback, so no loop warning) and once the fonts are in.
+  if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => requestAnimationFrame(fit)).observe(box);
+  void document.fonts?.ready.then(() => { width = 0; fit(); });
+  return box;
 }
 
 /** The Sound row of the title menu and the run menu (round 3, note 16): a
@@ -475,7 +540,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
         champ && !champ.player.bot && !isMine(champ.player.id) ? reportLink("name", champ.player.id, `@${champ.player.name}`) : null,
         own ? h("div", { class: "hero-day", "data-testid": "own-team" }, t("home.ownTeam")) : null,
         h("div", { class: "hero-day", "data-testid": "slayers" }, champ ? slayersLine(home.day.slayers) : t("home.newChampionAt", { at: rules.dayEndsAt })),
-        champ ? h("div", { class: "hero-team" }, team(champ.line, "ghost", content)) : null,
+        champ ? heroTeam(champ.line, content) : null,
       ),
       justEnded ? null : playoff,
     ),
@@ -879,6 +944,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const bench = h("div", { class: "slots bench-row", "data-testid": "bench" });
   const actions = h("div", { class: "row actions", "data-testid": "actions" });
   const hintSlot = h("div", { class: "hint-slot" });
+  // The shop head's line (phone, 800×450): how to buy, or the hint of the moment.
+  const how = h("span", { class: "dim how" });
   const awoken = board.filter((u) => u.kind === "unit" && u.form === "awoken").length;
   // Desktop: the inspector, the card under the mouse, an offer clicked, a fusion waiting for its Fuse.
   const inspector = h("aside", { class: "inspector stack", "data-testid": "inspector" });
@@ -945,17 +1012,73 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     if (slot < L) return run.bench.length < B ? L + run.bench.length : L + B - 1;
     return run.line.length < L ? run.line.length : L - 1;
   };
+  /** The piece's side per layout (mission #1286 slice 2): the phone's line of
+   * five keeps the when tab's icon only, the bench is a size down. */
+  const pieceSizes = () =>
+    desk
+      ? { line: 76, bench: 60, offer: 76, lineWord: true, benchWord: false, benchBare: false }
+      : wideQuery.matches
+        ? { line: 58, bench: 46, offer: 58, lineWord: true, benchWord: false, benchBare: false }
+        : { line: 46, bench: 46, offer: 62, lineWord: false, benchWord: false, benchBare: true };
+  /** Tap-tap: the offer in hand (chosen) or the unit in hand (picked) lights
+   * every slot it can go to; the twin it merges into is gold. */
+  /** The board slot an offer's copy merges into, or -1. */
+  const twinSlot = (unitId: string) => {
+    const i = mergeTarget(board, unitId);
+    return i < 0 ? -1 : i < run.line.length ? i : L + i - run.line.length;
+  };
+  /** A cell's height for a piece of side `s`: the tab above, the rim numbers, the name and the foot below. */
+  const cellStyle = (s: number, bare = false) => `--s:${s}px;height:${Math.round(s + 0.3 * Math.max(22, s * 0.37) + Math.max(12, s * 0.2) + (bare ? 22 : 47))}px`;
+  const lightTarget = (el: HTMLElement, slot: number) => {
+    const o = chosen !== null ? run.offers[chosen] : undefined;
+    const u = unitAt(slot);
+    if (o) {
+      if (buyBlock(o) && !(u && twinSlot(o.unitId) === slot && run.gold >= o.cost && !run.gift)) return;
+      if (u && twinSlot(o.unitId) === slot) {
+        el.classList.add("lit", "lit-twin");
+        el.append(h("span", { class: "lit-tag" }, u.kind === "unit" && u.form === "sleeping" && u.copies + 1 >= rules.copiesToAwaken ? t("slot.awakens") : t("slot.merges")));
+      } else if (!u || !owns(o.unitId)) el.classList.add("lit");
+    } else if (pick.mode === "picked" && pick.index !== slot && destFor(run, pick.index, slot) !== null && (!desk || !u)) el.classList.add("lit");
+  };
+  /** The second tap of tap-tap, on a slot: buys the offer in hand there, or
+   * moves the unit in hand there. False: not a second tap (the slot's own click goes on). */
+  const tapSlot = (slot: number): boolean => {
+    if (crown) return false;
+    const o = chosen !== null ? run.offers[chosen] : undefined;
+    if (o) {
+      const u = unitAt(slot);
+      // An offer you own goes to its twin; a tap on another unit of yours picks that one instead.
+      if (u && owns(o.unitId) && twinSlot(o.unitId) !== slot) return false;
+      if (u && !owns(o.unitId) && run.line.length >= L && run.bench.length >= B) return false;
+      play("click");
+      buyAt(o, slot);
+      return true;
+    }
+    if (pick.mode === "picked" && pick.index !== slot && (!desk || !unitAt(slot)) && destFor(run, pick.index, slot) !== null) {
+      play("click");
+      moveTo(pick.index, slot);
+      return true;
+    }
+    return false;
+  };
   const slotCard = (slot: number): HTMLElement => {
     const u = unitAt(slot);
     const onBench = slot >= L;
     const id = onBench ? `bench-${slot - L}` : `line-${slot}`;
     if (!u) {
-      const e = h("div", { class: "card empty", "data-testid": `${id}-empty` }, h("div", { class: "dim" }, onBench ? "" : `${slot + 1}`));
+      const e = h("div", { class: "cell empty", "data-testid": `${id}-empty`, style: onBench ? cellStyle(pieceSizes().bench, pieceSizes().benchBare) : cellStyle(pieceSizes().line) }, h("div", { class: "cell-well" }, onBench ? "" : `${slot + 1}`));
       if (!crown) dropTarget(e, slot);
+      if (!crown) lightTarget(e, slot);
+      e.addEventListener("click", () => tapSlot(slot));
       return e;
     }
-    const c = actionable(card(u, { side: "you", extra: [copiesBadge(u)], testid: id }), `${u.name}, ${onBench ? t("board.onBench", { n: slot - L + 1 }) : t("board.inLine", { n: slot + 1 })}`);
+    const sz = pieceSizes();
+    const c = actionable(
+      h("div", { class: ["cell", "you", onBench && sz.benchBare ? "bare" : "", u.kind === "fused" ? "fused" : u.form === "awoken" ? "awoken" : ""].filter(Boolean).join(" "), "data-copies": String(u.copies), "data-testid": id, style: onBench ? cellStyle(sz.bench, sz.benchBare) : cellStyle(sz.line) }, piece(lineToPiece(u, content), { size: "L", side: "you", px: onBench ? sz.bench : sz.line, word: onBench ? sz.benchWord : sz.lineWord })),
+      `${u.name}, ${onBench ? t("board.onBench", { n: slot - L + 1 }) : t("board.inLine", { n: slot + 1 })}`,
+    );
     if (pick.mode === "picked" && pick.index === slot) c.classList.add("selected");
+    if (!crown) lightTarget(c, slot);
     if (pick.mode === "fuse") {
       if (pick.first === slot) c.classList.add("selected");
       else if (fusesWith(pick.first, slot)) c.classList.add("fusable");
@@ -966,6 +1089,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       c.append(fuseMark(designedPairs(slot), slot));
     }
     c.addEventListener("click", () => {
+      if (tapSlot(slot)) return;
       play("click");
       if (pick.mode === "fuse") {
         if (pick.first === slot) pick = { mode: "none" };
@@ -1003,7 +1127,21 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     for (const o of offers.children) o.classList.toggle("selected", chosen !== null && (o as HTMLElement).dataset.testid === `offer-${chosen}`);
     if (desk) renderInspector(true);
     else actions.replaceChildren(...actionButtons());
-    hintSlot.replaceChildren(...[giftBanner() ?? shopHint()].filter((x): x is HTMLElement => x !== null));
+    const banner = giftBanner();
+    if (desk || crown) {
+      const said = banner ? null : shopHint();
+      return hintSlot.replaceChildren(...[banner ?? (said === null ? null : hint(said))].filter((x): x is HTMLElement => x !== null));
+    }
+    hintSlot.replaceChildren(...(banner ? [banner] : []));
+    // Phone and 800×450 (#1293 reopened): the hint is the shop head's one line, so
+    // nothing jumps when it changes, and with something in hand it says what a tap on a lit slot does.
+    const lit = line.querySelector(".lit") || bench.querySelector(".lit");
+    const step = !lit ? null : chosen !== null ? t("hint.tapSlotBuy") : pick.mode === "picked" ? t("hint.tapSlotMove") : null;
+    const said = (pick.mode === "picked" ? shopHint() : null) ?? step ?? (banner ? null : shopHint());
+    how.replaceChildren(said ?? (wideQuery.matches ? t("shop.howWide") : t("shop.howPhone")));
+    how.classList.toggle("on", said !== null);
+    if (said === null) (how.removeAttribute("data-testid"), how.removeAttribute("title"));
+    else (how.dataset.testid = "hint", (how.title = said));
   };
 
   /** Desktop: hovering a card reads it in the inspector; the keyboard reads a card too. */
@@ -1211,28 +1349,28 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   };
 
   /** The hint that matters most right now, or none. */
-  const shopHint = (): HTMLElement | null => {
-    if (!desk && !crown && pick.mode === "picked" && pick.index >= L && run.line.length >= L) return hint(t("hint.lineFullSwap"));
+  const shopHint = (): string | null => {
+    if (!desk && !crown && pick.mode === "picked" && pick.index >= L && run.line.length >= L) return t("hint.lineFullSwap");
     if (pick.mode !== "none") return null;
     // run.ts refuses every decision but the fight in the crown phase: the line is final.
-    if (crown) return hint(ownCrown ? t("hint.ownCrown") : t("hint.crown"));
+    if (crown) return ownCrown ? t("hint.ownCrown") : t("hint.crown");
     // Only a unit whose next copy is on offer right now.
     const almost = board.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === rules.copiesToAwaken - 1 && run.offers.some((o) => o.unitId === u.unitId));
     const canBuy = run.offers.some((o) => o.cost <= run.gold);
-    if (anyFuse()) return hint(desk ? t("hint.fuseDesk") : t("hint.fusePhone"));
-    if (almost && run.offers.some((o) => o.unitId === almost.unitId && o.cost <= run.gold)) return hint(t("hint.oneMore", { name: almost.name }));
-    if (run.line.length === 0 && run.bench.length > 0) return hint(t("hint.moveToLine"));
-    if (run.line.length === 0 && !canBuy) return hint(t("hint.noGold"));
-    if (run.line.length === 0) return hint(desk ? t("hint.buyDesk") : t("hint.buyPhone"));
-    if (run.round === 1 && run.line.length > 0 && run.gold < rules.unitCost) return hint(t("hint.outOfGold"));
-    if (run.line.length > 1 && run.round <= 2) return hint(desk ? t("hint.moveDesk") : t("hint.movePhone"));
+    if (anyFuse()) return desk ? t("hint.fuseDesk") : t("hint.fusePhone");
+    if (almost && run.offers.some((o) => o.unitId === almost.unitId && o.cost <= run.gold)) return t("hint.oneMore", { name: almost.name });
+    if (run.line.length === 0 && run.bench.length > 0) return t("hint.moveToLine");
+    if (run.line.length === 0 && !canBuy) return t("hint.noGold");
+    if (run.line.length === 0) return desk ? t("hint.buyDesk") : t("hint.buyPhone");
+    if (run.round === 1 && run.line.length > 0 && run.gold < rules.unitCost) return t("hint.outOfGold");
+    if (run.line.length > 1 && run.round <= 2) return desk ? t("hint.moveDesk") : t("hint.movePhone");
     if (almost) {
       const o = run.offers.find((o) => o.unitId === almost.unitId)!;
       const keep = !o.locked && !lastShop && o.cost > run.gold ? t("hint.lockToKeep") : "";
-      return hint(t("hint.oneMoreCost", { name: almost.name, cost: o.cost, keep }));
+      return t("hint.oneMoreCost", { name: almost.name, cost: o.cost, keep });
     }
     const keepIt = lastShop ? undefined : run.offers.find((o) => !o.locked && o.cost > run.gold && owns(o.unitId));
-    if (keepIt) return hint(t("hint.ownedCosts", { name: unitOf(keepIt.unitId)?.name ?? t("hint.yourUnit"), cost: keepIt.cost, gold: run.gold }));
+    if (keepIt) return t("hint.ownedCosts", { name: unitOf(keepIt.unitId)?.name ?? t("hint.yourUnit"), cost: keepIt.cost, gold: run.gold });
     return null;
   };
 
@@ -1474,9 +1612,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const owned = mine ? null : board.find((x) => x.kind === "unit" && x.unitId === o.unitId) ?? null;
     const sheet = mine ? unitSheet(mine.next, content, { from: mine.now.stats }) : owned ? unitSheet(owned, content) : u ? unitSheet(u, content) : h("h2", {}, o.unitId);
     // What buying does goes inside the sheet, above its last line (the rates hint).
-    if (after) sheet.insertBefore(after, sheet.querySelector('[data-testid="unit-rates"]'));
+    // The XL sheet's text column holds the rates line (mission #1286).
+    const body = sheet.querySelector(".sheet-body") ?? sheet;
+    const rates = body.querySelector(':scope > [data-testid="unit-rates"]');
+    if (after) body.insertBefore(after, rates);
     const fusions = offerFusions(o.slot);
-    if (fusions.length) sheet.insertBefore(h("div", { class: "stack offer-fusions", "data-testid": "offer-fusions" }, ...fusions.map((f) => h("div", { class: `small${f.awakens ? "" : " dim"}` }, `⚗ ${offerLine(f)}`))), sheet.querySelector('[data-testid="unit-rates"]'));
+    if (fusions.length) body.insertBefore(h("div", { class: "stack offer-fusions", "data-testid": "offer-fusions" }, ...fusions.map((f) => h("div", { class: `small${f.awakens ? "" : " dim"}` }, `⚗ ${offerLine(f)}`))), rates);
     return { sheet, blocked };
   };
   /** The phone's offer sheet: the body in an overlay, with Close and Buy. */
@@ -1494,17 +1635,28 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     { class: "slots", "data-testid": "offers" },
     ...run.offers.map((o: Offer) => {
       const u = unitOf(o.unitId);
-      const cu: CardUnit = { unitId: o.unitId, emoji: u?.emoji ?? "?", name: u?.name ?? o.unitId, stats: u?.base ?? { pwr: 0, hp: 0 }, ...(u ? { recipe: u.forms.sleeping } : {}) };
       const owned = owns(o.unitId);
-      // The lock is a corner mark, so "3g ＋" keeps one line at 360 px.
       const price = `${t("shop.gold", { n: o.cost })}${owned ? " ＋" : ""}`;
-      const c = actionable(card(cu, { side: "you", tier: o.tier, extra: [h("div", { class: "cost" }, price)], testid: `offer-${o.slot}` }), `${cu.name}, ${price}`);
-      if (o.locked) c.append(h("span", { class: "lock-mark", "aria-label": t("offer.locked") }, "🔒"));
+      // The piece (mission #1286): price and lock on its foot, the tier beside them.
+      const pu = { name: u?.name ?? o.unitId, emoji: u?.emoji ?? "?", stats: u?.base ?? { pwr: 0, hp: 0 }, face: u ? faceOfUnit(u) : { when: { icon: "✨", label: "" }, headline: { icon: "✨" } }, tier: o.tier, copies: 1 };
+      const c = actionable(
+        h("div", { class: "cell offer", "data-testid": `offer-${o.slot}`, "data-name": pu.name, style: cellStyle(pieceSizes().offer) }, piece(pu, { size: "L", side: "shop", px: pieceSizes().offer, word: pieceSizes().lineWord, price: o.cost, lock: o.locked === true })),
+        `${pu.name}, ${price}`,
+      );
       if (run.gold < o.cost) c.classList.add("poor");
       if (o.locked) c.classList.add("locked");
       if (owned) c.classList.add("owned");
       if (!crown) dragCard(c, { kind: "offer", offer: o });
-      if (!desk) c.addEventListener("click", () => (play("click"), void offerSheet(o)));
+      if (!desk)
+        // Tap-tap: the first tap takes it in hand and lights the slots it can go to,
+        // a tap on a lit slot buys it there; a second tap on it reads it (its sheet: Buy, Lock).
+        c.addEventListener("click", () => {
+          play("click");
+          if (chosen === o.slot) return (chosen = null), renderLine(), void offerSheet(o);
+          chosen = o.slot;
+          pick = { mode: "none" };
+          renderLine();
+        });
       else {
         // Click selects it (the inspector holds it), double-click buys it.
         c.addEventListener("click", () => {
@@ -1695,7 +1847,46 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   if (desk) (menuBtn.title = t("shop.menuEsc"), withKey(menuBtn, "Esc"));
 
   const nextOpp = h("span", { class: "dim next-opp", "data-testid": "next-opponent" }, ...(opp ? [`${crown ? t("opp.crownVs") : t("opp.next")} `, who(opp.player.name), `${opp.player.bot ? " 🤖" : ""}${ownCrown ? t("opp.yourChampionTeam") : ""}`] : [crown ? t("opp.crownVsChampion") : t("opp.nextSaved")]));
-  show(
+  // Phone and the 800×450 frame (mission #1286 slice 2, r/arena-redesign/final/):
+  // the HUD's one row with who's next in full, the line and the bench as two
+  // panels, the shop with its one line of how, and a side column of the
+  // selected unit's buttons, Reroll and Fight. The phone stacks them.
+  if (!desk) {
+    const wide = wideQuery.matches;
+    show(
+      h(
+        "div",
+        { class: "topbar", "data-testid": "topbar" },
+        h(
+          "div",
+          { class: "hud", "data-testid": "hud" },
+          menuBtn,
+          h("span", { class: "round-pill", "data-testid": "round" }, roundLabel(run.round)),
+          heartIcons(run.hearts),
+          h("span", { class: "hud-gap" }),
+          wide ? nextOpp : null,
+          // The Crown has no shop: no gold to show.
+          crown ? null : h("span", { class: "gold", "data-testid": "gold" }, t("shop.gold", { n: run.gold })),
+        ),
+        wide ? null : h("div", { class: "row opp" }, nextOpp, crown ? null : pin),
+      ),
+      h(
+        "div",
+        { class: "board" },
+        h(
+          "section",
+          { class: "run-panel line-panel" },
+          h("div", { class: "row spread line-head" }, h("div", { class: "label" }, crown ? t("line.crown") : t("line.phone")), legendBtn),
+          line,
+        ),
+        B > 0 ? h("section", { class: "run-panel bench-panel" }, bench) : null,
+        hintSlot,
+        h("section", { class: "run-panel shop-panel" }, crown ? null : h("div", { class: "row shop-head" }, h("div", { class: "label" }, t("shop.offersPhone")), how), crown ? foe : offers),
+        h("div", { class: "shop-side" }, wide && !crown ? pin : null, actions, h("div", { class: "row shop-foot" }, crown ? null : reroll, fight)),
+      ),
+      err,
+    );
+  } else show(
     h(
       "div",
       { class: "topbar", "data-testid": "topbar" },
@@ -2107,6 +2298,17 @@ function openCheckpoint(pair: string): void {
     if (err.textContent) show(h("h1", {}, "Checkpoint " + pair), err, button(t("invite.retry"), () => location.reload(), "primary"));
   });
 }
+/** `#gallery[=L|M|S|XS]` (#1291): every unit as a piece at every size, no
+ * sign-in, for judging the piece and screenshot tests (./screens/gallery.ts). */
+const galleryHash = new URLSearchParams(location.hash.slice(1));
+const galleryLink = galleryHash.has("gallery");
+function openGallery(): void {
+  const size = galleryHash.get("gallery");
+  const err = errorLine();
+  void guarded(err, async () => galleryScreen(await getContent(), size === "L" || size === "M" || size === "S" || size === "XS" ? size : null, galleryHash.get("detail"), galleryHash.has("on"))).then(() => {
+    if (err.textContent) show(h("h1", {}, "Gallery"), err);
+  });
+}
 /** `#scene=<id>` (#1026, ./scene.ts): a scenes server builds the fixture
  * (server/src/mvp/scenes.ts) and this opens its screen as its player, who
  * lives in memory only. */
@@ -2279,7 +2481,7 @@ initSound();
 // fragment, which reloads nothing: start over so the link opens.
 addEventListener("hashchange", () => {
   const hash = new URLSearchParams(location.hash.slice(1));
-  if (hash.has("invite") || hash.has("join") || hash.has("battle") || hash.has("scene") || hash.has("checkpoint")) location.reload();
+  if (hash.has("invite") || hash.has("join") || hash.has("battle") || hash.has("scene") || hash.has("checkpoint") || hash.has("gallery")) location.reload();
 });
 
 if (sceneId) {
@@ -2324,6 +2526,10 @@ async function cgBoot(): Promise<void> {
   if (err.textContent) show(h("h1", {}, t("name.title")), err, button(t("invite.retry"), () => location.reload(), "primary"));
 }
 function boot(): void {
+  if (galleryLink) {
+    openGallery();
+    return;
+  }
   if (CG && !battleLink) {
     void cgBoot();
     return;
