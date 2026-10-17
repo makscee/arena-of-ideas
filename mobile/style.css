@@ -2253,3 +2253,69 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 @media not ((max-width: 599.98px) and (orientation: portrait)) {
   #app[data-screen="battle"] .bv-v3 .bv-line .bv-changes { left: -40px; right: calc(50% + 6px); justify-content: flex-end; }
 }
+
+/* The XL detail (mission #1286, slice 4, detail-800.png): the piece big on the
+ * left with its shelf, the name / rule in words / sleeping vs awoken / what is
+ * on it now on the right. A phone stacks them, the piece centred on top. */
+.sheet-xl { container-type: inline-size; min-width: 0; }
+.sheet-xl-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.sheet-xl .sheet-hero { display: flex; justify-content: center; padding: 22px 16px 8px; }
+.sheet-xl .sheet-hero .pc { flex: none; }
+.sheet-xl .sheet-hero .pc-nm { display: none; }
+.sheet-xl .sheet-hero:has(.pc-shelf) { padding-bottom: 40px; }
+.sheet-xl .sheet-body { min-width: 0; gap: 8px; }
+.sheet-xl .sheet-portrait { display: none; }
+.sheet-xl .sheet-name { align-items: center; gap: 8px; flex-wrap: wrap; }
+.sheet-xl .sheet-name h2 { font-size: 24px; }
+.sheet-pips { display: inline-flex; gap: 3px; align-items: center; }
+.sheet-pips u { width: 10px; height: 10px; border-radius: 50%; background: var(--paper); border: 1.5px solid var(--outline); }
+.sheet-pips u.o { background: var(--pc-pip-off); border-color: var(--pc-pip-off-line); }
+.sheet-xl .sheet-stats { display: none; }
+.sheet-xl .sheet-stats:has(+ .dim), .sheet-xl div.num[data-testid="sheet-stats"]:not(.sheet-stats) { display: block; }
+.sheet-xl .sheet-rule-head { margin-top: 2px; }
+.sheet-xl .sheet-form { border: 0; padding: 0; font-size: 17px; line-height: 1.35; font-weight: 600; }
+.sheet-xl .sheet-form.other { border-left: 3px solid var(--awoken); padding-left: 10px; }
+.sheet-xl .sheet-form.other .label { color: var(--awoken); }
+.sheet-xl button.see-awoken { align-self: flex-start; border: 0; background: none; padding: 2px 0; min-height: 0; color: var(--pc-gold); font-weight: 700; box-shadow: none; }
+.sheet-now { gap: 6px; margin-top: 4px; }
+.sheet-now-row { display: flex; align-items: center; gap: 8px; line-height: 1.25; }
+.sheet-now-chip { flex: none; display: inline-flex; align-items: center; gap: 4px; min-width: 52px; height: 28px; padding: 0 8px; border-radius: 14px; border: 2px solid var(--outline); background: var(--pc-good); color: var(--pc-ink); font-size: 15px; }
+.sheet-now-chip.bad { background: var(--pc-bad); }
+.sheet-now-chip b { font: 400 15px/1 var(--font-head); margin-left: auto; }
+@container (min-width: 520px) {
+  .sheet-xl-grid { grid-template-columns: auto minmax(0, 1fr); column-gap: 28px; align-items: start; }
+  .sheet-xl .sheet-hero { padding: 26px 22px 10px; position: sticky; top: 0; }
+  .sheet-xl .sheet-hero:has(.pc-shelf) { padding-bottom: 46px; }
+  .sheet-xl .sheet-name h2 { font-size: 30px; }
+}
+@media (max-height: 560px) {
+  .sheet-xl .sheet-name h2 { font-size: 24px; }
+  .sheet-xl .sheet-form { font-size: 15px; }
+  .sheet-xl-grid { column-gap: 18px; }
+}
+
+/* The card as the piece (slice 4): Codex, gift, fusion preview, vote, stats,
+ * a team. The piece stands in the card's middle, its tab and rim numbers
+ * inside the card; the tier and the old footer's extras sit below. */
+#app .card.pcard, .card.pcard { isolation: isolate; height: auto; min-height: 0; padding: 18px 4px 6px; gap: 4px; justify-content: flex-start; overflow: visible; background: transparent; border-color: transparent; box-shadow: none; color: var(--paper); --text: var(--paper); }
+#app .card.pcard.inspected, #app .card.pcard.selected, .gift-choice.inspected .card.pcard { background: color-mix(in srgb, var(--you) 14%, transparent); border-color: var(--you); }
+.card.pcard:hover { background: color-mix(in srgb, var(--paper) 6%, transparent); }
+.card.pcard .pcard-stage { display: flex; justify-content: center; width: 100%; padding: 0 12px; height: 96px; }
+.card.pcard .pcard-stage .pc { flex: none; }
+.card.pcard .pc-nm { max-width: 112px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card.pcard .foot { display: flex; gap: 4px; align-items: center; justify-content: center; min-height: 0; flex-wrap: wrap; }
+.card.pcard .foot:empty { display: none; }
+.card.pcard .ver { font-size: 11px; color: var(--muted); }
+.card.pcard .by-mark { position: absolute; top: 2px; left: 4px; }
+.card.pcard .new-badge { position: static; }
+@media (max-width: 599.98px) {
+  #app .card.pcard, .card.pcard { padding: 12px 0 4px; }
+  .card.pcard .pcard-stage { height: 76px; padding: 0 6px; }
+  .card.pcard .pc-nm { max-width: 64px; }
+}
+/* On a light panel (the champion's pink) the name reads dark. */
+.champion .card.pcard .pc-nm, .champion .card.pcard .foot { color: var(--outline); }
+/* A unit's detail opens wide enough for its two columns (800×450 included). */
+@media (min-width: 600px) {
+  .sheet:has(> [data-testid="unit-sheet"]), .sheet:has(> * > [data-testid="unit-sheet"]) { max-width: 760px; }
+}
