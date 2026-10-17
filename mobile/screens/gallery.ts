@@ -2,9 +2,12 @@
 // a piece at every size, then the states (awoken, fused, statuses, a counter
 // ring, their side, an offer), so a change to the piece is judged and
 // screenshot-tested from one link. `#gallery=L` (or M, S, XS) shows one size.
+// `#gallery&detail=<unit id or name>` opens that unit's XL detail over it
+// (slice 4, #1295), `&on` with statuses on it; a tap on a unit's name does too.
 import type { MvpContent, UnitContent } from "../../src/mvp/contract";
 import { fusedFace } from "../../src/mvp/face";
-import { h, show } from "../ui/dom";
+import { closable, h, show } from "../ui/dom";
+import { unitSheet } from "../ui/card";
 import { faceOfUnit, piece, type PieceOptions, type PieceSize, type PieceUnit } from "../ui/piece";
 
 const SIZES: PieceSize[] = ["L", "M", "S", "XS"];
@@ -24,7 +27,17 @@ function cell(u: PieceUnit, o: PieceOptions): HTMLElement {
   return h("div", { class: `g-cell ${o.size}${shelf ? " with-shelf" : ""}` }, piece(u, o));
 }
 
-export function galleryScreen(content: MvpContent, only: PieceSize | null): void {
+/** The XL detail of one unit; `on` puts statuses on it (its counter at 2, Shield, Strength). */
+export function galleryDetail(content: MvpContent, key: string, on: boolean): void {
+  const k = key.toLowerCase();
+  const u = content.units.find((x) => x.id.toLowerCase() === k || x.name.toLowerCase() === k);
+  if (!u) return;
+  const ring = faceOfUnit(u).counter;
+  const statuses = [...(ring ? [{ status: ring.status, stacks: Math.min(2, ring.max) }] : []), { status: "Shield", stacks: 1 }, { status: "Strength", stacks: 1 }];
+  closable(unitSheet(u, content, on ? { now: { pwr: u.base.pwr + 1, hp: u.base.hp, statuses } } : {}));
+}
+
+export function galleryScreen(content: MvpContent, only: PieceSize | null, detail: string | null = null, on = false): void {
   const sizes = only ? [only] : SIZES;
   const byName = (n: string) => content.units.find((u) => u.name === n);
   const units = content.units;
@@ -51,13 +64,18 @@ export function galleryScreen(content: MvpContent, only: PieceSize | null): void
     h("div", { class: "g-unit", "data-testid": `gallery-state` }, h("div", { class: "g-name" }, label), h("div", { class: "g-row" }, ...sizes.map((size) => cell(u, { size, ...o })))),
   );
 
+  const nameOf = (u: UnitContent, pick: string) => {
+    const n = h("div", { class: "g-name", role: "button", tabindex: "0" }, u.name, h("small", {}, pick));
+    n.addEventListener("click", () => galleryDetail(content, u.id, false));
+    return n;
+  };
   const unitRows = units.map((u) => {
     const f = faceOfUnit(u);
     const pick = `${f.when.icon} ${f.when.label} · ${f.headline.icon}${f.headline.amount ? " " + f.headline.amount : ""}${f.counter ? ` · ring /${f.counter.max}` : ""}`;
     return h(
       "div",
       { class: "g-unit", "data-testid": "gallery-unit", "data-unit": u.id },
-      h("div", { class: "g-name" }, u.name, h("small", {}, pick)),
+      nameOf(u, pick),
       h("div", { class: "g-row" }, ...sizes.map((size) => cell(asPiece(u), { size }))),
     );
   });
@@ -75,4 +93,5 @@ export function galleryScreen(content: MvpContent, only: PieceSize | null): void
       ...unitRows,
     ),
   );
+  if (detail) galleryDetail(content, detail, on);
 }

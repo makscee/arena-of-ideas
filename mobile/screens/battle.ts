@@ -840,7 +840,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   let stage = { w: 0, h: 0, cols: 5 };
   function pieceFit(compact: boolean): { size: PieceSize; px?: number } {
     const phone = innerWidth < 600 && innerHeight > innerWidth;
-    const size: PieceSize = phone || compact ? "S" : "M";
+    // Six on a line keeps the names (cg-layout's battle-six): M drawn smaller; the phone's columns S.
+    const size: PieceSize = phone ? "S" : "M";
     const fallback = phone ? (compact ? 44 : undefined) : compact ? (innerHeight < 520 ? 40 : 52) : innerHeight < 520 ? 46 : innerHeight < 700 ? 56 : undefined;
     if (stage.h <= 0 || stage.w <= 0) return fallback === undefined ? { size } : { size, px: fallback };
     // The phone: a column of five rows; landscape: one row of five or more slots.
@@ -866,7 +867,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const s = fit.px ?? PIECE_PX[fit.size];
     if (fit.size === "XS") return `padding-top:2px;height:${s + 4}px`;
     const tabH = Math.round(Math.max(20, s * 0.27));
-    return `padding-top:${Math.round(tabH * 0.62) + 2}px;height:${boxHeight(fit.size, s)}px`;
+    // An M piece's name is wider than its face: the slot holds it (cg-layout's battle-six).
+    const wide = fit.size === "M" ? `;min-width:${s + 28}px` : "";
+    return `padding-top:${Math.round(tabH * 0.62) + 2}px;height:${boxHeight(fit.size, s)}px${wide}`;
   }
   /** A unit as the piece (mobile/ui/piece.ts): its face, live stats, statuses on the shelf. */
   function pieceOf(id: string, live: BoardUnit | null, side: Side, compact: boolean): HTMLElement {
@@ -1034,7 +1037,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const full = entered
       ? button(tr("battle.now.fullCard"), () => {
           app.querySelector('[data-testid="now-sheet"]')?.closest(".overlay")?.remove();
-          closable(unitSheet(entered, a.content));
+          closable(unitSheet(entered, a.content, { now: { pwr: u.pwr, hp: u.hp, statuses: u.statuses } }));
         }, "small link", "now-full-card")
       : body
         ? button(tr("battle.now.fullCard"), () => {
