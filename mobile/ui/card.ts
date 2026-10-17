@@ -18,7 +18,7 @@ import { discoveredLine } from "./fusion";
 import { isMine, reportLink } from "./report";
 import { icon } from "./icon";
 import { roman } from "./roman";
-import { faceOfUnit, lineToPiece, piece, statusEmoji, type PieceUnit } from "./piece";
+import { faceOfUnit, lineToPiece, piece, pieceReach, statusEmoji, type PieceUnit } from "./piece";
 import { faceFallback, fusedFace, type Face } from "../../src/mvp/face";
 import { termDef } from "../../src/glossary";
 import { markChangedPieces, richText } from "./term";
@@ -49,6 +49,9 @@ export interface CardOptions {
   /** M3-8: a unit the live credits don't know (the Library's): its archetype
    * version, and no live credit (NEW, 💡). */
   version?: number;
+  /** The piece's face side and whether its tab shows the word, in place of the
+   * screen's default (Home's champion sizes them from its panel). */
+  piece?: { px: number; word: boolean };
 }
 
 /** A tier's colour class (R4-4): .t1–.t4 on the --tier-1..4 tokens, .ts for a summoned unit. */
@@ -168,14 +171,15 @@ function pieceCard(u: CardUnit, o: CardOptions): HTMLElement {
     awoken: u.kind !== "fused" && u.form === "awoken",
     ...(u.kind === "fused" ? { fused: { emoji: ems.slice(1).join("") || "✨" } } : {}),
   };
-  const pc = piece(pu, { size: "M", px: window.innerWidth < 600 ? 46 : 60, side: o.side === "ghost" ? "them" : "you", word: window.innerWidth >= 600 });
+  const pc = piece(pu, { size: "M", px: o.piece?.px ?? (window.innerWidth < 600 ? 46 : 60), side: o.side === "ghost" ? "them" : "you", word: o.piece?.word ?? window.innerWidth >= 600 });
+  const reach = o.piece ? pieceReach(o.piece.px) : undefined;
   const credit = u.kind === "fused" || o.version !== undefined ? undefined : creditOf(u.unitId);
   const version = o.version ?? credit?.version ?? 1;
   const foot = (o.extra ?? []).filter((x): x is Node => x !== null);
   const el = h(
     "div",
-    { class: `card pcard ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}), title: u.name },
-    h("div", { class: "pcard-stage" }, pc),
+    { class: `card pcard ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}), title: u.name, ...(reach ? { style: `padding-top:${reach.above + 4}px` } : {}) },
+    h("div", { class: "pcard-stage", ...(reach ? { style: `height:${reach.below}px` } : {}) }, pc),
     h(
       "div",
       { class: "foot" },
