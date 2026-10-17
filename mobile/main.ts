@@ -123,10 +123,72 @@ function runTrack(run: RunView): HTMLElement {
 const hearts = (n: number) => h("span", { class: "hearts", "aria-label": t("run.hearts", { n }) }, "♥".repeat(n) + "♡".repeat(Math.max(0, rules.hearts - n)));
 const openSheet = (u: Parameters<typeof unitSheet>[0], content: MvpContent) => () => closable(unitSheet(u, content));
 
-/** A line of cards, each opening its unit sheet. `plain` drops the copies
- * badge: the piece's ★ / ✦ already says awoken / fused (Home's champion). */
-function team(line: LineUnit[], side: "you" | "ghost", content: MvpContent, testid = "", plain = false): HTMLElement {
-  return h("div", { class: "slots", ...(testid ? { "data-testid": testid } : {}) }, ...line.map((u) => card(u, { side, extra: plain ? [] : [copiesBadge(u)], onOpen: openSheet(u, content) })));
+/** A line of cards, each opening its unit sheet. */
+function team(line: LineUnit[], side: "you" | "ghost", content: MvpContent, testid = ""): HTMLElement {
+  return h("div", { class: "slots", ...(testid ? { "data-testid": testid } : {}) }, ...line.map((u) => card(u, { side, extra: [copiesBadge(u)], onOpen: openSheet(u, content) })));
+}
+
+/** Where a piece reaches on screen: its box with the tab, badges, rim
+ * numbers and name hanging outside it. */
+function reachOf(pc: Element): { left: number; right: number; top: number; bottom: number } {
+  const rs = [pc, ...pc.querySelectorAll("*")].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
+  return { left: Math.min(...rs.map((r) => r.left)), right: Math.max(...rs.map((r) => r.right)), top: Math.min(...rs.map((r) => r.top)), bottom: Math.max(...rs.map((r) => r.bottom)) };
+}
+
+/** Home's champion (void-board#1295): plain pieces (the ★ says awoken), sized
+ * from the panel's width so each, with its when tab and its whole name, fits
+ * beside the next with a gap. The largest piece wins among: five in a row with
+ * the tabs' words; on a phone, 3 + 2 with the words; five with the tabs' icons
+ * (the word stays in the tab's title and the unit's sheet). */
+function heroTeam(line: LineUnit[], content: MvpContent): HTMLElement {
+  const box = h("div", { class: "hero-team" });
+  const gap = 5;
+  const draw = (cols: number, px: number, word: boolean) => {
+    // A name wraps at a space within its share of the row.
+    const nmw = Math.floor((box.clientWidth + 20) / cols - gap);
+    const cards = line.map((u) => card(u, { side: "ghost", piece: { px, word }, onOpen: openSheet(u, content) }));
+    // 3 + 2: a break after the third.
+    if (cols < line.length) cards.splice(cols, 0, h("i", { class: "row-break" }));
+    box.replaceChildren(h("div", { class: "slots", style: `--nmw:${nmw}px` }, ...cards));
+    // Each card is as wide as its piece reaches (tab, badges, name) plus the gap; every stage as tall as the lowest name.
+    const stages = [...box.querySelectorAll<HTMLElement>(".pcard-stage")];
+    const need = Math.max(...stages.map((st) => {
+      const pc = st.querySelector<HTMLElement>(".pc")!;
+      const r = reachOf(pc), b = pc.getBoundingClientRect();
+      pc.style.marginLeft = `${Math.ceil(b.left - r.left)}px`;
+      st.parentElement!.style.width = `${Math.ceil(r.right - r.left) + gap}px`;
+      return Math.ceil(r.bottom - st.getBoundingClientRect().top);
+    }));
+    for (const st of stages) st.style.height = `${need}px`;
+  };
+  const fits = (cols: number): boolean => {
+    // One row (or 3 + 2): a card the row pushed onto a line of its own doesn't fit.
+    const rows = new Set([...box.querySelectorAll<HTMLElement>(".card")].map((c) => c.offsetTop)).size;
+    if (rows !== (cols < line.length ? 2 : 1)) return false;
+    const lim = box.getBoundingClientRect();
+    const rs = [...box.querySelectorAll(".pc")].map(reachOf);
+    return rs.every((a, i) => a.left >= lim.left - 10 && a.right <= lim.right + 10 && rs.every((b, j) => j <= i || a.right + gap <= b.left || b.right + gap <= a.left || a.bottom + gap <= b.top || b.bottom + gap <= a.top));
+  };
+  let width = 0;
+  const fit = () => {
+    const w = box.clientWidth;
+    if (!w || w === width) return;
+    width = w;
+    const tries: [number, number, boolean][] = [
+      ...[84, 78, 72, 66, 62, 58, 54].map((px): [number, number, boolean] => [5, px, true]),
+      ...(window.innerWidth < 600 ? [78, 72, 66, 62, 58, 54].map((px): [number, number, boolean] => [3, px, true]) : []),
+      ...[78, 72, 68, 64, 62, 60, 58, 56, 54, 50, 46, 42].map((px): [number, number, boolean] => [5, px, false]),
+    ];
+    for (const [cols, px, word] of tries) {
+      draw(cols, px, word);
+      if (fits(cols)) return;
+    }
+  };
+  draw(5, window.innerWidth < 600 ? 46 : 60, window.innerWidth >= 600);
+  // Refit after layout (outside the observer's callback, so no loop warning) and once the fonts are in.
+  if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => requestAnimationFrame(fit)).observe(box);
+  void document.fonts?.ready.then(() => { width = 0; fit(); });
+  return box;
 }
 
 /** The Sound row of the title menu and the run menu (round 3, note 16): a
@@ -478,7 +540,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
         champ && !champ.player.bot && !isMine(champ.player.id) ? reportLink("name", champ.player.id, `@${champ.player.name}`) : null,
         own ? h("div", { class: "hero-day", "data-testid": "own-team" }, t("home.ownTeam")) : null,
         h("div", { class: "hero-day", "data-testid": "slayers" }, champ ? slayersLine(home.day.slayers) : t("home.newChampionAt", { at: rules.dayEndsAt })),
-        champ ? h("div", { class: "hero-team" }, team(champ.line, "ghost", content, "", true)) : null,
+        champ ? heroTeam(champ.line, content) : null,
       ),
       justEnded ? null : playoff,
     ),

@@ -80,10 +80,6 @@ try {
     if (w < min) errors.push(`${name}: the screen is ${Math.round(w)}px wide, want ≥ ${min}`);
   };
   /** Desktop cards are 132×172 at this width. */
-  const cardSize = async (name, testid, nth = 0) => {
-    const box = await page.getByTestId(testid).locator(".card").nth(nth).boundingBox();
-    if (!box || Math.abs(box.width - 132) > 1 || Math.abs(box.height - 124) > 1) errors.push(`${name}: card ${box ? `${Math.round(box.width)}×${Math.round(box.height)}` : "missing"}, want 132×124`);
-  };
   /** Whole on screen, no scrolling. */
   const onScreen = async (name, locator) => {
     const box = await locator.boundingBox();
@@ -129,7 +125,15 @@ try {
   await shot("settings");
   await page.getByTestId("sheet-close").click();
   await shot("home"); await noHScroll("home"); await wide("home", 1100); await onScreen("home: Play", page.getByTestId("play"));
-  await cardSize("home champion", "champion", 2); // the piece card (mission #1286): a level row, no fan
+  {
+    // The champion's pieces (void-board#1295): sized from the panel, so no two touch, each tab and name whole.
+    const reach = await page.getByTestId("champion").locator(".pc").evaluateAll((els) => els.map((pc) => {
+      const rs = [pc, ...pc.querySelectorAll("*")].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
+      return { l: Math.min(...rs.map((r) => r.left)), r: Math.max(...rs.map((r) => r.right)), t: Math.min(...rs.map((r) => r.top)), b: Math.max(...rs.map((r) => r.bottom)) };
+    }));
+    const touch = reach.some((a, i) => reach.some((b, j) => j > i && a.r > b.l && b.r > a.l && a.b > b.t && b.b > a.t));
+    if (reach.length !== 5 || touch) errors.push(`home champion: ${reach.length} pieces${touch ? ", two touch" : ""}`);
+  }
   // Home's two columns: Play sits right of the champion panel.
   const [champBox, playBox] = [await page.getByTestId("champion").boundingBox(), await page.getByTestId("play").boundingBox()];
   if (!(playBox.x > champBox.x + champBox.width)) errors.push("home: Play isn't in the right column");
