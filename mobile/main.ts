@@ -49,34 +49,42 @@ function errorLine(): HTMLElement {
  * so a double tap can't send the same decision twice. */
 let busy = false;
 
-/** Where the latest tap landed, where the busy request's own tap did, and a
- * tap that came while it was out (arena#15): that one isn't lost but replayed
- * on the screen the answer drew, unless it is the same spot tapped again (the
- * double tap busy is for). A press shows at once (.pending), however slow the
- * answer. */
+/** Where the latest tap landed, where the busy request's own tap did, and the
+ * taps that came while it was out (arena#15, #16): those aren't lost but
+ * replayed in order on the screen the answer drew, unless one is the same spot
+ * tapped again (the double tap busy is for). A press shows at once (.pending),
+ * however slow the answer, and so does a tap that waits. Shop slots are cells:
+ * an empty slot tapped while a buy was out (the second tap of tap-tap) was
+ * dropped, and only the last waiting tap was kept (arena#16). */
 type Tap = { x: number; y: number };
 let lastTap: Tap | null = null;
 let busyTap: Tap | null = null;
-let queuedTap: Tap | null = null;
-const TAPPABLE = "button, .card, [role=button]";
+let queuedTaps: Tap[] = [];
+const TAPPABLE = "button, .card, .cell, [role=button]";
+const waiting = new Set<Element>();
 addEventListener("pointerdown", (e) => {
   lastTap = { x: e.clientX, y: e.clientY };
-  // No drag starts while a request is out.
-  if (busy && e.target instanceof Element && e.target.closest(".card")) e.stopPropagation();
+  // No drag starts while a request is out: the tap waits instead.
+  if (busy && e.target instanceof Element && e.target.closest(".card, .cell")) e.stopPropagation();
 }, true);
 addEventListener("click", (e) => {
-  if (!busy || !(e.target instanceof Element) || !e.target.closest(TAPPABLE)) return;
+  if (!busy || !(e.target instanceof Element)) return;
+  const el = e.target.closest(TAPPABLE);
+  if (!el) return;
   e.stopImmediatePropagation();
   e.preventDefault();
   const p = { x: e.clientX, y: e.clientY };
-  if (e.detail > 0 && (!busyTap || Math.hypot(p.x - busyTap.x, p.y - busyTap.y) > 24)) queuedTap = p;
+  if (e.detail > 0 && (!busyTap || Math.hypot(p.x - busyTap.x, p.y - busyTap.y) > 24) && queuedTaps.length < 4) {
+    queuedTaps.push(p);
+    el.classList.add("pending");
+    waiting.add(el);
+  }
 }, true);
 
 async function guarded(err: HTMLElement, fn: () => Promise<void>): Promise<void> {
   if (busy) return;
   busy = true;
   busyTap = lastTap;
-  queuedTap = null;
   app.classList.add("busy");
   const pressed = busyTap ? document.elementFromPoint(busyTap.x, busyTap.y)?.closest(TAPPABLE) : null;
   pressed?.classList.add("pending");
@@ -96,10 +104,21 @@ async function guarded(err: HTMLElement, fn: () => Promise<void>): Promise<void>
     busy = false;
     app.classList.remove("busy");
     pressed?.classList.remove("pending");
-    const q = queuedTap as Tap | null; // set by the click listener meanwhile
-    queuedTap = null;
+    for (const el of waiting) el.classList.remove("pending");
+    waiting.clear();
+    const q = queuedTaps; // set by the click listener meanwhile
+    queuedTaps = [];
     lastTap = null;
-    if (q) (document.elementFromPoint(q.x, q.y)?.closest(TAPPABLE) as HTMLElement | null)?.click();
+    for (let i = 0; i < q.length; i++) {
+      lastTap = q[i]!;
+      (document.elementFromPoint(q[i]!.x, q[i]!.y)?.closest(TAPPABLE) as HTMLElement | null)?.click();
+      // That tap sent a request of its own: the rest wait for its answer.
+      if (busy) {
+        queuedTaps = q.slice(i + 1).concat(queuedTaps);
+        break;
+      }
+      lastTap = null;
+    }
   }
 }
 
@@ -1112,12 +1131,17 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }
     return false;
   };
+  /** Fight with empty line slots and gold left warns (arena#15, #16): a first
+   * round lost with one or two units was the commonest unexplained loss. */
+  const wantsFill = () => !crown && !run.gift && run.line.length > 0 && run.line.length < L && run.offers.some((o) => o.cost <= run.gold);
   const slotCard = (slot: number): HTMLElement => {
     const u = unitAt(slot);
     const onBench = slot >= L;
     const id = onBench ? `bench-${slot - L}` : `line-${slot}`;
     if (!u) {
-      const e = h("div", { class: "cell empty", "data-testid": `${id}-empty`, style: onBench ? cellStyle(pieceSizes().bench, pieceSizes().benchBare) : cellStyle(pieceSizes().line) }, h("div", { class: "cell-well" }, onBench ? "" : `${slot + 1}`));
+      // A line slot left empty while gold can still fill it glows (arena#16), with Fight's warning.
+      const want = !onBench && wantsFill();
+      const e = h("div", { class: want ? "cell empty want" : "cell empty", "data-testid": `${id}-empty`, style: onBench ? cellStyle(pieceSizes().bench, pieceSizes().benchBare) : cellStyle(pieceSizes().line) }, h("div", { class: "cell-well" }, onBench ? "" : `${slot + 1}`));
       if (!crown) dropTarget(e, slot);
       if (!crown) lightTarget(e, slot);
       e.addEventListener("click", () => tapSlot(slot));
@@ -1766,7 +1790,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   // (arena#15): a first round lost with one unit was the commonest unexplained loss.
   const emptySlots = L - run.line.length;
   const fight = button(crown ? t("shop.fightChampion") : t("shop.fight"), () => void decide({ kind: "fight" }), "primary grow", "fight");
-  if (!crown && emptySlots > 0 && run.line.length > 0 && run.offers.some((o) => o.cost <= run.gold)) {
+  if (wantsFill()) {
     fight.classList.add("half-empty");
     fight.append(h("span", { class: "fight-warn", "data-testid": "fight-warn" }, t("shop.fillFirst", { n: emptySlots })));
   }
