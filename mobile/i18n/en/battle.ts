@@ -62,7 +62,7 @@ export const battle = {
   "battle.totals.start": "Start totals",
   "battle.whyWon": "Why I won",
   "battle.whyLost": "Why I lost",
-  "battle.lostLine.fewer": "Lost: your {mine} units against their {theirs}. Fill your line before Fight.",
+  "battle.lostLine.fewer": "Lost: {mine} vs {theirs} units. Fill your line before Fight.",
   "battle.lostLine.kills": { one: "Lost: their {name} did the most, {dmg} damage and {n} kill.", other: "Lost: their {name} did the most, {dmg} damage and {n} kills." },
   "battle.lostLine.damage": "Lost: their {name} did the most, {dmg} damage.",
   "battle.lostLine.fatigue": "Lost: fatigue wore your team down first.",
