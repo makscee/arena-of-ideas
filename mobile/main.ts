@@ -1652,6 +1652,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         // a tap on a lit slot buys it there; a second tap on it reads it (its sheet: Buy, Lock).
         c.addEventListener("click", () => {
           play("click");
+          // Every tap answers (CG audit): the card pulses, and a card that can't be bought says why.
+          c.classList.remove("tapped");
+          void c.offsetWidth;
+          c.classList.add("tapped");
+          const why = buyBlock(o);
+          if (why) err.textContent = why;
           if (chosen === o.slot) return (chosen = null), renderLine(), void offerSheet(o);
           chosen = o.slot;
           pick = { mode: "none" };

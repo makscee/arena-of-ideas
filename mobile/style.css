@@ -2362,3 +2362,12 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 @media (min-width: 600px) {
   .sheet:has(> [data-testid="unit-sheet"]), .sheet:has(> * > [data-testid="unit-sheet"]) { max-width: 760px; }
 }
+
+/* CG audit (arena#13): the whole shop card takes the tap, with a margin around it, and every tap pulses. */
+.cell.offer::after { content: ""; position: absolute; inset: -4px; border-radius: 18px; }
+.cell.offer.tapped { animation: offer-tap 0.22s ease-out; }
+@keyframes offer-tap { 0% { transform: scale(1); } 40% { transform: scale(0.94); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .cell.offer.tapped { animation: none; } }
+/* Next round is the dominant button of the result card, and the row keeps its height whatever the other buttons say (arena#13). */
+.bv-end-actions { min-height: 52px; align-items: stretch; }
+.bv-end-actions button[data-testid="battle-done"] { flex: 2 1 0; }

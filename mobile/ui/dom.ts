@@ -41,7 +41,7 @@ export function actionable<T extends HTMLElement>(el: T, label = ""): T {
 /** Puts a key on a button, as a keycap after its label, on desktop (the shop's
  * "Reroll R"): the key is visible where it is used (#1064). */
 export function withKey<T extends HTMLElement>(el: T, key: string): T {
-  if (keysQuery.matches) el.append(" ", h("kbd", {}, keyLabel(key)));
+  if (keysQuery.matches && !cgBuild) el.append(" ", h("kbd", {}, keyLabel(key)));
   return el;
 }
 

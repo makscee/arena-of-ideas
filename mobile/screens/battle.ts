@@ -28,7 +28,7 @@ import { card, formRich, summonById, summonSheet, summonText, unitSheet } from "
 import { isMine, reportLink } from "../ui/report";
 import { lineToPiece, piece, PIECE_PX, whenTone, type PieceSize, type PieceUnit } from "../ui/piece";
 import { faceFallback, V2_FACE } from "../../src/mvp/face";
-import { actionable, app, button, closable, fitText, h, isDesktop, keyLabel, keyOf, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
+import { actionable, app, button, closable, fitText, h, isDesktop, keyLabel, keyOf, onGone, onKeys, onLeave, overlay, screen, show } from "../ui/dom";
 import { t as tr } from "../i18n";
 import { icon } from "../ui/icon";
 import { statusesShown, STATUS_ROW_FALLBACK } from "../ui/status-row";
@@ -2261,7 +2261,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
 
   if (a.you && outcome !== "draw") {
     endWhy = () => {
-      const close = closable(whyPanel(battle, you, (id) => { close(); openTrace(id); }, outcome === "win"));
+      // Next round stays in reach here too (CG audit): Close goes back to the result, Next round goes on.
+      const close = overlay(
+        whyPanel(battle, you, (id) => { close(); openTrace(id); }, outcome === "win"),
+        h("div", { class: "row sheet-actions" }, button(tr("common.close"), () => close(), "grow", "sheet-close"), button(a.outro?.doneLabel ?? tr("battle.continue"), () => { close(); leave(); }, "primary grow", "why-done")),
+      );
     };
   }
 
