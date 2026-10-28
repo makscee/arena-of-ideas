@@ -59,6 +59,19 @@ describe("MVP run server", () => {
     expect(r.run).not.toHaveProperty("opponent");
   });
 
+  it("round 1 meets one of the smallest teams saved there (arena#15)", () => {
+    const rt = world();
+    const line = bigLine(rt.content);
+    const g = (i: number, size: number, round = 1): Ghost => ({ ghostId: `g${i}`, runId: `r${i}`, player: botP, round, line: line.slice(0, size), contentVersion: rt.content.version, createdAt: "t", rating: 1000 });
+    for (let i = 0; i < 6; i++) rt.store.addGhost(g(i, 3));
+    rt.store.addGhost(g(6, 1));
+    rt.store.addGhost(g(7, 1));
+    for (let i = 0; i < 4; i++) {
+      const run = startRun(rt, { id: `p${i + 10}`, name: `P${i}`, bot: false });
+      expect(["g6", "g7"]).toContain(run.opponent?.ghostId);
+    }
+  });
+
   it("after round 12 the Crown fights today's champion; a human's win is a Slay and moves the rating once", () => {
     const rt = world();
     const champ = weakChampion(rt);

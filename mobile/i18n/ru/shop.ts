@@ -75,6 +75,7 @@ export const shop = {
   "shop.allLocked": "Все карты закреплены",
   "shop.fightChampion": "Бой с чемпионом",
   "shop.fight": "В бой",
+  "shop.fillFirst": { one: "{n} пустой слот", few: "{n} пустых слота", many: "{n} пустых слотов", other: "{n} пустых слота" },
 
   // The Crown's foe and the champion pin.
   "foe.ownCrown": "Против тебя · твоя команда-чемпион · ",
