@@ -136,10 +136,10 @@ try {
     await gain(0, "ad started");
     await page.evaluate(() => window.__cgAd.adFinished());
     await gain(1, "ad finished");
-    await page.getByTestId("offer-0").click();
+    await page.getByTestId("offer-0").click(); await page.getByTestId("offer-0").click();
     await page.getByTestId("buy").waitFor();
     await page.getByTestId("buy").click();
-    await page.getByTestId("line").locator(".card.you").first().waitFor({ timeout: 10_000 });
+    await page.getByTestId("line").locator(".cell.you").first().waitFor({ timeout: 10_000 });
     await page.screenshot({ path: `${shots}/03-shop.png` });
     await page.getByTestId("fight").click();
     await page.getByTestId("battle-end").waitFor({ timeout: 15_000 });

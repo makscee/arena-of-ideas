@@ -28,7 +28,7 @@ for (let round = 1; round <= rounds; round++) {
     if ((await page.getByTestId("gold").count()) === 0) break;
     const gold = Number((await page.getByTestId("gold").textContent()).replace("g", ""));
     if (gold < 3 || (await page.getByTestId("line").locator(".card.you").count()) >= 5) break;
-    await page.getByTestId("offer-0").click();
+    await page.getByTestId("offer-0").click(); await page.getByTestId("offer-0").click();
     if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("offer-close").click(); break; }
     await page.getByTestId("buy").click();
     await page.waitForFunction((g) => document.querySelector('[data-testid="gold"]')?.textContent !== `${g}g`, gold);

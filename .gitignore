@@ -20,3 +20,5 @@ docs/mvp/meta-health.quick.*
 mobile/dist-cg/
 mobile/arena-cg.zip
 e2e/.cache/
+
+out/

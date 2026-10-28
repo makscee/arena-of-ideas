@@ -18,7 +18,10 @@ export const shop = {
   "hint.moveToLine": "Move a unit to your line: only the line fights.",
   "hint.noGold": "No gold for a unit. Fight to move on: an empty line loses, and costs a heart.",
   "hint.buyDesk": "Double-click an offer, or press its number, to buy it. Tab reaches every card.",
-  "hint.buyPhone": "Tap an offer to read it and buy it.",
+  "hint.buyPhone": "Tap an offer, then a lit slot to buy it there.",
+  // Tap-tap's second step (#1293): what the next tap on a lit slot does.
+  "hint.tapSlotBuy": "Tap a lit slot to buy it there.",
+  "hint.tapSlotMove": "Tap a lit slot to move it there.",
   "hint.outOfGold": "Out of gold for units. Fight when ready.",
   "hint.moveDesk": "Drag a unit to move it, or click it (Tab, Enter): ← → move it, S sells it.",
   "hint.movePhone": "Tap a unit in your line to move, sell or read it.",
@@ -74,6 +77,7 @@ export const shop = {
   "shop.allLocked": "Every offer is locked",
   "shop.fightChampion": "Fight the champion",
   "shop.fight": "Fight",
+  "shop.fillFirst": { one: "{n} empty slot", other: "{n} empty slots" },
 
   // The Crown's foe and the champion pin.
   "foe.ownCrown": "You face · your champion team · ",
@@ -128,6 +132,14 @@ export const shop = {
   "line.phone": "Your line · front first",
   "shop.offersDesk": { one: "Shop · {n} offer", other: "Shop · {n} offers" },
   "shop.offersPhone": "Shop",
+  // The shop's one line of how (mission #1286 slice 2): drag, or tap-tap.
+  "shop.howWide": "drag to a slot, or tap it then tap a slot",
+  "shop.howPhone": "tap, then tap a slot · or drag",
+  // A slot lit for the offer in hand: its twin merges it in.
+  "slot.awakens": "awakens ★",
+  "slot.merges": "+1 copy",
+  "slot.sell": "Sell +{n}",
+  "slot.tapLit": "tap a lit slot",
   "shop.selectFirst": "Select a unit first: click it in your line or bench.",
   "copies.fused": "FUSED ",
   "copies.awoken": "AWOKEN ",

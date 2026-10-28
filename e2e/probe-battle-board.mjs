@@ -26,7 +26,7 @@ try {
     await page.getByTestId("name-input").fill(`Board${lang}${label.replace(/\W/g, "")}`);
     await page.getByTestId("name-submit").click();
     await page.getByTestId("play").click();
-    await page.getByTestId("offer-0").click();
+    await page.getByTestId("offer-0").click(); await page.getByTestId("offer-0").click();
     await page.getByTestId("buy").click();
     await page.getByTestId("offer-0").click().catch(() => {});
     await page.getByTestId("buy").click().catch(() => {});

@@ -209,7 +209,7 @@ try {
     await at(2200);
     await page.evaluate(() => document.getElementById("__cover")?.remove());
     try {
-      await page.getByTestId("offer-0").click();
+      await page.getByTestId("offer-0").click(); await page.getByTestId("offer-0").click();
       await page.getByTestId("buy").waitFor({ timeout: 5_000 });
       await at(3300);
       await page.getByTestId("buy").click();

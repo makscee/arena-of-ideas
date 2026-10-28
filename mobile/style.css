@@ -148,6 +148,35 @@
 /* Lilita One has no Cyrillic: in Russian, headings and buttons take Rubik
  * semibold instead of a plain fallback (700 widened the shop's buttons). */
 :root:lang(ru) { --font-head: "Rubik", "Trebuchet MS", sans-serif; --head-weight: 600; }
+/* The piece (#1291): its face, ring, statuses and tiers, from the design page. */
+:root {
+  --pc-ink: #241d33;
+  --pc-face-hi: #fffdf8;
+  --pc-face: #f6eee0;
+  --pc-face-lo: #e6d8c2;
+  --pc-face-aw: #efe6fb;
+  --pc-face-aw-lo: #d9cbf2;
+  --pc-face-fu: #fbf0d6;
+  --pc-face-fu-lo: #efd9a4;
+  --pc-gold: #ffd34a;
+  --pc-ring-off: #4a3f68;
+  --pc-num: #fff;
+  --pc-hp: #e2546b;
+  --pc-glow-edge: #fff8;
+  --pc-glow: #ffd16a;
+  --pc-mark-shadow: #0008;
+  --pc-fuse: #ff9ad5;
+  --pc-shelf: #120e1ccc;
+  --pc-bad: #f7d3d9;
+  --pc-good: #d4f1e9;
+  --pc-name: #e6def7;
+  --pc-pip-off: #ffffff1c;
+  --pc-pip-off-line: #8f84b5;
+  --pc-t1: #cfe9df;
+  --pc-t2: #bcd3f5;
+  --pc-t3: #e5c9f4;
+  --pc-t4: #ffd27a;
+}
 /* end of tokens */
 * { box-sizing: border-box; }
 /* The ground: a faint dot grid, as on the Toybox boards. */
@@ -360,16 +389,18 @@ button.gear { width: 44px; height: 44px; padding: 0; border-radius: 22px; border
 .hero-name .who-mark > .who { flex: 0 1 auto; }
 :root:lang(ru) .hero-name { font-size: 26px; }
 .hero-day { font-size: 15px; }
-/* The champion's five cards, fanned like a hand (the same card as everywhere). */
+/* The champion's five units, each the plain piece on a level row, its name
+ * under it (mission #1286: the fan's tilt cut the names). */
+/* main.ts heroTeam sizes the pieces, each card as wide as its piece reaches,
+ * to fit the panel; a phone may break the row 3 + 2. */
 .hero-team { margin-top: 14px; }
-.throne-hero .hero-team .slots { margin: 0 -6px; gap: 2px; }
-.hero-team .card:nth-child(1) { rotate: -9deg; translate: 0 6px; }
-.hero-team .card:nth-child(2) { rotate: -4deg; }
-.hero-team .card:nth-child(3) { translate: 0 -6px; }
-.hero-team .card:nth-child(4) { rotate: 4deg; }
-.hero-team .card:nth-child(5) { rotate: 9deg; translate: 0 6px; }
-.hero-team .card { transition: rotate 0.12s, translate 0.12s; }
-.hero-team .card:hover { rotate: 0deg; translate: 0 -8px; z-index: 1; }
+#app .throne-hero .hero-team .slots { display: flex; flex-wrap: wrap; justify-content: space-evenly; margin: 0 -10px; gap: 4px 0; }
+#app .throne-hero .hero-team .slots > .card { flex: none; padding-left: 0; padding-right: 0; }
+#app .throne-hero .hero-team .slots > .row-break { flex-basis: 100%; height: 0; }
+#app .throne-hero .hero-team .card.pcard .pcard-stage { justify-content: flex-start; padding: 0; }
+#app .throne-hero .hero-team .card.pcard .pc-nm { width: max-content; max-width: var(--nmw, none); overflow: visible; white-space: normal; text-align: center; line-height: 1.05; }
+.hero-team .card { transition: translate 0.12s; }
+.hero-team .card:hover { translate: 0 -4px; z-index: 1; }
 /* Play: the one big button, its line under it. */
 button.play-big { min-height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-width: 3px; border-radius: 38px; box-shadow: 0 7px 0 var(--outline); padding: 6px 16px; }
 button.play-big:active:not(:disabled) { translate: 0 4px; box-shadow: 0 3px 0 var(--outline); }
@@ -476,8 +507,22 @@ button.link { align-self: flex-start; border: none; background: none; color: var
 /* ui/dom.ts overlay(): a sheet over the screen. */
 .overlay { position: fixed; inset: 0; z-index: 10; background: color-mix(in srgb, var(--ground) 70%, transparent); display: flex; align-items: flex-end; justify-content: center; }
 .sheet { width: 100%; max-width: 480px; max-height: 85dvh; overflow-y: auto; background: var(--panel); border-top: 1px solid var(--you); padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
-/* A request is out (main.ts guarded): no taps until it answers. */
-#app.busy button, #app.busy .card { pointer-events: none; }
+/* A request is out (main.ts guarded): the pressed control shows it at once;
+ * a tap elsewhere waits and acts on the next screen (arena#15). */
+#app.busy { cursor: progress; }
+.pending { filter: brightness(0.85); }
+button.pending { position: relative; transform: scale(0.97); }
+button.pending::after { content: ""; position: absolute; top: 50%; right: 10px; width: 14px; height: 14px; margin-top: -7px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: pending-spin 0.7s linear infinite; }
+button.play-big.pending::after { width: 26px; height: 26px; margin-top: -13px; right: 18px; border-width: 3px; }
+/* arena#15: Fight with empty slots and gold left names the empty slots. */
+button.half-empty { flex-direction: column; line-height: 1; }
+.fight-warn { display: block; font-size: 13px; font-weight: 800; margin-top: 3px; padding: 1px 8px; border-radius: 999px; background: var(--cost); color: var(--ground); }
+/* arena#16: a louder warning: the empty line slots pulse in the same colour until filled or lit. */
+.cell.empty.want:not(.lit) .cell-well { border-color: var(--cost); border-style: dashed; color: var(--cost); animation: want-pulse 1.4s ease-in-out infinite; }
+@keyframes want-pulse { 50% { box-shadow: 0 0 10px 2px color-mix(in srgb, var(--cost) 55%, transparent); } }
+/* A tap made while a request is out waits, and shows it at once (arena#16). */
+.cell.pending { outline: 2px solid var(--you); outline-offset: 1px; }
+@keyframes pending-spin { to { transform: rotate(360deg); } }
 /* Battle viewer (slice 9, screens/battle.ts). */
 .bv-line { min-height: 112px; }
 /* R2-13: a battle card has a fixed height (emoji, name, HP bar, big PWR / HP,
@@ -859,6 +904,8 @@ button.bv-why.won { color: var(--you); border-color: color-mix(in srgb, var(--yo
 .bv-end-top .bv-word { text-align: left; font-size: 28px; }
 .bv-end-sub { font-size: 14px; line-height: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* A run's fight: the round fought, hearts and record after it, what it cost or won (R2-17 batch E). */
+/* arena#16: why I lost, one plain line under the result. */
+.bv-lost-line { font-size: 15px; font-weight: 700; line-height: 19px; color: var(--loss); margin-top: -2px; }
 .bv-end-run { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: 13px; line-height: 17px; margin-top: -4px; }
 .bv-end-run .hearts { color: var(--them); letter-spacing: 1px; }
 .bv-end-run .error { font-size: inherit; min-height: 0; }
@@ -1881,7 +1928,7 @@ button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padd
  * scrolls: the shop, its line, bench, offers and Fight sit on one screen,
  * Home puts the champion beside Play, and a long screen (the Codex, Stats,
  * the ideas) scrolls inside #app. Sheets keep their own scroll. */
-@media (orientation: landscape) and (min-width: 760px) and (max-width: 1023.98px) and (max-height: 560px) {
+@media (orientation: landscape) and (min-width: 560px) and (max-width: 1023.98px) and (max-height: 560px) {
   html, body { height: 100%; overflow: hidden; }
   body { min-height: 0; }
   #app { max-width: none; height: 100dvh; min-height: 0; padding: 8px 16px; gap: 8px; overflow-y: auto; overscroll-behavior: contain; }
@@ -1954,3 +2001,417 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 .drag-ghost { position: fixed; left: 0; top: 0; z-index: 1000; pointer-events: none; opacity: 0.9; margin: 0; box-shadow: 0 6px 18px color-mix(in srgb, var(--outline) 60%, transparent); }
 .sell-zone { position: fixed; left: 0; right: 0; bottom: 0; z-index: 999; display: flex; align-items: center; justify-content: center; min-height: 56px; background: color-mix(in srgb, var(--loss) 75%, var(--outline)); color: var(--paper); font-weight: 700; border-top: 3px dashed var(--paper); }
 .sell-zone.drop { background: var(--loss); outline: none; }
+
+/* The piece (mission #1286, slice 1, #1291): ui/piece.ts sets the sizes and
+ * places, these draw them. The design: r/arena-redesign/final/. */
+.pc { position: relative; flex: none; }
+.pc-face { position: absolute; inset: 0; border-radius: 30%; border: 3px solid var(--outline); background: radial-gradient(circle at 50% 36%, var(--pc-face-hi) 0, var(--pc-face) 55%, var(--pc-face-lo) 100%); display: grid; place-items: center; z-index: 2; overflow: hidden; }
+.pc.aw .pc-face { background: radial-gradient(circle at 50% 36%, var(--pc-face-hi) 0, var(--pc-face-aw) 55%, var(--pc-face-aw-lo) 100%); }
+.pc.fu .pc-face { background: radial-gradient(circle at 50% 36%, var(--pc-face-hi) 0, var(--pc-face-fu) 55%, var(--pc-face-fu-lo) 100%); }
+.pc-em { line-height: 1; transform: translateY(4%); font-family: system-ui, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+.pc-em2 { position: relative; width: 100%; height: 100%; }
+.pc-em2 .pc-em { position: absolute; }
+.pc-em2 .a { left: 6%; top: 6%; }
+.pc-em2 .b { right: 6%; bottom: 8%; }
+.pc-tab { position: absolute; z-index: 4; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; border: 2.5px solid var(--outline); color: var(--pc-ink); font-family: var(--font-head); white-space: nowrap; box-shadow: 0 2px 0 var(--outline); }
+.pc-tab .ti, .pc-tab .tw { line-height: 1; }
+.pc-hb { position: absolute; z-index: 5; border-radius: 50%; display: grid; place-items: center; }
+.pc-hb .core { position: relative; z-index: 1; width: 100%; height: 100%; border-radius: 50%; border: 2.5px solid var(--outline); display: grid; place-items: center; line-height: 1; }
+.pc-hb.ring::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(var(--pc-gold) 0 var(--fill), var(--pc-ring-off) var(--fill) 100%); border: 2px solid var(--outline); }
+.pc-hb.ring::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: repeating-conic-gradient(from -4deg, var(--outline) 0 8deg, transparent 8deg var(--seg)); }
+.pc-num { position: absolute; z-index: 6; border: 2px solid var(--outline); border-radius: 999px; font-family: var(--font-head); line-height: 1; color: var(--pc-ink); background: var(--paper); display: grid; place-items: center; padding: 0 3px; white-space: nowrap; }
+.pc-b { position: absolute; z-index: 5; border-radius: 50%; border: 2.5px solid var(--outline); display: grid; place-items: center; color: var(--pc-num); font-family: var(--font-head); line-height: 1; text-shadow: 0 1.5px 0 var(--outline), 1px 0 0 var(--outline), -1px 0 0 var(--outline), 0 -1px 0 var(--outline); }
+.pc-b.p { background: var(--power); }
+.pc-b.h { background: var(--pc-hp); }
+.pc-b.up { box-shadow: 0 0 0 2px var(--pc-glow-edge), 0 0 8px 2px var(--pc-glow); }
+.pc-b.low { background: var(--loss); }
+.pc-mark { position: absolute; z-index: 6; line-height: 1; font-family: system-ui, sans-serif; text-shadow: 1.5px 0 0 var(--outline), -1.5px 0 0 var(--outline), 0 1.5px 0 var(--outline), 0 -1.5px 0 var(--outline), 0 2px 3px var(--pc-mark-shadow); }
+.pc-mark.star { color: var(--pc-gold); }
+.pc-mark.fuse { color: var(--pc-fuse); }
+.pc-shelf { position: absolute; z-index: 1; left: 50%; transform: translateX(-50%); background: var(--pc-shelf); border-radius: 0 0 12px 12px; display: flex; gap: 4px; justify-content: center; align-items: flex-end; }
+.pc-st { position: relative; border-radius: 999px; border: 2px solid var(--outline); display: flex; align-items: center; justify-content: center; gap: 2px; line-height: 1; flex: none; padding: 0 5px 0 3px; }
+.pc-st i { font-family: var(--font-head); font-style: normal; line-height: 1; color: var(--pc-ink); }
+.pc-st.bad { background: var(--pc-bad); }
+.pc-st.good { background: var(--pc-good); }
+.pc-nm { position: absolute; left: 50%; transform: translateX(-50%); font-family: var(--font-head); color: var(--pc-name); white-space: nowrap; line-height: 1; letter-spacing: 0.2px; z-index: 3; }
+.pc-meta { position: absolute; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; align-items: center; white-space: nowrap; }
+.pc-pips { display: flex; gap: 3px; align-items: center; }
+.pc-pips u { width: 9px; height: 9px; border-radius: 50%; background: var(--paper); border: 1.5px solid var(--outline); }
+.pc-pips u.o { background: var(--pc-pip-off); border-color: var(--pc-pip-off-line); }
+.pc-tier { height: 19px; min-width: 22px; padding: 0 4px; border-radius: 6px; border: 2px solid var(--outline); font: 400 12px/15px var(--font-head); text-align: center; color: var(--pc-ink); }
+.pc-t1 { background: var(--pc-t1); }
+.pc-t2 { background: var(--pc-t2); }
+.pc-t3 { background: var(--pc-t3); }
+.pc-t4 { background: var(--pc-t4); }
+.pc-flag { font: 400 13px/1 var(--font-head); }
+.pc-flag.star { color: var(--awoken); }
+.pc-flag.fuse { color: var(--pc-fuse); }
+.pc-price { display: flex; align-items: center; gap: 3px; height: 20px; padding: 0 6px 0 3px; border-radius: 10px; background: var(--cost); border: 2px solid var(--outline); font: 400 13px/1 var(--font-head); color: var(--pc-ink); }
+.pc-price .coin { width: 13px; height: 13px; border-radius: 50%; background: var(--action); border: 2px solid var(--outline); }
+.pc-lock { font-size: 13px; }
+
+/* #gallery (#1291): every unit at every size, for screenshot tests. */
+#app:has(> .gallery) { max-width: none; }
+.gallery { padding: 4px 4px 48px; }
+.gallery h1 { font-size: 22px; margin-bottom: 4px; }
+.gallery h2 { font-size: 16px; color: var(--dim); margin: 22px 0 8px; }
+.gallery .g-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+.gallery .g-cell { display: grid; justify-items: center; align-content: start; padding-top: 22px; }
+.gallery .g-cell.L { width: 124px; height: 156px; }
+.gallery .g-cell.M { width: 118px; height: 140px; }
+.gallery .g-cell.S { width: 108px; height: 96px; }
+.gallery .g-cell.XS { width: 48px; height: 48px; padding-top: 4px; }
+.gallery .g-cell.with-shelf.L { width: 150px; height: 186px; }
+.gallery .g-cell.with-shelf.M { width: 150px; height: 168px; }
+.gallery .g-cell.with-shelf.S { width: 140px; height: 126px; }
+.gallery .g-unit { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; padding: 6px 0; border-top: 1.5px solid color-mix(in srgb, var(--paper) 7%, transparent); }
+.gallery .g-unit .g-name { width: 120px; flex: none; font-family: var(--font-head); padding-top: 22px; }
+.gallery .g-unit .g-name small { display: block; font: 500 12px/1.3 var(--font-body); color: var(--dim); margin-top: 3px; }
+@media (max-width: 560px) { .gallery .g-unit .g-name { width: 100%; padding-top: 6px; } }
+.gallery .g-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 4px; }
+.gallery .g-tabs a { color: var(--action); font-family: var(--font-head); }
+
+/* The shop with pieces (mission #1286 slice 2, #1293; r/arena-redesign/final/
+ * shop-800 and shop-phone). Each slot and offer is a cell holding a piece
+ * (ui/piece.ts); main.ts sets the cell's height for its piece (--s). Tap-tap
+ * and drag light the slots a unit or an offer can go to: teal to place,
+ * gold on the twin it merges into. */
+#app[data-screen="shop"] .slots:has(> .cell) { display: grid; grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); gap: 2px; align-items: start; margin: 0; }
+#app[data-screen="shop"] .slots.bench-row:has(> .cell) { --n: 3; }
+.cell.bare .pc-meta { display: none; }
+#app[data-screen="shop"] .slots.bench-row > .bench-label { grid-column: 1 / -1; justify-content: flex-start; flex-direction: row; gap: 10px; align-items: baseline; font: 400 15px/1 var(--font-head); letter-spacing: 0.5px; text-transform: uppercase; color: var(--dim); }
+#app[data-screen="shop"] .slots.bench-row > .bench-label span:first-child { color: var(--paper); opacity: 0.75; }
+.cell { position: relative; isolation: isolate; display: flex; justify-content: center; align-items: flex-start; padding-top: 15px; min-width: 0; border-radius: 16px; cursor: pointer; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+.cell:focus-visible { outline: 3px solid var(--action); outline-offset: -2px; }
+.cell .cell-well { width: var(--s); height: var(--s); box-sizing: border-box; border: 2.5px dashed color-mix(in srgb, var(--paper) 22%, transparent); border-radius: 30%; display: grid; place-items: center; font: 400 14px/1 var(--font-head); color: var(--dim); }
+.cell.empty { cursor: default; }
+.cell.selected { background: color-mix(in srgb, var(--action) 16%, transparent); box-shadow: inset 0 0 0 2.5px var(--action); }
+.cell.selected .pc-face { box-shadow: 0 0 0 3px var(--action), 0 0 16px 4px color-mix(in srgb, var(--action) 55%, transparent) !important; }
+.cell.poor .pc { opacity: 0.5; filter: saturate(0.6); }
+/* Lit: where the unit or offer in hand can go (tap-tap and drag alike). */
+.cell.lit .cell-well, #app.drag-on .cell.empty.drop-ok .cell-well { border-color: var(--you); border-style: dashed; background: color-mix(in srgb, var(--you) 14%, transparent); box-shadow: 0 0 12px 2px color-mix(in srgb, var(--you) 45%, transparent); color: var(--you); cursor: pointer; }
+.cell.lit:not(.empty), #app.drag-on .cell:not(.empty).drop-ok { box-shadow: inset 0 0 0 2.5px color-mix(in srgb, var(--you) 75%, transparent); }
+.cell.lit-twin, #app.drag-on .cell.lit-twin { background: color-mix(in srgb, var(--pc-gold) 16%, transparent); box-shadow: inset 0 0 0 3px var(--pc-gold); }
+.cell.lit-twin .pc-face { box-shadow: 0 0 0 3px var(--pc-gold), 0 0 16px 4px color-mix(in srgb, var(--pc-gold) 55%, transparent) !important; }
+.cell .lit-tag { position: absolute; z-index: 8; left: 50%; bottom: 2px; transform: translateX(-50%); white-space: nowrap; padding: 1px 7px; border-radius: 999px; background: var(--pc-gold); border: 2px solid var(--outline); font: 400 12px/1.2 var(--font-head); color: var(--pc-ink); }
+#app.drag-on .cell.drop { box-shadow: inset 0 0 0 3px var(--you); background: color-mix(in srgb, var(--you) 18%, transparent); }
+#app.drag-on .cell.empty.drop .cell-well { border-style: solid; }
+/* Tap feedback and a generous hit area on the shop's offers (CrazyGames audit, arena#13): the touch target reaches past the card's edge. */
+.cell.offer::before { content: ""; position: absolute; inset: -4px -3px -6px; }
+.cell.offer.tapped { animation: tap-pulse 0.28s ease-out; }
+@keyframes tap-pulse { 0% { transform: scale(1); } 40% { transform: scale(0.94); } 100% { transform: scale(1); } }
+.shop-head .nudge, .hint.nudge { animation: hint-blink 0.7s ease-out; }
+@keyframes hint-blink { 0%, 50% { background: color-mix(in srgb, var(--action) 45%, transparent); } 100% { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { .cell.offer.tapped, .shop-head .nudge, .hint.nudge { animation: none; } }
+#app[data-screen="shop"] .cell.draggable { touch-action: none; cursor: grab; }
+#app[data-screen="shop"] .cell.dragging { opacity: 0.35; }
+.cell.drag-ghost { background: none; box-shadow: none; transform-origin: center; }
+.cell .fuse-mark { position: absolute; z-index: 9; top: 0; right: 2px; }
+.cell .fuse-tag { position: absolute; z-index: 9; left: 50%; bottom: 0; transform: translateX(-50%); white-space: nowrap; font-size: 11px; }
+#app[data-screen="shop"] .run-panel { border-radius: 18px; }
+#app[data-screen="shop"] .run-panel > .label, #app[data-screen="shop"] .line-head .label, #app[data-screen="shop"] .shop-head .label { font: 400 15px/1 var(--font-head); letter-spacing: 0.5px; text-transform: uppercase; opacity: 0.8; }
+#app[data-screen="shop"] .shop-head { gap: 12px; align-items: baseline; flex-wrap: nowrap; min-width: 0; }
+#app[data-screen="shop"] .shop-head .how { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+/* The hint of the moment takes the how line's place (#1293 reopened): one line, it never moves the layout. */
+#app[data-screen="shop"] .shop-head .how.on { color: var(--you); font-weight: 700; }
+/* The sell zone, while a unit is dragged: a dashed red strip along the foot. */
+.sell-zone { min-height: 64px; margin: 0 12px 8px; border: 3px dashed var(--paper); border-radius: 18px; font: 400 20px/1 var(--font-head); background: color-mix(in srgb, var(--loss) 70%, var(--outline)); }
+/* Who's next, in full (no ellipsis): its name never shrinks. */
+#app[data-screen="shop"] .next-opp { flex: none; white-space: nowrap; color: var(--them); font-family: var(--font-head); }
+#app[data-screen="shop"] .next-opp .who { max-width: none; overflow: visible; }
+#app[data-screen="shop"] .hud .hud-gap { flex: 1 1 0; min-width: 0; }
+
+/* Phone and tablet column (below 1024 px, not the short landscape). */
+@media (max-width: 1023.98px) {
+  #app[data-screen="shop"] .opp { justify-content: space-between; gap: 10px; flex-wrap: nowrap; }
+  #app[data-screen="shop"] .opp .pin { flex: 0 1 auto; min-width: 0; }
+  #app[data-screen="shop"] .bench-panel .slots.bench-row { margin-top: 0; }
+  #app[data-screen="shop"] [data-testid="offers"]:has(> .cell) { --n: 3; row-gap: 0; margin-top: 0; }
+  /* Reroll and Fight stay in view at the foot while the shop scrolls (a 360×640 phone);
+   * whatever scrolls into view stops above them. */
+  html:has(#app[data-screen="shop"]) { scroll-padding-bottom: 150px; }
+  #app[data-screen="shop"] .shop-side { display: flex; flex-direction: column; gap: 8px; position: sticky; bottom: 0; z-index: 3; margin: 0 -4px; padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); background: var(--ground); }
+  #app[data-screen="shop"] .shop-side .shop-foot button { min-height: 56px; }
+}
+/* The short landscape (800×450, 821×462): HUD across the top; the line and
+ * the bench; the shop and a side column (the selected unit's buttons, the
+ * champion, Reroll over Fight). Nothing scrolls. */
+@media (orientation: landscape) and (min-width: 560px) and (max-width: 1023.98px) and (max-height: 560px) {
+  #app[data-screen="shop"] {
+    padding: 6px 12px 8px; column-gap: 10px; row-gap: 6px;
+    grid-template-columns: minmax(0, 1fr) 220px;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "hud hud" "line bench" "hint hint" "shop side" "err err";
+  }
+  #app[data-screen="shop"] .hud { gap: 10px; font-size: 17px; }
+  #app[data-screen="shop"] .hud .menu-btn { min-height: 36px; min-width: 44px; }
+  #app[data-screen="shop"] .next-opp { font-size: 17px; padding: 4px 12px; border: var(--bw) solid var(--outline); border-radius: 999px; background: color-mix(in srgb, var(--them) 14%, var(--panel)); }
+  #app[data-screen="shop"] .line-panel { grid-area: line; padding: 6px 8px 4px; }
+  #app[data-screen="shop"] .bench-panel { grid-area: bench; padding: 6px 8px 4px; }
+  #app[data-screen="shop"] .hint-slot { grid-area: hint; }
+  #app[data-screen="shop"] .hint-slot:empty { display: none; }
+  #app[data-screen="shop"] .shop-panel { grid-area: shop; overflow: hidden; padding: 6px 8px 4px; }
+  #app[data-screen="shop"] [data-testid="offers"]:has(> .cell) { --n: 6; grid-auto-rows: auto; flex: none; gap: 2px; }
+  #app[data-screen="shop"] .shop-side { grid-area: side; display: flex; flex-direction: column; gap: 6px; min-height: 0; position: static; margin: 0; padding: 0; background: none; }
+  #app[data-screen="shop"] .shop-side .actions { flex-wrap: wrap; gap: 4px; }
+  #app[data-screen="shop"] .shop-side .actions button { min-height: 34px; padding: 0 8px; font-size: 13px; flex: 1 0 auto; }
+  #app[data-screen="shop"] .shop-side .pin .pin-btn { max-width: 100%; min-height: 34px; font-size: 13px; }
+  /* A unit in hand: its buttons take the champion's place; moving is tap-tap, drag or ← → here. */
+  #app[data-screen="shop"] .shop-side:has(.actions > *) .pin { display: none; }
+  #app[data-screen="shop"] .shop-side .actions [data-testid="move-left"], #app[data-screen="shop"] .shop-side .actions [data-testid="move-right"] { display: none; }
+  #app[data-screen="shop"] .shop-side .actions button { flex: 1 1 0; min-width: 0; padding: 0 4px; }
+  #app[data-screen="shop"] .shop-side .shop-foot { flex: 1 1 auto; flex-direction: column; align-items: stretch; gap: 6px; }
+  #app[data-screen="shop"] .shop-side .shop-foot .reroll-btn { min-height: 44px; }
+  #app[data-screen="shop"] .shop-side .shop-foot button.grow { flex: 1 1 auto; min-height: 56px; font-size: 26px; }
+  #app[data-screen="shop"] .line-head .label { font-size: 14px; }
+  #app[data-screen="shop"] .run-panel .line-head, #app[data-screen="shop"] .run-panel .line-head button.small { min-height: 30px; font-size: 13px; }
+}
+/* Desktop: the offers spread over one row, the bench keeps room for three pieces. */
+@media (min-width: 1024px) {
+  #app[data-screen="shop"] [data-testid="offers"]:has(> .cell) { grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); row-gap: 8px; }
+  #app[data-screen="shop"] .bench-panel { min-width: 330px; }
+  #app[data-screen="shop"] .slots.bench-row:has(> .cell) { column-gap: 6px; }
+}
+/* Battle in the new layout (#1294, mission #1286; design r/arena-redesign/final/
+ * battle-800.png and battle-phone.png). Landscape: their line on top, yours
+ * below, the gap between holds only the arrows and the result tags; the rail
+ * on the right holds the play-by-play (the event on screen big, the last few
+ * small) and the controls; the turn scrubber runs under the board. The phone
+ * (portrait): two columns, theirs left and yours right, fronts at the top,
+ * and the rail at the foot. Cards are the shared piece (ui/piece.ts). */
+#app[data-screen="battle"] .bv-screen.bv-v3 { --rail: 216px; display: grid; grid-template-columns: minmax(0, 1fr) var(--rail); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "hud hud" "board rail" "tl rail"; gap: 4px 12px; }
+#app[data-screen="battle"] .bv-v3 > .hud { grid-area: hud; min-height: 32px; }
+#app[data-screen="battle"] .bv-v3 > .bv-board { grid-area: board; min-height: 0; display: grid; grid-template-columns: 22px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(34px, 0.42fr) minmax(0, 1fr); grid-template-areas: "lthem enemy" "gap gap" "lyou mine"; column-gap: 6px; row-gap: 0; align-content: stretch; }
+#app[data-screen="battle"] .bv-v3 > .bv-tl { grid-area: tl; display: block; }
+#app[data-screen="battle"] .bv-v3 > .bv-rail { grid-area: rail; min-height: 0; display: flex; flex-direction: column; gap: 6px; padding: 8px; margin-bottom: 4px; border: var(--bw, 2px) solid var(--outline); border-radius: 14px; background: color-mix(in srgb, var(--panel) 70%, var(--ground)); overflow: hidden; }
+/* The side labels: a slim upright pill beside each line. */
+#app[data-screen="battle"] .bv-v3 .bv-lab-them, #app[data-screen="battle"] .bv-v3 .bv-lab-you { display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; rotate: 180deg; margin: 10px 0; padding: 0; border-radius: 11px; font-size: 11px; line-height: 1; letter-spacing: 0.08em; white-space: nowrap; overflow: hidden; color: var(--ground); text-align: center; }
+#app[data-screen="battle"] .bv-v3 .bv-lab-them { grid-area: lthem; background: var(--them); }
+#app[data-screen="battle"] .bv-v3 .bv-lab-you { grid-area: lyou; background: var(--you); }
+#app[data-screen="battle"] .bv-v3 .bv-lab-them > *, #app[data-screen="battle"] .bv-v3 .bv-lab-you > * { display: none; }
+#app[data-screen="battle"] .bv-v3 .bv-gap { grid-area: gap; }
+#app[data-screen="battle"] .bv-v3 .bv-clash { display: none; }
+#app[data-screen="battle"] .bv-v3 .bv-line { display: grid; flex-direction: row; gap: 4px; margin: 0; padding: 0; min-height: 0; align-items: center; justify-items: center; }
+#app[data-screen="battle"] .bv-v3 .bv-line.theirs { grid-area: enemy; }
+#app[data-screen="battle"] .bv-v3 .bv-line.mine { grid-area: mine; }
+#app[data-screen="battle"] .bv-v3 .bv-slot { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+/* A card is the piece in a box that holds its tab above and its rim, shelf and name below. */
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc { position: relative; height: auto; min-height: 0; width: auto; padding: 0; margin: 0; display: block; background: none; border: 0; box-shadow: none; clip-path: none; overflow: visible; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc { box-sizing: border-box; display: flex; justify-content: center; align-items: flex-start; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc > .pc { margin: 0; flex: none; }
+/* The scrubber under the board: one box per turn, compact. */
+#app[data-screen="battle"] .bv-v3 .bv-tl-track { position: relative; display: flex; gap: 2px; cursor: pointer; touch-action: none; user-select: none; }
+#app[data-screen="battle"] .bv-v3 .bv-tl-turn { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+#app[data-screen="battle"] .bv-v3 .bv-tl-box { height: 18px; display: flex; align-items: center; justify-content: center; gap: 1px; overflow: hidden; border: 1.5px solid var(--outline); border-radius: 5px; background: color-mix(in srgb, var(--panel) 60%, var(--ground)); }
+#app[data-screen="battle"] .bv-v3 .bv-tl-box .ic { width: 11px; height: 11px; }
+#app[data-screen="battle"] .bv-v3 .bv-tl-turn.past .bv-tl-box { background: color-mix(in srgb, var(--action) 45%, var(--ground)); }
+#app[data-screen="battle"] .bv-v3 .bv-tl-turn.on .bv-tl-box { border-color: var(--action); background: color-mix(in srgb, var(--action) 30%, var(--ground)); }
+#app[data-screen="battle"] .bv-v3 .bv-tl-mark { display: inline-flex; flex: none; }
+#app[data-screen="battle"] .bv-v3 .bv-tl-mark.ahead, #app[data-screen="battle"] .bv-v3 .bv-tl-more.ahead { visibility: hidden; }
+#app[data-screen="battle"] .bv-v3 .bv-tl-more { flex: none; font-size: 10px; line-height: 12px; }
+#app[data-screen="battle"] .bv-v3 .bv-tl-n { height: 11px; overflow: hidden; white-space: nowrap; font-size: 9px; line-height: 11px; text-align: center; }
+#app[data-screen="battle"] .bv-v3 .bv-tl-turn.on .bv-tl-n { color: var(--action); }
+#app[data-screen="battle"] .bv-v3 .bv-tl-head { position: absolute; top: -2px; width: 2px; height: 22px; margin-left: -1px; background: var(--action); box-shadow: 0 0 6px var(--action); pointer-events: none; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.acting { transform: translateY(-2px); background: none; box-shadow: none; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.acting > .pc > .pc-face { outline: 3px solid var(--action); outline-offset: 2px; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.dead { opacity: 0.42; filter: grayscale(1); transform: none; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.dead.bv-dying { filter: none; opacity: 1; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.silenced .pc-em { filter: grayscale(1); }
+#app[data-screen="battle"] .bv-v3 .pc-b.h.hurt { color: var(--pc-num); background: var(--k-dmg); }
+/* The when tab lights up when its rule fires. */
+#app[data-screen="battle"] .bv-v3 .pc-tab.bv-fired { animation: bv-tab-fired calc(0.6s / var(--bv-sp, 1)) ease-out calc(var(--bv-ftt, 0s) / var(--bv-sp, 1)) both; }
+#app[data-screen="battle"] .bv-v3 .pc-tab.bv-fired.still { animation: none; box-shadow: 0 0 0 3px var(--action), 0 0 12px var(--action); scale: 1.12; }
+@keyframes bv-tab-fired { 0% { box-shadow: 0 0 0 0 var(--action); scale: 1; } 25% { box-shadow: 0 0 0 4px var(--action), 0 0 14px var(--action); scale: 1.18; } 100% { box-shadow: 0 0 0 3px var(--action); scale: 1.08; } }
+@media (prefers-reduced-motion: reduce) { #app[data-screen="battle"] .bv-v3 .pc-tab.bv-fired { animation: none; box-shadow: 0 0 0 3px var(--action); } }
+/* Result tags sit in the gap: under their cards, over yours. */
+#app[data-screen="battle"] .bv-v3 .bv-changes { left: -12px; right: -12px; height: auto; justify-content: center; z-index: 3; pointer-events: none; }
+#app[data-screen="battle"] .bv-v3 .bv-changes > * { pointer-events: auto; }
+#app[data-screen="battle"] .bv-v3 .bv-line.theirs .bv-changes { top: calc(100% + 2px); bottom: auto; }
+#app[data-screen="battle"] .bv-v3 .bv-line.mine .bv-changes { top: auto; bottom: calc(100% + 2px); }
+#app[data-screen="battle"] .bv-v3 button.bv-badge { display: none; }
+/* The rail: the event on screen big, the last few small, the ledger, the controls. */
+#app[data-screen="battle"] .bv-v3 button.bv-caption { flex: none; width: 100%; height: 96px; min-height: 96px; max-height: 96px; translate: none; margin: 0; padding: 8px 10px; align-items: flex-start; border: 3px solid var(--action); border-radius: 12px; background: var(--pc-face-hi); color: var(--pc-ink); text-shadow: none; font-size: 15px; line-height: 1.25; white-space: normal; overflow: hidden; }
+#app[data-screen="battle"] .bv-v3 button.bv-caption * { text-shadow: none; }
+#app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line { flex-wrap: wrap; white-space: normal; row-gap: 2px; }
+#app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line > * { flex: none !important; width: auto !important; max-width: 100%; white-space: normal; overflow: visible; text-overflow: clip; }
+#app[data-screen="battle"] .bv-v3 .bv-recent { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 1.25; }
+#app[data-screen="battle"] .bv-v3 .bv-recent-row { opacity: 0.85; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+#app[data-screen="battle"] .bv-v3 .bv-recent-row:nth-child(n+3) { opacity: 0.6; }
+#app[data-screen="battle"] .bv-v3 .bv-rail > .bv-below { flex: none; max-height: 30%; overflow: hidden; font-size: 12px; }
+#app[data-screen="battle"] .bv-v3 .bv-rail > .bv-below .bv-ledger { min-height: 0; padding: 4px 6px; }
+#app[data-screen="battle"] .bv-v3 .bv-controls { flex: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+#app[data-screen="battle"] .bv-v3 .bv-controls button { min-height: 34px; min-width: 0; padding: 0 2px; }
+#app[data-screen="battle"] .bv-v3 .bv-controls .bv-keys { display: none; }
+/* Desktop: a wider rail; the inspector column stays to its right. */
+@media (min-width: 1024px) {
+  #app[data-screen="battle"] .bv-screen.bv-v3 { --rail: 260px; height: 100dvh; padding: 0 16px 12px; }
+  #app[data-screen="battle"] .bv-v3 > .hud { margin: 0 -16px; padding: 0 16px; min-height: 48px; }
+  #app[data-screen="battle"] .bv-v3 button.bv-caption { font-size: 18px; }
+  #app[data-screen="battle"] .bv-v3 .bv-recent { font-size: 14px; }
+  #app[data-screen="battle"] .bv-v3 .bv-controls button { min-height: 44px; }
+}
+/* The phone, upright: two columns (theirs left, yours right), fronts on top, the rail at the foot. */
+@media (max-width: 599.98px) and (orientation: portrait) {
+  #app[data-screen="battle"] .bv-screen.bv-v3 { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "hud" "board" "rail"; }
+  #app[data-screen="battle"] .bv-v3 > .bv-tl { display: none; }
+  #app[data-screen="battle"] .bv-v3 > .bv-board { grid-template-columns: minmax(0, 1fr) minmax(40px, 0.35fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "lthem . lyou" "enemy gap mine"; }
+  #app[data-screen="battle"] .bv-v3 .bv-lab-them, #app[data-screen="battle"] .bv-v3 .bv-lab-you { writing-mode: horizontal-tb; rotate: none; margin: 0 8px 4px; padding: 4px 0; font-size: 12px; }
+  #app[data-screen="battle"] .bv-v3 .bv-line { grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: repeat(var(--n, 5), minmax(0, 1fr)); align-content: stretch; }
+  #app[data-screen="battle"] .bv-v3 .bv-line.theirs .bv-changes { top: 20px; bottom: auto; left: calc(100% - 8px); right: auto; width: max-content; justify-content: flex-start; }
+  #app[data-screen="battle"] .bv-v3 .bv-line.mine .bv-changes { top: 20px; bottom: auto; right: calc(100% - 8px); left: auto; width: max-content; justify-content: flex-end; }
+  #app[data-screen="battle"] .bv-v3 > .bv-rail { flex-direction: column; margin: 0; }
+  #app[data-screen="battle"] .bv-v3 .bv-recent, #app[data-screen="battle"] .bv-v3 .bv-rail > .bv-below { display: none; }
+  #app[data-screen="battle"] .bv-v3 button.bv-caption { height: 76px; min-height: 76px; max-height: 76px; }
+  #app[data-screen="battle"] .bv-v3 .bv-controls { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  #app[data-screen="battle"] .bv-v3 .bv-controls button { min-height: 44px; }
+}
+/* The ledger in the rail shows only a chain's Skip and a turn's bottom line. */
+#app[data-screen="battle"] .bv-v3 .bv-ledger-head:not(:has(button)) { display: none; }
+#app[data-screen="battle"] .bv-v3 .bv-rail > .bv-below:not(:has(button)):has(.bv-ledger-foot:empty) { display: none; }
+@media (max-width: 599.98px) and (orientation: portrait) {
+  #app[data-screen="battle"] .bv-v3 .bv-line.theirs .bv-changes, #app[data-screen="battle"] .bv-v3 .bv-line.mine .bv-changes { top: auto; bottom: 0; }
+}
+@media (max-width: 379.98px) and (orientation: portrait) {
+  #app[data-screen="battle"] .bv-v3 button.bv-caption { font-size: 13px; line-height: 1.2; padding: 6px 8px; }
+}
+/* An arrow lands on the middle of a piece: its result chip sits to the arrow's left, never over it. */
+@media not ((max-width: 599.98px) and (orientation: portrait)) {
+  #app[data-screen="battle"] .bv-v3 .bv-line .bv-changes { left: -40px; right: calc(50% + 6px); justify-content: flex-end; }
+}
+/* Check of #1286 (#1294 reopened). One result tag per event, at the arrow:
+ * no running totals and no floating numbers over the pieces. */
+#app[data-screen="battle"]:has(.bv-v3) .bv-runs, #app[data-screen="battle"]:has(.bv-v3) .bv-fxnums { display: none; }
+/* The event card is sized to its text: the acting unit's when tab, then one
+ * plain sentence that wraps; nothing truncates. */
+#app[data-screen="battle"] .bv-v3 button.bv-caption { height: auto; min-height: 0; max-height: none; overflow: visible; }
+#app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+#app[data-screen="battle"] .bv-v3 .bv-cap-when { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px 1px 6px; border: 2px solid var(--outline); border-radius: 9px; color: var(--pc-ink); font-family: var(--font-head); font-size: 13px; line-height: 1.2; white-space: nowrap; }
+#app[data-screen="battle"] .bv-v3 .bv-rail-line { display: block; white-space: normal; overflow-wrap: anywhere; }
+#app[data-screen="battle"] .bv-v3 .bv-recent-row { display: block; -webkit-line-clamp: none; overflow: visible; flex: none; }
+#app[data-screen="battle"] .bv-v3 .bv-ledger-foot, #app[data-screen="battle"] .bv-v3 .bv-turn-line { white-space: normal; overflow: visible; text-overflow: clip; }
+@media (max-width: 599.98px) and (orientation: portrait) {
+  #app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  #app[data-screen="battle"] .bv-v3 button.bv-caption { min-height: 56px; }
+}
+/* The result tag: the event's change, at the arrow, shown while playing too. */
+#app[data-screen="battle"] .bv-v3 .bv-line .bv-pill { visibility: visible; height: 26px; line-height: 22px; padding: 0 8px; border: 2px solid var(--outline); border-radius: 10px; background: color-mix(in srgb, var(--action) 45%, var(--pc-face-hi)); color: var(--pc-ink); font-family: var(--font-head); font-size: 15px; box-shadow: 0 2px 0 var(--outline); overflow: visible; text-overflow: clip; }
+#app[data-screen="battle"] .bv-v3 .bv-line .bv-pill.two { height: auto; line-height: 1.15; padding: 2px 8px; }
+#app[data-screen="battle"] .bv-v3 .bv-line .bv-pill .bv-l.bv-dup { display: inline; }
+#app[data-screen="battle"] .bv-v3 .bv-line .bv-pill * { color: var(--pc-ink); }
+/* A hit flashes the face, not the piece's whole box (it drew a dark block under the piece). */
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.bv-flash-hit::after { content: none; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.bv-flash-hit > .pc > .pc-face { animation: bv-face-flash calc(0.4s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
+@keyframes bv-face-flash { from { filter: drop-shadow(0 0 8px var(--k-dmg)) brightness(1.25); } to { filter: none; } }
+/* Landscape: the lines face each other across the gap; spare height goes to the outer edges. */
+@media not ((max-width: 599.98px) and (orientation: portrait)) {
+  #app[data-screen="battle"] .bv-v3 .bv-line.theirs { align-items: end; }
+  #app[data-screen="battle"] .bv-v3 .bv-line.mine { align-items: start; }
+}
+/* The phone's event card holds still (its box never moves the board): the when tab left, the sentence beside it on up to three lines. */
+@media (max-width: 599.98px) and (orientation: portrait) {
+  #app[data-screen="battle"] .bv-v3 button.bv-caption { height: 76px; min-height: 76px; max-height: 76px; overflow: hidden; font-size: 14px; line-height: 1.2; align-items: center; }
+  #app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line { flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 8px; }
+  #app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line > .bv-rail-line { flex: 1 1 auto !important; min-width: 0; }
+  #app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line > b { flex: none !important; }
+}
+/* The phone: a result tag stands in the gap past the rim's discs, under the arrow, never on a face. */
+@media (max-width: 599.98px) and (orientation: portrait) {
+  #app[data-screen="battle"] .bv-v3 .bv-line.theirs .bv-changes { left: calc(100% + 14px); right: auto; }
+  #app[data-screen="battle"] .bv-v3 .bv-line.mine .bv-changes { right: calc(100% + 14px); left: auto; }
+}
+
+/* The XL detail (mission #1286, slice 4, detail-800.png): the piece big on the
+ * left with its shelf, the name / rule in words / sleeping vs awoken / what is
+ * on it now on the right. A phone stacks them, the piece centred on top. */
+.sheet-xl { container-type: inline-size; min-width: 0; }
+.sheet-xl-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.sheet-xl .sheet-hero { display: flex; justify-content: center; padding: 22px 16px 8px; }
+.sheet-xl .sheet-hero .pc { flex: none; }
+.sheet-xl .sheet-hero .pc-nm { display: none; }
+.sheet-xl .sheet-hero:has(.pc-shelf) { padding-bottom: 40px; }
+.sheet-xl .sheet-body { min-width: 0; gap: 8px; }
+.sheet-xl .sheet-portrait { display: none; }
+.sheet-xl .sheet-name { align-items: center; gap: 8px; flex-wrap: wrap; }
+.sheet-xl .sheet-name h2 { font-size: 24px; }
+.sheet-pips { display: inline-flex; gap: 3px; align-items: center; }
+.sheet-pips u { width: 10px; height: 10px; border-radius: 50%; background: var(--paper); border: 1.5px solid var(--outline); }
+.sheet-pips u.o { background: var(--pc-pip-off); border-color: var(--pc-pip-off-line); }
+.sheet-xl .sheet-stats { display: none; }
+.sheet-xl .sheet-stats:has(+ .dim), .sheet-xl div.num[data-testid="sheet-stats"]:not(.sheet-stats) { display: block; }
+.sheet-xl .sheet-rule-head { margin-top: 2px; }
+.sheet-xl .sheet-form { border: 0; padding: 0; font-size: 17px; line-height: 1.35; font-weight: 600; }
+.sheet-xl .sheet-form.other { border-left: 3px solid var(--awoken); padding-left: 10px; }
+.sheet-xl .sheet-form.other .label { color: var(--awoken); }
+.sheet-xl button.see-awoken { align-self: flex-start; border: 0; background: none; padding: 2px 0; min-height: 0; color: var(--pc-gold); font-weight: 700; box-shadow: none; }
+.sheet-now { gap: 6px; margin-top: 4px; }
+.sheet-now-row { display: flex; align-items: center; gap: 8px; line-height: 1.25; }
+.sheet-now-chip { flex: none; display: inline-flex; align-items: center; gap: 4px; min-width: 52px; height: 28px; padding: 0 8px; border-radius: 14px; border: 2px solid var(--outline); background: var(--pc-good); color: var(--pc-ink); font-size: 15px; }
+.sheet-now-chip.bad { background: var(--pc-bad); }
+.sheet-now-chip b { font: 400 15px/1 var(--font-head); margin-left: auto; }
+@container (min-width: 520px) {
+  .sheet-xl-grid { grid-template-columns: auto minmax(0, 1fr); column-gap: 28px; align-items: start; }
+  .sheet-xl .sheet-hero { padding: 26px 22px 10px; position: sticky; top: 0; }
+  .sheet-xl .sheet-hero:has(.pc-shelf) { padding-bottom: 46px; }
+  .sheet-xl .sheet-name h2 { font-size: 30px; }
+}
+@media (max-height: 560px) {
+  .sheet-xl .sheet-name h2 { font-size: 24px; }
+  .sheet-xl .sheet-form { font-size: 15px; }
+  .sheet-xl-grid { column-gap: 18px; }
+}
+
+/* The card as the piece (slice 4): Codex, gift, fusion preview, vote, stats,
+ * a team. The piece stands in the card's middle, its tab and rim numbers
+ * inside the card; the tier and the old footer's extras sit below. */
+#app .card.pcard, .card.pcard { isolation: isolate; height: auto; min-height: 0; padding: 18px 4px 6px; gap: 4px; justify-content: flex-start; overflow: visible; background: transparent; border-color: transparent; box-shadow: none; color: var(--paper); --text: var(--paper); }
+#app .card.pcard.inspected, #app .card.pcard.selected, .gift-choice.inspected .card.pcard { background: color-mix(in srgb, var(--you) 14%, transparent); border-color: var(--you); }
+.card.pcard:hover { background: color-mix(in srgb, var(--paper) 6%, transparent); }
+.card.pcard .pcard-stage { display: flex; justify-content: center; width: 100%; padding: 0 12px; height: 96px; }
+.card.pcard .pcard-stage .pc { flex: none; }
+.card.pcard .pc-nm { max-width: 112px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card.pcard .foot { display: flex; gap: 4px; align-items: center; justify-content: center; min-height: 0; flex-wrap: wrap; }
+.card.pcard .foot:empty { display: none; }
+.card.pcard .ver { font-size: 11px; color: var(--muted); }
+.card.pcard .by-mark { position: absolute; top: 2px; left: 4px; }
+.card.pcard .new-badge { position: static; }
+@media (max-width: 599.98px) {
+  #app .card.pcard, .card.pcard { padding: 12px 0 4px; }
+  .card.pcard .pcard-stage { height: 76px; padding: 0 6px; }
+  .card.pcard .pc-nm { max-width: 64px; }
+}
+/* On a light panel (the champion's pink) the name reads dark. */
+.champion .card.pcard .pc-nm, .champion .card.pcard .foot { color: var(--outline); }
+/* A unit's detail opens wide enough for its two columns (800×450 included). */
+@media (min-width: 600px) {
+  .sheet:has(> [data-testid="unit-sheet"]), .sheet:has(> * > [data-testid="unit-sheet"]) { max-width: 760px; }
+}
+/* A tap on an offer you can't buy: the card answers with a nudge (the reason shows in the error line). */
+.cell.offer.nudge { animation: bv-shake 0.4s ease-out; }
+
+/* A bought offer leaves its slot empty, so the others stay put (CrazyGames audit, arena#14). */
+.cell.offer-gap { border: 2px dashed color-mix(in srgb, var(--outline) 35%, transparent); border-radius: 14px; background: color-mix(in srgb, var(--panel) 60%, transparent); pointer-events: none; }
+
+/* The result card: the next step is the one big button, Replay and Why are small and quiet (CrazyGames audit, arena#14). */
+.bv-end-actions { flex-wrap: wrap; align-items: stretch; }
+.bv-end-actions button[data-testid="battle-done"] { order: 1; flex: 1 1 100%; min-height: 60px; font-size: 24px; letter-spacing: 0.04em; text-transform: uppercase; box-shadow: 0 5px 0 var(--outline); }
+.bv-end-actions button:not([data-testid="battle-done"]) { order: 2; flex: 1 1 0; min-height: 36px; font-size: 13px; font-weight: 500; opacity: 0.85; box-shadow: none; background: transparent; }
+@media (orientation: landscape) and (max-height: 560px) {
+  .bv-end-actions button[data-testid="battle-done"] { order: 2; flex: 2 1 0; min-height: 52px; font-size: 22px; }
+  .bv-end-actions button:not([data-testid="battle-done"]) { order: 1; flex: 0 1 auto; }
+  #app[data-screen="battle"] .bv-end-actions button[data-testid="battle-done"] { margin-left: 0; min-width: 0; }
+}
+/* Phone landscape under 760 px wide (667×375): the same layout, a narrower side column (arena#14). */
+@media (orientation: landscape) and (min-width: 560px) and (max-width: 759.98px) and (max-height: 560px) {
+  #app[data-screen="shop"] { grid-template-columns: minmax(0, 1fr) 168px; padding: 4px 8px 6px; column-gap: 6px; row-gap: 4px; }
+  #app[data-screen="shop"] .hud { font-size: 15px; gap: 6px; }
+  #app[data-screen="shop"] .next-opp { font-size: 14px; padding: 2px 8px; }
+  /* Home (arena#15): a narrower side column and a tighter champion card, so its five fit one row and nothing clips. */
+  #app[data-screen="home"] { grid-template-columns: minmax(0, 1fr) minmax(0, 224px); column-gap: 10px; row-gap: 4px; padding: 6px 10px; }
+  #app[data-screen="home"] .throne-top h1 { font-size: 26px; }
+  #app[data-screen="home"] .throne-hero { padding: 10px 12px 10px; margin-top: 8px; gap: 2px; }
+  #app[data-screen="home"] .hero-name { font-size: 22px; }
+  #app[data-screen="home"] .hero-day { font-size: 13px; }
+  #app[data-screen="home"] .hero-team { margin-top: 4px; }
+  #app[data-screen="home"] .play-big .play-main { font-size: 30px; }
+  #app[data-screen="home"] .throne-nav button { font-size: 16px; padding-left: 4px; padding-right: 4px; min-width: 0; }
+}

@@ -63,18 +63,18 @@ const watch = (boxes) => {
         if (!a || !b || a.some((x, i) => Math.abs(x - b[i]) > 0.6)) L.moved.push({ box: k, was: a, now: b, at: L.frames, t: Math.round(performance.now()) });
       }
     }
-    // The strip is one line: its text's height is its line's.
+    // The caption sits in the rail (#1294): it may wrap, but its words fit its fixed box.
     const strip = document.querySelector(boxes.strip);
     if (strip) {
       const line = strip.querySelector(".bv-strip-line");
-      if (line && line.scrollWidth > line.clientWidth + 1 && getComputedStyle(line).whiteSpace !== "nowrap") L.wrapped++;
-      if (line && line.getBoundingClientRect().height > 30) L.wrapped++;
+      if (line && line.getBoundingClientRect().bottom > strip.getBoundingClientRect().bottom + 1) L.wrapped++;
     }
-    // While playing, no change pill shows on a card.
-    // (Reduced motion has no floats: the pills keep the numbers there.)
+    // While playing, no result tag or running total sits on a piece's face
+    // (#1294: the event's tag shows while playing, beside the piece at the arrow).
     if (document.querySelector(".bv-playing") && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      // (A turn's totals, .bv-tot, are the turn-end summary until the ledger takes it over, slice 2.)
-      for (const p of document.querySelectorAll(".bv-card .bv-pill:not(.bv-tot), .bv-run-row")) if (getComputedStyle(p).visibility !== "hidden") L.pills++;
+      const faces = [...document.querySelectorAll(".bv-card .pc-face")].map((f) => f.getBoundingClientRect());
+      const over = (r) => faces.some((f) => r.left < f.right - 1 && r.right > f.left + 1 && r.top < f.bottom - 1 && r.bottom > f.top + 1);
+      for (const p of document.querySelectorAll(".bv-card .bv-pill:not(.bv-tot), .bv-run-row")) if (getComputedStyle(p).visibility !== "hidden" && p.getClientRects().length && over(p.getBoundingClientRect())) L.pills++;
     }
     requestAnimationFrame(tick);
   };
@@ -87,7 +87,7 @@ const report = async (page, label) => {
   const L = await page.evaluate(() => window.__layout);
   const first = new Map();
   for (const m of L.moved) if (!first.has(m.box)) first.set(m.box, m);
-  const line = `${label}: ${L.frames} frames, ${L.moved.length} box moves${[...first.values()].map((m) => ` [${m.box} ${JSON.stringify(m.was)} → ${JSON.stringify(m.now)} at frame ${m.at}]`).join("")}, ${L.wrapped} wrapped strip frames, ${L.pills} pill frames while playing`;
+  const line = `${label}: ${L.frames} frames, ${L.moved.length} box moves${[...first.values()].map((m) => ` [${m.box} ${JSON.stringify(m.was)} → ${JSON.stringify(m.now)} at frame ${m.at}]`).join("")}, ${L.wrapped} overflowing caption frames, ${L.pills} pill frames while playing`;
   console.log(line);
   if (L.moved.length || L.wrapped || L.pills || L.frames < 5) bad++;
 };
@@ -104,7 +104,7 @@ for (const motion of ["no-preference", "reduce"]) {
       if ((await page.getByTestId("gold").count()) === 0) break;
       const gold = Number((await page.getByTestId("gold").textContent()).replace("g", ""));
       if (gold < 3 || (await page.getByTestId("line").locator(".card.you").count()) >= 5) break;
-      await page.getByTestId("offer-0").click();
+      await page.getByTestId("offer-0").click(); await page.getByTestId("offer-0").click();
       if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("offer-close").click(); break; }
       await page.getByTestId("buy").click();
       await page.waitForFunction((g) => document.querySelector('[data-testid="gold"]')?.textContent !== `${g}g`, gold);
@@ -154,7 +154,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 640 }
   await page.getByTestId("name-input").fill(`Line8${viewport.width}${TAG}`);
   await page.getByTestId("name-submit").click();
   await page.getByTestId("play").click();
-  await page.getByTestId("offer-0").click();
+  await page.getByTestId("offer-0").click(); await page.getByTestId("offer-0").click();
   await page.getByTestId("buy").click();
   await page.getByTestId("fight").click();
   await page.getByTestId("battle-end").waitFor({ timeout: 10_000 });

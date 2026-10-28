@@ -431,7 +431,7 @@ try {
     const offerName = (slot) => page.getByTestId(`offer-${slot}`).locator(".name").textContent();
     const isLocked = async (slot) => (await page.getByTestId(`offer-${slot}`).getAttribute("class")).includes("locked") && (await page.getByTestId(`offer-${slot}`).locator(".lock-mark").count()) === 1;
     const lockFromSheet = async (slot, want) => {
-      await page.getByTestId(`offer-${slot}`).click();
+      await page.getByTestId(`offer-${slot}`).click(); await page.getByTestId(`offer-${slot}`).click();
       await page.getByTestId("lock").waitFor();
       if (!(await page.getByTestId("lock").textContent()).includes(L(want === "Lock" ? "board.lock" : "board.unlock"))) errors.push(`lock: offer ${slot}'s sheet says "${await page.getByTestId("lock").textContent()}", not ${want}`);
       if (want === "Lock" && round === 0) { await shot("offer-sheet-lock"); await tap44("Lock", page.getByTestId("lock")); }
@@ -443,7 +443,7 @@ try {
       else lockSurvived = true;
       lockedFromLast = null;
     }
-    if (round === 0 && (await page.getByTestId("offers").locator(".card").count()) >= 2) {
+    if (round === 0 && (await page.getByTestId("offers").locator(".cell").count()) >= 2) {
       const name = await offerName(1);
       await lockFromSheet(1, "Lock");
       if (!(await isLocked(1))) errors.push("lock: offer 1 has no padlock after Lock");
@@ -459,11 +459,11 @@ try {
     for (let k = 0; k < 4; k++) {
       if ((await page.getByTestId("gold").count()) === 0) break; // the Crown: no shop, no gold
       const gold = Number((await page.getByTestId("gold").textContent()).replace(L("shop.gold", { n: "" }), ""));
-      if (gold < 3 || (await page.getByTestId("offers").locator(".card").count()) === 0) break;
-      const filled = await page.getByTestId("line").locator(".card.you").count();
+      if (gold < 3 || (await page.getByTestId("offers").locator(".cell").count()) === 0) break;
+      const filled = await page.getByTestId("line").locator(".cell.you").count();
       if (filled >= 5) break;
       // An offer opens its sheet (both forms, what buying does); Buy buys.
-      await page.getByTestId("offer-0").click();
+      await page.getByTestId("offer-0").click(); await page.getByTestId("offer-0").click();
       await page.getByTestId("buy").waitFor();
       if (round === 0 && k === 0) { await shot("offer-sheet"); await noHScroll("offer-sheet"); }
       if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("offer-close").click(); break; }
@@ -476,7 +476,7 @@ try {
         await page.getByTestId("gift-skip").waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
       }
     }
-    if (round === 1 && (await page.getByTestId("offers").locator(".card").count()) > 0) {
+    if (round === 1 && (await page.getByTestId("offers").locator(".cell").count()) > 0) {
       lockedFromLast = await offerName(0);
       await lockFromSheet(0, "Lock");
     }
@@ -494,7 +494,7 @@ try {
       await page.getByTestId("legend").waitFor({ state: "detached" });
       await page.getByTestId("line").waitFor();
     }
-    if (round === 2 && (await page.getByTestId("line").locator(".card.you").count()) > 1) {
+    if (round === 2 && (await page.getByTestId("line").locator(".cell.you").count()) > 1) {
       await page.getByTestId("line-1").click();
       await shot("shop-selected");
       await page.getByTestId("info").click();
@@ -931,7 +931,7 @@ try {
     const almost = run.line.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === 2 && run.offers.some((o) => o.unitId === u.unitId));
     const slot = run.offers.find((o) => o.unitId === almost.unitId).slot;
     await shot("shop-almost"); await noHScroll("shop-almost");
-    await page.getByTestId(`offer-${slot}`).click();
+    await page.getByTestId(`offer-${slot}`).click(); await page.getByTestId(`offer-${slot}`).click();
     await page.getByTestId("buy-preview").waitFor();
     if (!(await page.getByTestId("buy-preview").textContent()).includes(L("buy.awakens"))) errors.push("awaken preview: no 'Awakens!'");
     await shot("awaken-preview"); await noHScroll("awaken-preview");
@@ -974,14 +974,14 @@ try {
     if (/Fusion preview|Предпросмотр слияния/.test(await page.getByTestId("overlay").textContent())) errors.push("fusion: 'Fusion preview' copy in the forge");
     await shot("fusion-forge"); await noHScroll("fusion-forge");
     await page.getByTestId("preview-confirm").click();
-    await page.getByTestId("line").locator(".card.fused").waitFor();
+    await page.getByTestId("line").locator(".cell.fused").waitFor();
     console.log("mvp phone: fused through the forge");
     await shot("fused"); await noHScroll("fused");
-    await page.locator(".card.fused").screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-fused-card.png` });
+    await page.locator(".cell.fused").screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-fused-card.png` });
     // The fused card's row lines up: every card in it is one height.
-    const heights = await page.getByTestId("line").locator(".card.you").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
+    const heights = await page.getByTestId("line").locator(".cell.you").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
     if (new Set(heights).size > 1) errors.push(`fused row: uneven card heights ${heights.join(",")}`);
-    await page.locator(".card.fused").click();
+    await page.locator(".cell.fused").click();
     await page.getByTestId("info").click();
     await page.getByTestId("unit-sheet").waitFor();
     // The pair may be someone else's discovery already (live, or a reused DB).
@@ -1015,9 +1015,9 @@ try {
       await page.reload();
       await page.getByTestId("play").click();
       await page.getByTestId("fight").waitFor();
-      if ((await page.getByTestId("bench").locator(".card.empty").count()) !== 3) errors.push("bench: the empty bench doesn't show 3 dashed slots");
+      if ((await page.getByTestId("bench").locator(".cell.empty").count()) !== 3) errors.push("bench: the empty bench doesn't show 3 dashed slots");
       const o = fresh(r);
-      await page.getByTestId(`offer-${o.slot}`).click();
+      await page.getByTestId(`offer-${o.slot}`).click(); await page.getByTestId(`offer-${o.slot}`).click();
       await page.getByTestId("buy-preview").waitFor();
       if (!(await page.getByTestId("buy-preview").textContent()).includes(L("buy.toBench"))) errors.push(`bench: the buy preview says "${await page.getByTestId("buy-preview").locator(".label").textContent()}", not "Goes to your bench"`);
       await shot("bench-buy-preview"); await noHScroll("bench-buy-preview");
@@ -1129,7 +1129,7 @@ try {
       await page.reload();
       await page.getByTestId("play").click();
       await page.getByTestId("fight").waitFor();
-      const offers = await page.getByTestId("offers").locator(".card").count();
+      const offers = await page.getByTestId("offers").locator(".cell").count();
       if (offers < 6) errors.push(`compact: round ${r.round} shows ${offers} offers, not 6`);
       await shot("shop-round-8"); await noHScroll("shop-round-8"); await noVScroll("shop-round-8"); await noRates("shop-round-8");
       await onScreen("round 8: Fight", page.getByTestId("fight"));
