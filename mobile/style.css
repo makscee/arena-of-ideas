@@ -2080,6 +2080,13 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 .cell .lit-tag { position: absolute; z-index: 8; left: 50%; bottom: 2px; transform: translateX(-50%); white-space: nowrap; padding: 1px 7px; border-radius: 999px; background: var(--pc-gold); border: 2px solid var(--outline); font: 400 12px/1.2 var(--font-head); color: var(--pc-ink); }
 #app.drag-on .cell.drop { box-shadow: inset 0 0 0 3px var(--you); background: color-mix(in srgb, var(--you) 18%, transparent); }
 #app.drag-on .cell.empty.drop .cell-well { border-style: solid; }
+/* Tap feedback and a generous hit area on the shop's offers (CrazyGames audit, arena#13): the touch target reaches past the card's edge. */
+.cell.offer::before { content: ""; position: absolute; inset: -4px -3px -6px; }
+.cell.offer.tapped { animation: tap-pulse 0.28s ease-out; }
+@keyframes tap-pulse { 0% { transform: scale(1); } 40% { transform: scale(0.94); } 100% { transform: scale(1); } }
+.shop-head .nudge, .hint.nudge { animation: hint-blink 0.7s ease-out; }
+@keyframes hint-blink { 0%, 50% { background: color-mix(in srgb, var(--action) 45%, transparent); } 100% { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { .cell.offer.tapped, .shop-head .nudge, .hint.nudge { animation: none; } }
 #app[data-screen="shop"] .cell.draggable { touch-action: none; cursor: grab; }
 #app[data-screen="shop"] .cell.dragging { opacity: 0.35; }
 .cell.drag-ghost { background: none; box-shadow: none; transform-origin: center; }
@@ -2362,3 +2369,5 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 @media (min-width: 600px) {
   .sheet:has(> [data-testid="unit-sheet"]), .sheet:has(> * > [data-testid="unit-sheet"]) { max-width: 760px; }
 }
+/* A tap on an offer you can't buy: the card answers with a nudge (the reason shows in the error line). */
+.cell.offer.nudge { animation: bv-shake 0.4s ease-out; }
