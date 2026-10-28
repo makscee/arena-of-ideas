@@ -1327,13 +1327,15 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const why = buyBlock(o);
     if (why) return void ((err.textContent = why), play("wrong"));
     const d = { kind: "buy", slot: o.slot } as const;
-    // The buy shows at once (arena#17): the offer fades and its piece stands
-    // in the tapped empty slot, however slow the answer.
+    // The buy looks done at once (arena#17): the offer leaves, the gold drops
+    // and its piece stands in the tapped empty slot, however slow the answer.
+    // A faded offer and a half-clear piece read as "frozen" in the audit.
     const card = document.querySelector(`[data-testid="offer-${o.slot}"]`);
     const cell = document.querySelector(`[data-testid="${to < L ? `line-${to}` : `bench-${to - L}`}-empty"]`);
     if (card && !busy) {
-      card.classList.add("buying");
-      if (cell && card.firstElementChild) cell.replaceChildren(card.firstElementChild.cloneNode(true)), cell.classList.add("arriving");
+      if (cell && card.firstElementChild) cell.replaceChildren(card.firstElementChild.cloneNode(true));
+      card.classList.add("bought");
+      document.querySelectorAll('[data-testid="gold"]').forEach((g) => (g.textContent = t("shop.gold", { n: run.gold - o.cost })));
     }
     void guarded(err, async () => {
       await Promise.allSettled([...previewsOut]);

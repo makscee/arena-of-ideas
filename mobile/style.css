@@ -522,9 +522,8 @@ button.half-empty { flex-direction: column; line-height: 1; }
 @keyframes want-pulse { 50% { box-shadow: 0 0 10px 2px color-mix(in srgb, var(--cost) 55%, transparent); } }
 /* A tap made while a request is out waits, and shows it at once (arena#16). */
 .cell.pending { outline: 2px solid var(--you); outline-offset: 1px; }
-/* A buy shows before its answer (arena#17): the offer fades, its piece stands in the slot. */
-.cell.offer.buying { opacity: 0.3; }
-.cell.arriving { opacity: 0.85; }
+/* A buy looks done before its answer (arena#17): the offer leaves its place. */
+.cell.offer.bought { visibility: hidden; }
 @keyframes pending-spin { to { transform: rotate(360deg); } }
 /* Battle viewer (slice 9, screens/battle.ts). */
 .bv-line { min-height: 112px; }
