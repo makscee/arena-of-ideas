@@ -195,9 +195,14 @@ function pickGhost(deps: RunDeps, run: MvpRunState): Ghost {
   };
   const saved = store.ghosts(run.round, { excludePlayerId: run.player.id, limit: GHOST_PICK_POOL }).filter((g) => !hidden(g) && resolves(g));
   // Round 1 meets one of the smallest teams saved there (arena#15): a new
-  // player's first fight is winnable with a filled line.
+  // player's first fight is winnable with a filled line. A first run meets the
+  // weakest third (fewest units, then the least power and health) through round 3 too: its
+  // round-3 spike read as unfair to a first-timer (arena#17).
   const fewest = Math.min(...saved.map((g) => g.line.length));
-  const candidates = run.round === 1 ? saved.filter((g) => g.line.length === fewest) : saved;
+  const firstRun = !(store.rating(run.player.id)?.runs);
+  const weight = (g: Ghost) => g.line.length * 10_000 + g.line.reduce((n, u) => n + u.stats.pwr + u.stats.hp, 0);
+  const weakest = [...saved].sort((x, y) => weight(x) - weight(y)).slice(0, Math.max(1, Math.ceil(saved.length / 3)));
+  const candidates = run.round === 1 ? saved.filter((g) => g.line.length === fewest) : firstRun && run.round <= 3 ? weakest : saved;
   const pick = deps.seed();
   return candidates.length > 0
     ? candidates[pick % candidates.length]!

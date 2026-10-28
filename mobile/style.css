@@ -522,6 +522,9 @@ button.half-empty { flex-direction: column; line-height: 1; }
 @keyframes want-pulse { 50% { box-shadow: 0 0 10px 2px color-mix(in srgb, var(--cost) 55%, transparent); } }
 /* A tap made while a request is out waits, and shows it at once (arena#16). */
 .cell.pending { outline: 2px solid var(--you); outline-offset: 1px; }
+/* A buy shows before its answer (arena#17): the offer fades, its piece stands in the slot. */
+.cell.offer.buying { opacity: 0.3; }
+.cell.arriving { opacity: 0.85; }
 @keyframes pending-spin { to { transform: rotate(360deg); } }
 /* Battle viewer (slice 9, screens/battle.ts). */
 .bv-line { min-height: 112px; }
@@ -905,6 +908,7 @@ button.bv-why.won { color: var(--you); border-color: color-mix(in srgb, var(--yo
 .bv-end-sub { font-size: 14px; line-height: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* A run's fight: the round fought, hearts and record after it, what it cost or won (R2-17 batch E). */
 /* arena#16: why I lost, one plain line under the result. */
+.bv-why-next { font-size: 15px; font-weight: 700; line-height: 19px; color: var(--action); }
 .bv-lost-line { font-size: 15px; font-weight: 700; line-height: 19px; color: var(--loss); margin-top: -2px; }
 .bv-end-run { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: 13px; line-height: 17px; margin-top: -4px; }
 .bv-end-run .hearts { color: var(--them); letter-spacing: 1px; }
@@ -2414,4 +2418,17 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
   #app[data-screen="home"] .hero-team { margin-top: 4px; }
   #app[data-screen="home"] .play-big .play-main { font-size: 30px; }
   #app[data-screen="home"] .throne-nav button { font-size: 16px; padding-left: 4px; padding-right: 4px; min-width: 0; }
+}
+/* arena#17: at 800×450 (CrazyGames' frame) the piece's words and numbers read
+ * too small: names, trigger words, PWR/HP badges, price, tier and the shop's
+ * hint a size up. The shop has room below its offers for the taller names. */
+@media (max-width: 1023.98px) and (max-height: 520px) and (min-width: 700px) {
+  #app[data-screen="shop"] .pc-nm { font-size: 14px !important; }
+  #app[data-screen="shop"] .pc-tab .tw { font-size: 13px !important; }
+  #app[data-screen="shop"] .pc-b { font-size: 17px !important; }
+  #app[data-screen="shop"] .pc-price { height: 22px; font-size: 15px; }
+  #app[data-screen="shop"] .pc-price .coin { width: 14px; height: 14px; }
+  #app[data-screen="shop"] .pc-tier { height: 21px; font-size: 14px; line-height: 17px; }
+  #app[data-screen="shop"] .shop-head .how { font-size: 15px; }
+  #app[data-screen="shop"] .cell.offer { margin-bottom: 6px; }
 }

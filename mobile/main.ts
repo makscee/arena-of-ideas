@@ -74,7 +74,12 @@ addEventListener("click", (e) => {
   e.stopImmediatePropagation();
   e.preventDefault();
   const p = { x: e.clientX, y: e.clientY };
-  if (e.detail > 0 && (!busyTap || Math.hypot(p.x - busyTap.x, p.y - busyTap.y) > 24) && queuedTaps.length < 4) {
+  // A tap again on the spot of the last waiting one is the same tap: a player
+  // who saw no answer taps twice, and the replay chose then unchose the offer
+  // (arena#17, "offer taps ignored after a buy").
+  const prev = queuedTaps[queuedTaps.length - 1];
+  const again = (t: Tap | null | undefined) => !!t && Math.hypot(p.x - t.x, p.y - t.y) <= 24;
+  if (e.detail > 0 && !again(busyTap) && !again(prev) && queuedTaps.length < 4) {
     queuedTaps.push(p);
     el.classList.add("pending");
     waiting.add(el);
@@ -1322,6 +1327,14 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const why = buyBlock(o);
     if (why) return void ((err.textContent = why), play("wrong"));
     const d = { kind: "buy", slot: o.slot } as const;
+    // The buy shows at once (arena#17): the offer fades and its piece stands
+    // in the tapped empty slot, however slow the answer.
+    const card = document.querySelector(`[data-testid="offer-${o.slot}"]`);
+    const cell = document.querySelector(`[data-testid="${to < L ? `line-${to}` : `bench-${to - L}`}-empty"]`);
+    if (card && !busy) {
+      card.classList.add("buying");
+      if (cell && card.firstElementChild) cell.replaceChildren(card.firstElementChild.cloneNode(true)), cell.classList.add("arriving");
+    }
     void guarded(err, async () => {
       await Promise.allSettled([...previewsOut]);
       let res = await api.decide(run.runId, d);
@@ -1745,7 +1758,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         // Click selects it (the inspector holds it), double-click buys it.
         c.addEventListener("click", () => {
           play("click");
-          chosen = chosen === o.slot ? null : o.slot;
+          // A click on the chosen offer keeps it chosen (arena#17): a second
+          // click that unchose it read as a dead tap. Esc lets go.
+          chosen = o.slot;
           if (pick.mode === "picked") pick = { mode: "none" };
           renderLine();
         });

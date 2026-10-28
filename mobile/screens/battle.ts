@@ -2268,7 +2268,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
 
   if (a.you && outcome !== "draw") {
     endWhy = () => {
-      const close = closable(whyPanel(battle, you, (id) => { close(); openTrace(id); }, outcome === "win"));
+      const close = closable(whyPanel(battle, you, (id) => { close(); openTrace(id); }, outcome === "win", nextTip));
     };
   }
 
@@ -2283,6 +2283,18 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     if (!top) return "";
     if (top.text === "Fatigue") return tr("battle.lostLine.fatigue");
     return top.kills ? tr("battle.lostLine.kills", { name: top.text, n: top.kills, dmg: top.damage }) : tr("battle.lostLine.damage", { name: top.text, dmg: top.damage });
+  })();
+
+  // What to do next after a loss (arena#17): Why I lost read as a replay, not
+  // an answer; one line above its chains says what to change.
+  const nextTip = ((): string => {
+    if (!a.you || outcome !== "loss") return "";
+    const mine = (you === "A" ? battle.teamA : battle.teamB).length;
+    const theirs = (you === "A" ? battle.teamB : battle.teamA).length;
+    if (mine < theirs) return tr("battle.next.fill");
+    const top = lossChains(battle.log, you, 1)[0];
+    if (top?.text === "Fatigue") return tr("battle.next.fatigue");
+    return top?.kills ? tr("battle.next.front") : tr("battle.next.merge");
   })();
 
   function endView(): Node[] {
@@ -2478,12 +2490,13 @@ export function beamColour(b: Pick<Beam, "kind" | "status">): string {
 /** The "why I lost" card for side `you`: the 2–3 enemy chains that did the
  * most; with `won`, "why I won": your chains that did the most to them
  * (R2-17). Each row opens that chain's trace in the battle (onTrace). */
-function whyPanel(battle: BattleRecord, you: Side, onTrace: (eventId: number) => void, won = false): HTMLElement {
+function whyPanel(battle: BattleRecord, you: Side, onTrace: (eventId: number) => void, won = false, next = ""): HTMLElement {
   const chains = lossChains(battle.log, won ? (you === "A" ? "B" : "A") : you);
   return h(
     "div",
     { class: `panel stack${won ? " why-won" : ""}`, "data-testid": won ? "why-won" : "why-lost" },
     h("div", { class: "row spread" }, h("div", { class: "label" }, won ? tr("battle.whyWon") : tr("battle.whyLost")), h("div", { class: "dim small" }, isDesktop() ? tr("battle.why.clickRow") : tr("battle.why.tapRow"))),
+    ...(next ? [h("div", { class: "bv-why-next", "data-testid": "why-next" }, next)] : []),
     ...(chains.length
       ? chains.map((c) => {
           const row = h(
