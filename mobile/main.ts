@@ -903,6 +903,24 @@ type Pick = { mode: "none" } | { mode: "picked"; index: number } | { mode: "fuse
  * isDesktop) the same shop is a top bar, a wide board and a right inspector
  * that reads the hovered or selected card instead of pop-up sheets, with
  * mouse and keys; below it the phone layout is as it was. */
+/** Where each offer stands in the shop row (arena#14): the server renumbers the
+ * offers after a buy, so the row remembers positions: a bought offer leaves a
+ * gap and the others stay where they were. `at[position]` is an index in run.offers, or -1. */
+let offerRow: { runId: string; round: number; at: number[] } | null = null;
+let boughtOffer = -1;
+function offerPositions(run: RunView): number[] {
+  const live = run.offers.length;
+  const prev = offerRow && offerRow.runId === run.runId && offerRow.round === run.round ? offerRow.at : null;
+  let at: number[];
+  if (prev && prev.filter((i) => i >= 0).length === live) at = prev;
+  else if (prev && boughtOffer >= 0 && prev.filter((i) => i >= 0).length === live + 1) at = prev.map((i) => (i === boughtOffer ? -1 : i > boughtOffer ? i - 1 : i));
+  else at = run.offers.map((_, i) => i);
+  boughtOffer = -1;
+  const n = Math.max(offersAt(rules, run.round), at.length);
+  at = Array.from({ length: n }, (_, i) => at[i] ?? -1);
+  offerRow = { runId: run.runId, round: run.round, at };
+  return at;
+}
 function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -1, offer = -1): void {
   if (run.phase === "over") return runOverScreen(run, content, notice);
   const desk = isDesktop();
@@ -931,6 +949,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const res = await api.decide(run.runId, d);
       if (res.fight) return fightScreens(res.run, res.fight, content, run);
       play(shopSound(d, run, res.run));
+      boughtOffer = d.kind === "buy" ? d.slot : -1;
       shopScreen(res.run, content, "", select, offer);
     });
   /** Lock or unlock an offer (free); on desktop it stays chosen in the inspector. */
@@ -1264,6 +1283,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         }
       }
       play(shopSound(d, run, res.run));
+      boughtOffer = o.slot;
       shopScreen(res.run, content, "", sel, -1);
     });
   };
@@ -1633,7 +1653,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const offers = h(
     "div",
     { class: "slots", "data-testid": "offers" },
-    ...run.offers.map((o: Offer) => {
+    // Every slot keeps its place: a bought offer leaves an empty slot, the rest never shift (CrazyGames audit, arena#14).
+    ...offerPositions(run).map((at, pos) => (at >= 0 ? run.offers[at]! : pos)).map((o: Offer | number) => {
+      if (typeof o === "number") return h("div", { class: "cell offer-gap", "data-testid": `offer-gap-${o}`, "aria-hidden": "true", style: cellStyle(pieceSizes().offer) });
       const u = unitOf(o.unitId);
       const owned = owns(o.unitId);
       const price = `${t("shop.gold", { n: o.cost })}${owned ? " ＋" : ""}`;
