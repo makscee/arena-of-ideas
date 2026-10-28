@@ -153,7 +153,7 @@ export function onGone(fn: () => void): void {
 export const desktopQuery = matchMedia("(min-width: 1024px)");
 export const isDesktop = (): boolean => desktopQuery.matches;
 /** The short landscape window (CrazyGames' 800×450 and 821×462, #1217): style.css's same query. */
-export const wideQuery = matchMedia("(orientation: landscape) and (min-width: 760px) and (max-width: 1023.98px) and (max-height: 560px)");
+export const wideQuery = matchMedia("(orientation: landscape) and (min-width: 560px) and (max-width: 1023.98px) and (max-height: 560px)");
 
 /** Where the screens take keys (#1217): the desktop, and a landscape window
  * with a mouse below it (CrazyGames' 821×462). A phone takes none. */

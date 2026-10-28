@@ -1912,7 +1912,7 @@ button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padd
  * scrolls: the shop, its line, bench, offers and Fight sit on one screen,
  * Home puts the champion beside Play, and a long screen (the Codex, Stats,
  * the ideas) scrolls inside #app. Sheets keep their own scroll. */
-@media (orientation: landscape) and (min-width: 760px) and (max-width: 1023.98px) and (max-height: 560px) {
+@media (orientation: landscape) and (min-width: 560px) and (max-width: 1023.98px) and (max-height: 560px) {
   html, body { height: 100%; overflow: hidden; }
   body { min-height: 0; }
   #app { max-width: none; height: 100dvh; min-height: 0; padding: 8px 16px; gap: 8px; overflow-y: auto; overscroll-behavior: contain; }
@@ -2120,7 +2120,7 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 /* The short landscape (800×450, 821×462): HUD across the top; the line and
  * the bench; the shop and a side column (the selected unit's buttons, the
  * champion, Reroll over Fight). Nothing scrolls. */
-@media (orientation: landscape) and (min-width: 760px) and (max-width: 1023.98px) and (max-height: 560px) {
+@media (orientation: landscape) and (min-width: 560px) and (max-width: 1023.98px) and (max-height: 560px) {
   #app[data-screen="shop"] {
     padding: 6px 12px 8px; column-gap: 10px; row-gap: 6px;
     grid-template-columns: minmax(0, 1fr) 220px;
@@ -2371,3 +2371,22 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 }
 /* A tap on an offer you can't buy: the card answers with a nudge (the reason shows in the error line). */
 .cell.offer.nudge { animation: bv-shake 0.4s ease-out; }
+
+/* A bought offer leaves its slot empty, so the others stay put (CrazyGames audit, arena#14). */
+.cell.offer-gap { border: 2px dashed color-mix(in srgb, var(--outline) 35%, transparent); border-radius: 14px; background: color-mix(in srgb, var(--panel) 60%, transparent); pointer-events: none; }
+
+/* The result card: the next step is the one big button, Replay and Why are small and quiet (CrazyGames audit, arena#14). */
+.bv-end-actions { flex-wrap: wrap; align-items: stretch; }
+.bv-end-actions button[data-testid="battle-done"] { order: 1; flex: 1 1 100%; min-height: 60px; font-size: 24px; letter-spacing: 0.04em; text-transform: uppercase; box-shadow: 0 5px 0 var(--outline); }
+.bv-end-actions button:not([data-testid="battle-done"]) { order: 2; flex: 1 1 0; min-height: 36px; font-size: 13px; font-weight: 500; opacity: 0.85; box-shadow: none; background: transparent; }
+@media (orientation: landscape) and (max-height: 560px) {
+  .bv-end-actions button[data-testid="battle-done"] { order: 2; flex: 2 1 0; min-height: 52px; font-size: 22px; }
+  .bv-end-actions button:not([data-testid="battle-done"]) { order: 1; flex: 0 1 auto; }
+  #app[data-screen="battle"] .bv-end-actions button[data-testid="battle-done"] { margin-left: 0; min-width: 0; }
+}
+/* Phone landscape under 760 px wide (667×375): the same layout, a narrower side column (arena#14). */
+@media (orientation: landscape) and (min-width: 560px) and (max-width: 759.98px) and (max-height: 560px) {
+  #app[data-screen="shop"] { grid-template-columns: minmax(0, 1fr) 168px; padding: 4px 8px 6px; column-gap: 6px; row-gap: 4px; }
+  #app[data-screen="shop"] .hud { font-size: 15px; gap: 6px; }
+  #app[data-screen="shop"] .next-opp { font-size: 14px; padding: 2px 8px; }
+}
