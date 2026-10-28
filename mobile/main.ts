@@ -1656,6 +1656,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         c.addEventListener("click", () => {
           play("click");
           if (chosen === o.slot) return (chosen = null), renderLine(), void offerSheet(o);
+          // Feedback on every tap: a card you can't buy says why, right away.
+          const why = buyBlock(o);
+          if (why) (err.textContent = why), play("wrong"), c.classList.add("nudge"), setTimeout(() => c.classList.remove("nudge"), 400);
           chosen = o.slot;
           pick = { mode: "none" };
           renderLine();

@@ -369,6 +369,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const speedBtn = button(`${chosenSpeed}×`, () => setSpeed(SPEEDS[(SPEEDS.indexOf(chosenSpeed as 1) + 1) % SPEEDS.length]!), "", "battle-speed");
   const endBtn = button(tr("battle.endButton"), () => finish(), "", "battle-end");
   const replayBtn = button("↻", () => replay(), "", "battle-replay");
+  // With the end card put away (✕), the way on stays in the controls, in End's place: the result is never a dead end.
+  const nextBtn = a.outro ? button(a.outro.doneLabel, () => leave(), "primary", "battle-next") : null;
   /** Skip chain (#913): while a chain plays, jumps to its last link and its summary. */
   const skipBtn = button(tr("battle.chain.skip"), () => skipChain(), "bv-skip", "chain-skip");
   skipBtn.title = tr("battle.chain.skipKey");
@@ -1610,6 +1612,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     backBtn.disabled = at < 0;
     fwdBtn.disabled = finished;
     endBtn.disabled = finished;
+    if (nextBtn) {
+      const away = seenEnd && !finished && !playing;
+      if (away && endBtn.parentNode === controls) endBtn.replaceWith(nextBtn);
+      else if (!away && nextBtn.parentNode === controls) nextBtn.replaceWith(endBtn);
+    }
     // ⏭ or › pressed by Enter disables itself, and the browser takes the focus
     // off a disabled button only on its next frame: an Enter before then
     // pressed the dead button and the end card stayed (#1128). Continue takes it.

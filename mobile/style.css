@@ -2369,3 +2369,5 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 @media (min-width: 600px) {
   .sheet:has(> [data-testid="unit-sheet"]), .sheet:has(> * > [data-testid="unit-sheet"]) { max-width: 760px; }
 }
+/* A tap on an offer you can't buy: the card answers with a nudge (the reason shows in the error line). */
+.cell.offer.nudge { animation: bv-shake 0.4s ease-out; }
