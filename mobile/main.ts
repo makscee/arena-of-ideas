@@ -956,20 +956,28 @@ type Pick = { mode: "none" } | { mode: "picked"; index: number } | { mode: "fuse
  * mouse and keys; below it the phone layout is as it was. */
 /** Where each offer stands in the shop row (arena#14): the server renumbers the
  * offers after a buy, so the row remembers positions: a bought offer leaves a
- * gap and the others stay where they were. `at[position]` is an index in run.offers, or -1. */
-let offerRow: { runId: string; round: number; at: number[] } | null = null;
-let boughtOffer = -1;
+ * gap and the others stay where they were. `at[position]` is an index in run.offers, or -1.
+ * Fewer offers than before: each remaining one is matched, in order, to the
+ * unit it was at its old position (so a buy by any path, or one whose
+ * redraw was missed, still leaves its gap); anything else lays the row out afresh. */
+let offerRow: { runId: string; round: number; at: number[]; ids: string[] } | null = null;
 function offerPositions(run: RunView): number[] {
   const live = run.offers.length;
-  const prev = offerRow && offerRow.runId === run.runId && offerRow.round === run.round ? offerRow.at : null;
-  let at: number[];
-  if (prev && prev.filter((i) => i >= 0).length === live) at = prev;
-  else if (prev && boughtOffer >= 0 && prev.filter((i) => i >= 0).length === live + 1) at = prev.map((i) => (i === boughtOffer ? -1 : i > boughtOffer ? i - 1 : i));
-  else at = run.offers.map((_, i) => i);
-  boughtOffer = -1;
+  const prev = offerRow && offerRow.runId === run.runId && offerRow.round === run.round ? offerRow : null;
+  const prevLive = prev ? prev.at.filter((i) => i >= 0).length : 0;
+  let at: number[] = run.offers.map((_, i) => i);
+  if (prev && prevLive === live) at = prev.at;
+  else if (prev && live < prevLive) {
+    const matched: number[] = prev.at.map(() => -1);
+    let next = 0;
+    prev.ids.forEach((id, pos) => {
+      if (id && next < live && run.offers[next]!.unitId === id) matched[pos] = next++;
+    });
+    if (next === live) at = matched;
+  }
   const n = Math.max(offersAt(rules, run.round), at.length);
   at = Array.from({ length: n }, (_, i) => at[i] ?? -1);
-  offerRow = { runId: run.runId, round: run.round, at };
+  offerRow = { runId: run.runId, round: run.round, at, ids: at.map((i) => (i >= 0 ? run.offers[i]!.unitId : "")) };
   return at;
 }
 function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -1, offer = -1): void {
@@ -1000,7 +1008,6 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const res = await api.decide(run.runId, d);
       if (res.fight) return fightScreens(res.run, res.fight, content, run);
       play(shopSound(d, run, res.run));
-      boughtOffer = d.kind === "buy" ? d.slot : -1;
       shopScreen(res.run, content, "", select, offer);
     });
   /** Lock or unlock an offer (free); on desktop it stays chosen in the inspector. */
@@ -1099,10 +1106,13 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   };
   /** A cell's height for a piece of side `s`: the tab above, the rim numbers, the name and the foot below. */
   const cellStyle = (s: number, bare = false) => `--s:${s}px;height:${Math.round(s + 0.3 * Math.max(22, s * 0.37) + Math.max(12, s * 0.2) + (bare ? 22 : 47))}px`;
+  /** A buy goes to the line while it has room (the audit's "slot 5 went to the bench" was a tap on the lit bench beside it): the bench takes one only once the line is full, or to merge into a twin there. */
+  const benchWhileLineHasRoom = (o: Offer, slot: number) => slot >= L && run.line.length < L && twinSlot(o.unitId) !== slot;
   const lightTarget = (el: HTMLElement, slot: number) => {
     const o = chosen !== null ? run.offers[chosen] : undefined;
     const u = unitAt(slot);
     if (o) {
+      if (benchWhileLineHasRoom(o, slot)) return;
       if (buyBlock(o) && !(u && twinSlot(o.unitId) === slot && run.gold >= o.cost && !run.gift)) return;
       if (u && twinSlot(o.unitId) === slot) {
         el.classList.add("lit", "lit-twin");
@@ -1117,6 +1127,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const o = chosen !== null ? run.offers[chosen] : undefined;
     if (o) {
       const u = unitAt(slot);
+      if (benchWhileLineHasRoom(o, slot)) return false;
       // An offer you own goes to its twin; a tap on another unit of yours picks that one instead.
       if (u && owns(o.unitId) && twinSlot(o.unitId) !== slot) return false;
       if (u && !owns(o.unitId) && run.line.length >= L && run.bench.length >= B) return false;
@@ -1334,12 +1345,11 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         const from = i < res.run.line.length ? i : L + i - res.run.line.length;
         const dest = destFor(res.run, from, to);
         if (dest !== null) {
-          res = await api.decide(run.runId, { kind: "reorder", from, to: dest });
-          sel = dest;
+          // The buy stands even if the move is refused: draw the shop as bought, never the one before it.
+          res = await api.decide(run.runId, { kind: "reorder", from, to: dest }).then((r) => ((sel = dest), r), () => res);
         }
       }
       play(shopSound(d, run, res.run));
-      boughtOffer = o.slot;
       shopScreen(res.run, content, "", sel, -1);
     });
   };
@@ -2600,7 +2610,8 @@ if (sceneId) {
  * no player becomes a guest at once, and a logged-in CrazyGames user (now or
  * later) becomes their account's player, a guest's progress kept. */
 async function cgBoot(): Promise<void> {
-  show(h("h1", {}, t("name.title")));
+  // A slow server (a guest is made, Home is fetched) leaves the title alone on a dark screen: say it is loading.
+  show(h("h1", {}, t("name.title")), h("p", { class: "hint", "data-testid": "loading" }, t("name.loading")));
   await cgInit();
   // #1219: loading runs from here until Home (or the error) shows; gameplay
   // follows the screen from then on.
