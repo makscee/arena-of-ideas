@@ -516,7 +516,12 @@ button.pending::after { content: ""; position: absolute; top: 50%; right: 10px; 
 button.play-big.pending::after { width: 26px; height: 26px; margin-top: -13px; right: 18px; border-width: 3px; }
 /* arena#15: Fight with empty slots and gold left names the empty slots. */
 button.half-empty { flex-direction: column; line-height: 1; }
-.fight-warn { display: block; font-size: 13px; font-weight: 600; opacity: 0.85; margin-top: 2px; }
+.fight-warn { display: block; font-size: 13px; font-weight: 800; margin-top: 3px; padding: 1px 8px; border-radius: 999px; background: var(--cost); color: var(--ground); }
+/* arena#16: a louder warning: the empty line slots pulse in the same colour until filled or lit. */
+.cell.empty.want:not(.lit) .cell-well { border-color: var(--cost); border-style: dashed; color: var(--cost); animation: want-pulse 1.4s ease-in-out infinite; }
+@keyframes want-pulse { 50% { box-shadow: 0 0 10px 2px color-mix(in srgb, var(--cost) 55%, transparent); } }
+/* A tap made while a request is out waits, and shows it at once (arena#16). */
+.cell.pending { outline: 2px solid var(--you); outline-offset: 1px; }
 @keyframes pending-spin { to { transform: rotate(360deg); } }
 /* Battle viewer (slice 9, screens/battle.ts). */
 .bv-line { min-height: 112px; }
@@ -899,6 +904,8 @@ button.bv-why.won { color: var(--you); border-color: color-mix(in srgb, var(--yo
 .bv-end-top .bv-word { text-align: left; font-size: 28px; }
 .bv-end-sub { font-size: 14px; line-height: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* A run's fight: the round fought, hearts and record after it, what it cost or won (R2-17 batch E). */
+/* arena#16: why I lost, one plain line under the result. */
+.bv-lost-line { font-size: 15px; font-weight: 700; line-height: 19px; color: var(--loss); margin-top: -2px; }
 .bv-end-run { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: 13px; line-height: 17px; margin-top: -4px; }
 .bv-end-run .hearts { color: var(--them); letter-spacing: 1px; }
 .bv-end-run .error { font-size: inherit; min-height: 0; }

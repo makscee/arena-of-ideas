@@ -2272,6 +2272,19 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     };
   }
 
+  // Why I lost in one line (arena#16), from the fight's own record: fewer
+  // units than theirs says so; else the enemy chain that did the most.
+  const lostLine = ((): string => {
+    if (!a.you || outcome !== "loss") return "";
+    const mine = (you === "A" ? battle.teamA : battle.teamB).length;
+    const theirs = (you === "A" ? battle.teamB : battle.teamA).length;
+    if (mine < theirs) return tr("battle.lostLine.fewer", { mine, theirs });
+    const top = lossChains(battle.log, you, 1)[0];
+    if (!top) return "";
+    if (top.text === "Fatigue") return tr("battle.lostLine.fatigue");
+    return top.kills ? tr("battle.lostLine.kills", { name: top.text, n: top.kills, dmg: top.damage }) : tr("battle.lostLine.damage", { name: top.text, dmg: top.damage });
+  })();
+
   function endView(): Node[] {
     // Only a viewer with a side wins or loses; otherwise the winner is named.
     const word = !a.you ? (battle.winner === "draw" ? tr("battle.end.draw") : tr("battle.end.wins", { name: owner(battle.winner) })) : outcome === "win" ? tr("battle.end.victory") : outcome === "loss" ? tr("battle.end.defeat") : tr("battle.end.draw");
@@ -2286,6 +2299,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     return [
       h("div", { class: "row spread bv-end-top" }, h("div", { class: "bv-end-head" }, h("div", { class: `bv-word ${cls}`, "data-testid": "battle-word" }, word), h("div", { class: "bv-end-sub dim", "data-testid": "end-sub" }, ...endSubtitle())), hide),
       // The run line spans the card, not the head beside ✕: on a 360px phone the head is too narrow and the line wrapped (R2-17).
+      ...(lostLine ? [h("div", { class: "bv-lost-line", "data-testid": "lost-line" }, lostLine)] : []),
       ...(a.outro ? [h("div", { class: "bv-end-run", "data-testid": "end-run" }, ...a.outro.status())] : []),
       h(
         "div",
