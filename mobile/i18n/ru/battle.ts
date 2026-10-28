@@ -62,7 +62,7 @@ export const battle = {
   "battle.totals.start": "Итоги старта",
   "battle.whyWon": "Разбор",
   "battle.whyLost": "Разбор",
-  "battle.lostLine.fewer": "Поражение: у тебя {mine} против их {theirs}. Заполни линию перед боем.",
+  "battle.lostLine.fewer": "Поражение: у тебя {mine}, у них {theirs}. Заполни линию перед боем.",
   "battle.lostLine.kills": "Поражение: больше всех сделал их {name}: {dmg} урона, убито: {n}.",
   "battle.lostLine.damage": "Поражение: больше всех сделал их {name}: {dmg} урона.",
   "battle.lostLine.fatigue": "Поражение: усталость добила твою команду первой.",
