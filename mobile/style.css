@@ -507,8 +507,14 @@ button.link { align-self: flex-start; border: none; background: none; color: var
 /* ui/dom.ts overlay(): a sheet over the screen. */
 .overlay { position: fixed; inset: 0; z-index: 10; background: color-mix(in srgb, var(--ground) 70%, transparent); display: flex; align-items: flex-end; justify-content: center; }
 .sheet { width: 100%; max-width: 480px; max-height: 85dvh; overflow-y: auto; background: var(--panel); border-top: 1px solid var(--you); padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
-/* A request is out (main.ts guarded): no taps until it answers. */
-#app.busy button, #app.busy .card { pointer-events: none; }
+/* A request is out (main.ts guarded): the pressed control shows it at once;
+ * a tap elsewhere waits and acts on the next screen (arena#15). */
+#app.busy { cursor: progress; }
+.pending { filter: brightness(0.85); }
+button.pending { position: relative; transform: scale(0.97); }
+button.pending::after { content: ""; position: absolute; top: 50%; right: 10px; width: 14px; height: 14px; margin-top: -7px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: pending-spin 0.7s linear infinite; }
+button.play-big.pending::after { width: 26px; height: 26px; margin-top: -13px; right: 18px; border-width: 3px; }
+@keyframes pending-spin { to { transform: rotate(360deg); } }
 /* Battle viewer (slice 9, screens/battle.ts). */
 .bv-line { min-height: 112px; }
 /* R2-13: a battle card has a fixed height (emoji, name, HP bar, big PWR / HP,
@@ -2389,4 +2395,13 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
   #app[data-screen="shop"] { grid-template-columns: minmax(0, 1fr) 168px; padding: 4px 8px 6px; column-gap: 6px; row-gap: 4px; }
   #app[data-screen="shop"] .hud { font-size: 15px; gap: 6px; }
   #app[data-screen="shop"] .next-opp { font-size: 14px; padding: 2px 8px; }
+  /* Home (arena#15): a narrower side column and a tighter champion card, so its five fit one row and nothing clips. */
+  #app[data-screen="home"] { grid-template-columns: minmax(0, 1fr) minmax(0, 224px); column-gap: 10px; row-gap: 4px; padding: 6px 10px; }
+  #app[data-screen="home"] .throne-top h1 { font-size: 26px; }
+  #app[data-screen="home"] .throne-hero { padding: 10px 12px 10px; margin-top: 8px; gap: 2px; }
+  #app[data-screen="home"] .hero-name { font-size: 22px; }
+  #app[data-screen="home"] .hero-day { font-size: 13px; }
+  #app[data-screen="home"] .hero-team { margin-top: 4px; }
+  #app[data-screen="home"] .play-big .play-main { font-size: 30px; }
+  #app[data-screen="home"] .throne-nav button { font-size: 16px; padding-left: 4px; padding-right: 4px; min-width: 0; }
 }

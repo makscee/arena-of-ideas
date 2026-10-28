@@ -48,11 +48,40 @@ function errorLine(): HTMLElement {
 /** True while a guarded request is out: taps are ignored until it answers,
  * so a double tap can't send the same decision twice. */
 let busy = false;
+/** The run and round whose half-empty fight was already warned about (arena#15). */
+let fightWarned = "";
+
+/** Where the latest tap landed, where the busy request's own tap did, and a
+ * tap that came while it was out (arena#15): that one isn't lost but replayed
+ * on the screen the answer drew, unless it is the same spot tapped again (the
+ * double tap busy is for). A press shows at once (.pending), however slow the
+ * answer. */
+type Tap = { x: number; y: number };
+let lastTap: Tap | null = null;
+let busyTap: Tap | null = null;
+let queuedTap: Tap | null = null;
+const TAPPABLE = "button, .card, [role=button]";
+addEventListener("pointerdown", (e) => {
+  lastTap = { x: e.clientX, y: e.clientY };
+  // No drag starts while a request is out.
+  if (busy && e.target instanceof Element && e.target.closest(".card")) e.stopPropagation();
+}, true);
+addEventListener("click", (e) => {
+  if (!busy || !(e.target instanceof Element) || !e.target.closest(TAPPABLE)) return;
+  e.stopImmediatePropagation();
+  e.preventDefault();
+  const p = { x: e.clientX, y: e.clientY };
+  if (e.detail > 0 && (!busyTap || Math.hypot(p.x - busyTap.x, p.y - busyTap.y) > 24)) queuedTap = p;
+}, true);
 
 async function guarded(err: HTMLElement, fn: () => Promise<void>): Promise<void> {
   if (busy) return;
   busy = true;
+  busyTap = lastTap;
+  queuedTap = null;
   app.classList.add("busy");
+  const pressed = busyTap ? document.elementFromPoint(busyTap.x, busyTap.y)?.closest(TAPPABLE) : null;
+  pressed?.classList.add("pending");
   try {
     err.textContent = "";
     await fn();
@@ -68,6 +97,11 @@ async function guarded(err: HTMLElement, fn: () => Promise<void>): Promise<void>
   } finally {
     busy = false;
     app.classList.remove("busy");
+    pressed?.classList.remove("pending");
+    const q = queuedTap as Tap | null; // set by the click listener meanwhile
+    queuedTap = null;
+    lastTap = null;
+    if (q) (document.elementFromPoint(q.x, q.y)?.closest(TAPPABLE) as HTMLElement | null)?.click();
   }
 }
 
@@ -1730,7 +1764,25 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const allLocked = lockedFull({ offers: run.offers, rules, round: run.round });
   reroll.disabled = run.gold < rules.rerollCost || allLocked || !!run.gift;
   if (allLocked) reroll.title = t("shop.allLocked");
-  const fight = button(crown ? t("shop.fightChampion") : t("shop.fight"), () => void decide({ kind: "fight" }), "primary grow", "fight");
+  // A fight with gold to spend and empty line slots asks once (arena#15): a
+  // first round lost with one unit was the commonest unexplained loss.
+  const emptySlots = L - run.line.length;
+  const canBuy = run.offers.some((o) => o.cost <= run.gold);
+  const fight = button(crown ? t("shop.fightChampion") : t("shop.fight"), () => {
+    const key = `${run.runId}-${run.round}`;
+    if (!crown && emptySlots > 0 && canBuy && fightWarned !== key) {
+      fightWarned = key;
+      play("wrong");
+      err.textContent = t("shop.fillFirst", { n: emptySlots, gold: run.gold });
+      for (const o of offers.querySelectorAll(".cell.offer")) {
+        o.classList.remove("nudge");
+        void (o as HTMLElement).offsetWidth;
+        o.classList.add("nudge");
+      }
+      return;
+    }
+    void decide({ kind: "fight" });
+  }, "primary grow", "fight");
   // An empty line can fight (and lose a heart) once nothing is affordable, so a broke run moves on.
   fight.disabled = (run.line.length === 0 && run.offers.some((o) => o.cost <= run.gold)) || !!run.gift;
   if (desk) {
