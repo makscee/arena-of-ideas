@@ -1333,8 +1333,14 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const card = document.querySelector(`[data-testid="offer-${o.slot}"]`);
     const cell = document.querySelector(`[data-testid="${to < L ? `line-${to}` : `bench-${to - L}`}-empty"]`);
     if (card && !busy) {
-      if (cell && card.firstElementChild) cell.replaceChildren(card.firstElementChild.cloneNode(true));
+      if (cell && card.firstElementChild) {
+        const piece = card.firstElementChild.cloneNode(true) as HTMLElement;
+        piece.querySelector(".pc-price")?.remove();
+        cell.replaceChildren(piece);
+      }
       card.classList.add("bought");
+      document.querySelectorAll(".lit").forEach((c) => c.classList.remove("lit", "lit-twin"));
+      document.querySelectorAll(".lit-tag").forEach((c) => c.remove());
       document.querySelectorAll('[data-testid="gold"]').forEach((g) => (g.textContent = t("shop.gold", { n: run.gold - o.cost })));
     }
     void guarded(err, async () => {
