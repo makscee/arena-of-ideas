@@ -48,8 +48,6 @@ function errorLine(): HTMLElement {
 /** True while a guarded request is out: taps are ignored until it answers,
  * so a double tap can't send the same decision twice. */
 let busy = false;
-/** The run and round whose half-empty fight was already warned about (arena#15). */
-let fightWarned = "";
 
 /** Where the latest tap landed, where the busy request's own tap did, and a
  * tap that came while it was out (arena#15): that one isn't lost but replayed
@@ -1764,25 +1762,14 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const allLocked = lockedFull({ offers: run.offers, rules, round: run.round });
   reroll.disabled = run.gold < rules.rerollCost || allLocked || !!run.gift;
   if (allLocked) reroll.title = t("shop.allLocked");
-  // A fight with gold to spend and empty line slots asks once (arena#15): a
-  // first round lost with one unit was the commonest unexplained loss.
+  // A fight with gold to spend and empty line slots says so on the button
+  // (arena#15): a first round lost with one unit was the commonest unexplained loss.
   const emptySlots = L - run.line.length;
-  const canBuy = run.offers.some((o) => o.cost <= run.gold);
-  const fight = button(crown ? t("shop.fightChampion") : t("shop.fight"), () => {
-    const key = `${run.runId}-${run.round}`;
-    if (!crown && emptySlots > 0 && canBuy && fightWarned !== key) {
-      fightWarned = key;
-      play("wrong");
-      err.textContent = t("shop.fillFirst", { n: emptySlots, gold: run.gold });
-      for (const o of offers.querySelectorAll(".cell.offer")) {
-        o.classList.remove("nudge");
-        void (o as HTMLElement).offsetWidth;
-        o.classList.add("nudge");
-      }
-      return;
-    }
-    void decide({ kind: "fight" });
-  }, "primary grow", "fight");
+  const fight = button(crown ? t("shop.fightChampion") : t("shop.fight"), () => void decide({ kind: "fight" }), "primary grow", "fight");
+  if (!crown && emptySlots > 0 && run.line.length > 0 && run.offers.some((o) => o.cost <= run.gold)) {
+    fight.classList.add("half-empty");
+    fight.append(h("span", { class: "fight-warn", "data-testid": "fight-warn" }, t("shop.fillFirst", { n: emptySlots })));
+  }
   // An empty line can fight (and lose a heart) once nothing is affordable, so a broke run moves on.
   fight.disabled = (run.line.length === 0 && run.offers.some((o) => o.cost <= run.gold)) || !!run.gift;
   if (desk) {

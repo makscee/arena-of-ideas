@@ -77,7 +77,7 @@ export const shop = {
   "shop.allLocked": "Every offer is locked",
   "shop.fightChampion": "Fight the champion",
   "shop.fight": "Fight",
-  "shop.fillFirst": { one: "{n} empty slot and {gold}g left: buy a unit first, or press Fight again.", other: "{n} empty slots and {gold}g left: buy units first, or press Fight again." },
+  "shop.fillFirst": { one: "{n} empty slot", other: "{n} empty slots" },
 
   // The Crown's foe and the champion pin.
   "foe.ownCrown": "You face · your champion team · ",

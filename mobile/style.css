@@ -514,6 +514,9 @@ button.link { align-self: flex-start; border: none; background: none; color: var
 button.pending { position: relative; transform: scale(0.97); }
 button.pending::after { content: ""; position: absolute; top: 50%; right: 10px; width: 14px; height: 14px; margin-top: -7px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: pending-spin 0.7s linear infinite; }
 button.play-big.pending::after { width: 26px; height: 26px; margin-top: -13px; right: 18px; border-width: 3px; }
+/* arena#15: Fight with empty slots and gold left names the empty slots. */
+button.half-empty { flex-direction: column; line-height: 1; }
+.fight-warn { display: block; font-size: 13px; font-weight: 600; opacity: 0.85; margin-top: 2px; }
 @keyframes pending-spin { to { transform: rotate(360deg); } }
 /* Battle viewer (slice 9, screens/battle.ts). */
 .bv-line { min-height: 112px; }
