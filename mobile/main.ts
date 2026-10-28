@@ -1646,6 +1646,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       if (run.gold < o.cost) c.classList.add("poor");
       if (o.locked) c.classList.add("locked");
       if (owned) c.classList.add("owned");
+      // Feedback on every tap (CrazyGames audit, arena#13): the card pulses once.
+      c.addEventListener("click", () => (c.classList.remove("tapped"), void c.offsetWidth, c.classList.add("tapped")));
+      c.addEventListener("animationend", () => c.classList.remove("tapped"));
       if (!crown) dragCard(c, { kind: "offer", offer: o });
       if (!desk)
         // Tap-tap: the first tap takes it in hand and lights the slots it can go to,
@@ -1936,6 +1939,18 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     err,
   );
   screen("shop");
+  // A tap on a panel's bare ground (not a card, slot or button) answers too: the hint says what a tap does and blinks (CrazyGames audit, arena#13).
+  for (const panel of document.querySelectorAll<HTMLElement>("#app .run-panel"))
+    panel.addEventListener("click", (e) => {
+      if (!(e.target instanceof Element) || e.target.closest(".cell, .card, button, a, input, [role=button]")) return;
+      const line = chosen !== null ? t("hint.tapSlotBuy") : pick.mode === "picked" ? t("hint.tapSlotMove") : wideQuery.matches ? t("shop.howWide") : t("shop.howPhone");
+      for (const el of [how, hintSlot.firstElementChild].filter((x): x is Element => x !== null && x !== undefined)) {
+        if (el === how) how.replaceChildren(line);
+        el.classList.remove("nudge");
+        void (el as HTMLElement).offsetWidth;
+        el.classList.add("nudge");
+      }
+    });
   // The keyboard stays with the unit in hand (#1064): a move or a merge redraws the
   // shop, and the focus that was on a board card follows the selection.
   if (hasKeys() && pick.mode === "none" && keyboardLost()) document.querySelector<HTMLElement>('[data-testid="line-0"], [data-testid="bench-0"], [data-testid="offer-0"]')?.focus({ preventScroll: true });
