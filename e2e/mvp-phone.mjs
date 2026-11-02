@@ -150,10 +150,14 @@ try {
       if (await tsheet.count()) errors.push(`${name}: the rule sheet doesn't close`);
     }
   };
-  /** The page doesn't scroll at 640 px. */
-  const noVScroll = async (name) => {
-    const hgt = await page.evaluate(() => document.documentElement.scrollHeight);
-    if (hgt > height + 0.5) errors.push(`${name}: scrolls (${hgt}px tall)`);
+  /** A shop-phase page (the shop, a gift) may scroll on a 360x640 phone, as the redesign meant
+   * (style.css: "Reroll and Fight stay in view at the foot while the shop scrolls"): its sticky
+   * foot, Reroll and Fight where the page has them, stays on screen, never below the fold. */
+  const footInView = async (name) => {
+    const foot = page.locator('#app[data-screen="shop"] .shop-side');
+    if (!(await foot.count())) return;
+    const box = await foot.boundingBox();
+    if (!box || box.y + box.height > height + 0.5 || box.y < 0) errors.push(`${name}: the Reroll/Fight foot is off screen (${box ? Math.round(box.y + box.height) : "none"}px)`);
   };
   /** The element is on screen without scrolling (the bottom of a 640 px phone). */
   const onScreen = async (name, locator) => {
@@ -878,7 +882,7 @@ try {
     if (wantTier > shopTier && !new RegExp(pattern(L("gift.freeTierAhead"))).test(free)) errors.push(`gift: the chooser doesn't say a tier ahead: "${free}"`);
     const cards = await page.getByTestId("gift-choices").locator(".card").count();
     if (cards !== 3) errors.push(`gift: ${cards} cards, want 3`);
-    await shot("gift-chooser"); await noHScroll("gift-chooser"); await noVScroll("gift-chooser");
+    await shot("gift-chooser"); await noHScroll("gift-chooser"); await footInView("gift-chooser");
     await tap44("gift Pick and Skip", page.locator('[data-testid^="gift-pick-"], [data-testid="gift-skip"]'));
     await onScreen("gift: Skip", page.getByTestId("gift-skip"));
     // A card's sheet is one tap away, and closes back to the chooser.
@@ -1025,13 +1029,13 @@ try {
       await page.getByTestId("bench-0").waitFor();
       const name = (id) => page.getByTestId(id).locator(".name").textContent();
       const benched = await name("bench-0");
-      await shot("shop-bench"); await noHScroll("shop-bench"); await noVScroll("shop-bench");
+      await shot("shop-bench"); await noHScroll("shop-bench"); await footInView("shop-bench");
       // A bench unit selected, the line full: a tap on a line unit swaps the two.
       const last = await name("line-4");
       await page.getByTestId("bench-0").click();
       await page.getByTestId("to-line").waitFor();
       if ((await page.getByTestId("hint").filter({ hasText: L("hint.lineFullSwap") }).count()) === 0) errors.push("bench: no swap hint with a bench unit selected and the line full");
-      await shot("bench-selected"); await noHScroll("bench-selected"); await noVScroll("bench-selected");
+      await shot("bench-selected"); await noHScroll("bench-selected"); await footInView("bench-selected");
       await tap44("bench actions", page.getByTestId("actions").locator("button"));
       await page.getByTestId("line-4").click();
       await page.waitForFunction((n) => document.querySelector('[data-testid="line-4"] .name')?.textContent === n, benched, { timeout: 5_000 }).catch(() => {});
@@ -1086,12 +1090,12 @@ try {
       await page.getByTestId("gift-title").waitFor();
       if (!(await page.getByTestId("gift-full").isVisible())) errors.push("make room: no 'make room' line with line and bench full");
       for (let i = 0; i < 3; i++) if (!(await page.getByTestId(`gift-pick-${i}`).isDisabled())) errors.push(`make room: Pick ${i} is on with no room`);
-      await shot("gift-make-room"); await noHScroll("gift-make-room"); await noVScroll("gift-make-room");
+      await shot("gift-make-room"); await noHScroll("gift-make-room"); await footInView("gift-make-room");
       await tap44("make room buttons", page.locator('[data-testid="gift-make-room"], [data-testid="gift-skip"]'));
       await page.getByTestId("gift-make-room").click();
       await page.getByTestId("gift-banner").waitFor();
       if (!(await page.getByTestId("gift-banner").textContent()).startsWith(L("gift.waitingFull"))) errors.push(`make room: the banner says "${await page.getByTestId("gift-banner").textContent()}"`);
-      await shot("gift-make-room-aside"); await noHScroll("gift-make-room-aside"); await noVScroll("gift-make-room-aside");
+      await shot("gift-make-room-aside"); await noHScroll("gift-make-room-aside"); await footInView("gift-make-room-aside");
       // Selling stays possible behind it: sell the front unit, and the chooser comes back.
       await page.getByTestId("line-0").click();
       await page.getByTestId("sell").click();
@@ -1131,7 +1135,7 @@ try {
       await page.getByTestId("fight").waitFor();
       const offers = await page.getByTestId("offers").locator(".cell").count();
       if (offers < 6) errors.push(`compact: round ${r.round} shows ${offers} offers, not 6`);
-      await shot("shop-round-8"); await noHScroll("shop-round-8"); await noVScroll("shop-round-8"); await noRates("shop-round-8");
+      await shot("shop-round-8"); await noHScroll("shop-round-8"); await footInView("shop-round-8"); await noRates("shop-round-8");
       await onScreen("round 8: Fight", page.getByTestId("fight"));
       const sizes = await page.locator('[data-testid="line"] .card, [data-testid="offers"] .card').evaluateAll((els) => els.map((e) => `${Math.round(e.getBoundingClientRect().width)}x${Math.round(e.getBoundingClientRect().height)}`));
       if (sizes.some((x) => x !== "64x84")) errors.push(`compact: card sizes ${[...new Set(sizes)].join(", ")}, not 64x84`);

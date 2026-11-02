@@ -2368,7 +2368,7 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 .card.pcard:hover { background: color-mix(in srgb, var(--paper) 6%, transparent); }
 .card.pcard .pcard-stage { display: flex; justify-content: center; width: 100%; padding: 0 12px; height: 96px; }
 .card.pcard .pcard-stage .pc { flex: none; }
-.card.pcard .pc-nm { max-width: 112px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card.pcard .pc-nm { max-width: 112px; overflow-x: clip; overflow-y: visible; text-overflow: ellipsis; white-space: nowrap; }
 .card.pcard .foot { display: flex; gap: 4px; align-items: center; justify-content: center; min-height: 0; flex-wrap: wrap; }
 .card.pcard .foot:empty { display: none; }
 .card.pcard .ver { font-size: 11px; color: var(--muted); }
