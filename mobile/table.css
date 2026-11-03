@@ -215,11 +215,11 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 
 /* The first run's coach (arena#31) is the tray's card */
 :is(#app[data-screen="shop"], #under) .tb-coach:has(> .coach) { padding: 0; background: none; border: 0; box-shadow: none; border-radius: 0; overflow: visible; justify-content: stretch; }
-:is(#app[data-screen="shop"], #under) .tb-coach > .coach { flex: 1; justify-content: center; margin: 0; padding: 12px 16px; border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 6px 0 var(--outline); font-size: 20px; line-height: 1.3; gap: 6px; }
+:is(#app[data-screen="shop"], #under) .tb-coach > .coach { flex: 1; justify-content: center; margin: 0; padding: 12px 16px; border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 6px 0 var(--outline); font-size: 18px; line-height: 1.25; gap: 4px; min-height: 0; }
 :is(#app[data-screen="shop"], #under) .tb-coach > .coach .coach-step { display: block; font-size: 18px; }
 :is(#app[data-screen="shop"], #under) .tb-coach > .coach .coach-pair { display: flex; }
 :is(#app[data-screen="shop"], #under) .tb-coach > .coach .coach-chain { display: none; }
-:is(#app[data-screen="shop"], #under) .tb-coach > .coach .coach-text b { font-size: 20px; }
+:is(#app[data-screen="shop"], #under) .tb-coach > .coach .coach-text b { font-size: 18px; }
 :is(#app[data-screen="shop"], #under) .tb-coach > .coach .coach-by { display: block; margin: 2px 0 0; font-size: 18px; }
 :is(#app[data-screen="shop"], #under) .stage.P .tb-coach > .coach { padding: 6px 10px; border-width: 3px; border-radius: 14px; font-size: 14px; gap: 2px; }
 :is(#app[data-screen="shop"], #under) .stage.P .tb-coach > .coach .coach-step { font-size: 12px; }
