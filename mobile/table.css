@@ -102,7 +102,7 @@
 :is(#app[data-screen="shop"], #under) .stage.L .tb-coach { left: 16px; top: 16px; width: 410px; bottom: 22px; }
 :is(#app[data-screen="shop"], #under) .stage.L .tb-shop { left: 440px; top: 6px; width: 470px; }
 :is(#app[data-screen="shop"], #under) .stage.L .tb-go { right: 18px; top: 16px; bottom: 22px; width: 308px; }
-:is(#app[data-screen="shop"], #under) .stage.L .tb-insp { left: 892px; top: 84px; width: 372px; max-height: 396px; }
+:is(#app[data-screen="shop"], #under) .stage.L .tb-insp { left: 892px; top: 84px; width: 372px; max-height: 400px; padding-bottom: 8px; }
 
 /* Portrait stage, 390×844 */
 :is(#app[data-screen="shop"], #under) .stage.P .tb-hud { left: 8px; right: 8px; top: 8px; height: 48px; gap: 6px; }
@@ -154,10 +154,14 @@
 :is(#app[data-screen="shop"], #under) .stage.L .tb-insp :is(.ik-name, .sheet-form, .t-glue, .tw, .ti, .sheet-credit, .credit-line, .num, .rates, [data-testid="unit-rates"]) { font-size: 18px; }
 :is(#app[data-screen="shop"], #under) .stage.L .tb-insp .pc-tab { height: auto; min-height: 26px; }
 :is(#app[data-screen="shop"], #under) .stage.L .pin-emoji { font-size: 18px; }
-:is(#app[data-screen="shop"], #under) .tb-insp .sheet-xl-grid { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 4px 12px; align-items: start; }
+:is(#app[data-screen="shop"], #under) .tb-insp .sheet-xl-grid { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 4px 12px; align-items: start; }
+:is(#app[data-screen="shop"], #under) .tb-insp .sheet-hero > .pc { transform: scale(0.72); transform-origin: 0 0; }
+:is(#app[data-screen="shop"], #under) .tb-insp .sheet-hero { overflow: visible; min-width: 0; }
 :is(#app[data-screen="shop"], #under) .tb-insp .sheet-hero { padding-top: 22px; }
-:is(#app[data-screen="shop"], #under) .tb-insp > .row:last-child { position: sticky; bottom: -14px; margin: 8px -4px -14px; padding: 8px 4px 14px; background: var(--paper); }
-:is(#app[data-screen="shop"], #under) .tb-insp > .label { margin-bottom: 4px; }
+:is(#app[data-screen="shop"], #under) .tb-insp { display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+:is(#app[data-screen="shop"], #under) .tb-insp .insp-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 8px; }
+:is(#app[data-screen="shop"], #under) .tb-insp > .row { flex: none; }
+:is(#app[data-screen="shop"], #under) .tb-insp .insp-body > .label { margin-bottom: 4px; padding-right: 40px; }
 :is(#app[data-screen="shop"], #under) .tb-go button.primary { flex-direction: column; flex-wrap: nowrap; gap: 2px; }
 :is(#app[data-screen="shop"], #under) .tb-go button.primary .fight-warn { flex-basis: auto; background: none; border: 0; padding: 0; margin: 0; font: 600 18px/1.1 var(--font-body); color: var(--outline); text-shadow: none; }
 :is(#app[data-screen="shop"], #under) .stage.P .tb-go button.primary.half-empty { font-size: 24px; }
@@ -202,3 +206,9 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="shop"], #under) .stage.P.compact .tb-insp { max-height: 250px; bottom: 96px; }
 :is(#app[data-screen="shop"], #under) .stage.P .tb-side.them .next-opp .who { display: inline; }
 :is(#app[data-screen="shop"], #under) .stage.P .tb-insp .actions button { min-width: 48px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-hud { gap: 4px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate { gap: 6px; padding: 0 6px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate.menu { padding: 0 2px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate .heart-icons .heart { width: 18px; height: 18px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate .gold { font-size: 22px; }
+:is(#app[data-screen="shop"], #under) .tb-insp .sheet-hero { padding-left: 12px; }

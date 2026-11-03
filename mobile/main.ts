@@ -1363,20 +1363,32 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
    * for its Fuse), else how to use the board. `force` redraws even when the
    * same card is shown (the selection changed). */
   let inspected = "";
+  const layoutInspector = () => {
+    inspector.querySelector(":scope > button.insp-x")?.remove();
+    const rows = [...inspector.children].filter((c) => c.classList.contains("row"));
+    const body = h("div", { class: "insp-body" }, ...[...inspector.children].filter((c) => !rows.includes(c)).map((c) => c as HTMLElement));
+    inspector.replaceChildren(...(body.childElementCount ? [body] : []), ...rows);
+  };
   const renderInspector = (force = false) => {
     drawInspector(force);
     inspector.hidden = inspector.childElementCount === 0;
+    // What reads scrolls; the buttons (Buy, Lock, move, sell) stay at the card's foot.
+    layoutInspector();
     // A close on the card (the mockup's "Esc ✕"): the offers under it on a phone are out of reach otherwise.
-    if (!inspector.hidden)
-      inspector.prepend(
-        button("✕", () => {
-          fuseView = null;
-          pick = { mode: "none" };
-          chosen = null;
-          renderLine();
-        }, "insp-x", "inspector-close"),
-      );
+    if (!inspector.hidden) inspector.prepend(closeBtn());
   };
+  const closeBtn = () =>
+    button(
+      "✕",
+      () => {
+        fuseView = null;
+        pick = { mode: "none" };
+        chosen = null;
+        renderLine();
+      },
+      "insp-x",
+      "inspector-close",
+    );
   const drawInspector = (force: boolean) => {
     if (fuseView) return inspector.replaceChildren(fuseView);
     const at: At | null = (pick.mode === "picked" ? { kind: "line", index: pick.index } : chosen !== null ? { kind: "offer", slot: chosen } : null);
@@ -1407,6 +1419,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
           const lockBtn = canLock(o) ? [button(`${lockLabel(o)} · L`, () => lock(o), "", "lock")] : [];
           inspector.replaceChildren(head, sheet, h("div", { class: "row" }, ...lockBtn, buy));
           ratesToFoot();
+          layoutInspector();
+          inspector.prepend(closeBtn());
         },
         (e: unknown) => {
           if (inspected === key) inspector.replaceChildren(head, h("div", { class: "error" }, e instanceof Error ? e.message : String(e)));
@@ -1686,7 +1700,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   };
   const offerSlots = offerPositions(run);
   // The shop row has the tray's width: more offers than three shrink their pieces to fit.
-  const manyOffers = offerSlots.length > 4;
+  const manyOffers = offerSlots.length > 3;
   const offerPx = Math.min(pieceSizes().offer, Math.floor((tall ? 366 : manyOffers ? 626 : 462) / offerSlots.length) - 14);
   const offers = h(
     "div",
