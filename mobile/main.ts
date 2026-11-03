@@ -776,13 +776,8 @@ async function openCodex(state?: Partial<CodexState>): Promise<void> {
   if (app.dataset.screen !== "codex" || !codexBack) {
     // A battle under it pauses (keepScreen), and its fetches start fresh.
     const keep = keepScreen();
-    const desk = isDesktop();
     codexCache = newCodexCache();
-    // The shop's desktop layout is more than CSS: crossed 1024px meanwhile, Back redraws it.
-    codexBack = () => {
-      keep();
-      if (isDesktop() !== desk && app.dataset.screen === "shop") rerender?.();
-    };
+    codexBack = keep;
   }
   // A deep link (a term's "Open in Codex") is a fresh Codex: no tab keeps the
   // scroll it had, whatever was open before (R2-17); fetched data stays.
