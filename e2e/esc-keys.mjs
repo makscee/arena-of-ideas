@@ -76,14 +76,13 @@ export async function escPass(browser, url, { label, viewport, touch = false, er
     // run menu opens, and Esc on it resumes.
     await tid("play").click();
     await tid("gold").waitFor();
-    if (mobile) {
+    {
       const gold = await tid("gold").textContent();
-      // Tap-tap (#1293): the first tap takes the offer in hand, the second opens its sheet.
+      // Tap-tap (#1293): the tap takes the offer in hand and the inspector reads it; Esc puts it down, unbought.
       await tid("offer-0").click();
-      await tid("offer-0").click();
-      await tid("offer-close").waitFor();
+      await tid("inspector").waitFor({ state: "visible" });
       await esc();
-      await expectShown("Shop → offer → Esc", tid("offer-close"), false);
+      await expectShown("Shop → offer → Esc", tid("inspector"), false);
       if ((await tid("gold").textContent()) !== gold) fail(`Shop → offer → Esc bought it (${gold} → ${await tid("gold").textContent()})`);
     }
     await tid("legend-open").click();
@@ -97,11 +96,8 @@ export async function escPass(browser, url, { label, viewport, touch = false, er
     await expectShown("Shop → menu → Esc resumes", tid("run-menu"), false);
 
     // A fight: Esc opens the menu (the battle pauses), Esc resumes play.
-    if (mobile) {
-      await tid("offer-0").click();
-      await tid("offer-0").click();
-      await tid("buy").click();
-    } else await page.keyboard.press("1");
+    await tid("offer-0").click();
+    await tid("buy").click();
     await tid("line").locator(".card").first().waitFor().catch(() => {});
     await tid("fight").click();
     await tid("battle-play").waitFor();

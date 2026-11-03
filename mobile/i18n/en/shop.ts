@@ -4,10 +4,6 @@
 import type { Msg } from "../index";
 
 export const shop = {
-  // The desktop inspector, empty.
-  "inspector.idleCrown": "Hover a card, or Tab to it, to read it here.",
-  "inspector.idle": "Hover a card, or Tab to it, to read it here.",
-
   // The shop's one hint.
   "hint.lineFullSwap": "Line full: Swap trades with the back unit, or tap one.",
   "hint.ownCrown": "The Crown: today's champion is your own team. Beat it to be a slayer again; a loss costs a heart. Your line is final.",
@@ -133,7 +129,6 @@ export const shop = {
   "shop.offersDesk": { one: "Shop · {n} offer", other: "Shop · {n} offers" },
   "shop.offersPhone": "Shop",
   // The shop's one line of how (mission #1286 slice 2): drag, or tap-tap.
-  "shop.howWide": "drag to a slot, or tap it then tap a slot",
   "shop.howPhone": "tap, then tap a slot · or drag",
   // A slot lit for the offer in hand: its twin merges it in.
   "slot.awakens": "awakens ★",

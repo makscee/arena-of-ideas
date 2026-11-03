@@ -201,3 +201,4 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="shop"], #under) .stage.P.compact .tb-shop { top: 90px; }
 :is(#app[data-screen="shop"], #under) .stage.P.compact .tb-insp { max-height: 250px; bottom: 96px; }
 :is(#app[data-screen="shop"], #under) .stage.P .tb-side.them .next-opp .who { display: inline; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-insp .actions button { min-width: 48px; }

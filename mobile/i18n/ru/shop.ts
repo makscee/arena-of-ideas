@@ -3,10 +3,6 @@ import type { Msg } from "../index";
 import type { shop as en } from "../en/shop";
 
 export const shop = {
-  // The desktop inspector, empty.
-  "inspector.idleCrown": "Наведи на карту или дойди до неё Tab, чтобы прочитать её здесь.",
-  "inspector.idle": "Наведи на карту или дойди до неё Tab, чтобы прочитать её здесь.",
-
   // The shop's one hint.
   "hint.lineFullSwap": "Строй полон: ⇄ меняет с задним, или нажми на юнита.",
   "hint.ownCrown": "Корона: сегодняшний чемпион — твоя же команда. Победи её, чтобы снова стать цареубийцей; поражение стоит сердца. Строй окончательный.",
@@ -131,7 +127,6 @@ export const shop = {
   "shop.offersDesk": { one: "Лавка · {n} карта", few: "Лавка · {n} карты", many: "Лавка · {n} карт", other: "Лавка · {n} карты" },
   "shop.offersPhone": "Лавка",
   // The shop's one line of how (mission #1286 slice 2): drag, or tap-tap.
-  "shop.howWide": "перетащи в слот или коснись, затем слота",
   "shop.howPhone": "коснись, затем слота · или тяни",
   // A slot lit for the offer in hand: its twin merges it in.
   "slot.awakens": "пробудит ★",

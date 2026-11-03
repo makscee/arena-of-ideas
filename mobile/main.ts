@@ -29,7 +29,7 @@ import { isMine, reportLink, setReporter } from "./ui/report";
 import { previewName } from "./ui/fusion";
 import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
-import { actionable, app, button, wideQuery, closable, desktopQuery, dismissable, h, hasKeys, isDesktop, keepFocus, keepScreen, keyboardLost, keyLabel, keyOf, onKeys, onRestore, overlay, screen, show, who, withKey } from "./ui/dom";
+import { actionable, app, button, closable, desktopQuery, dismissable, h, hasKeys, isDesktop, keepFocus, keepScreen, keyboardLost, keyLabel, keyOf, onKeys, onRestore, overlay, screen, show, who, withKey } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
 import { telegramSheet } from "./screens/telegram";
 import { emailAttach, emailSignIn, emailSignUp } from "./screens/email";
@@ -943,11 +943,9 @@ let forgeScene: [number, number, string | undefined] | null = null;
 /** What the shop is in the middle of: nothing, a unit picked, or a fuse waiting for its second unit. */
 type Pick = { mode: "none" } | { mode: "picked"; index: number } | { mode: "fuse"; first: number };
 
-/** The shop. `selected`: the line slot to keep selected on desktop (a unit
- * just moved by key or drag stays in hand). At 1024px and wider (ui/dom.ts
- * isDesktop) the same shop is a top bar, a wide board and a right inspector
- * that reads the hovered or selected card instead of pop-up sheets, with
- * mouse and keys; below it the phone layout is as it was. */
+/** The shop, as the table (arena#28): one stage at every size (ui/stage.ts, table.css), tap-tap
+ * and keys, the inspector floating over it instead of pop-up sheets. `selected`: the line slot to
+ * keep selected (a unit just moved by key or drag stays in hand). */
 /** Where each offer stands in the shop row (arena#14): the server renumbers the
  * offers after a buy, so the row remembers positions: a bought offer leaves a
  * gap and the others stay where they were. `at[position]` is an index in run.offers, or -1.
