@@ -472,6 +472,8 @@ try {
     // Rules v2 (#1049): the pair fuses only with a design; give it one (as the
     // night batch would), claimed by this player.
     await call("POST", "/dev/codex-pair", { a: run.line.find((u) => u.form === "awoken").unitId, b: almost.unitId, state: "discovered" }, fuser.id);
+    // A gift still waiting in this run opens over the shop: skip it first.
+    await dropOwnGift();
     // Tapping the offer shows "Awakens!" in the inspector.
     await page.getByTestId(`offer-${run.offers[key - 1].slot}`).click();
     await page.getByTestId("inspector").getByTestId("buy-preview").waitFor();
