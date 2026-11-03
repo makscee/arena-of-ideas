@@ -2011,7 +2011,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       return true;
     }
     if (crown) return false;
-    if (/^[1-9]$/.test(k) && Number(k) <= L) {
+    // 1–5 are the line, 6–8 the bench slots after it (the board's own numbering).
+    if (/^[1-9]$/.test(k) && Number(k) <= L + B) {
       const slot = Number(k) - 1;
       if (tapSlot(slot)) return true;
       if (pick.mode === "none" && chosen === null && unitAt(slot)) pick = { mode: "picked", index: slot };

@@ -314,10 +314,15 @@ async function scenes(lang) {
     // → walks to it, the digit of the twin's slot merges it there.
     const twin = await k.page.evaluate(() => {
       const name = (c) => c.querySelector(".name")?.textContent ?? "";
+      const two = new Set([...document.querySelectorAll('[data-testid^="line-"].cell.you, [data-testid^="bench-"].cell.you')].filter((c) => c.dataset.copies === "2").map(name));
       const offers = [...document.querySelectorAll('[data-testid^="offer-"].cell')];
-      const o = offers.find((x) => x.classList.contains("owned") && !x.classList.contains("poor"));
-      const line = [...document.querySelectorAll('[data-testid^="line-"].cell.you')];
-      return o ? line.findIndex((c) => c.dataset.copies === "2" && name(c) === name(o)) + 1 : 0;
+      const o = offers.find((x) => x.classList.contains("owned") && !x.classList.contains("poor") && two.has(name(x)));
+      // The board's numbering: the line's slots 1–5, then the bench's.
+      const board = [...document.querySelectorAll('[data-testid^="line-"], [data-testid^="bench-"]')].filter((c) => !c.dataset.testid.endsWith("-empty"));
+      const at = o ? board.findIndex((c) => c.dataset.copies === "2" && name(c) === name(o)) : -1;
+      if (at < 0) return 0;
+      const bench = board[at].dataset.testid.startsWith("bench-");
+      return bench ? 5 + Number(board[at].dataset.testid.slice(6)) + 1 : Number(board[at].dataset.testid.slice(5)) + 1;
     });
     if (third > 0) for (let i = 0; i < third; i++) await k.press("ArrowRight");
     if (third > 0 && twin > 0) await k.press(String(twin));
