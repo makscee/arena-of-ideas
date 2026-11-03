@@ -17,6 +17,10 @@ const ALLOWED = new Set<string>([
   // battle.ts matches the caption word src/mvp/trace.ts builds (the game's
   // own words, M4-3), never shows it.
   "Time's up",
+  // ui/coach.ts matches the faces' when words (src/mvp/face.ts) to find a unit
+  // that answers an ally; it never shows them (arena#31).
+  "Ally hit",
+  "Ally strike",
 ]);
 
 function files(dir: string): string[] {

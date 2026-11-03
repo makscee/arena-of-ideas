@@ -70,7 +70,7 @@ export function startRun(deps: RunDeps, player: PlayerRef): MvpRunState {
   // The rating every ghost and Slay of this run carries: a human's as it is
   // now (it only moves when a run ends, and only one runs at a time).
   const rating = player.bot ? deps.rules.botRating : (deps.store.rating(player.id)?.rating ?? deps.rules.ratingStart);
-  const fresh = initMvpRun({ runId: randomUUID(), player, seed: deps.seed(), content: deps.content, day: deps.today().seq, startedAt: deps.now().toISOString(), rules: deps.rules, rating });
+  const fresh = initMvpRun({ runId: randomUUID(), player, seed: deps.seed(), content: deps.content, day: deps.today().seq, startedAt: deps.now().toISOString(), rules: deps.rules, rating, firstRun: !player.bot && !deps.store.rating(player.id) });
   const run = setOpponent(fresh, pickGhost(deps, fresh));
   deps.store.putRun(run);
   return run;
