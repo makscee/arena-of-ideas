@@ -31,6 +31,10 @@ import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
 import { actionable, app, button, wideQuery, closable, desktopQuery, dismissable, h, hasKeys, isDesktop, keepFocus, keepScreen, keyboardLost, keyLabel, keyOf, onKeys, onRestore, overlay, screen, show, who, withKey } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
+import { startScreen } from "./screens/start";
+import { guestName } from "./ui/guest-name";
+import { coachStep, coaching, type CoachStep } from "./ui/coach";
+import { coachState, coachView } from "./ui/coach-view";
 import { telegramSheet } from "./screens/telegram";
 import { emailAttach, emailSignIn, emailSignUp } from "./screens/email";
 import { galleryScreen } from "./screens/gallery";
@@ -467,23 +471,53 @@ function telegramRow(linked: boolean, err: HTMLElement): HTMLElement {
 }
 
 function nameForm(tg: HTMLElement | null = null, mail = false): void {
-  const input = h("input", { placeholder: t("name.placeholder"), maxlength: "24", autocomplete: "nickname", "data-testid": "name-input" });
+  firstScreen(async (name) => void (await api.register(name)), [mail ? button(t("email.signIn"), () => emailSignIn({ back: nameScreen, onDone: signedIn }), "", "email-signin-open") : null, tg]);
+}
+
+/** The first screen (arena#31, mission #26 move 3): "One rule starts a chain."
+ * over a chain that plays itself. PLAY (Enter) skips the name form: a
+ * generated name, then round 1 with the coach. A name typed in the quiet field
+ * under it takes the name form's way: Home. `register` makes the player. */
+function firstScreen(register: (name: string) => Promise<void>, extra: (HTMLElement | null)[]): void {
   const err = errorLine();
-  const go = () => guarded(err, async () => {
-    await api.register(input.value.trim());
-    await homeScreen();
-  });
-  input.addEventListener("keydown", (e) => e.key === "Enter" && void go());
-  show(
-    h("h1", {}, t("name.title")),
-    h("p", { class: "dim" }, t("name.intro")),
-    input,
-    button(t("name.enter"), () => void go(), "primary", "name-submit"),
-    mail ? button(t("email.signIn"), () => emailSignIn({ back: nameScreen, onDone: signedIn }), "", "email-signin-open") : null,
-    tg,
-    err,
-  );
-  input.focus();
+  let going = false;
+  const go = (name: string | null) => {
+    if (going) return;
+    going = true;
+    void guarded(err, async () => {
+      if (name !== null) {
+        await register(name);
+        return homeScreen();
+      }
+      await registerGenerated(register);
+      await playFirst();
+    }).finally(() => (going = false));
+  };
+  void getContent().then((c) => c, () => null).then((content) => startScreen({ content, onPlay: () => go(null), onName: (n) => go(n), extra, err }));
+}
+
+/** A generated name the server takes (a taken or crude one is rerolled). */
+async function registerGenerated(register: (name: string) => Promise<void>): Promise<void> {
+  for (let tries = 0; ; tries++) {
+    try {
+      return await register(guestName(undefined, tries < 3 ? 3 : 5));
+    } catch (e) {
+      if (!(e instanceof ApiError) || ![400, 409].includes(e.status) || tries >= 5) throw e;
+    }
+  }
+}
+
+/** PLAY: the new player's first run, at once (Home is skipped). */
+async function playFirst(): Promise<void> {
+  void loadUnitRates();
+  const [home, content, health]: [HomeView, MvpContent, { codex?: boolean }] = await Promise.all([api.home(), getContent(), api.health().catch(() => ({}))]);
+  codexOn = !!health.codex;
+  // A server that wants an email first sends the player to add one (homeScreen does it).
+  if (!CG && home.email?.required && !home.email.address) return homeScreen();
+  rules = home.rules;
+  day = home.day;
+  firstRun = !home.rating || home.rating.runs === 0;
+  shopScreen(await api.startRun(), content);
 }
 
 // ---------- home ----------
@@ -506,6 +540,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
   if (!CG && home.email?.required && !home.email.address) return emailAttach({ playerName: api.player?.name ?? "", onDone: () => void homeScreen() });
   rules = home.rules;
   day = home.day;
+  firstRun = !home.rating || home.rating.runs === 0;
   // The run that waits, for Continue's round and hearts (null if it ended meanwhile).
   const waiting = home.activeRunId ? await api.run(home.activeRunId).catch(() => null) : null;
   const active = waiting && waiting.phase !== "over" ? waiting : null;
@@ -800,6 +835,8 @@ async function openCodex(state?: Partial<CodexState>): Promise<void> {
  * the Codex does; a wish redraws it from the server. `codexOn`: whether the
  * server runs the Codex (/health), so its links show only then. */
 let codexOn = false;
+/** The signed-in player has no finished run yet: round 1 of their run has the coach (arena#31). */
+let firstRun = false;
 void api.health().then((h) => (codexOn = !!h.codex), () => undefined);
 setReporter((r) => api.report(r), () => api.player?.id ?? savedPlayer()?.id ?? "");
 async function openForge(tab: ForgeTab = "units"): Promise<void> {
@@ -980,6 +1017,12 @@ function offerPositions(run: RunView): number[] {
   offerRow = { runId: run.runId, round: run.round, at, ids: at.map((i) => (i >= 0 ? run.offers[i]!.unitId : "")) };
   return at;
 }
+/** The coach's card under the shop (in the error line's place: nothing else moves), and the offer or the Fight button it points at lit. */
+function mountCoach(step: CoachStep, err: HTMLElement, content: MvpContent): void {
+  err.append(coachView(step, content));
+  const target = step.step === "fight" ? document.querySelector<HTMLElement>('[data-testid="fight"]') : document.querySelector<HTMLElement>(`[data-testid="offer-${step.offer}"]`);
+  target?.classList.add("coach-target");
+}
 function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -1, offer = -1): void {
   if (run.phase === "over") return runOverScreen(run, content, notice);
   const desk = isDesktop();
@@ -996,6 +1039,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const zoneStart = (slot: number) => (slot < L ? 0 : L);
   const zoneLen = (slot: number) => (slot < L ? run.line.length : run.bench.length);
   const board = [...run.line, ...run.bench];
+  // The first run's coach (arena#31): round 1, before the first fight, builds a pair from the shop that is there.
+  const coachNow: CoachStep | null = !crown && !run.gift && !notice && coaching({ round: run.round, fights: run.fights.length, firstRun }) ? coachStep(coachState(run, L, content)) : null;
   const owns = (unitId: string) => mergeTarget(board, unitId) >= 0;
   let pick: Pick = desk && unitAt(selected) ? { mode: "picked", index: selected } : { mode: "none" };
   const unitOf = (id: string) => unitIn(content, id); // a run on an older pool may hold a unit that left
@@ -1144,7 +1189,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   };
   /** Fight with empty line slots and gold left warns (arena#15, #16): a first
    * round lost with one or two units was the commonest unexplained loss. */
-  const wantsFill = () => !crown && !run.gift && run.line.length > 0 && run.line.length < L && run.offers.some((o) => o.cost <= run.gold);
+  const wantsFill = () => coachNow?.step !== "fight" && !crown && !run.gift && run.line.length > 0 && run.line.length < L && run.offers.some((o) => o.cost <= run.gold);
   const slotCard = (slot: number): HTMLElement => {
     const u = unitAt(slot);
     const onBench = slot >= L;
@@ -2037,6 +2082,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     err,
   );
   screen("shop");
+  if (coachNow) mountCoach(coachNow, err, content);
   // A tap on a panel's bare ground (not a card, slot or button) answers too: the hint says what a tap does and blinks (CrazyGames audit, arena#13).
   for (const panel of document.querySelectorAll<HTMLElement>("#app .run-panel"))
     panel.addEventListener("click", (e) => {
@@ -2547,6 +2593,12 @@ function joinForm(code: string, tg: HTMLElement | null = null): void {
   );
 }
 function nameJoinForm(code: string, tg: HTMLElement | null): void {
+  // Open to all, no join link: the first screen (arena#31).
+  if (code === "")
+    return firstScreen(async (name) => {
+      const s = await api.join(code, name);
+      history.replaceState(null, "", ownLink(s.invite));
+    }, [tg]);
   const input = h("input", { placeholder: t("join.yourName"), maxlength: "24", autocomplete: "nickname", "data-testid": "join-name" });
   const err = errorLine();
   const go = () => guarded(err, async () => {

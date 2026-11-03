@@ -98,7 +98,10 @@ async function fullRun(lang) {
   const { page, tid, press, tabTo, settle, expect, fail } = k;
   await page.goto(`${url}?lang=${lang}`, { timeout: 20_000 });
   await tid("name-input").waitFor({ timeout: 10_000 });
-  expect("sign-in: the name field has the keyboard", (await k.active()) === "name-input");
+  // The first screen (arena#31): PLAY has the keyboard; the name field is a Tab away.
+  expect("sign-in: PLAY has the keyboard", (await k.active()) === "start-play");
+  await tid("name-input").focus();
+  expect("sign-in: the name field takes the keyboard", (await k.active()) === "name-input");
   await page.keyboard.type(`Keys${lang}${TAG}`);
   await press("Enter");
   await tid("play").waitFor();

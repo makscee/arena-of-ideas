@@ -7,7 +7,8 @@ import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { DRAW_SCORE, ratingChange, ratingK, type MvpRunState } from "../../../src/mvp/run.js";
 import { rngStep } from "../../../src/rng.js";
 import { createMvpApp } from "./app.js";
-import { mvpContent } from "./content.js";
+import { contentOf, mvpContent } from "./content.js";
+import { ROWS_V2 } from "../../../src/mvp/units-v2.js";
 import { decide, GHOST_PICK_POOL, preview, startRun } from "./runs.js";
 import { MemoryMvpStore } from "./store.js";
 import { mvpRuntime, type MvpDeps } from "./runtime.js";
@@ -44,6 +45,41 @@ function weakChampion(rt: ReturnType<typeof world>, over: Partial<Champion> = {}
 }
 
 describe("MVP run server", () => {
+  it("a first run's round 1 shop holds a striker and its answerer, for the coach (arena#31)", () => {
+    const rt = world({ content: contentOf(ROWS_V2) });
+    const names = (run: MvpRunState) => run.offers.map((o) => rt.content.units.find((u) => u.id === o.unitId)!.name);
+    for (let i = 0; i < 8; i++) {
+      const run = startRun(rt, { id: `new${i}`, name: `New ${i}`, bot: false });
+      expect(run.offers).toHaveLength(rt.rules.offers);
+      expect(names(run)).toEqual(expect.arrayContaining(["Gambler", "Medic"]));
+      expect(run.offers.map((o) => o.slot)).toEqual(run.offers.map((_, slot) => slot));
+      expect(run.offers.every((o) => o.cost === rt.rules.unitCost)).toBe(true);
+    }
+    // Buying them in order puts Medic right behind Gambler, and the fight keeps the previewed opponent.
+    let run = startRun(rt, { id: "walk", name: "Walker", bot: false });
+    const shown = run.opponent!;
+    for (const name of ["Gambler", "Medic"]) {
+      const slot = run.offers.find((o) => rt.content.units.find((u) => u.id === o.unitId)!.name === name)!.slot;
+      decide(rt, run, { kind: "buy", slot });
+      run = rt.store.run(run.runId)!;
+    }
+    expect(run.line.map((u) => u.name)).toEqual(["Gambler", "Medic"]);
+    expect(decide(rt, run, { kind: "fight" }).fight!.opponent.ghostId).toBe(shown.ghostId);
+  });
+
+  it("only a first run is steered: a player with a rating and a bot get the plain draw", () => {
+    const rt = world({ content: contentOf(ROWS_V2) });
+    const hasPair = (run: MvpRunState) => ["Gambler", "Medic"].every((n) => run.offers.some((o) => rt.content.units.find((u) => u.id === o.unitId)!.name === n));
+    const plain = (p: PlayerRef, n: number) => Array.from({ length: n }, (_, i) => hasPair(startRun(rt, { ...p, id: `${p.id}${i}` })));
+    for (let i = 0; i < 12; i++) rt.store.putRating({ player: { id: `vet${i}`, name: `Vet ${i}`, bot: false }, rating: 1000, runs: 1, slays: 0, daysAsChampion: 0, playoffWins: 0 });
+    // Twelve veterans on a draw of three from fifteen: not all of them meet the pair.
+    expect(plain({ id: "vet", name: "Vet", bot: false }, 12)).toContain(false);
+    expect(plain({ id: "bot", name: "bot-Ash", bot: true }, 12)).toContain(false);
+    // A pool without the pair is left alone.
+    const v1 = world();
+    expect(startRun(v1, { id: "n1", name: "N", bot: false }).offers).toHaveLength(v1.rules.offers);
+  });
+
   it("picks each round's opponent at round start, and the fight uses it", () => {
     const rt = world();
     let run = startRun(rt, maks);
