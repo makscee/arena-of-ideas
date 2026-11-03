@@ -15,7 +15,7 @@
 }
 :is(#app[data-screen="shop"], #under) .stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 :is(#app[data-screen="shop"], #under) .stage.L { width: 1280px; height: 720px; }
-:is(#app[data-screen="shop"], #under) .stage.P { width: 390px; height: 844px; }
+:is(#app[data-screen="shop"], #under) .stage.P { width: 390px; }
 :is(#app[data-screen="shop"], #under) .stage > * { position: absolute; margin: 0; }
 
 /* HUD plates */
@@ -107,7 +107,7 @@
 /* Portrait stage, 390×844 */
 :is(#app[data-screen="shop"], #under) .stage.P .tb-hud { left: 8px; right: 8px; top: 8px; height: 48px; gap: 6px; }
 :is(#app[data-screen="shop"], #under) .stage.P .plate { height: 48px; padding: 0 8px; border-width: 3px; border-radius: 14px; box-shadow: 0 4px 0 var(--outline), inset 0 2px 0 rgba(255, 255, 255, 0.1); }
-:is(#app[data-screen="shop"], #under) .stage.P .plate button { height: 40px; min-width: 40px; min-height: 40px; padding: 0 6px; font-size: 22px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate button { height: 44px; min-width: 44px; min-height: 44px; padding: 0 6px; font-size: 22px; }
 :is(#app[data-screen="shop"], #under) .stage.P .plate button.new { font-size: 14px; }
 :is(#app[data-screen="shop"], #under) .stage.P .plate .round-pill { font-size: 19px; }
 :is(#app[data-screen="shop"], #under) .stage.P .plate .heart-icons { gap: 1px; }
@@ -135,9 +135,9 @@
 :is(#app[data-screen="shop"], #under) .stage.P .tb-go button.reroll-btn { height: auto; width: 120px; font-size: 18px; flex-wrap: wrap; gap: 4px; }
 :is(#app[data-screen="shop"], #under) .stage.P .tb-go button.reroll-btn .cost-chip { font-size: 13px; }
 :is(#app[data-screen="shop"], #under) .stage.P .tb-go button.primary { font-size: 30px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-insp { left: 8px; right: 8px; bottom: 8px; max-height: 430px; border-width: 3px; padding: 10px 12px 12px; font-size: 15px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-insp { left: 8px; right: 8px; bottom: 90px; max-height: 430px; border-width: 3px; padding: 10px 12px 12px; font-size: 15px; }
 :is(#app[data-screen="shop"], #under) .stage.P .tb-insp .dim, :is(#app[data-screen="shop"], #under) .stage.P .tb-insp .small, :is(#app[data-screen="shop"], #under) .stage.P .tb-insp .label { font-size: 13px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-insp button { font-size: 15px; min-height: 40px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-insp button { font-size: 15px; min-height: 44px; }
 
 :is(#app[data-screen="shop"], #under) .stage.P .tb-help { right: 12px; top: 200px; height: 34px; padding: 0 4px; border-width: 3px; border-radius: 12px; box-shadow: 0 3px 0 var(--outline); z-index: 4; }
 :is(#app[data-screen="shop"], #under) .stage.P .tb-help button { height: 28px; min-height: 28px; min-width: 32px; font-size: 18px; padding: 0 8px; }
@@ -162,7 +162,7 @@
 :is(#app[data-screen="shop"], #under) .tb-go button.primary .fight-warn { flex-basis: auto; background: none; border: 0; padding: 0; margin: 0; font: 600 18px/1.1 var(--font-body); color: var(--outline); text-shadow: none; }
 :is(#app[data-screen="shop"], #under) .stage.P .tb-go button.primary.half-empty { font-size: 24px; }
 :is(#app[data-screen="shop"], #under) .stage.P .tb-go button.primary .fight-warn { font-size: 13px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-insp { max-height: 380px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-insp { max-height: 300px; }
 
 :is(#app[data-screen="shop"], #under) .stage.L .tb-tray.many .tb-coach { width: 300px; }
 :is(#app[data-screen="shop"], #under) .stage.L .tb-tray.many .tb-shop { left: 330px; width: 640px; }
@@ -177,3 +177,27 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
   box-shadow: 0 8px 0 var(--outline), 0 30px 80px rgba(0, 0, 0, 0.7);
 }
 @media (max-width: 600px) { body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="forge"] { inset: 6px; border-width: 3px; border-radius: 20px; } }
+
+:is(#app[data-screen="shop"], #under) .tb-insp { position: absolute; }
+:is(#app[data-screen="shop"], #under) .tb-insp button.insp-x { position: absolute; top: 2px; right: 4px; z-index: 2; min-width: 44px; width: 44px; height: 40px; min-height: 40px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; color: #5e5280; font: 600 20px/1 var(--font-body); }
+
+/* Portrait, 48px taps: the stage may be scaled to 0.92 on a 360-wide phone, and a tap stays 44px */
+:is(#app[data-screen="shop"], #under) .stage.P .plate { height: 52px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate button, :is(#app[data-screen="shop"], #under) .stage.P .tb-insp button { min-height: 48px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate button { height: 48px; min-width: 48px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-hud { height: 52px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-help { height: 40px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-help button { height: 40px; min-height: 48px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-coach .gift-banner button { min-height: 48px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-go { height: 64px; }
+/* The compact portrait table (a window under 780 stage px tall): no wells for the hidden team, the tray comes up */
+:is(#app[data-screen="shop"], #under) .stage.P.compact .tb-their:not(:has(.crown-foe)) { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-side.you { top: 98px; }
+:is(#app[data-screen="shop"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-help { top: 90px; }
+:is(#app[data-screen="shop"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-line { top: 128px; }
+:is(#app[data-screen="shop"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-bench { top: 262px; }
+:is(#app[data-screen="shop"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-tray { top: 364px; }
+:is(#app[data-screen="shop"], #under) .stage.P.compact .tb-coach { height: 66px; padding: 6px 12px; }
+:is(#app[data-screen="shop"], #under) .stage.P.compact .tb-shop { top: 90px; }
+:is(#app[data-screen="shop"], #under) .stage.P.compact .tb-insp { max-height: 250px; bottom: 96px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-side.them .next-opp .who { display: inline; }

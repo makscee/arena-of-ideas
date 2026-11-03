@@ -5,21 +5,10 @@
 // never reflows it: the same table, smaller or larger.
 import { h } from "./dom";
 
-export type Orient = "L" | "P";
+import { fit, orientOf, type Orient } from "./stage-fit";
 
-/** The stage's size per orientation. */
-export const STAGE: Record<Orient, { w: number; h: number }> = { L: { w: 1280, h: 720 }, P: { w: 390, h: 844 } };
-
-/** Landscape or portrait stage for a window (the duel's rule: narrower than 0.8 is portrait). */
-export const orientOf = (w: number, hh: number): Orient => (w / hh < 0.8 ? "P" : "L");
+/** Landscape or portrait for the window now. */
 export const orient = (): Orient => orientOf(window.innerWidth, window.innerHeight);
-
-/** The scale that fits the stage in a window, and where its corner goes. */
-export function fit(o: Orient, w: number, hh: number): { k: number; left: number; top: number } {
-  const s = STAGE[o];
-  const k = Math.min(w / s.w, hh / s.h);
-  return { k, left: (w - s.w * k) / 2, top: (hh - s.h * k) / 2 };
-}
 
 /** A stage holding `kids`, fitted to the window now and on every resize. `onFlip`
  * runs when the window crosses between landscape and portrait (the screen draws
@@ -35,16 +24,19 @@ export function stage(kids: (Node | null)[], onFlip: () => void): HTMLElement {
       return onFlip();
     }
     const f = fit(o, window.innerWidth, window.innerHeight);
+    apply();
+  };
+  const apply = () => {
+    const f = fit(o, window.innerWidth, window.innerHeight);
     el.style.setProperty("--k", String(f.k));
     el.style.left = `${f.left}px`;
     el.style.top = `${f.top}px`;
+    el.style.height = `${f.h}px`;
     el.style.transform = `scale(${f.k})`;
+    // A portrait stage under 780 tall is the compact table (their line's empty wells make room).
+    el.classList.toggle("compact", o === "P" && f.h < 780);
   };
-  const f = fit(o, window.innerWidth, window.innerHeight);
-  el.style.setProperty("--k", String(f.k));
-  el.style.left = `${f.left}px`;
-  el.style.top = `${f.top}px`;
-  el.style.transform = `scale(${f.k})`;
+  apply();
   addEventListener("resize", place);
   return el;
 }

@@ -1007,8 +1007,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       play(shopSound(d, run, res.run));
       shopScreen(res.run, content, "", select, offer);
     });
-  /** Lock or unlock an offer (free); on desktop it stays chosen in the inspector. */
-  const lock = (o: Offer) => void decide({ kind: "lock", slot: o.slot }, -1, o.slot);
+  /** Lock or unlock an offer (free); the offer is put down, so the inspector never covers the shop. */
+  const lock = (o: Offer) => void decide({ kind: "lock", slot: o.slot });
   const lockLabel = (o: Offer) => (o.locked ? t("board.unlock") : t("board.lock"));
   // The last shop round has no Lock: the Crown clears the offers. Unlock stays.
   const lastShop = run.round >= rules.rounds;
@@ -1175,6 +1175,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         if (pick.first === slot) pick = { mode: "none" };
         else if (fusesWith(pick.first, slot)) return void fusePreview(pick.first, slot);
         else return;
+      } else if (!crown && pick.mode === "picked" && pick.index >= L && !onBench && run.line.length >= L) {
+        // A bench unit in hand and the line full: a tap on a line unit swaps the two.
+        return moveTo(pick.index, slot);
       } else
         // A tap keeps the unit in hand (the inspector reads it), so the next B, S or F still has one (Esc lets go).
         pick = { mode: "picked", index: slot };
@@ -1365,6 +1368,16 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const renderInspector = (force = false) => {
     drawInspector(force);
     inspector.hidden = inspector.childElementCount === 0;
+    // A close on the card (the mockup's "Esc ✕"): the offers under it on a phone are out of reach otherwise.
+    if (!inspector.hidden)
+      inspector.prepend(
+        button("✕", () => {
+          fuseView = null;
+          pick = { mode: "none" };
+          chosen = null;
+          renderLine();
+        }, "insp-x", "inspector-close"),
+      );
   };
   const drawInspector = (force: boolean) => {
     if (fuseView) return inspector.replaceChildren(fuseView);
@@ -2359,6 +2372,7 @@ function openScene(id: string): void {
         return;
       case "shop":
         if (entry.forge) forgeScene = [entry.forge[0], entry.forge[1], entry.click];
+        else if (entry.click) settle(() => document.querySelector<HTMLElement>(`[data-testid="${entry.click}"]`)?.click());
         return shopScreen(await api.run(entry.runId), content);
       case "run-over":
         return runOverScreen(await api.run(entry.runId), content);

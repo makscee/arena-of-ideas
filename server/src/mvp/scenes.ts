@@ -107,7 +107,7 @@ async function playTo(rt: MvpRuntime, stop: (run: MvpRunState) => boolean, what:
 
 const shopAt = (round: number) => (run: MvpRunState) => run.phase === "shop" && run.round === round && !run.gift;
 const fightOf = (kind: "round" | "crown", outcome: "win" | "loss" | "draw") => (run: MvpRunState) => run.fights.find((f) => f.kind === kind && f.outcome === outcome);
-const shop = (run: MvpRunState): SceneBuilt => ({ player: run.player, entry: { screen: "shop", runId: run.runId } });
+const shop = (run: MvpRunState, click?: string): SceneBuilt => ({ player: run.player, entry: { screen: "shop", runId: run.runId, ...(click ? { click } : {}) } });
 const battleOf = (kind: "round" | "crown", outcome: "win" | "loss" | "draw", keys?: string[]) => async (rt: MvpRuntime): Promise<SceneBuilt> => {
   const run = await playTo(rt, (r) => r.phase === "over" && !!fightOf(kind, outcome)(r), `a ${kind} ${outcome}`, 80);
   return { player: run.player, entry: { screen: "battle", battleId: fightOf(kind, outcome)(run)!.battleId, runId: run.runId, ...(keys ? { keys } : {}) } };
@@ -278,6 +278,8 @@ export const SCENES: Scene[] = [
 
   { id: "shop-r1", group: "Shop", title: "Shop, round 1 (empty board)", look: "Empty line and bench, the first offers, gold", desktop: true, build: async (rt) => shop(await playTo(rt, shopAt(1), "round 1")) },
   { id: "shop-r3", group: "Shop", title: "Shop, round 3", look: "A few units on the line, offers, hearts, run track", desktop: true, build: async (rt) => shop(await playTo(rt, shopAt(3), "round 3")) },
+  { id: "shop-offer", group: "Shop", title: "Shop, an offer in hand", look: "The table: tap an offer and the inspector reads its rule, with Buy and Lock; the lit slots are where it goes", desktop: true, build: async (rt) => shop(await playTo(rt, shopAt(3), "round 3"), "offer-0") },
+  { id: "shop-unit", group: "Shop", title: "Shop, a unit tapped", look: "The table: tap a unit of yours and the inspector reads its rule and whose idea it was, with move, bench and sell", desktop: true, build: async (rt) => shop(await playTo(rt, shopAt(3), "round 3"), "line-0") },
   { id: "shop-r8", group: "Shop", title: "Shop, round 8", look: "A late line, tier offers, the run track near the Crown", desktop: true, build: async (rt) => shop(await playTo(rt, shopAt(8), "round 8")) },
   { id: "shop-bench-full", group: "Shop", title: "Shop, full bench", look: "Line of 5 plus a full bench: does it all fit?", desktop: true, build: async (rt) => shop(await playTo(rt, (r) => r.phase === "shop" && !r.gift && r.line.length >= rt.rules.lineSize && (r.bench ?? []).length >= benchSizeOf(rt.rules), "a full bench", 80)) },
   { id: "shop-merge-hint", group: "Shop", title: "Shop, a merge hint", look: "An offer that is a copy of a unit you own: its hint", desktop: true, build: async (rt) => shop(await playTo(rt, copyOffer(1), "a copy on offer")) },
