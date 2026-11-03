@@ -4,7 +4,7 @@
 // next screen that asks gets the new pack, without a reload.
 import type { MvpContent, UnitContent } from "../src/mvp/contract";
 import { api } from "./api";
-import { openSummon, setCardAbilities, setCardCredits, summonById } from "./ui/card";
+import { openSummon, setCardAbilities, setCardCredits, setCardFaces, summonById } from "./ui/card";
 import { setUnitRefs } from "./ui/term";
 import { rulesLang } from "./lang";
 import { setKnownStatusNames } from "../src/status-names";
@@ -21,6 +21,7 @@ const load = (): Promise<MvpContent> =>
     checkedAt = Date.now();
     const c = localContent(raw); // M4-4: Russian names and lines on a Russian page
     setCardAbilities(c.abilities); // cards draw their When · Who · Does icons from it
+    setCardFaces([...c.units, ...(c.left ?? [])]); // and their pieces' when tab and headline
     setKnownStatusNames(c.statuses); // a coined status's RU name in the battle's chips and log ("Песчинки ×1")
     // "Imp (1/2)" in a unit's text opens the Imp's card (R3-5).
     setUnitRefs({

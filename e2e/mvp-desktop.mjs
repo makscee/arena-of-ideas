@@ -80,10 +80,6 @@ try {
     if (w < min) errors.push(`${name}: the screen is ${Math.round(w)}px wide, want ≥ ${min}`);
   };
   /** Desktop cards are 132×172 at this width. */
-  const cardSize = async (name, testid, nth = 0) => {
-    const box = await page.getByTestId(testid).locator(".card").nth(nth).boundingBox();
-    if (!box || Math.abs(box.width - 132) > 1 || Math.abs(box.height - 172) > 1) errors.push(`${name}: card ${box ? `${Math.round(box.width)}×${Math.round(box.height)}` : "missing"}, want 132×172`);
-  };
   /** Whole on screen, no scrolling. */
   const onScreen = async (name, locator) => {
     const box = await locator.boundingBox();
@@ -93,7 +89,7 @@ try {
     if (await page.getByTestId("overlay").count()) errors.push(`${name}: a pop-up sheet in the shop (the inspector reads cards on desktop)`);
   };
   const gold = async () => Number(((await page.getByTestId("gold").textContent().catch(() => "0")) ?? "0").replace("g", ""));
-  const lineCount = () => page.getByTestId("line").locator(".card.you").count();
+  const lineCount = () => page.getByTestId("line").locator(".cell.you").count();
   /** Waits until the shop is drawn again after a decision (the gold or the line changed). */
   const settle = async () => { await page.waitForTimeout(150); await page.waitForFunction(() => !document.getElementById("app").classList.contains("busy")); };
   /** A gift the run's own buys brought (an awakening copy, R3-15): skip it, so
@@ -106,6 +102,12 @@ try {
     await settle();
   };
   /** The last sound the client asked for (round 3, note 16: ui/sound.ts logs each to window.__sfx). */
+  /** The end card: End jumps to it; once the fight was watched, End has given way to Next round
+   * (arena#14), so › steps to the last beat, where the card comes up. */
+  const showEnd = async () => {
+    if (await page.getByTestId("battle-end").count()) return void (await page.getByTestId("battle-end").click());
+    for (let k = 0; k < 400 && !(await page.getByTestId("end-card").isVisible()); k++) await page.getByTestId("battle-step").click();
+  };
   const lastSfx = () => page.evaluate(() => window.__sfx?.at(-1) ?? "");
   const wantSfx = async (what, re) => {
     const got = await lastSfx();
@@ -129,7 +131,15 @@ try {
   await shot("settings");
   await page.getByTestId("sheet-close").click();
   await shot("home"); await noHScroll("home"); await wide("home", 1100); await onScreen("home: Play", page.getByTestId("play"));
-  await cardSize("home champion", "champion", 2); // the middle card of the fan: the others are tilted
+  {
+    // The champion's pieces (void-board#1295): sized from the panel, so no two touch, each tab and name whole.
+    const reach = await page.getByTestId("champion").locator(".pc").evaluateAll((els) => els.map((pc) => {
+      const rs = [pc, ...pc.querySelectorAll("*")].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
+      return { l: Math.min(...rs.map((r) => r.left)), r: Math.max(...rs.map((r) => r.right)), t: Math.min(...rs.map((r) => r.top)), b: Math.max(...rs.map((r) => r.bottom)) };
+    }));
+    const touch = reach.some((a, i) => reach.some((b, j) => j > i && a.r > b.l && b.r > a.l && a.b > b.t && b.b > a.t));
+    if (reach.length !== 5 || touch) errors.push(`home champion: ${reach.length} pieces${touch ? ", two touch" : ""}`);
+  }
   // Home's two columns: Play sits right of the champion panel.
   const [champBox, playBox] = [await page.getByTestId("champion").boundingBox(), await page.getByTestId("play").boundingBox()];
   if (!(playBox.x > champBox.x + champBox.width)) errors.push("home: Play isn't in the right column");
@@ -137,7 +147,7 @@ try {
     // At 1024px the champion's 5 cards stay on one line (R2-10).
     const size = page.viewportSize();
     await page.setViewportSize({ width: 1024, height: size.height });
-    const tops = await page.getByTestId("champion").locator(".card").evaluateAll((els) => els.map((e) => e.offsetTop)); // the fan tilts them: layout, not the drawn box
+    const tops = await page.getByTestId("champion").locator(".card").evaluateAll((els) => els.map((e) => e.offsetTop));
     if (new Set(tops).size > 1) errors.push(`home at 1024px: the champion's cards wrap (${tops.join(",")})`);
     await shot("home-1024");
     await page.setViewportSize(size);
@@ -202,7 +212,7 @@ try {
     await page.getByTestId("fight").waitFor({ timeout: 10_000 });
     round++;
     const crown = (await page.getByTestId("gold").count()) === 0;
-    if (round === 2 && !crown && (await gold()) >= 1 && (await page.getByTestId("offers").locator(".card").count()) >= 2) {
+    if (round === 2 && !crown && (await gold()) >= 1 && (await page.getByTestId("offers").locator(".cell").count()) >= 2) {
       // Lock (R3-12): click offer 2, L locks it and it stays chosen; R keeps it
       // at the left, still locked; right-click unlocks it.
       const offer = (s) => page.getByTestId(`offer-${s}`);
@@ -230,12 +240,13 @@ try {
     }
     if (round === 1) {
       await shot("shop"); await noHScroll("shop"); await wide("shop", W - 1);
-      await cardSize("shop offers", "offers");
+      // The offers are pieces in cells (#1293): one row, each at least 112 px wide.
+      { const box = await page.getByTestId("offers").locator(".cell").first().boundingBox(); if (!box || box.width < 112) errors.push(`shop offers: cell ${box ? Math.round(box.width) : "missing"}px wide, want ≥ 112`); }
       await onScreen("shop: Fight", page.getByTestId("fight"));
       await onScreen("shop: inspector", page.getByTestId("inspector"));
-      await onScreen("shop: last offer", page.getByTestId("offers").locator(".card").last());
+      await onScreen("shop: last offer", page.getByTestId("offers").locator(".cell").last());
       // Hover reads an offer in the inspector, with its Buy.
-      await page.getByTestId("offers").locator(".card").first().hover();
+      await page.getByTestId("offers").locator(".cell").first().hover();
       await page.getByTestId("inspector").getByTestId("unit-sheet").waitFor();
       await page.getByTestId("inspector").getByTestId("buy").waitFor();
       await shot("shop-hover-offer"); await noOverlay("hover");
@@ -245,7 +256,7 @@ try {
       if (Math.abs(insp.width - 380) > 2) errors.push(`shop: inspector ${Math.round(insp.width)}px wide, want 380`);
       // Double-click buys the first offer.
       const before = await lineCount();
-      await page.getByTestId("offers").locator(".card").first().dblclick();
+      await page.getByTestId("offers").locator(".cell").first().dblclick();
       await settle();
       if ((await lineCount()) !== before + 1) errors.push("shop: double-click didn't buy");
       await dropOwnGift();
@@ -253,7 +264,7 @@ try {
     // Buy with the number keys while gold lasts (and the line has room).
     for (let k = 0; k < 4 && !crown; k++) {
       const g = await gold();
-      const offers = await page.getByTestId("offers").locator(".card").count();
+      const offers = await page.getByTestId("offers").locator(".cell").count();
       if (g < 3 || offers === 0) break;
       const n = await lineCount();
       if (n >= 5) {
@@ -314,7 +325,7 @@ try {
       if (!(await page.getByTestId("line-0").evaluate((el) => el.classList.contains("selected")))) errors.push("the moved unit isn't selected anymore");
       // Esc deselects.
       await page.keyboard.press("Escape");
-      if (await page.locator('[data-testid="line"] .card.selected').count()) errors.push("Esc didn't deselect");
+      if (await page.locator('[data-testid="line"] .cell.selected').count()) errors.push("Esc didn't deselect");
       // With nothing left to step back from, Esc opens the ☰ run menu (R2-10); Esc again closes it.
       await page.keyboard.press("Escape");
       await page.getByTestId("run-menu").waitFor({ timeout: 2_000 }).catch(() => errors.push("Esc didn't open the run menu"));
@@ -352,7 +363,7 @@ try {
     if (round === 1) await desktopBattle();
     if (round === 1) await beamChecks(page, errors, { shot, phone: false });
     if (round === 1) await nowSheetChecks(page, errors, { shot, phone: false });
-    if (!(await page.getByTestId("end-card").isVisible().catch(() => false))) await page.getByTestId("battle-end").click();
+    if (!(await page.getByTestId("end-card").isVisible().catch(() => false))) await showEnd();
     // R2-17 batch E: the end card is the fight's one result: the round
     // fought, hearts and record, and its button goes straight on.
     await page.getByTestId("end-card").waitFor({ timeout: 10_000 });
@@ -482,7 +493,7 @@ try {
     const second = run.line.findIndex((u) => u.uid === almost.uid) - (run.line.findIndex((u) => u.uid === almost.uid) > awake ? 1 : 0);
     await page.getByTestId("inspector").getByTestId("fuse").waitFor();
     await page.keyboard.press("f");
-    await page.locator(".card.fusable").first().waitFor();
+    await page.locator(".cell.fusable").first().waitFor();
     await shot("fuse-pick");
     await page.getByTestId(`line-${second}`).click();
     await page.getByTestId("inspector").getByTestId("forge-discovered").waitFor();
@@ -491,7 +502,7 @@ try {
     if ((await page.getByTestId("inspector").locator('[data-testid="preview-swap"], [data-testid="fusion-recipe"]').count()) > 0) errors.push("fusion: the forge shows a splice recipe or Swap");
     await shot("fusion-forge");
     await page.getByTestId("preview-confirm").click();
-    await page.getByTestId("line").locator(".card.fused").waitFor();
+    await page.getByTestId("line").locator(".cell.fused").waitFor();
     if (!/\bfuse\b/.test((await page.evaluate(() => window.__sfx ?? [])).slice(-2).join(" "))) errors.push("sound: the fuse made no sound");
     // A pair nobody had made reveals its name (R2-5); Esc closes it.
     if (await page.getByTestId("fusion-reveal").isVisible().catch(() => false)) {
@@ -500,10 +511,10 @@ try {
       await page.keyboard.press("Escape");
       await page.getByTestId("fusion-reveal").waitFor({ state: "detached" });
     }
-    await page.getByTestId("line").locator(".card.fused").hover();
+    await page.getByTestId("line").locator(".cell.fused").hover();
     await page.getByTestId("inspector").getByTestId("unit-sheet").waitFor();
     if (!/discovered by (you|@\S+)/.test(await page.getByTestId("inspector").textContent())) errors.push("fused: no discovery credit in the inspector");
-    if ((await page.getByTestId("bench").locator(".card.you").count()) !== 0) errors.push("bench: the fused bench unit is still on the bench");
+    if ((await page.getByTestId("bench").locator(".cell.you").count()) !== 0) errors.push("bench: the fused bench unit is still on the bench");
     await shot("fused");
     // Drag between line and bench (R3-14): line-0 onto the bench's empty slot, then back onto the line's.
     const front = await page.getByTestId("line-0").locator(".name").textContent();
@@ -511,9 +522,9 @@ try {
     await page.getByTestId("bench-0").waitFor();
     if ((await page.getByTestId("bench-0").locator(".name").textContent()) !== front) errors.push(`bench: dragging line-0 to the bench put "${await page.getByTestId("bench-0").locator(".name").textContent()}" there, not "${front}"`);
     await shot("bench-dragged");
-    await page.getByTestId("bench-0").dragTo(page.getByTestId("line").locator(".card.empty").first());
+    await page.getByTestId("bench-0").dragTo(page.getByTestId("line").locator(".cell.empty").first());
     await page.getByTestId("bench-0-empty").waitFor();
-    const back = await page.getByTestId("line").locator(".card.you").last().locator(".name").textContent();
+    const back = await page.getByTestId("line").locator(".cell.you").last().locator(".name").textContent();
     if (back !== front) errors.push(`bench: dragging back put "${back}" at the line's end, not "${front}"`);
   }
 
@@ -526,7 +537,7 @@ try {
   if (!(await page.getByTestId("inspector").count())) errors.push("1024px: no inspector");
   const w1024 = await page.evaluate(() => document.documentElement.scrollWidth);
   if (w1024 > 1024) errors.push(`1024px: horizontal scroll (${w1024}px)`);
-  const line1024 = await page.getByTestId("line").locator(".card").evaluateAll((els) => new Set(els.map((e) => Math.round(e.getBoundingClientRect().top))).size);
+  const line1024 = await page.getByTestId("line").locator(".cell").evaluateAll((els) => new Set(els.map((e) => Math.round(e.getBoundingClientRect().top))).size);
   if (line1024 !== 1) errors.push("1024px: the line wraps");
   await page.setViewportSize({ width: 1023, height: 768 });
   await page.waitForTimeout(200);
@@ -620,30 +631,31 @@ try {
     if ((await page.getByTestId("battle-play").textContent()) === "❚❚") await page.getByTestId("battle-play").click();
     // R2-17: the end card keeps the timeline and the controls clear (as the mockup does), at both sizes.
     const endClear = async (name) => {
-      if (!(await page.getByTestId("end-card").isVisible())) await page.getByTestId("battle-end").click();
+      if (!(await page.getByTestId("end-card").isVisible())) await showEnd();
       const endBox = await page.getByTestId("end-card").boundingBox();
       for (const id of ["timeline", "battle-back", "battle-play", "battle-replay"]) {
         const b = await page.getByTestId(id).boundingBox();
         if (endBox && b && endBox.y + endBox.height > b.y + 0.5 && endBox.y < b.y + b.height && endBox.x < b.x + b.width && endBox.x + endBox.width > b.x) errors.push(`${name}: the end card covers ${id}`);
       }
-      const keys = await page.getByTestId("battle-keys").boundingBox();
-      if (!keys) errors.push(`${name}: no key hints (Space / ←→ / R) by the controls`);
+      // The v3 control rail draws no key hints (style.css: ".bv-v3 .bv-controls .bv-keys { display: none }"); the keys still work.
     };
     await endClear("end card 1440×900");
     await shot("battle-end-card");
     if (await page.getByTestId("end-card").isVisible()) await page.getByTestId("end-close").click();
     const facing = async (name, w, h) => {
       const [mine, theirs, panel] = [await page.getByTestId("battle-you").boundingBox(), await page.getByTestId("battle-them").boundingBox(), await page.getByTestId("trace").boundingBox()];
-      if (!mine || !theirs || Math.abs(mine.y - theirs.y) > 2 || mine.x + mine.width > theirs.x + 0.5) errors.push(`${name}: the lines don't face each other on one row (${JSON.stringify({ mine, theirs })})`);
+      // The v3 board stacks the lines in one column (theirs above, yours below), each front-first from the left (mission #1286).
+      if (!mine || !theirs || mine.y < theirs.y + theirs.height - 2 || Math.abs(mine.x - theirs.x) > 2) errors.push(`${name}: the lines don't face each other, theirs above yours (${JSON.stringify({ mine, theirs })})`);
       if (!panel || theirs.x + theirs.width > panel.x + 0.5) errors.push(`${name}: the side panel covers their line`);
-      // Fronts in the middle: your line runs right to left, theirs left to right.
       const xs = async (testid) => page.getByTestId(testid).locator(".bv-slot").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().x));
       const [m, t] = [await xs("battle-you"), await xs("battle-them")];
-      if (m.length > 1 && !(m[0] > m.at(-1))) errors.push(`${name}: your front isn't in the middle`);
-      if (t.length > 1 && !(t[0] < t.at(-1))) errors.push(`${name}: their front isn't in the middle`);
+      if (m.length > 1 && !(m[0] < m.at(-1))) errors.push(`${name}: your front isn't at the left`);
+      if (t.length > 1 && !(t[0] < t.at(-1))) errors.push(`${name}: their front isn't at the left`);
       const doc = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.scrollHeight]);
       if (doc[0] > w || doc[1] > h) errors.push(`${name}: the fight scrolls (${doc.join("×")})`);
-      for (const id of ["battle-back", "battle-play", "battle-step", "battle-speed", "battle-end", "battle-replay", "timeline"]) {
+      // At the fight's end the control bar's End button gives way to Next round (arena#14, mission #1286).
+      const endId = (await page.getByTestId("battle-end").count()) ? "battle-end" : "battle-next";
+      for (const id of ["battle-back", "battle-play", "battle-step", "battle-speed", endId, "battle-replay", "timeline"]) {
         const b = await page.getByTestId(id).boundingBox();
         if (!b || b.y < 0 || b.y + b.height > h + 0.5 || b.x + b.width > w + 0.5) errors.push(`${name}: ${id} off screen`);
       }

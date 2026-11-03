@@ -193,7 +193,11 @@ function pickGhost(deps: RunDeps, run: MvpRunState): Ghost {
     console.warn(`[runs] ghost ${g.ghostId} has a line that doesn't resolve; skipped`);
     return false;
   };
-  const candidates = store.ghosts(run.round, { excludePlayerId: run.player.id, limit: GHOST_PICK_POOL }).filter((g) => !hidden(g) && resolves(g));
+  const saved = store.ghosts(run.round, { excludePlayerId: run.player.id, limit: GHOST_PICK_POOL }).filter((g) => !hidden(g) && resolves(g));
+  // Round 1 meets one of the smallest teams saved there (arena#15): a new
+  // player's first fight is winnable with a filled line.
+  const fewest = Math.min(...saved.map((g) => g.line.length));
+  const candidates = run.round === 1 ? saved.filter((g) => g.line.length === fewest) : saved;
   const pick = deps.seed();
   return candidates.length > 0
     ? candidates[pick % candidates.length]!

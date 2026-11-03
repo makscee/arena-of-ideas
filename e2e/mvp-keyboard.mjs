@@ -140,7 +140,7 @@ async function fullRun(lang) {
           continue;
         }
         if (!(await tid("gift-banner").count())) return;
-        const zone = (await page.locator('[data-testid^="bench-"].card.you').count()) ? "bench-0" : "line-0";
+        const zone = (await page.locator('[data-testid^="bench-"].cell.you').count()) ? "bench-0" : "line-0";
         if (!(await tabTo(zone))) return;
         await press("Enter");
         await press("s");
@@ -159,14 +159,14 @@ async function fullRun(lang) {
     for (let n = 0; n < 4; n++) {
       const gold = Number(((await tid("gold").textContent().catch(() => "0")) ?? "0").replace(/\D/g, ""));
       if (gold < 3 || !(await tid("offer-0").count())) break;
-      const before = await page.getByTestId("line").locator(".card.you").count() + await page.getByTestId("bench").locator(".card.you").count();
+      const before = await page.getByTestId("line").locator(".cell.you").count() + await page.getByTestId("bench").locator(".cell.you").count();
       await press("1");
       await settle();
       await gift();
-      const after = await page.getByTestId("line").locator(".card.you").count() + await page.getByTestId("bench").locator(".card.you").count();
+      const after = await page.getByTestId("line").locator(".cell.you").count() + await page.getByTestId("bench").locator(".cell.you").count();
       if (after === before && n === 0 && round === 0) fail("1 didn't buy the first offer");
     }
-    const lineCards = () => tid("line").locator(".card.you");
+    const lineCards = () => tid("line").locator(".cell.you");
     // Arrange (round 1 on): Tab to a unit, Enter selects it, → moves it, B benches it.
     if (!arranged && (await lineCards().count()) >= 2) {
       const first = await unitName(lineCards().nth(0));
@@ -187,7 +187,7 @@ async function fullRun(lang) {
           const n = await lineCards().count();
           await press("b");
           await settle();
-          expect("B puts the unit on the bench", (await lineCards().count()) === n - 1 && (await tid("bench").locator(".card.you").count()) >= 1);
+          expect("B puts the unit on the bench", (await lineCards().count()) === n - 1 && (await tid("bench").locator(".cell.you").count()) >= 1);
           await press("b");
           await settle();
           expect("B brings it back to the line", (await lineCards().count()) === n);
@@ -299,8 +299,8 @@ async function scenes(lang) {
     // (two filled pips). Its number is its place among the offers now (a buy moves the rest up).
     const third = await k.page.evaluate(() => {
       const name = (c) => c.querySelector(".name")?.textContent ?? "";
-      const two = new Set([...document.querySelectorAll('[data-testid^="line-"].card.you, [data-testid^="bench-"].card.you')].filter((c) => (c.querySelector(".copies.pips")?.textContent ?? "").startsWith("●●○")).map(name));
-      const offers = [...document.querySelectorAll('[data-testid^="offer-"].card')];
+      const two = new Set([...document.querySelectorAll('[data-testid^="line-"].cell.you, [data-testid^="bench-"].cell.you')].filter((c) => c.dataset.copies === "2").map(name));
+      const offers = [...document.querySelectorAll('[data-testid^="offer-"].cell')];
       const i = offers.findIndex((o) => o.classList.contains("owned") && !o.classList.contains("poor") && two.has(name(o)));
       return i + 1;
     });
@@ -330,7 +330,7 @@ async function scenes(lang) {
     await k.page.waitForResponse((r) => /\/forge$/.test(r.url()), { timeout: 30_000 }).catch(() => {});
     await k.page.waitForFunction(() => document.querySelectorAll('[data-testid^="fuse-mark-"]').length >= 2, null, { timeout: 15_000 }).catch(() => {});
     await k.settle();
-    const marked = await k.page.locator('[data-testid^="fuse-mark-"]').evaluateAll((els) => els.map((e) => e.closest(".card")?.dataset.testid));
+    const marked = await k.page.locator('[data-testid^="fuse-mark-"]').evaluateAll((els) => els.map((e) => e.closest(".cell")?.dataset.testid));
     k.expect("the fusion-now scene has two marked units", marked.length === 2);
     if (marked.length === 2) {
       await k.tabTo(marked[0]);
@@ -343,10 +343,10 @@ async function scenes(lang) {
       await k.tid("preview-confirm").waitFor({ timeout: 5_000 }).catch(() => k.fail("Enter on the partner didn't open the forge"));
       k.expect("the forge takes the keyboard (Fuse)", (await k.active()) === "preview-confirm");
       k.expect("the forge's buttons wear Esc and Enter", (await k.tid("preview-cancel").locator("kbd").count()) === 1 && (await k.tid("preview-confirm").locator("kbd").count()) === 1);
-      const units = await k.tid("line").locator(".card.you").count();
+      const units = await k.tid("line").locator(".cell.you").count();
       await k.press("Enter");
       await k.settle();
-      k.expect("Enter on Fuse fuses the pair", (await k.tid("line").locator(".card.you").count()) === units - 1);
+      k.expect("Enter on Fuse fuses the pair", (await k.tid("line").locator(".cell.you").count()) === units - 1);
       k.expect("the keyboard lands on the fused unit", (await k.active()) === "line-0");
       await k.press("Space");
       await k.tid("battle-end").waitFor({ timeout: 10_000 }).catch(() => k.fail("Space didn't fight after the fuse"));

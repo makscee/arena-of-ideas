@@ -135,7 +135,7 @@ export async function codexScreen(a: {
       b.dataset.unit = v.unitId;
       return b;
     });
-    sheet.append(h("div", { class: "stack history", "data-testid": "sheet-history" }, h("div", { class: "label" }, t("codex.versions", { n: c.versions.length })), ...rows));
+    (sheet.querySelector(".sheet-body") ?? sheet).append(h("div", { class: "stack history", "data-testid": "sheet-history" }, h("div", { class: "label" }, t("codex.versions", { n: c.versions.length })), ...rows));
     return sheet;
   };
   const liveSheet = (u: UnitContent): HTMLElement => history(creditOf(u.id), unitSheet(u, a.content));

@@ -23,6 +23,7 @@
 import { battle } from "../../../src/battle.js";
 import type { DescribeSegment, Lang } from "../../../src/describe.js";
 import { formSegments } from "../../../src/mvp/form-text.js";
+import { faceFallback, faceProblems, type Face } from "../../../src/mvp/face.js";
 import { fusedStats } from "../../../src/mvp/forms.js";
 import type { AbilityDef, AbilityRegistry, Amount, BattleEvent, Effect, StatusDef, StatusRegistry, UnitDef } from "../../../src/types.js";
 import { validateAbilityRegistry, validateTeam } from "../../../src/validate.js";
@@ -142,6 +143,8 @@ export interface DesignDraft {
   statuses?: Record<string, StatusDef>;
   /** A word the design needs and the registry lacks (§7): the pair waits for it. */
   wordRequest?: { word: string; meaning: string };
+  /** The piece's face the designer picked (#1291, src/mvp/face.ts). */
+  face?: Face;
 }
 
 export interface Naming {
@@ -271,7 +274,14 @@ export interface Candidate {
   state: "ready" | "word" | "rejected";
   why?: string;
   wordRequest?: { word: string; meaning: string };
+  /** The piece's face (#1291): the designer's when tab, headline and counter,
+   * or, when it wrote none that fits, the one its trigger gives. Absent on
+   * a candidate stored before it. */
+  face?: Face;
 }
+
+/** A draft's face: the designer's when it fits the piece, else its trigger's. */
+export const draftFace = (d: Pick<DesignDraft, "face" | "rule">): Face => (d.face && !faceProblems(d.face).length ? d.face : faceFallback({ when: d.rule?.triggers ?? [] }));
 
 /** A fusion's stats as the game's fuse gives them (fusedStats: the stronger parent plus half the other). */
 export function fusedBase(a: Parent, b: Parent): { hp: number; pwr: number } {
@@ -543,7 +553,7 @@ async function designPair(pair: ListedPair, a: Parent, b: Parent, o: BatchOption
   return Promise.all(
     drafts.map(async (d, i): Promise<Candidate> => {
       const naming = namings[i]!;
-      const base = { pair: pair.key, lean: d.lean, intent: d.intent ?? "", name: naming.name, flavour: naming.flavour };
+      const base = { pair: pair.key, lean: d.lean, intent: d.intent ?? "", name: naming.name, flavour: naming.flavour, face: draftFace(d) };
       const empty = { unit: { name: naming.name.en, base: fusedBase(a, b) }, abilities: {}, statuses: {}, text: { en: "", ru: "" }, check: null };
       // no text may name a unit outside the pair (#1120)
       const foreign = foreignUnits([naming.name.en, naming.name.ru, naming.flavour.en, naming.flavour.ru, d.intent ?? ""], [pair.a, pair.b], o.parents);

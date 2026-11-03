@@ -17,7 +17,9 @@ export const shop = {
   "hint.moveToLine": "Поставь юнита в строй: бьётся только строй.",
   "hint.noGold": "Нет золота на юнита. Иди в бой: пустой строй проигрывает и теряет сердце.",
   "hint.buyDesk": "Дважды щёлкни карту или нажми её цифру, чтобы купить. Tab доходит до каждой карты.",
-  "hint.buyPhone": "Нажми на карту, чтобы прочитать и купить.",
+  "hint.buyPhone": "Нажми на карту, затем на подсвеченный слот, чтобы купить.",
+  "hint.tapSlotBuy": "Нажми на подсвеченный слот, чтобы купить туда.",
+  "hint.tapSlotMove": "Нажми на подсвеченный слот, чтобы переставить туда.",
   "hint.outOfGold": "Золото кончилось. В бой, когда готов.",
   "hint.moveDesk": "Перетащи юнита, чтобы передвинуть, или выбери его (Tab, Enter): ← → двигают, S продаёт.",
   "hint.movePhone": "Нажми на юнита в строю: двигать, продать, прочитать.",
@@ -73,6 +75,7 @@ export const shop = {
   "shop.allLocked": "Все карты закреплены",
   "shop.fightChampion": "Бой с чемпионом",
   "shop.fight": "В бой",
+  "shop.fillFirst": { one: "{n} пустой слот", few: "{n} пустых слота", many: "{n} пустых слотов", other: "{n} пустых слота" },
 
   // The Crown's foe and the champion pin.
   "foe.ownCrown": "Против тебя · твоя команда-чемпион · ",
@@ -127,6 +130,14 @@ export const shop = {
   "line.phone": "Строй · первый впереди",
   "shop.offersDesk": { one: "Лавка · {n} карта", few: "Лавка · {n} карты", many: "Лавка · {n} карт", other: "Лавка · {n} карты" },
   "shop.offersPhone": "Лавка",
+  // The shop's one line of how (mission #1286 slice 2): drag, or tap-tap.
+  "shop.howWide": "перетащи в слот или коснись, затем слота",
+  "shop.howPhone": "коснись, затем слота · или тяни",
+  // A slot lit for the offer in hand: its twin merges it in.
+  "slot.awakens": "пробудит ★",
+  "slot.merges": "+1 копия",
+  "slot.sell": "Продать +{n}",
+  "slot.tapLit": "коснись подсвеченного слота",
   "shop.selectFirst": "Сначала выбери юнита: щёлкни его в строю или запасе.",
   "copies.fused": "СЛИТ ",
   "copies.awoken": "ПРОБУЖД. ",

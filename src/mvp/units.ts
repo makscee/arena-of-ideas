@@ -19,6 +19,7 @@ import { stressRegistry } from "../content/stress.js";
 import { summonId } from "../describe.js";
 import type { AbilityDef, AbilityRegistry, Effect, EventPattern, Family, Selector, StatusRegistry, UnitDef, When } from "../types.js";
 import type { LineUnit, SummonContent, Tier, UnitContent, UnitForm } from "./contract.js";
+import { faceFallback, V2_FACE } from "./face.js";
 import { isV2Row, V2_ABILITIES, V2_STATUSES, type V2Row } from "./units-v2.js";
 
 // ---------- When ----------
@@ -397,6 +398,7 @@ function unitOf(row: AnyRow): UnitContent {
       base: { pwr: row.pwr, hp: row.hp },
       ...(row.awoken && (row.awoken.pwr || row.awoken.hp) ? { awokenBonus: { ...row.awoken } } : {}),
       forms: structuredClone(row.forms),
+      face: structuredClone(row.face ?? V2_FACE[row.name] ?? faceFallback(row.forms.sleeping)),
     };
   }
   const sleeping: UnitForm = { when: WHEN[row.when], who: [WHO[row.who]], does: [row.does] };

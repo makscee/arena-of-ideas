@@ -9,6 +9,7 @@
 import type { AbilityRegistry, BattleEvent, Condition, Selector, Side, Stats, StatusRegistry, When } from "../types.js";
 import type { AwokenRow, WhenKey, WhoKey } from "./units.js";
 import type { FusionDesign } from "./codex.js";
+import type { Face } from "./face.js";
 
 export const MVP_API_VERSION = 1;
 /** Every API path hangs off this prefix, relative to the app's base URL
@@ -238,6 +239,10 @@ export interface UnitContent {
    * the copies' growth (the tune's awoken knob; absent means none). */
   awokenBonus?: Stats;
   forms: Record<FormKey, UnitForm>;
+  /** The piece's face (#1291, ./face.ts): the when tab, headline badge and
+   * counter ring the designer picked. Absent on a v1 unit: the client falls
+   * back to the trigger (faceFallback). */
+  face?: Face;
   /** M4-4, GET /content only: the name and line (`archetype`) in Russian,
    * when the unit has been translated. Never part of the version. */
   texts?: { ru?: { name: string; line: string } };

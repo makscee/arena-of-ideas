@@ -73,6 +73,7 @@ export const main = {
   "legend.sheetPhone": "Tap any card for its sheet: what it does now, and its Awoken form one tap away.",
 
   "name.title": "ARENA OF IDEAS",
+  "name.loading": "Loading…",
   "name.inviteOnly": "Arena is invite-only for now. Open your invite link on this device to play.",
   // The holding page while Arena is rebuilt (#1044, rules v2): shown instead of every screen when /health says dark.
   "holding.title": "Arena is being rebuilt",

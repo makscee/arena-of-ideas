@@ -50,7 +50,7 @@ async function toBattle(page, name) {
   for (let k = 0; k < 3; k++) {
     const gold = Number((await page.getByTestId("gold").textContent()).replace("g", ""));
     if (gold < 3) break;
-    await page.getByTestId("offer-0").click();
+    await page.getByTestId("offer-0").click(); await page.getByTestId("offer-0").click();
     if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("offer-close").click(); break; }
     await page.getByTestId("buy").click();
     await page.waitForFunction((g) => document.querySelector('[data-testid="gold"]')?.textContent !== `${g}g`, gold);

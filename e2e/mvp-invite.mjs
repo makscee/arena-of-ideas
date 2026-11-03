@@ -107,7 +107,7 @@ try {
   if (await a.getByTestId("end-day").count()) errors.push("tester: sees End day now");
   await a.getByTestId("play").click();
   await a.getByTestId("fight").waitFor({ timeout: 10_000 });
-  await a.getByTestId("offer-0").click();
+  await a.getByTestId("offer-0").click(); await a.getByTestId("offer-0").click();
   await a.getByTestId("buy").click();
   await a.getByTestId("line").locator(".card.you").first().waitFor();
   await shot(a, "tester-shop-phone");
@@ -267,7 +267,7 @@ try {
   await switchLang("en", "back after ?lang=");
   await j1.getByTestId("play").click();
   await j1.getByTestId("fight").waitFor({ timeout: 10_000 });
-  await j1.getByTestId("offer-0").click();
+  await j1.getByTestId("offer-0").click(); await j1.getByTestId("offer-0").click();
   await j1.getByTestId("buy").click();
   await j1.getByTestId("fight").click();
   await j1.getByTestId("battle-end").waitFor({ timeout: 10_000 });

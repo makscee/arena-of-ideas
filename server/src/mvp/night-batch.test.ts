@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { Candle, FIXTURE_ABILITIES, FIXTURE_STATUSES, Gambler, Hourglass, Mirror, Nautilus } from "../../../src/words/fixtures.js";
 import { plain, rule } from "../../../src/words/examples.js";
 import type { UnitDef } from "../../../src/types.js";
-import { BATCH_MAX, BATCH_MIN, compile, type DesignDraft, foreignUnits, type Field, type Parent, pairKey, pickPairs, REDESIGN_AFTER_MS, ruleText, runBatch, scaled } from "./night-batch.js";
+import { BATCH_MAX, BATCH_MIN, compile, type DesignDraft, draftFace, foreignUnits, type Field, type Parent, pairKey, pickPairs, REDESIGN_AFTER_MS, ruleText, runBatch, scaled } from "./night-batch.js";
 import { DESIGN_SCHEMA, DESIGNER_RULES, designerSystemPrompt, designPrompt, designerFromEnv, fakeDesigner, namePrompt } from "./night-designer.js";
 import { nightReport } from "./night-report.js";
 
@@ -42,6 +42,16 @@ const Archer = rule("Archer", 6, 1, { on: "TurnStart" }, { kind: "frontEnemy" },
 const Brute = plain("Brute", 14, 3);
 const field: Field = { ghosts: [[Brute, Hourglass, Archer], [Nautilus, Archer, Brute], [Archer, Candle, Brute]], breakers: [[Brute, Brute, Archer]], abilities: FIXTURE_ABILITIES, statuses: FIXTURE_STATUSES };
 
+describe("a candidate's face (#1291)", () => {
+  const rule = { triggers: [{ kind: "trigger" as const, on: { on: "TurnEnd" as const } }] };
+  it("keeps the designer's face when it fits, else takes its trigger's", () => {
+    const face = { when: { icon: "🔔", label: "When healed" }, headline: { icon: "🔁", amount: "=" } };
+    expect(draftFace({ face, rule })).toEqual(face);
+    expect(draftFace({ face: { ...face, when: { icon: "🔔", label: "Whenever it gets healed" } }, rule }).when).toEqual({ icon: "🌙", label: "Turn end" });
+    expect(draftFace({ rule }).headline.icon).toBeTruthy();
+  });
+});
+
 describe("one pair through the batch", () => {
   it("gives three candidates with fusedStats (Hourglass 8/1 plus half of Mirror 6/1), a rendered EN/RU sentence and a check", async () => {
     const list = pickPairs({ units, now, size: 1, small: true, requests: ["Hourglass+Mirror"] });
@@ -52,6 +62,8 @@ describe("one pair through the batch", () => {
       expect(c.unit.base).toEqual({ hp: 11, pwr: 1 });
       expect(c.name.en).toBeTruthy();
       expect(c.name.ru).toBeTruthy();
+      // the fake designer writes no face: the trigger's fills in (#1291)
+      expect(c.face?.when.label).toBeTruthy();
       expect(c.check).not.toBeNull();
       expect(c.check!.games).toBeGreaterThan(0);
       expect(["ready", "rejected"]).toContain(c.state);

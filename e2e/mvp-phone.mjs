@@ -115,7 +115,8 @@ try {
     const sheet = page.getByTestId("unit-sheet");
     if ((await sheet.getByTestId("sheet-form").count()) !== 1) errors.push(`${name}: not exactly one form block`);
     await noRates(name);
-    const last = await sheet.evaluate((el) => el.lastElementChild?.dataset.testid ?? "");
+    // The XL sheet (mission #1286) holds its text in .sheet-body, the rates its last line.
+    const last = await sheet.evaluate((el) => (el.querySelector(".sheet-body") ?? el).lastElementChild?.dataset.testid ?? "");
     if ((await sheet.getByTestId("unit-rates").count()) && last !== "unit-rates") errors.push(`${name}: rates aren't the last line`);
     await termChecks(name, sheet.getByTestId("sheet-form"));
     if (await sheet.getByTestId("see-awoken").count()) {
@@ -150,10 +151,14 @@ try {
       if (await tsheet.count()) errors.push(`${name}: the rule sheet doesn't close`);
     }
   };
-  /** The page doesn't scroll at 640 px. */
-  const noVScroll = async (name) => {
-    const hgt = await page.evaluate(() => document.documentElement.scrollHeight);
-    if (hgt > height + 0.5) errors.push(`${name}: scrolls (${hgt}px tall)`);
+  /** A shop-phase page (the shop, a gift) may scroll on a 360x640 phone, as the redesign meant
+   * (style.css: "Reroll and Fight stay in view at the foot while the shop scrolls"): its sticky
+   * foot, Reroll and Fight where the page has them, stays on screen, never below the fold. */
+  const footInView = async (name) => {
+    const foot = page.locator('#app[data-screen="shop"] .shop-side');
+    if (!(await foot.count())) return;
+    const box = await foot.boundingBox();
+    if (!box || box.y + box.height > height + 0.5 || box.y < 0) errors.push(`${name}: the Reroll/Fight foot is off screen (${box ? Math.round(box.y + box.height) : "none"}px)`);
   };
   /** The element is on screen without scrolling (the bottom of a 640 px phone). */
   const onScreen = async (name, locator) => {
@@ -431,7 +436,7 @@ try {
     const offerName = (slot) => page.getByTestId(`offer-${slot}`).locator(".name").textContent();
     const isLocked = async (slot) => (await page.getByTestId(`offer-${slot}`).getAttribute("class")).includes("locked") && (await page.getByTestId(`offer-${slot}`).locator(".lock-mark").count()) === 1;
     const lockFromSheet = async (slot, want) => {
-      await page.getByTestId(`offer-${slot}`).click();
+      await page.getByTestId(`offer-${slot}`).click(); await page.getByTestId(`offer-${slot}`).click();
       await page.getByTestId("lock").waitFor();
       if (!(await page.getByTestId("lock").textContent()).includes(L(want === "Lock" ? "board.lock" : "board.unlock"))) errors.push(`lock: offer ${slot}'s sheet says "${await page.getByTestId("lock").textContent()}", not ${want}`);
       if (want === "Lock" && round === 0) { await shot("offer-sheet-lock"); await tap44("Lock", page.getByTestId("lock")); }
@@ -443,7 +448,7 @@ try {
       else lockSurvived = true;
       lockedFromLast = null;
     }
-    if (round === 0 && (await page.getByTestId("offers").locator(".card").count()) >= 2) {
+    if (round === 0 && (await page.getByTestId("offers").locator(".cell").count()) >= 2) {
       const name = await offerName(1);
       await lockFromSheet(1, "Lock");
       if (!(await isLocked(1))) errors.push("lock: offer 1 has no padlock after Lock");
@@ -459,11 +464,11 @@ try {
     for (let k = 0; k < 4; k++) {
       if ((await page.getByTestId("gold").count()) === 0) break; // the Crown: no shop, no gold
       const gold = Number((await page.getByTestId("gold").textContent()).replace(L("shop.gold", { n: "" }), ""));
-      if (gold < 3 || (await page.getByTestId("offers").locator(".card").count()) === 0) break;
-      const filled = await page.getByTestId("line").locator(".card.you").count();
+      if (gold < 3 || (await page.getByTestId("offers").locator(".cell").count()) === 0) break;
+      const filled = await page.getByTestId("line").locator(".cell.you").count();
       if (filled >= 5) break;
       // An offer opens its sheet (both forms, what buying does); Buy buys.
-      await page.getByTestId("offer-0").click();
+      await page.getByTestId("offer-0").click(); await page.getByTestId("offer-0").click();
       await page.getByTestId("buy").waitFor();
       if (round === 0 && k === 0) { await shot("offer-sheet"); await noHScroll("offer-sheet"); }
       if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("offer-close").click(); break; }
@@ -476,7 +481,7 @@ try {
         await page.getByTestId("gift-skip").waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
       }
     }
-    if (round === 1 && (await page.getByTestId("offers").locator(".card").count()) > 0) {
+    if (round === 1 && (await page.getByTestId("offers").locator(".cell").count()) > 0) {
       lockedFromLast = await offerName(0);
       await lockFromSheet(0, "Lock");
     }
@@ -494,7 +499,7 @@ try {
       await page.getByTestId("legend").waitFor({ state: "detached" });
       await page.getByTestId("line").waitFor();
     }
-    if (round === 2 && (await page.getByTestId("line").locator(".card.you").count()) > 1) {
+    if (round === 2 && (await page.getByTestId("line").locator(".cell.you").count()) > 1) {
       await page.getByTestId("line-1").click();
       await shot("shop-selected");
       await page.getByTestId("info").click();
@@ -550,9 +555,12 @@ try {
         const cards = [...document.querySelectorAll(".bv-card:not(.dead)")];
         return {
           cards: cards.length,
-          noBar: cards.filter((c) => !c.querySelector('[data-testid="hp-bar"]')).length,
-          noRow: cards.filter((c) => !c.querySelector('[data-testid="card-statuses"]')).length,
-          wordy: [...document.querySelectorAll('[data-testid="card-status"]')].filter((s) => !s.querySelector("svg")).length,
+          // The v3 battle card is a piece (mission #1286): its HP is the number on its rim (.pc-b.h) and its
+          // statuses a shelf of icon chips (.pc-shelf .pc-st) that is there only while it holds some.
+          noBar: cards.filter((c) => !c.querySelector('[data-testid="hp-bar"], .pc-b.h')).length,
+          noRow: cards.filter((c) => !c.querySelector('[data-testid="card-statuses"]') && !c.classList.contains("bv-pc")).length,
+          // (a piece's chip draws its status as an emoji, not an svg: it is "wordy" only when letters stand there)
+          wordy: [...document.querySelectorAll('[data-testid="card-status"]')].filter((s) => !s.querySelector("svg")).length + [...document.querySelectorAll(".bv-pc .pc-st")].filter((s) => /\p{L}/u.test(s.firstChild?.textContent ?? "")).length,
           zero: [...document.querySelectorAll('[data-testid="change"], [data-testid="caption"], .bv-ledger, .bv-still, .bv-float, .bv-run-row')].filter((c) => /[−-]0(?!\d)/.test(c.textContent)).length,
           hiddenStatus: [...document.querySelectorAll('[data-testid="card-statuses"]')].flatMap((row) => [...row.children].filter((c) => c.getBoundingClientRect().bottom > row.getBoundingClientRect().bottom + 0.5)).length,
           wrongSide: [...document.querySelectorAll(".bv-cn[data-unit]")].filter((n) => {
@@ -600,7 +608,7 @@ try {
       await tap44("change chip", page.getByTestId("change"));
       await tap44("trace close", page.getByTestId("trace-close"));
       await tap44("trace close", page.getByTestId("trace-close"), "width");
-      await tap44("trigger badge", page.getByTestId("trigger-badge"));
+      await tap44("trigger badge", page.locator('[data-testid="trigger-badge"]:visible')); // v3 battle hides the badges (style.css: .bv-v3 button.bv-badge), so only shown ones are checked
       if (/→/.test(await page.getByTestId("caption").textContent()) && (await page.getByTestId("caption").locator(".bv-cn").count()) === 0) errors.push("battle strip: an act names no unit");
       // A battle card (below its chip) opens its Now sheet (R3-18), whose
       // Full card opens the unit's sheet, which closes with Close.
@@ -671,9 +679,10 @@ try {
       const moments = await page.getByTestId("key-moment").count();
       if (moments < 1 || moments > 3) errors.push(`end card: ${moments} key moments`);
       await onScreen("end card: Continue", page.getByTestId("battle-done"));
-      // R2-17: the end card never hides the caption's result line ("They win").
-      const [endBox, capBox] = [await page.getByTestId("end-card").boundingBox(), await page.locator(".bv-cap").boundingBox()];
-      if (endBox && capBox && endBox.y < capBox.y + capBox.height - 0.5) errors.push(`end card: it covers the caption's result line (${Math.round(endBox.y)} < ${Math.round(capBox.y + capBox.height)})`);
+      // R2-17: the result stays on screen. The redesigned end card covers the caption band and says
+      // it itself (VICTORY, mission #1286), so the check is that its word is shown, whole, on screen.
+      const wordBox = await page.getByTestId("battle-word").boundingBox();
+      if (!wordBox || wordBox.y < 0 || wordBox.y + wordBox.height > height + 0.5) errors.push(`end card: the result word is off screen (${JSON.stringify(wordBox)})`);
       await tap44("end card buttons", page.locator('[data-testid="end-card"] button'));
       await shot("battle-end-card"); await noHScroll("battle-end-card");
       if (await page.getByTestId("end-why").count()) {
@@ -878,7 +887,7 @@ try {
     if (wantTier > shopTier && !new RegExp(pattern(L("gift.freeTierAhead"))).test(free)) errors.push(`gift: the chooser doesn't say a tier ahead: "${free}"`);
     const cards = await page.getByTestId("gift-choices").locator(".card").count();
     if (cards !== 3) errors.push(`gift: ${cards} cards, want 3`);
-    await shot("gift-chooser"); await noHScroll("gift-chooser"); await noVScroll("gift-chooser");
+    await shot("gift-chooser"); await noHScroll("gift-chooser"); await footInView("gift-chooser");
     await tap44("gift Pick and Skip", page.locator('[data-testid^="gift-pick-"], [data-testid="gift-skip"]'));
     await onScreen("gift: Skip", page.getByTestId("gift-skip"));
     // A card's sheet is one tap away, and closes back to the chooser.
@@ -931,7 +940,7 @@ try {
     const almost = run.line.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === 2 && run.offers.some((o) => o.unitId === u.unitId));
     const slot = run.offers.find((o) => o.unitId === almost.unitId).slot;
     await shot("shop-almost"); await noHScroll("shop-almost");
-    await page.getByTestId(`offer-${slot}`).click();
+    await page.getByTestId(`offer-${slot}`).click(); await page.getByTestId(`offer-${slot}`).click();
     await page.getByTestId("buy-preview").waitFor();
     if (!(await page.getByTestId("buy-preview").textContent()).includes(L("buy.awakens"))) errors.push("awaken preview: no 'Awakens!'");
     await shot("awaken-preview"); await noHScroll("awaken-preview");
@@ -974,14 +983,14 @@ try {
     if (/Fusion preview|Предпросмотр слияния/.test(await page.getByTestId("overlay").textContent())) errors.push("fusion: 'Fusion preview' copy in the forge");
     await shot("fusion-forge"); await noHScroll("fusion-forge");
     await page.getByTestId("preview-confirm").click();
-    await page.getByTestId("line").locator(".card.fused").waitFor();
+    await page.getByTestId("line").locator(".cell.fused").waitFor();
     console.log("mvp phone: fused through the forge");
     await shot("fused"); await noHScroll("fused");
-    await page.locator(".card.fused").screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-fused-card.png` });
+    await page.locator(".cell.fused").screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-fused-card.png` });
     // The fused card's row lines up: every card in it is one height.
-    const heights = await page.getByTestId("line").locator(".card.you").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
+    const heights = await page.getByTestId("line").locator(".cell.you").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
     if (new Set(heights).size > 1) errors.push(`fused row: uneven card heights ${heights.join(",")}`);
-    await page.locator(".card.fused").click();
+    await page.locator(".cell.fused").click();
     await page.getByTestId("info").click();
     await page.getByTestId("unit-sheet").waitFor();
     // The pair may be someone else's discovery already (live, or a reused DB).
@@ -1015,9 +1024,9 @@ try {
       await page.reload();
       await page.getByTestId("play").click();
       await page.getByTestId("fight").waitFor();
-      if ((await page.getByTestId("bench").locator(".card.empty").count()) !== 3) errors.push("bench: the empty bench doesn't show 3 dashed slots");
+      if ((await page.getByTestId("bench").locator(".cell.empty").count()) !== 3) errors.push("bench: the empty bench doesn't show 3 dashed slots");
       const o = fresh(r);
-      await page.getByTestId(`offer-${o.slot}`).click();
+      await page.getByTestId(`offer-${o.slot}`).click(); await page.getByTestId(`offer-${o.slot}`).click();
       await page.getByTestId("buy-preview").waitFor();
       if (!(await page.getByTestId("buy-preview").textContent()).includes(L("buy.toBench"))) errors.push(`bench: the buy preview says "${await page.getByTestId("buy-preview").locator(".label").textContent()}", not "Goes to your bench"`);
       await shot("bench-buy-preview"); await noHScroll("bench-buy-preview");
@@ -1025,13 +1034,13 @@ try {
       await page.getByTestId("bench-0").waitFor();
       const name = (id) => page.getByTestId(id).locator(".name").textContent();
       const benched = await name("bench-0");
-      await shot("shop-bench"); await noHScroll("shop-bench"); await noVScroll("shop-bench");
+      await shot("shop-bench"); await noHScroll("shop-bench"); await footInView("shop-bench");
       // A bench unit selected, the line full: a tap on a line unit swaps the two.
       const last = await name("line-4");
       await page.getByTestId("bench-0").click();
       await page.getByTestId("to-line").waitFor();
       if ((await page.getByTestId("hint").filter({ hasText: L("hint.lineFullSwap") }).count()) === 0) errors.push("bench: no swap hint with a bench unit selected and the line full");
-      await shot("bench-selected"); await noHScroll("bench-selected"); await noVScroll("bench-selected");
+      await shot("bench-selected"); await noHScroll("bench-selected"); await footInView("bench-selected");
       await tap44("bench actions", page.getByTestId("actions").locator("button"));
       await page.getByTestId("line-4").click();
       await page.waitForFunction((n) => document.querySelector('[data-testid="line-4"] .name')?.textContent === n, benched, { timeout: 5_000 }).catch(() => {});
@@ -1086,12 +1095,12 @@ try {
       await page.getByTestId("gift-title").waitFor();
       if (!(await page.getByTestId("gift-full").isVisible())) errors.push("make room: no 'make room' line with line and bench full");
       for (let i = 0; i < 3; i++) if (!(await page.getByTestId(`gift-pick-${i}`).isDisabled())) errors.push(`make room: Pick ${i} is on with no room`);
-      await shot("gift-make-room"); await noHScroll("gift-make-room"); await noVScroll("gift-make-room");
+      await shot("gift-make-room"); await noHScroll("gift-make-room"); await footInView("gift-make-room");
       await tap44("make room buttons", page.locator('[data-testid="gift-make-room"], [data-testid="gift-skip"]'));
       await page.getByTestId("gift-make-room").click();
       await page.getByTestId("gift-banner").waitFor();
       if (!(await page.getByTestId("gift-banner").textContent()).startsWith(L("gift.waitingFull"))) errors.push(`make room: the banner says "${await page.getByTestId("gift-banner").textContent()}"`);
-      await shot("gift-make-room-aside"); await noHScroll("gift-make-room-aside"); await noVScroll("gift-make-room-aside");
+      await shot("gift-make-room-aside"); await noHScroll("gift-make-room-aside"); await footInView("gift-make-room-aside");
       // Selling stays possible behind it: sell the front unit, and the chooser comes back.
       await page.getByTestId("line-0").click();
       await page.getByTestId("sell").click();
@@ -1129,9 +1138,9 @@ try {
       await page.reload();
       await page.getByTestId("play").click();
       await page.getByTestId("fight").waitFor();
-      const offers = await page.getByTestId("offers").locator(".card").count();
+      const offers = await page.getByTestId("offers").locator(".cell").count();
       if (offers < 6) errors.push(`compact: round ${r.round} shows ${offers} offers, not 6`);
-      await shot("shop-round-8"); await noHScroll("shop-round-8"); await noVScroll("shop-round-8"); await noRates("shop-round-8");
+      await shot("shop-round-8"); await noHScroll("shop-round-8"); await footInView("shop-round-8"); await noRates("shop-round-8");
       await onScreen("round 8: Fight", page.getByTestId("fight"));
       const sizes = await page.locator('[data-testid="line"] .card, [data-testid="offers"] .card').evaluateAll((els) => els.map((e) => `${Math.round(e.getBoundingClientRect().width)}x${Math.round(e.getBoundingClientRect().height)}`));
       if (sizes.some((x) => x !== "64x84")) errors.push(`compact: card sizes ${[...new Set(sizes)].join(", ")}, not 64x84`);

@@ -152,6 +152,8 @@ export function onGone(fn: () => void): void {
  * Below it the phone layout stays as it is. */
 export const desktopQuery = matchMedia("(min-width: 1024px)");
 export const isDesktop = (): boolean => desktopQuery.matches;
+/** The short landscape window (CrazyGames' 800×450 and 821×462, #1217): style.css's same query. */
+export const wideQuery = matchMedia("(orientation: landscape) and (min-width: 560px) and (max-width: 1023.98px) and (max-height: 560px)");
 
 /** Where the screens take keys (#1217): the desktop, and a landscape window
  * with a mouse below it (CrazyGames' 821×462). A phone takes none. */
@@ -316,6 +318,10 @@ function syncBack(): void {
     history.back();
   }
 }
+// The app keeps its own scroll (show() resets it, keepScreen() restores it, the Codex lands on a row):
+// a history step must not make the browser restore an old entry's scroll a few ms after (arena#24:
+// "Open in Codex" landed on its row, then the page jumped back to the top).
+history.scrollRestoration = "manual";
 addEventListener("popstate", (e) => {
   if (ownBacks > 0) return void (ownBacks--, syncBack());
   const s = e.state as Partial<NavState> | null;

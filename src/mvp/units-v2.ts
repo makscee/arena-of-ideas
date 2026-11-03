@@ -11,6 +11,7 @@
 import type { AbilityRegistry, Effect, StatusRegistry } from "../types.js";
 import { ALL_OR_NOTHING } from "../words/all-or-nothing.js";
 import type { Tier, UnitForm } from "./contract.js";
+import type { Face } from "./face.js";
 import { V2_NUMBERS } from "./units-v2-numbers.js";
 import { V2_SAY } from "./units-v2-say.js";
 
@@ -31,6 +32,9 @@ export interface V2Row {
   /** One sentence on what the unit is about (unique across the pool). */
   archetype: string;
   forms: { sleeping: UnitForm; awoken: UnitForm };
+  /** The piece's face (#1291): a new idea's designer writes it; the pool's
+   * are in face.ts (V2_FACE), by name. */
+  face?: Face;
 }
 
 export const isV2Row = (row: object): row is V2Row => (row as { v2?: true }).v2 === true;

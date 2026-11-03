@@ -18,6 +18,9 @@ import { discoveredLine } from "./fusion";
 import { isMine, reportLink } from "./report";
 import { icon } from "./icon";
 import { roman } from "./roman";
+import { faceOfUnit, lineToPiece, piece, pieceReach, statusEmoji, type PieceUnit } from "./piece";
+import { faceFallback, fusedFace, type Face } from "../../src/mvp/face";
+import { termDef } from "../../src/glossary";
 import { markChangedPieces, richText } from "./term";
 import { unitStatsLine, type UnitRates } from "./unit-stats";
 import { rulesLangOpt } from "../lang";
@@ -46,6 +49,9 @@ export interface CardOptions {
   /** M3-8: a unit the live credits don't know (the Library's): its archetype
    * version, and no live credit (NEW, 💡). */
   version?: number;
+  /** The piece's face side and whether its tab shows the word, in place of the
+   * screen's default (Home's champion sizes them from its panel). */
+  piece?: { px: number; word: boolean };
 }
 
 /** A tier's colour class (R4-4): .t1–.t4 on the --tier-1..4 tokens, .ts for a summoned unit. */
@@ -107,6 +113,7 @@ function creditLine(unitId: string): HTMLElement | null {
 export function card(u: CardUnit, o: CardOptions): HTMLElement {
   // M4-4: a line or battle unit comes named in English: its Russian name on a Russian page.
   u = { ...u, name: u.kind === "fused" ? fusionName(u.fusion, u.name) : unitName(u.unitId, u.name) };
+  if (!o.live && !o.unset) return pieceCard(u, o);
   const stats = o.live?.stats ?? u.stats;
   // A fused unit is its finders' (discoveredLine); its parts' credits stay on theirs.
   // A Library card's unit isn't live: no live credit, even when a live version shares its id.
@@ -146,6 +153,56 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
   return el;
 }
 
+/** The card as the piece (mission #1286, slice 4): every screen outside the
+ * shop and the battle (Codex, gift, fusion preview, vote, stats, a team)
+ * draws its units the way those do. The piece at M (its name under it), the
+ * tier and the footer's extras below. */
+function pieceCard(u: CardUnit, o: CardOptions): HTMLElement {
+  const first = u.fusion?.first ?? u.unitId;
+  const own = first ? faces.get(first) : undefined;
+  const face = own ? (u.kind === "fused" ? fusedFace(own) : own) : faceFallback(u.recipe ?? { when: [] } as unknown as UnitForm);
+  // A fused unit's emoji is both parts' ("🥁⚡"): the first big, the second small.
+  const ems = u.kind === "fused" ? [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(u.emoji)].map((x) => x.segment) : [u.emoji];
+  const pu: PieceUnit = {
+    name: u.name,
+    emoji: ems[0] ?? u.emoji,
+    stats: u.stats,
+    face,
+    awoken: u.kind !== "fused" && u.form === "awoken",
+    ...(u.kind === "fused" ? { fused: { emoji: ems.slice(1).join("") || "✨" } } : {}),
+  };
+  const pc = piece(pu, { size: "M", px: o.piece?.px ?? (window.innerWidth < 600 ? 46 : 60), side: o.side === "ghost" ? "them" : "you", word: o.piece?.word ?? window.innerWidth >= 600 });
+  const reach = o.piece ? pieceReach(o.piece.px) : undefined;
+  const credit = u.kind === "fused" || o.version !== undefined ? undefined : creditOf(u.unitId);
+  const version = o.version ?? credit?.version ?? 1;
+  const foot = (o.extra ?? []).filter((x): x is Node => x !== null);
+  const el = h(
+    "div",
+    { class: `card pcard ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}), title: u.name, ...(reach ? { style: `padding-top:${reach.above + 4}px` } : {}) },
+    h("div", { class: "pcard-stage", ...(reach ? { style: `height:${reach.below}px` } : {}) }, pc),
+    h(
+      "div",
+      { class: "foot" },
+      o.tier ? h("span", { class: `pc-tier ${o.tier === "S" ? "pc-ts" : `pc-t${o.tier}`}`, "aria-label": o.tier === "S" ? t("card.summonedAria") : t("card.tierAria", { tier: o.tier }) }, o.tier === "S" ? "S" : roman(o.tier)) : null,
+      version > 1 ? h("span", { class: "ver", "data-testid": "card-version" }, `v${version}`) : null,
+      credit?.isNew ? h("span", { class: "new-badge", "data-testid": "card-new" }, t("card.new")) : null,
+      ...foot,
+    ),
+  );
+  if (u.kind === "fused") el.classList.add("fused");
+  else if (u.form === "awoken") el.classList.add("awoken");
+  if (credit?.by) {
+    el.dataset.by = credit.by.name;
+    el.title = `${u.name}: idea by @${credit.by.name}`;
+    el.append(h("span", { class: "by-mark", "data-testid": "card-by", "aria-label": t("card.ideaByAria", { name: credit.by.name }) }, "💡"));
+  }
+  if (o.onOpen) {
+    el.addEventListener("click", o.onOpen);
+    actionable(el, u.name);
+  }
+  return el;
+}
+
 /** A battle card's numbers (R2-13): an HP bar, then PWR and HP, big. */
 function liveStats(stats: Stats, maxHp: number): Node[] {
   const max = Math.max(1, maxHp, stats.hp);
@@ -169,6 +226,12 @@ function liveStats(stats: Stats, maxHp: number): Node[] {
 let abilities: AbilityRegistry = {};
 export function setCardAbilities(a: AbilityRegistry): void {
   abilities = a;
+}
+/** The units' faces (mission #1286), so a card draws its piece with the
+ * designer's when tab and headline (set once the content loads: ../content.ts). */
+let faces = new Map<string, Face>();
+export function setCardFaces(units: Pick<UnitContent, "id" | "face" | "forms">[]): void {
+  faces = new Map(units.map((u) => [u.id, faceOfUnit(u)]));
 }
 /** Adds abilities the content lacks (a vote card's candidate, M2-8; a
  * designed fusion's own, #1065). Sheets read them too (#1120: a sealed
@@ -243,7 +306,7 @@ export function formRich(form: UnitForm, content: MvpContent): Node[] {
 export function unitSheet(
   u: LineUnit | BattleUnit | UnitContent,
   content: MvpContent,
-  opts: { rates?: UnitRates; from?: Stats; preview?: boolean; candidate?: boolean; credit?: Parameters<typeof creditText>[0] } = {},
+  opts: { rates?: UnitRates; from?: Stats; preview?: boolean; candidate?: boolean; credit?: Parameters<typeof creditText>[0]; now?: { pwr: number; hp: number; statuses: { status: string; stacks: number }[] } } = {},
 ): HTMLElement {
   const unitId = "forms" in u ? u.id : u.unitId;
   // A unit that left the pool (a champion's, a replay's) is in content.left (M2-2).
@@ -318,31 +381,96 @@ export function unitSheet(
     children.push(btn, note);
   }
 
+  // The XL detail (mission #1286, detail-800.png): the piece big on the left,
+  // its statuses on the shelf; the name, the rule in words, sleeping vs
+  // awoken and what is on it now, explained, on the right.
+  const pu: PieceUnit =
+    "forms" in u ? { name: u.name, emoji: u.emoji, stats: u.base, face: faceOfUnit(u), tier: u.tier } : lineToPiece(u, content);
+  if ("stats" in u) pu.stats = u.stats;
+  const now$ = opts.now?.statuses ?? ("recipe" in u ? u.recipe.statuses : undefined) ?? [];
+  const onIt = now$.filter((x) => x.stacks > 0);
+  if (opts.now) pu.stats = { pwr: opts.now.pwr, hp: opts.now.hp };
+  const ring = pu.face.counter;
+  const k = known(content);
+  const hero = h(
+    "div",
+    { class: "sheet-hero", "data-testid": "sheet-piece" },
+    piece(pu, { size: "M", px: heroPx(), side: "stats" in u ? "you" : "shop", statuses: onIt, counter: ring ? (onIt.find((x) => x.status === ring.status)?.stacks ?? 0) : 0, word: true }),
+  );
+  const tier = "forms" in u ? u.tier : pu.tier;
+  const pips = !fused && copies > 0 && !("form" in u && u.form === "awoken")
+    ? h("span", { class: "sheet-pips", "aria-label": t("card.formCopies", { form: formName("sleeping"), n: copies }) }, ...[0, 1, 2].map((i) => h("u", i < copies ? {} : { class: "o" })))
+    : null;
+  const onNow = onIt.length
+    ? h(
+        "div",
+        { class: "stack sheet-now", "data-testid": "sheet-now" },
+        h("div", { class: "label" }, t("card.onNow")),
+        ...onIt.map(({ status, stacks }) => {
+          const def = termDef(`status:${status}`, k.statuses, rulesLangOpt());
+          const max = ring && ring.status === status ? ring.max : 0;
+          return h(
+            "div",
+            { class: "sheet-now-row", "data-status": status },
+            h("span", { class: `sheet-now-chip ${statusEmoji(status)[1]}` }, statusEmoji(status)[0], h("b", {}, max ? `${stacks}/${max}` : String(stacks))),
+            // A counter's own tip says nothing ("No effect"): its ring's fill says what it is.
+            h("span", {}, h("b", {}, `${def?.label ?? status} ${stacks}`), max ? ` · ${t("card.counterTip", { n: stacks, max })}` : def?.tip ? ` · ${def.tip}` : ""),
+          );
+        }),
+      )
+    : null;
+
+  // The sheet measures its own width (a container): two columns in a wide
+  // dialog, one in the shop's inspector or on a phone.
   return h(
     "div",
-    { class: "stack", "data-testid": "unit-sheet" },
-    // M5-2 (C-Shop's inspector): the portrait in a round frame, the name big, its state under it.
+    { class: "sheet-xl", "data-testid": "unit-sheet" },
     h(
       "div",
-      { class: "row sheet-head" },
-      h("span", { class: `sheet-portrait${fused ? " fused" : ""}`, "aria-hidden": "true" }, u.emoji),
-      h("div", { class: "sheet-title" }, h("h2", {}, fused ? fusionName("fusion" in u ? u.fusion : undefined, u.name) : unitName(unitId, u.name)), state),
+      { class: "sheet-xl-grid" },
+      hero,
+      h(
+      "div",
+      { class: "stack sheet-body" },
+      // M5-2 (C-Shop's inspector): the name big, tier and copies beside it, its state under it.
+      h(
+        "div",
+        { class: "row sheet-head" },
+        h("span", { class: `sheet-portrait${fused ? " fused" : ""}`, "aria-hidden": "true" }, u.emoji),
+        h(
+          "div",
+          { class: "sheet-title" },
+          h("div", { class: "row sheet-name" }, h("h2", {}, fused ? fusionName("fusion" in u ? u.fusion : undefined, u.name) : unitName(unitId, u.name)), tier ? h("span", { class: `pc-tier pc-t${tier}` }, roman(tier)) : null, pips),
+          state,
+        ),
+      ),
+      // What the unit is about, in one sentence (R4-8); a fused unit has none.
+      c?.archetype ? h("div", { class: "archetype", "data-testid": "sheet-archetype" }, c.archetype) : null,
+      opts.candidate ? h("div", { class: "dim small", "data-testid": "sheet-unset" }, SET_BY_SIM()) : "stats" in u ? statsLine(u.stats) : sheetStats(u.base.pwr, u.base.hp),
+      opts.from ? h("div", { class: "dim small" }, t("card.yourCopyNow")) : null,
+      h("div", { class: "label sheet-rule-head" }, t("card.ruleHead")),
+      icons.childNodes.length ? icons : null,
+      box,
+      ...children,
+      summons.childNodes.length || (sleeping && c) ? summons : null,
+      onNow,
+      // opts.credit: a Library unit's own (M3-8), not a live version's that shares its id.
+      fused ? null : opts.credit ? creditText(opts.credit) : creditLine(unitId),
+      // #1271: a unit a player made can be reported (not your own).
+      fused ? null : reportUnit(opts.credit ?? creditOf(unitId), unitId, u.name),
+      "forms" in u ? null : discoveredLine(u, { preview: opts.preview ?? false }),
+      fused || opts.candidate ? null : unitStatsLine(unitId, opts.rates),
+      ),
     ),
-    // What the unit is about, in one sentence (R4-8); a fused unit has none.
-    c?.archetype ? h("div", { class: "archetype", "data-testid": "sheet-archetype" }, c.archetype) : null,
-    // opts.credit: a Library unit's own (M3-8), not a live version's that shares its id.
-    fused ? null : opts.credit ? creditText(opts.credit) : creditLine(unitId),
-    // #1271: a unit a player made can be reported (not your own).
-    fused ? null : reportUnit(opts.credit ?? creditOf(unitId), unitId, u.name),
-    "forms" in u ? null : discoveredLine(u, { preview: opts.preview ?? false }),
-    opts.candidate ? h("div", { class: "dim small", "data-testid": "sheet-unset" }, SET_BY_SIM()) : "stats" in u ? statsLine(u.stats) : sheetStats(u.base.pwr, u.base.hp),
-    opts.from ? h("div", { class: "dim small" }, t("card.yourCopyNow")) : null,
-    icons.childNodes.length ? icons : null,
-    box,
-    ...children,
-    summons.childNodes.length || (sleeping && c) ? summons : null,
-    fused || opts.candidate ? null : unitStatsLine(unitId, opts.rates),
   );
+}
+
+/** The detail's piece: big where the sheet is wide, smaller on a phone or a short frame. */
+function heroPx(): number {
+  const w = window.innerWidth;
+  const hgt = window.innerHeight;
+  if (w < 600) return 72;
+  return hgt < 560 ? 92 : 120;
 }
 
 /** A sheet's numbers as two chips (C-Shop's inspector): PWR in its colour, HP in its. */
