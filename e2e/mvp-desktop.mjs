@@ -116,7 +116,7 @@ try {
 
   await page.goto(url, { timeout: 20_000 });
   await page.getByTestId("name-input").waitFor({ timeout: 10_000 });
-  await page.keyboard.type(`DeskTester${TAG}`);
+  await page.getByTestId("name-input").fill(`DeskTester${TAG}`);
   await page.keyboard.press("Enter");
   await page.getByTestId("play").waitFor();
   // The gear's Sound row (M5-3: settings left the Throne): on at 60% by default.

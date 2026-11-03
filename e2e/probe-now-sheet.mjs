@@ -60,7 +60,7 @@ try {
   await page.route("**/api/v1/battles/*", (r) => r.fulfill({ json: pick.battle }));
   await page.goto(url);
   await page.getByTestId("name-input").waitFor({ timeout: 10_000 });
-  await page.keyboard.type(`NowProbe${Date.now().toString(36).slice(-4)}`);
+  await page.getByTestId("name-input").fill(`NowProbe${Date.now().toString(36).slice(-4)}`);
   await page.keyboard.press("Enter");
   await page.getByTestId("play").click();
   await page.getByTestId("fight").waitFor({ timeout: 10_000 });

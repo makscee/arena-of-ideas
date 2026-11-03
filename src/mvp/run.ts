@@ -146,7 +146,7 @@ function addUnit(s: MvpRunState, u: UnitContent, content: MvpContent, kind: Deci
 
 /** A new run. The kernel has no clock: the caller passes the day (DayView.seq)
  * and the start time. */
-export function initMvpRun(args: { runId: string; player: PlayerRef; seed: number; content: MvpContent; day: number; startedAt: string; rules?: MvpRules; rating?: number }): MvpRunState {
+export function initMvpRun(args: { runId: string; player: PlayerRef; seed: number; content: MvpContent; day: number; startedAt: string; rules?: MvpRules; rating?: number; firstRun?: boolean }): MvpRunState {
   const rules = args.rules ?? MVP_RULES;
   const s: MvpRunState = {
     runId: args.runId,
@@ -174,7 +174,23 @@ export function initMvpRun(args: { runId: string; player: PlayerRef; seed: numbe
     ratingAtStart: args.rating ?? (args.player.bot ? rules.botRating : rules.ratingStart),
   };
   rollOffers(s, args.content);
+  if (args.firstRun) seedFirstOffers(s, args.content);
   return s;
+}
+
+/** A player's first run (arena#31): round 1's shop holds a striker and a unit
+ * that answers it, so the coach has a real pair to build (Gambler, then Medic
+ * behind it). Only the draw is steered, in slots 0 and 1; prices, rules and the
+ * rest of the shop stay. Nothing happens when the pool lacks either unit. */
+export const FIRST_RUN_PAIR = ["Gambler", "Medic"] as const;
+function seedFirstOffers(s: MvpRunState, content: MvpContent): void {
+  const open = openUnits(content, s.rules, s.round);
+  const pair = FIRST_RUN_PAIR.map((name) => open.find((u) => u.name === name));
+  if (pair.some((u) => !u) || s.offers.length < pair.length) return;
+  const keep = s.offers.filter((o) => !pair.some((u) => u!.id === o.unitId));
+  s.offers = [...pair.map((u) => ({ slot: 0, unitId: u!.id, tier: u!.tier, cost: s.rules.unitCost })), ...keep]
+    .slice(0, s.offers.length)
+    .map((o, slot) => ({ ...o, slot }));
 }
 
 export function unitById(content: MvpContent, id: string): UnitContent {
