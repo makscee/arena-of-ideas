@@ -60,9 +60,11 @@ export async function nowSheetChecks(page, errors, { shot, phone }) {
 
   const card = page.locator(`.bv-card:not(.dead)[data-unit="${pick.id}"]`);
   const want = (await readCards(page)).find((c) => c.id === pick.id);
-  const box = await card.boundingBox();
-  // Click the card low, clear of the change chip on its top (which traces).
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height - 8);
+  // Click the piece's face (mission #1286: the card box's foot is overlapped by the next card's tab,
+  // and the change chip on top traces), else the card low.
+  const face = await card.locator(".pc-face").first().boundingBox();
+  const box = face ?? (await card.boundingBox());
+  await page.mouse.click(box.x + box.width / 2, face ? box.y + box.height / 2 : box.y + box.height - 8);
   await page.getByTestId("now-sheet").waitFor({ timeout: 2_000 }).catch(() => errors.push("now sheet: a card's click didn't open it"));
   if (!(await page.getByTestId("now-sheet").count())) return;
   if (!(await paused())) errors.push("now sheet: opened with the battle still playing");

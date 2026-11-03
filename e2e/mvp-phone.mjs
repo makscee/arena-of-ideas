@@ -115,7 +115,8 @@ try {
     const sheet = page.getByTestId("unit-sheet");
     if ((await sheet.getByTestId("sheet-form").count()) !== 1) errors.push(`${name}: not exactly one form block`);
     await noRates(name);
-    const last = await sheet.evaluate((el) => el.lastElementChild?.dataset.testid ?? "");
+    // The XL sheet (mission #1286) holds its text in .sheet-body, the rates its last line.
+    const last = await sheet.evaluate((el) => (el.querySelector(".sheet-body") ?? el).lastElementChild?.dataset.testid ?? "");
     if ((await sheet.getByTestId("unit-rates").count()) && last !== "unit-rates") errors.push(`${name}: rates aren't the last line`);
     await termChecks(name, sheet.getByTestId("sheet-form"));
     if (await sheet.getByTestId("see-awoken").count()) {
@@ -554,9 +555,12 @@ try {
         const cards = [...document.querySelectorAll(".bv-card:not(.dead)")];
         return {
           cards: cards.length,
-          noBar: cards.filter((c) => !c.querySelector('[data-testid="hp-bar"]')).length,
-          noRow: cards.filter((c) => !c.querySelector('[data-testid="card-statuses"]')).length,
-          wordy: [...document.querySelectorAll('[data-testid="card-status"]')].filter((s) => !s.querySelector("svg")).length,
+          // The v3 battle card is a piece (mission #1286): its HP is the number on its rim (.pc-b.h) and its
+          // statuses a shelf of icon chips (.pc-shelf .pc-st) that is there only while it holds some.
+          noBar: cards.filter((c) => !c.querySelector('[data-testid="hp-bar"], .pc-b.h')).length,
+          noRow: cards.filter((c) => !c.querySelector('[data-testid="card-statuses"]') && !c.classList.contains("bv-pc")).length,
+          // (a piece's chip draws its status as an emoji, not an svg: it is "wordy" only when letters stand there)
+          wordy: [...document.querySelectorAll('[data-testid="card-status"]')].filter((s) => !s.querySelector("svg")).length + [...document.querySelectorAll(".bv-pc .pc-st")].filter((s) => /\p{L}/u.test(s.firstChild?.textContent ?? "")).length,
           zero: [...document.querySelectorAll('[data-testid="change"], [data-testid="caption"], .bv-ledger, .bv-still, .bv-float, .bv-run-row')].filter((c) => /[−-]0(?!\d)/.test(c.textContent)).length,
           hiddenStatus: [...document.querySelectorAll('[data-testid="card-statuses"]')].flatMap((row) => [...row.children].filter((c) => c.getBoundingClientRect().bottom > row.getBoundingClientRect().bottom + 0.5)).length,
           wrongSide: [...document.querySelectorAll(".bv-cn[data-unit]")].filter((n) => {
@@ -604,7 +608,7 @@ try {
       await tap44("change chip", page.getByTestId("change"));
       await tap44("trace close", page.getByTestId("trace-close"));
       await tap44("trace close", page.getByTestId("trace-close"), "width");
-      await tap44("trigger badge", page.getByTestId("trigger-badge"));
+      await tap44("trigger badge", page.locator('[data-testid="trigger-badge"]:visible')); // v3 battle hides the badges (style.css: .bv-v3 button.bv-badge), so only shown ones are checked
       if (/→/.test(await page.getByTestId("caption").textContent()) && (await page.getByTestId("caption").locator(".bv-cn").count()) === 0) errors.push("battle strip: an act names no unit");
       // A battle card (below its chip) opens its Now sheet (R3-18), whose
       // Full card opens the unit's sheet, which closes with Close.
@@ -675,9 +679,10 @@ try {
       const moments = await page.getByTestId("key-moment").count();
       if (moments < 1 || moments > 3) errors.push(`end card: ${moments} key moments`);
       await onScreen("end card: Continue", page.getByTestId("battle-done"));
-      // R2-17: the end card never hides the caption's result line ("They win").
-      const [endBox, capBox] = [await page.getByTestId("end-card").boundingBox(), await page.locator(".bv-cap").boundingBox()];
-      if (endBox && capBox && endBox.y < capBox.y + capBox.height - 0.5) errors.push(`end card: it covers the caption's result line (${Math.round(endBox.y)} < ${Math.round(capBox.y + capBox.height)})`);
+      // R2-17: the result stays on screen. The redesigned end card covers the caption band and says
+      // it itself (VICTORY, mission #1286), so the check is that its word is shown, whole, on screen.
+      const wordBox = await page.getByTestId("battle-word").boundingBox();
+      if (!wordBox || wordBox.y < 0 || wordBox.y + wordBox.height > height + 0.5) errors.push(`end card: the result word is off screen (${JSON.stringify(wordBox)})`);
       await tap44("end card buttons", page.locator('[data-testid="end-card"] button'));
       await shot("battle-end-card"); await noHScroll("battle-end-card");
       if (await page.getByTestId("end-why").count()) {

@@ -102,6 +102,12 @@ try {
     await settle();
   };
   /** The last sound the client asked for (round 3, note 16: ui/sound.ts logs each to window.__sfx). */
+  /** The end card: End jumps to it; once the fight was watched, End has given way to Next round
+   * (arena#14), so › steps to the last beat, where the card comes up. */
+  const showEnd = async () => {
+    if (await page.getByTestId("battle-end").count()) return void (await page.getByTestId("battle-end").click());
+    for (let k = 0; k < 400 && !(await page.getByTestId("end-card").isVisible()); k++) await page.getByTestId("battle-step").click();
+  };
   const lastSfx = () => page.evaluate(() => window.__sfx?.at(-1) ?? "");
   const wantSfx = async (what, re) => {
     const got = await lastSfx();
@@ -357,7 +363,7 @@ try {
     if (round === 1) await desktopBattle();
     if (round === 1) await beamChecks(page, errors, { shot, phone: false });
     if (round === 1) await nowSheetChecks(page, errors, { shot, phone: false });
-    if (!(await page.getByTestId("end-card").isVisible().catch(() => false))) await page.getByTestId("battle-end").click();
+    if (!(await page.getByTestId("end-card").isVisible().catch(() => false))) await showEnd();
     // R2-17 batch E: the end card is the fight's one result: the round
     // fought, hearts and record, and its button goes straight on.
     await page.getByTestId("end-card").waitFor({ timeout: 10_000 });
@@ -625,30 +631,31 @@ try {
     if ((await page.getByTestId("battle-play").textContent()) === "❚❚") await page.getByTestId("battle-play").click();
     // R2-17: the end card keeps the timeline and the controls clear (as the mockup does), at both sizes.
     const endClear = async (name) => {
-      if (!(await page.getByTestId("end-card").isVisible())) await page.getByTestId("battle-end").click();
+      if (!(await page.getByTestId("end-card").isVisible())) await showEnd();
       const endBox = await page.getByTestId("end-card").boundingBox();
       for (const id of ["timeline", "battle-back", "battle-play", "battle-replay"]) {
         const b = await page.getByTestId(id).boundingBox();
         if (endBox && b && endBox.y + endBox.height > b.y + 0.5 && endBox.y < b.y + b.height && endBox.x < b.x + b.width && endBox.x + endBox.width > b.x) errors.push(`${name}: the end card covers ${id}`);
       }
-      const keys = await page.getByTestId("battle-keys").boundingBox();
-      if (!keys) errors.push(`${name}: no key hints (Space / ←→ / R) by the controls`);
+      // The v3 control rail draws no key hints (style.css: ".bv-v3 .bv-controls .bv-keys { display: none }"); the keys still work.
     };
     await endClear("end card 1440×900");
     await shot("battle-end-card");
     if (await page.getByTestId("end-card").isVisible()) await page.getByTestId("end-close").click();
     const facing = async (name, w, h) => {
       const [mine, theirs, panel] = [await page.getByTestId("battle-you").boundingBox(), await page.getByTestId("battle-them").boundingBox(), await page.getByTestId("trace").boundingBox()];
-      if (!mine || !theirs || Math.abs(mine.y - theirs.y) > 2 || mine.x + mine.width > theirs.x + 0.5) errors.push(`${name}: the lines don't face each other on one row (${JSON.stringify({ mine, theirs })})`);
+      // The v3 board stacks the lines in one column (theirs above, yours below), each front-first from the left (mission #1286).
+      if (!mine || !theirs || mine.y < theirs.y + theirs.height - 2 || Math.abs(mine.x - theirs.x) > 2) errors.push(`${name}: the lines don't face each other, theirs above yours (${JSON.stringify({ mine, theirs })})`);
       if (!panel || theirs.x + theirs.width > panel.x + 0.5) errors.push(`${name}: the side panel covers their line`);
-      // Fronts in the middle: your line runs right to left, theirs left to right.
       const xs = async (testid) => page.getByTestId(testid).locator(".bv-slot").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().x));
       const [m, t] = [await xs("battle-you"), await xs("battle-them")];
-      if (m.length > 1 && !(m[0] > m.at(-1))) errors.push(`${name}: your front isn't in the middle`);
-      if (t.length > 1 && !(t[0] < t.at(-1))) errors.push(`${name}: their front isn't in the middle`);
+      if (m.length > 1 && !(m[0] < m.at(-1))) errors.push(`${name}: your front isn't at the left`);
+      if (t.length > 1 && !(t[0] < t.at(-1))) errors.push(`${name}: their front isn't at the left`);
       const doc = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.scrollHeight]);
       if (doc[0] > w || doc[1] > h) errors.push(`${name}: the fight scrolls (${doc.join("×")})`);
-      for (const id of ["battle-back", "battle-play", "battle-step", "battle-speed", "battle-end", "battle-replay", "timeline"]) {
+      // At the fight's end the control bar's End button gives way to Next round (arena#14, mission #1286).
+      const endId = (await page.getByTestId("battle-end").count()) ? "battle-end" : "battle-next";
+      for (const id of ["battle-back", "battle-play", "battle-step", "battle-speed", endId, "battle-replay", "timeline"]) {
         const b = await page.getByTestId(id).boundingBox();
         if (!b || b.y < 0 || b.y + b.height > h + 0.5 || b.x + b.width > w + 0.5) errors.push(`${name}: ${id} off screen`);
       }

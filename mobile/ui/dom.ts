@@ -318,6 +318,10 @@ function syncBack(): void {
     history.back();
   }
 }
+// The app keeps its own scroll (show() resets it, keepScreen() restores it, the Codex lands on a row):
+// a history step must not make the browser restore an old entry's scroll a few ms after (arena#24:
+// "Open in Codex" landed on its row, then the page jumped back to the top).
+history.scrollRestoration = "manual";
 addEventListener("popstate", (e) => {
   if (ownBacks > 0) return void (ownBacks--, syncBack());
   const s = e.state as Partial<NavState> | null;

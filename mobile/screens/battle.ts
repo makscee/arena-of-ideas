@@ -2152,11 +2152,19 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       // 1024×768 it touched it (R3-26). A card taller than that scrolls.
       const top = hud.getBoundingClientRect().bottom + 2 * gap;
       const cap = caption.getBoundingClientRect();
-      const bottom = Math.min(timeline.getBoundingClientRect().top, cap.height > 0 ? cap.top : Infinity) - 2 * gap;
+      // The v3 layout keeps the caption in the side rail, beside the end card: only a caption the card
+      // overlaps sideways bounds it (else the card's room was the caption's top minus the HUD: 0 px).
+      // The rail (caption, recent lines, controls) stands inside the board's column: the card keeps left of it.
+      const rail = document.querySelector(".bv-rail")?.getBoundingClientRect();
+      end.style.right = rail && rail.width > 0 ? `${Math.round(innerWidth - rail.left + 2 * gap)}px` : "";
+      const er = end.getBoundingClientRect();
+      const capOver = cap.height > 0 && cap.left < er.right && cap.right > er.left;
+      const bottom = Math.min(timeline.getBoundingClientRect().top, capOver ? cap.top : Infinity) - 2 * gap;
       end.style.top = `${Math.round(top)}px`;
       end.style.bottom = "auto";
       end.style.maxHeight = `${Math.max(0, Math.round(bottom - top))}px`;
     } else {
+      end.style.right = "";
       // A narrow gap on the phone: every pixel goes to the three key moments.
       // Never below the screen's foot, whatever the controls do (R2-17 batch E).
       const bottom = Math.min(controls.getBoundingClientRect().top, innerHeight) - gap / 2;
