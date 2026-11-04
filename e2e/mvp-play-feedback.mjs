@@ -1,11 +1,13 @@
 // Play feedback (arena#31, fix round after the blind first-play audit): with
 // the API slowed to 1500 ms, a press on PLAY (click or Enter) is acknowledged
 // within 100 ms and never starts a second run; a refused or failing start says
-// so and PLAY works again; the coach in round 1 lights only the slot behind
+// so and PLAY works again; the coach in round 1 says how to buy (a how-line:
+// "Tap Medic, then slot 2 · or press 2") and lights only the slot behind
 // Gambler and refuses another one in one line; and a slow first load shows the
 // title and a loader at once. Starts the server itself (rules v2's pool).
 //   npm run mvp:play-feedback -- [--url http://127.0.0.1:8841/arena/]
 import { spawn, execFileSync } from "node:child_process";
+import { mkdirSync } from "node:fs";
 import { createServer } from "node:net";
 import { launchChromium } from "./browser.mjs";
 
@@ -35,6 +37,8 @@ async function open(viewport, label, { delay = DELAY, refuse = {} } = {}) {
   const ctx = await browser.newContext({ viewport });
   const page = await ctx.newPage();
   const seen = { players: 0, runs: 0, buys: [] };
+  // Registrations that went through: a generated name the server turns down (a crude one) is rerolled, and that is not a second player.
+  page.on("response", (r) => { if (r.request().method() === "POST" && /\/players$/.test(new URL(r.url()).pathname) && r.ok()) seen.made = (seen.made ?? 0) + 1; });
   const fail = (m) => errors.push(`${label}: ${m}`);
   page.on("pageerror", (e) => fail(`pageerror: ${e.message}`));
   await page.route("**/api/v1/**", async (route) => {
@@ -90,7 +94,7 @@ try {
       await page.waitForTimeout(200);
       if ((await tid("start-caption").textContent()) !== cap) fail("the chain demo keeps playing while the run starts");
       await tid("coach").waitFor({ timeout: 20_000 }).catch(() => fail("no table after a slow start"));
-      if (seen.players !== 1 || seen.runs !== 1) fail(`${seen.players} registrations and ${seen.runs} run starts after pressing PLAY three times, not 1 and 1`);
+      if (seen.made !== 1 || seen.runs !== 1) fail(`${seen.made} players made and ${seen.runs} run starts after pressing PLAY three times, not 1 and 1`);
       await ctx.close();
     }
 
@@ -106,7 +110,7 @@ try {
       await page.waitForFunction(() => document.querySelector('[data-testid="error"]')?.textContent?.trim() && !document.querySelector('[data-testid="start-play"]')?.getAttribute("aria-busy"), null, { timeout: 5000 }).catch(() => fail("a refused run start says nothing"));
       await tid("start-play").click();
       await tid("coach").waitFor({ timeout: 10_000 }).catch(() => fail("PLAY does not work after two refusals"));
-      if (seen.players !== 2) fail(`${seen.players} registrations: a retry after a registered player must not register again (expected 2: one refused, one made)`);
+      if (seen.made !== 1) fail(`${seen.made} players made: a retry after a registered player must not register again (expected 1)`);
       await ctx.close();
     }
 
@@ -117,9 +121,16 @@ try {
       await tid("start-play").click();
       await tid("coach").waitFor({ timeout: 15_000 });
       const offer = (name) => page.locator(`[data-testid="offers"] [data-testid^="offer-"][data-name="${name}"]`);
+      const keys = viewport.width >= 1024;
+      const how = async (want, step) => {
+        const got = (await page.locator('[data-testid="coach"] [data-testid="coach-how"]').innerText().catch(() => "")).replace(/\s+/g, " ").trim();
+        if (got !== want) fail(`the coach's how-line at ${step} is ${JSON.stringify(got)}, expected ${JSON.stringify(want)}`);
+      };
+      await how(keys ? "Tap Gambler, then slot 1 · or press 1" : "Tap Gambler, then slot 1", "step 1");
       await offer("Gambler").click();
       await tid("line-0-empty").click();
       await page.waitForFunction(() => document.querySelector('[data-testid="coach"]')?.getAttribute("data-step") === "buy-second", null, { timeout: 5000 }).catch(() => fail("no step 2 after buying Gambler"));
+      await how(keys ? "Tap Medic, then slot 2 · or press 2" : "Tap Medic, then slot 2", "step 2");
       await offer("Medic").click();
       await page.waitForTimeout(150);
       const lit = await page.evaluate(() => [...document.querySelectorAll('[data-testid="line"] .lit, [data-testid="bench"] .lit, [data-testid^="line-"].lit, [data-testid^="bench-"].lit')].map((e) => e.getAttribute("data-testid")));
@@ -134,10 +145,56 @@ try {
       if (seen.buys.length !== before) fail("a tap on slot 1 bought Medic");
       await tid("line-1-empty").click();
       await page.waitForFunction(() => document.querySelector('[data-testid="coach"]')?.getAttribute("data-step") === "fight", null, { timeout: 5000 }).catch(() => fail("Medic in slot 2 does not lead to Now Fight"));
+      await how(keys ? "Press Fight · or Space" : "Press Fight", "step 3");
       const line = await page.locator('[data-testid="line"] .pc[data-name]').evaluateAll((els) => els.map((e) => e.getAttribute("data-name")));
       if (line.join() !== "Gambler,Medic") fail(`the line is ${line.join()}`);
       await ctx.close();
     }
+  }
+
+  // 5. The coach with its how-line fits the small frames: no page scroll, nothing clipped, no text under 11 px as drawn.
+  for (const [label, viewport] of [["800x450", { width: 800, height: 450 }], ["390x844", { width: 390, height: 844 }]]) {
+    const { ctx, page, fail, tid } = await open(viewport, `${label} coach fit`, { delay: 0 });
+    await page.goto(url, { timeout: 20_000 });
+    await tid("start-play").click();
+    await tid("coach").waitFor({ timeout: 15_000 });
+    const offer = (name) => page.locator(`[data-testid="offers"] [data-testid^="offer-"][data-name="${name}"]`);
+    const fit = (step) => page.evaluate(() => {
+      const d = document.scrollingElement ?? document.documentElement;
+      const how = document.querySelector('[data-testid="coach-how"]');
+      const coach = document.querySelector('[data-testid="coach"]');
+      const tray = coach?.closest(".tb-coach") ?? coach;
+      const drawn = (e) => {
+        const f = parseFloat(getComputedStyle(e).fontSize);
+        let b = e;
+        while (b && b !== document.body && (getComputedStyle(b).display === "inline" || b.offsetWidth < 24 || b.offsetHeight < 24)) b = b.parentElement;
+        const r = b?.getBoundingClientRect();
+        const k = b && b.offsetWidth > 0 && r.width > 0 ? r.width / b.offsetWidth : 1;
+        return f * (k > 0 ? k : 1);
+      };
+      const small = [...(coach?.querySelectorAll("*") ?? [])].filter((e) => e.getClientRects().length && /^(SPAN|DIV|P|B|I|SMALL|STRONG)$/.test(e.tagName) && !e.closest("[aria-hidden='true']") && [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())).map((e) => `${e.textContent.trim().slice(0, 24)} (${drawn(e).toFixed(1)}px)`).filter((x) => parseFloat(x.slice(x.lastIndexOf("(") + 1)) < 10.9);
+      const hr = how?.getBoundingClientRect(), tr = tray?.getBoundingClientRect();
+      return { scroll: d.scrollHeight - d.clientHeight, hscroll: d.scrollWidth - d.clientWidth, small, how: !!hr && hr.width > 0 && hr.height > 0, clipped: !!hr && !!tr && (hr.bottom > tr.bottom + 1 || hr.top < tr.top - 1 || hr.bottom > innerHeight + 1 || hr.right > innerWidth + 1), coachScrolls: !!coach && coach.scrollHeight > coach.clientHeight + 1 };
+    });
+    const check = async (step) => {
+      await mkdirSync("e2e/.shots/play-feedback", { recursive: true });
+      await page.screenshot({ path: `e2e/.shots/play-feedback/coach-${label}-${step.replace(" ", "")}.png` });
+      const m = await fit(step);
+      if (m.scroll > 0 || m.hscroll > 0) fail(`${step}: the page scrolls (${m.scroll}px down, ${m.hscroll}px across)`);
+      if (!m.how) fail(`${step}: no how-line on screen`);
+      if (m.clipped || m.coachScrolls) fail(`${step}: the how-line is clipped`);
+      if (m.small.length) fail(`${step}: text under 11 px in the coach: ${m.small.join(", ")}`);
+    };
+    await check("step 1");
+    await offer("Gambler").click();
+    await tid("line-0-empty").click();
+    await page.waitForFunction(() => document.querySelector('[data-testid="coach"]')?.getAttribute("data-step") === "buy-second", null, { timeout: 5000 });
+    await check("step 2");
+    await offer("Medic").click();
+    await tid("line-1-empty").click();
+    await page.waitForFunction(() => document.querySelector('[data-testid="coach"]')?.getAttribute("data-step") === "fight", null, { timeout: 5000 });
+    await check("step 3");
+    await ctx.close();
   }
 
   // 4. A slow first load: the title and a loader are on screen before the script runs.
