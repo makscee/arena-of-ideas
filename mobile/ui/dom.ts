@@ -484,6 +484,14 @@ const MIN_PX = 8;
 const NAME_MIN_PX = 10;
 const CARD_NAME_MIN_PX = 9;
 
+/** A card name never draws under 11 px (CrazyGames' 800×450 frame, arena#32): in the landscape
+ * stage, drawn at a scale under 1, the size that is 11 px there; elsewhere 11. It ends in an ellipsis instead. */
+function drawnFloor(el: HTMLElement): number {
+  const st = el.closest<HTMLElement>('[data-testid="stage"]');
+  const k = Number(st?.style.getPropertyValue("--k"));
+  return st && k > 0 && k < 1 ? Math.ceil(11 / k) : 11;
+}
+
 /** Shrinks each card name (and battle chip) until it fits the card, measured,
  * not guessed from letter counts; one that still doesn't fit at the smallest
  * size ends in an ellipsis. */
@@ -507,7 +515,8 @@ export function fitText(root: ParentNode = app): void {
     el.style.fontSize = "";
     el.classList.remove("clip");
     let px = parseFloat(getComputedStyle(el).fontSize);
-    const min = !el.classList.contains("name") ? MIN_PX : el.closest(".bv-card") ? NAME_MIN_PX : CARD_NAME_MIN_PX;
+    const min = !el.classList.contains("name") ? MIN_PX : Math.max(el.closest(".bv-card") ? NAME_MIN_PX : CARD_NAME_MIN_PX, drawnFloor(el));
+    if (el.classList.contains("name") && px < min) (px = min, (el.style.fontSize = `${px}px`));
     while (el.scrollWidth > el.clientWidth + 0.5 && px > min) {
       px = Math.max(min, px - 0.5);
       el.style.fontSize = `${px}px`;

@@ -168,6 +168,15 @@ function chips(list: { status: string; stacks: number }[], cz: number, floor = 0
   });
 }
 
+/** The text floor of the landscape stage where the window shows it scaled down (800×450 is 0.625 of it: 18 px there is 11 px),
+ * for a piece drawn without its own: a card in a window over the table, the Codex's grid, the forge. */
+function stageFloor(): number {
+  if (typeof document === "undefined") return 0;
+  const st = document.querySelector<HTMLElement>('[data-testid="stage"]');
+  const k = Number(st?.style.getPropertyValue("--k"));
+  return st?.classList.contains("L") && k > 0 && k < 1 ? Math.ceil(11 / k) : 0;
+}
+
 /** One piece. Its box is the face's square; the tab, rim numbers, shelf and
  * name hang outside it, so the caller leaves room (pieceBox gives how much). */
 export function piece(u: PieceUnit, o: PieceOptions): HTMLElement {
@@ -196,7 +205,7 @@ export function piece(u: PieceUnit, o: PieceOptions): HTMLElement {
   const showWord = o.word ?? (o.size === "L" || o.size === "M" || o.px !== undefined);
   const showName = o.size === "L" || o.size === "M";
   const showMeta = o.size === "L";
-  const fl = o.floor ?? 0;
+  const fl = o.floor ?? stageFloor();
   const tabH = Math.round(Math.max(20, s * 0.27, fl * 1.45));
   const tf = Math.round(Math.max(12, s * 0.17, fl));
   const ti = Math.round(Math.max(13, s * 0.19, fl));

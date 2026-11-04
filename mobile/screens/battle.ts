@@ -2337,7 +2337,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const top = Math.max(1, ...damage.map((d) => d.damage));
     const bySide = (side: Side) => damage.filter((d) => d.side === side);
     const all = bySide(you).length + bySide(them).length;
-    const cap = dmgAll ? 99 : DMG_ROWS;
+    // The landscape tray holds two rows a side without cutting the last one (arena#32): the rest is behind All.
+    const cap = dmgAll ? 99 : orient() === "L" ? Math.min(2, DMG_ROWS) : DMG_ROWS;
     const rows = (side: Side) =>
       bySide(side)
         .slice(0, cap)

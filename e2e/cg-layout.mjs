@@ -7,7 +7,7 @@
 // Without --url it builds the client and starts its own scenes server.
 // Keys at 821×462 (a window with a mouse): the shop takes them by their place
 // on the keyboard (KeyboardEvent.code), as a Russian or AZERTY layout sends
-// them: 1 buys, R rerolls, Space fights. Esc opens the run's menu; with --cg
+// them: a tap on an offer then 1–5 puts it in that slot (the table, arena#28), R rerolls, Space fights. Esc opens the run's menu; with --cg
 // (a client built with VITE_CG=1) Esc does nothing and Backspace opens it.
 //   npm run mvp:cg-layout -- [--url http://127.0.0.1:PORT/arena/] [--out e2e/.shots/cg-layout] [--only shop,home,keys] [--cg]
 import { spawn, execFileSync } from "node:child_process";
@@ -172,7 +172,8 @@ async function keys() {
   const idle = () => page.waitForFunction(() => !document.getElementById("app").classList.contains("busy"), null, { timeout: 30_000 }).then(() => page.waitForTimeout(400));
   const sheet = () => page.evaluate(() => !!document.querySelector('[data-testid="run-menu"]'));
   const g0 = await gold();
-  await send("&", "Digit1"); // AZERTY's 1
+  await page.locator('[data-testid="offers"] [data-testid^="offer-"][data-name]').first().click(); // the offer in hand,
+  await send("&", "Digit1"); // then AZERTY's 1 puts it in slot 1
   await idle();
   const g1 = await gold();
   if (!(g1 < g0)) why.push(`Digit1 (key "&") bought nothing: gold ${g0} → ${g1}`);
