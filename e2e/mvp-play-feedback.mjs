@@ -37,6 +37,8 @@ async function open(viewport, label, { delay = DELAY, refuse = {} } = {}) {
   const ctx = await browser.newContext({ viewport });
   const page = await ctx.newPage();
   const seen = { players: 0, runs: 0, buys: [] };
+  // Registrations that went through: a generated name the server turns down (a crude one) is rerolled, and that is not a second player.
+  page.on("response", (r) => { if (r.request().method() === "POST" && /\/players$/.test(new URL(r.url()).pathname) && r.ok()) seen.made = (seen.made ?? 0) + 1; });
   const fail = (m) => errors.push(`${label}: ${m}`);
   page.on("pageerror", (e) => fail(`pageerror: ${e.message}`));
   await page.route("**/api/v1/**", async (route) => {
@@ -92,7 +94,7 @@ try {
       await page.waitForTimeout(200);
       if ((await tid("start-caption").textContent()) !== cap) fail("the chain demo keeps playing while the run starts");
       await tid("coach").waitFor({ timeout: 20_000 }).catch(() => fail("no table after a slow start"));
-      if (seen.players !== 1 || seen.runs !== 1) fail(`${seen.players} registrations and ${seen.runs} run starts after pressing PLAY three times, not 1 and 1`);
+      if (seen.made !== 1 || seen.runs !== 1) fail(`${seen.made} players made and ${seen.runs} run starts after pressing PLAY three times, not 1 and 1`);
       await ctx.close();
     }
 
@@ -108,7 +110,7 @@ try {
       await page.waitForFunction(() => document.querySelector('[data-testid="error"]')?.textContent?.trim() && !document.querySelector('[data-testid="start-play"]')?.getAttribute("aria-busy"), null, { timeout: 5000 }).catch(() => fail("a refused run start says nothing"));
       await tid("start-play").click();
       await tid("coach").waitFor({ timeout: 10_000 }).catch(() => fail("PLAY does not work after two refusals"));
-      if (seen.players !== 2) fail(`${seen.players} registrations: a retry after a registered player must not register again (expected 2: one refused, one made)`);
+      if (seen.made !== 1) fail(`${seen.made} players made: a retry after a registered player must not register again (expected 1)`);
       await ctx.close();
     }
 

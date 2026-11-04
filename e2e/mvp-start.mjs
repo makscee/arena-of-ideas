@@ -45,8 +45,12 @@ try {
     /** Buys the offer the coach points at, as a player does: a key, or tap the offer then its slot. */
     const buy = async (name, slot) => {
       const cell = page.locator(`[data-testid="offers"] [data-testid^="offer-"][data-name="${name}"]`);
-            // The table's way: the offer in hand (a tap), then its slot (a key or a tap).
-      await cell.click();
+      // The table's way: the offer in hand (a tap), then its slot (a key or a tap). A shop that redraws from the
+      // last buy's answer can drop the offer in hand: wait for the slot to light, and tap the offer again if not.
+      for (let attempt = 0; attempt < 3; attempt++) {
+        await cell.click();
+        if (await page.locator(`[data-testid="line-${slot}-empty"].lit`).waitFor({ timeout: 800 }).then(() => true, () => false)) break;
+      }
       if (desk) await page.keyboard.press(String(slot + 1));
       else await tid(`line-${slot}-empty`).click();
     };
