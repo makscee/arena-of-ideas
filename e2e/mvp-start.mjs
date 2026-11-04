@@ -9,6 +9,7 @@ import { spawn, execFileSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { createServer } from "node:net";
 import { launchChromium } from "./browser.mjs";
+import { replayBattle } from "./battle-ctl.mjs";
 
 const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : undefined; };
@@ -91,10 +92,40 @@ try {
     // The fight uses the bought line against the opponent the shop previewed.
     if (foe.length > 1 && `@${fought.fight.opponent.player.name}` !== foe) fail(`the first fight is against @${fought.fight.opponent.player.name}, the shop showed ${foe}`);
     await page.getByTestId("battle-end").or(tid("end-card")).first().waitFor({ timeout: 15_000 });
-    if (!(await tid("end-card").isVisible())) await tid("battle-end").click();
+    // The battle on the table (arena#29): no scroll, no text under 11 px as drawn (the stage is scaled), playing, with a unit's inspector open, and the result.
+    const drawnFit = () => page.evaluate(() => {
+      const k = Number(document.querySelector('[data-testid="stage"]')?.style.getPropertyValue("--k") || 1);
+      const small = [...document.querySelectorAll("#app .stage *")].filter((e) => e.getClientRects().length && getComputedStyle(e).visibility !== "hidden" && [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) && parseFloat(getComputedStyle(e).fontSize) * k < 10.99).map((e) => `${e.textContent.trim().slice(0, 20)} ${(parseFloat(getComputedStyle(e).fontSize) * k).toFixed(1)}px`);
+      return { scroll: document.documentElement.scrollHeight - document.documentElement.clientHeight, small: [...new Set(small)] };
+    });
+    const checkBattle = async (what) => {
+      const f = await drawnFit();
+      if (f.scroll > 0) fail(`the battle (${what}) scrolls by ${f.scroll}px`);
+      if (f.small.length) fail(`text under 11 px in the battle (${what}): ${f.small.join(", ")}`);
+    };
+    if (await tid("battle-play").count()) {
+      await checkBattle("playing");
+      await page.keyboard.press("Space");
+      // Beat by beat to the end: statuses, result tags and chain steps appear along the way, none under 11 px.
+      for (let i = 0; i < 40 && !(await tid("battle-step").isDisabled()); i++) {
+        await page.keyboard.press("ArrowRight");
+        if (i % 2 === 0) await checkBattle(`beat ${i + 1}`);
+      }
+      await replayBattle(page);
+      await page.waitForTimeout(600);
+      if ((await tid("battle-play").textContent()) === "❚❚") await page.keyboard.press("Space");
+      await page.locator('[data-testid="battle-you"] .bv-card .pc-face').first().click();
+      await tid("inspector").waitFor({ timeout: 3_000 }).catch(() => fail("a unit's tap didn't open the inspector"));
+      await page.screenshot({ path: `${out}/battle-inspector-${label}.png` });
+      await checkBattle("inspector");
+      await page.keyboard.press("Escape");
+      await page.screenshot({ path: `${out}/battle-paused-${label}.png` });
+    }
+    if (!(await tid("end-card").isVisible())) await page.keyboard.press("e"); // E ends the battle (the End button gives way to Next round once a result was seen)
     await tid("end-card").waitFor({ timeout: 10_000 });
     const took = Date.now() - t0;
     if (took > 20_000) fail(`PLAY to the end of the first fight took ${Math.round(took / 1000)} s`);
+    await checkBattle("result");
     console.log(`${label}: PLAY to the end of the first fight in ${(took / 1000).toFixed(1)} s, against ${foe}`);
     await page.screenshot({ path: `${out}/fight-end-${label}.png` });
     await ctx.close();

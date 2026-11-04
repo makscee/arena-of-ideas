@@ -863,10 +863,14 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     }
     return { size, px };
   }
+  /** The text floor on the stage (arena#29): the landscape stage is drawn at up to 1.6× what 800×450 shows,
+   * so its pieces' text is 18 px and up there (11 px at 800×450), as the shop's pieces are. */
+  const textFloor = () => (orient() === "P" ? 0 : 18);
   function boxHeight(size: PieceSize, s: number): number {
-    const tabH = Math.round(Math.max(20, s * 0.27));
-    const d = Math.round(Math.max(22, s * 0.37));
-    const name = size === "M" ? 3 + Math.round(Math.max(12, s * 0.2)) : 0;
+    const fl = textFloor();
+    const tabH = Math.round(Math.max(20, s * 0.27, fl * 1.45));
+    const d = Math.round(Math.max(22, s * 0.37, fl * 1.5));
+    const name = size === "M" ? 3 + Math.round(Math.max(12, s * 0.2, fl)) : 0;
     return Math.round(tabH * 0.62) + 2 + s + Math.round(d * 0.3) + 31 + name;
   }
   /** The box a piece takes in its slot: its tab above, the rim's discs, a
@@ -874,7 +878,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   function pieceBox(fit: { size: PieceSize; px?: number }): string {
     const s = fit.px ?? PIECE_PX[fit.size];
     if (fit.size === "XS") return `padding-top:2px;height:${s + 4}px`;
-    const tabH = Math.round(Math.max(20, s * 0.27));
+    const tabH = Math.round(Math.max(20, s * 0.27, textFloor() * 1.45));
     // An M piece's name is wider than its face: the slot holds it (cg-layout's battle-six).
     const wide = fit.size === "M" ? `;min-width:${s + 28}px` : "";
     return `padding-top:${Math.round(tabH * 0.62) + 2}px;height:${boxHeight(fit.size, s)}px${wide}`;
@@ -895,6 +899,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const fit = pieceFit(compact);
     const el = piece(unit, {
       ...fit,
+      floor: textFloor(),
       side: side === you ? "you" : "them",
       statuses: onShelf.slice(0, compact ? 2 : 3),
       ...(ring ? { counter: statuses.find((st) => st.status === ring.status)?.stacks ?? 0 } : {}),

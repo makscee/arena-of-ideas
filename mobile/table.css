@@ -379,3 +379,23 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 button.bv-change { min-height: 48px; height: 48px; }
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet button, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet [data-testid="why-step"], :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 button.bv-also-btn, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end button, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-ledger button { min-height: 48px; }
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet button.bv-close, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet [data-testid="trace-close"] { min-width: 48px; }
+/* The side tags in the result ("You", "Them") and the caption's small words: 18 on the landscape stage */
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bv-who { font-size: 18px; padding: 0 6px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-who { font-size: 12px; }
+/* Small battle text on the landscape stage (800×450 draws it at 0.625): 18 and up */
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bv-nodmg { font-size: 18px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bv-card > .bv-chain-chip { min-width: 34px; height: 34px; font-size: 20px; border-radius: 17px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray .bv-chain-sum { font-size: 18px; max-width: none; flex-wrap: wrap; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray .bv-chain-sum *, :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray .bv-ledger-foot * { font-size: inherit; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray .bv-ledger-foot .bv-chain-sum { line-height: 1.3; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-nodmg { font-size: 12px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray .bv-chain-sum { font-size: 14px; max-width: none; }
+/* The traced change's window and the unit inspector: 18 and up on the landscape stage, 12 on the portrait one */
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 > .bv-sheet :is(.label, .bv-trace-text, .bv-step-by, .bv-why-keys, .dim, .small, .mono, .bv-step, .bv-step *, .bv-chain *, .t, b) { font-size: 18px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet :is(.label, .bv-trace-text, .bv-step-by, .bv-why-keys, .dim, .small, .mono) { font-size: 12px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .tb-insp :is(.bv-live-st, .bv-live-st *, .bv-now *, .credit-line, .bv-now-turn *, .label) { font-size: 18px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-insp :is(.bv-live-st, .bv-live-st *, .credit-line) { font-size: 13px; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-sheet { max-width: none; right: auto; bottom: auto; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 > .bv-sheet { height: 396px; max-height: 396px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet { right: 8px; bottom: 8px; max-height: none; }
+#app[data-screen="battle"]:has(.stage > .bv-sheet.open) .bv-fx { visibility: hidden; }
