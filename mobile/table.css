@@ -426,3 +426,11 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 @keyframes tb-banner { from { transform: translate(-50%, -50%) rotate(-3deg) scale(0.4); opacity: 0; } }
 :is(#app[data-screen="shop"], #under) .stage.P .tb-fight-banner { font-size: 44px; }
 @media (prefers-reduced-motion: reduce) { :is(#app[data-screen="shop"], #under) .tb-offers.rolling .cell.offer, :is(#app[data-screen="shop"], #under) .stage.fighting .tb-their .cell.ghost, :is(#app[data-screen="shop"], #under) .tb-fight-banner { animation: none; } }
+
+/* The first run's coach card holds its step line and three lines of text on a phone */
+:is(#app[data-screen="shop"], #under) .stage.P .tb-coach { height: 112px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-coach > .coach { justify-content: flex-start; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-shop { top: 130px; }
+:is(#app[data-screen="shop"], #under) .stage.P.compact .tb-coach { height: 70px; }
+:is(#app[data-screen="shop"], #under) .stage.P.compact .tb-coach > .coach .coach-step { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.P.compact .tb-shop { top: 92px; }

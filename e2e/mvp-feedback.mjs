@@ -120,6 +120,7 @@ try {
     // 1. Tap an offer, then its slot: the unit is in the slot as bought, gold down, the offer gone.
     await offer("Gambler").click();
     await at("buy: Gambler into slot 1", () => placeAt(0), (s) => s.line.some((l) => l.startsWith("line-0:Gambler")) && s.gold === g0 - 3 && !s.offers.includes("Gambler"));
+    await page.screenshot({ path: `${out}/buy-drawn-${label}.png` }); // the answer is still 1.5 s away
     await settled();
 
     // 5. An offer's inspector reads its rule at once, never "…" (its preview is still out).
@@ -158,6 +159,7 @@ try {
     // 3. Reroll: gold down and the offers rolling (or the button pressed), before the answer.
     const g2 = (await snap()).gold;
     if (g2 >= 1) await at("reroll", () => tid("reroll").click(), (s) => s.gold === g2 - 1 && (s.rolling || s.rerollPressed));
+    await page.screenshot({ path: `${out}/reroll-pressed-${label}.png` });
     await settled();
 
     // 3. Sell: the unit is gone and the gold is back, at once.
