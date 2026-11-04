@@ -17,7 +17,7 @@ let child = null;
 if (!url) {
   execFileSync("npm", ["run", "-s", "mvp:build"], { stdio: "inherit", env: { ...process.env, ...(cg ? { VITE_CG: "1" } : {}) } });
   const port = await new Promise((r) => { const s = createServer().listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => r(p)); }); });
-  child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1", ARENA_SCENES: "1", MVP_DB: ":memory:", ARENA_TUNER: "instant", ARENA_CODEX: "1", MVP_POOL: "v2", ...(cg ? { ARENA_CG: "1" } : {}) }, stdio: ["ignore", "inherit", "inherit"] });
+  child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1", ARENA_SCENES: "1", MVP_DB: ":memory:", ARENA_TUNER: "instant", ARENA_CODEX: "1", MVP_POOL: "v2", ...(cg ? { ARENA_CG: "1", ARENA_GUEST_JOINS_PER_IP: "100", ARENA_GUEST_JOINS_PER_HOUR: "300" } : {}) }, stdio: ["ignore", "inherit", "inherit"] });
   url = `http://127.0.0.1:${port}/arena/`;
 }
 for (let i = 0; i < 300; i++) {
@@ -29,12 +29,12 @@ for (let i = 0; i < 300; i++) {
 const CASES = [["scene", "battle-win"], ["scene", "battle-loss"], ["run", "pair"]].filter(([kind]) => !cg || kind === "run");
 const SIZES = [[800, 450], [1280, 720]];
 const DELAYS = [0, 1500];
-// How the result is reached: E, the battle ending on its own, or E and then the card closed (✕), which leaves Next round in the controls.
+// How the result is reached: E, the battle ending on its own, or E and then the card closed (✕), which leaves Next round in the controls (a real run only: a scene has no way on).
 const HOWS = ["e", "natural", "close"];
 const failures = [];
 const browser = await launchChromium();
 try {
-  for (const [kind, scene] of CASES) for (const how of HOWS) for (const [w, h] of SIZES) for (const delay of DELAYS) {
+  for (const [kind, scene] of CASES) for (const how of HOWS.filter((x) => x !== "close" || kind === "run")) for (const [w, h] of SIZES) for (const delay of DELAYS) {
     const label = `${kind === "run" ? "run " : ""}${scene} via ${how} ${w}x${h} delay ${delay}`;
     const ctx = await browser.newContext({ viewport: { width: w, height: h } });
     const page = await ctx.newPage();
@@ -49,8 +49,8 @@ try {
       await page.addInitScript(() => localStorage.setItem("arena.battleSpeed", "4")); // a fight that ends by itself, soon
       await page.goto(url, { timeout: 120_000 });
       if (!cg) await page.getByTestId("start").waitFor({ timeout: 20_000 });
-      else await page.waitForTimeout(1500);
-      await page.keyboard.press("Enter");
+      // The CrazyGames build has no PLAY screen and a slow first load: Enter until the coach is up.
+      for (let i = 0; i < 40 && !(await page.getByTestId("coach").count()); i++) { if (i === 0 || cg) await page.keyboard.press("Enter"); await page.waitForTimeout(500); }
       await page.getByTestId("coach").waitFor({ timeout: 20_000 });
       if (scene === "pair") {
         const desk = w >= 1024;
