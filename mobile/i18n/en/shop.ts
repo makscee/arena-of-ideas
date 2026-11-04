@@ -72,6 +72,7 @@ export const shop = {
   "shop.reroll": "Reroll",
   "shop.allLocked": "Every offer is locked",
   "shop.fightChampion": "Fight the champion",
+  "fight.starting": "Fight!",
   "shop.fight": "Fight",
   "shop.fillFirst": { one: "{n} empty slot", other: "{n} empty slots" },
 

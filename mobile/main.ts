@@ -39,6 +39,7 @@ import { telegramSheet } from "./screens/telegram";
 import { emailAttach, emailSignIn, emailSignUp } from "./screens/email";
 import { galleryScreen } from "./screens/gallery";
 import { faceOfUnit, lineToPiece, piece, pieceReach } from "./ui/piece";
+import { predictRun } from "./ui/predict";
 import { orient, stage } from "./ui/stage";
 import { initSound, music, onSoundChange, play, setSound, soundSettings } from "./ui/sound";
 import { shopSound } from "./ui/sound-map";
@@ -1014,6 +1015,21 @@ function mountCoach(step: CoachStep): void {
   const target = step.step === "fight" ? document.querySelector<HTMLElement>('[data-testid="fight"]') : document.querySelector<HTMLElement>(`[data-testid="offer-${step.offer}"]`);
   target?.classList.add("coach-target");
 }
+/** Fight was pressed: the button is down and the table starts its transition, before the answer (arena#28). */
+function pressFight(): void {
+  const st = document.querySelector<HTMLElement>(".stage");
+  if (!st || st.classList.contains("fighting")) return;
+  st.classList.add("fighting");
+  document.querySelector('[data-testid="fight"]')?.classList.add("pressed");
+  st.append(h("div", { class: "tb-fight-banner", "data-testid": "fight-banner", role: "status" }, t("fight.starting")));
+}
+/** Reroll was pressed: the gold is spent and the offers roll, before the new ones arrive. */
+function pressReroll(run: RunView): void {
+  document.querySelector('[data-testid="reroll"]')?.classList.add("pressed");
+  document.querySelector('[data-testid="offers"]')?.classList.add("rolling");
+  const gold = document.querySelector('[data-testid="gold"]');
+  if (gold) gold.textContent = t("shop.gold", { n: Math.max(0, run.gold - rules.rerollCost) });
+}
 function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -1, offer = -1): void {
   if (run.phase === "over") return runOverScreen(run, content, notice);
   // The table (arena#28): one stage and one set of controls at every size. `kb`
@@ -1041,13 +1057,32 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   /** Buy previews still out: a decision waits for them, or the server may
    * apply a buy first and refuse the preview of its slot (a 409, R4-19). */
   const previewsOut = new Set<Promise<unknown>>();
-  const decide = (d: Parameters<typeof api.decide>[1], select = -1, offer = -1) =>
-    guarded(err, async () => {
+  /** The answer to a decision: the run as the server has it, or the table put back as it was with why. */
+  const answered = async (d: Parameters<typeof api.decide>[1], select: number, offer: number, shown: boolean) => {
+    try {
       await Promise.allSettled([...previewsOut]);
       const res = await api.decide(run.runId, d);
       if (res.fight) return fightScreens(res.run, res.fight, content, run);
       play(shopSound(d, run, res.run));
       shopScreen(res.run, content, "", select, offer);
+    } catch (e) {
+      // What was drawn before the answer is taken back, with the reason (a refused buy puts the offer back).
+      if (shown && !(e instanceof ApiError && e.status === 401)) {
+        play("wrong");
+        shopScreen(run, content, e instanceof ApiError && e.status === 409 ? plainRefusal(e.message) : e instanceof Error ? e.message : String(e));
+      }
+      throw e;
+    }
+  };
+  /** Presses show at once (arena#28): the result predicted by the shop's own rules is drawn before the
+   * request goes out; a reroll or a fight shows its pressed state and starts its motion. */
+  const decide = (d: Parameters<typeof api.decide>[1], select = -1, offer = -1) =>
+    guarded(err, async () => {
+      if (d.kind === "fight") pressFight();
+      else if (d.kind === "reroll") pressReroll(run);
+      const next = predictRun(run, d, content, rules);
+      if (next) shopScreen(next, content, "", select, offer);
+      await answered(d, select, offer, next !== null || d.kind === "fight" || d.kind === "reroll");
     });
   /** Lock or unlock an offer (free); the offer is put down, so the inspector never covers the shop. */
   const lock = (o: Offer) => void decide({ kind: "lock", slot: o.slot });
@@ -1351,8 +1386,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const why = buyBlock(o);
     if (why) return void ((err.textContent = why), play("wrong"));
     const d = { kind: "buy", slot: o.slot } as const;
-    void guarded(err, async () => {
-      await Promise.allSettled([...previewsOut]);
+    /** The server's side of it: the buy, then the move to where it was dropped. */
+    const buyThenMove = async () => {
       let res = await api.decide(run.runId, d);
       if (res.fight) return fightScreens(res.run, res.fight, content, run);
       const had = new Set(board.map((u) => u.uid));
@@ -1369,6 +1404,29 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       }
       play(shopSound(d, run, res.run));
       shopScreen(res.run, content, "", sel, -1);
+    };
+    void guarded(err, async () => {
+      // The unit is drawn where it goes as bought, before the server answers (the move is predicted too).
+      const bought = predictRun(run, d, content, rules);
+      if (bought) {
+        const had = new Set(board.map((u) => u.uid));
+        const now = [...bought.line, ...bought.bench];
+        const j = now.findIndex((u) => !had.has(u.uid));
+        const from = j < 0 ? -1 : j < bought.line.length ? j : L + j - bought.line.length;
+        const dest = from < 0 ? null : destFor(bought, from, to);
+        const moved = dest === null ? bought : predictRun(bought, { kind: "reorder", from, to: dest }, content, rules) ?? bought;
+        shopScreen(moved, content, "", dest ?? -1, -1);
+      }
+      try {
+        await Promise.allSettled([...previewsOut]);
+        await buyThenMove();
+      } catch (e) {
+        if (bought && !(e instanceof ApiError && e.status === 401)) {
+          play("wrong");
+          shopScreen(run, content, e instanceof ApiError && e.status === 409 ? plainRefusal(e.message) : e instanceof Error ? e.message : String(e));
+        }
+        throw e;
+      }
     });
   };
 
@@ -1455,20 +1513,26 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const o = run.offers[n];
       if (!o) return;
       const head = h("div", { class: "label" }, t("board.offerHead", { n: n + 1 }));
-      inspector.replaceChildren(head, h("div", { class: "dim small" }, "…"));
+      /** The card: its sheet, then Lock and Buy at the foot. */
+      const card_ = (sheet: HTMLElement, blocked: string) => {
+        const buy = button(buttonRefusal(blocked) || t("board.buyDesk", { cost: o.cost, n: n + 1 }), () => void decide({ kind: "buy", slot: o.slot }), "primary grow", "buy");
+        buy.disabled = blocked !== "";
+        const lockBtn = canLock(o) ? [button(`${lockLabel(o)} · L`, () => lock(o), "", "lock")] : [];
+        inspector.replaceChildren(head, sheet, h("div", { class: "row" }, ...lockBtn, buy));
+        ratesToFoot();
+        layoutInspector();
+        inspector.prepend(closeBtn());
+      };
+      // At once: the unit's own rule and numbers (your copy, if you own one); what buying does follows with the preview.
+      const own = board.find((x) => x.kind === "unit" && x.unitId === o.unitId);
+      const pool = unitOf(o.unitId);
+      card_(own ? unitSheet(own, content) : pool ? unitSheet(pool, content) : h("h2", {}, o.unitId), buyBlock(o));
       void offerBody(o).then(
         ({ sheet, blocked }) => {
-          if (inspected !== key) return;
-          const buy = button(buttonRefusal(blocked) || t("board.buyDesk", { cost: o.cost, n: n + 1 }), () => void decide({ kind: "buy", slot: o.slot }), "primary grow", "buy");
-          buy.disabled = blocked !== "";
-          const lockBtn = canLock(o) ? [button(`${lockLabel(o)} · L`, () => lock(o), "", "lock")] : [];
-          inspector.replaceChildren(head, sheet, h("div", { class: "row" }, ...lockBtn, buy));
-          ratesToFoot();
-          layoutInspector();
-          inspector.prepend(closeBtn());
+          if (inspected === key) card_(sheet, blocked);
         },
         (e: unknown) => {
-          if (inspected === key) inspector.replaceChildren(head, h("div", { class: "error" }, e instanceof Error ? e.message : String(e)));
+          if (inspected === key) inspector.append(h("div", { class: "error" }, e instanceof Error ? e.message : String(e)));
         },
       );
       return;
