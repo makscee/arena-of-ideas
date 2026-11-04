@@ -268,6 +268,15 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="battle"], #under) .bt-tray .bv-recent { overflow: hidden; display: flex; flex-direction: column; gap: 4px; font: 500 18px/1.25 var(--font-body); color: var(--paper); }
 :is(#app[data-screen="battle"], #under) .bt-tray .bv-recent-row { opacity: 0.85; }
 :is(#app[data-screen="battle"], #under) .bt-tray .bv-recent-row:nth-child(n+3) { opacity: 0.6; }
+/* A chain (arena#30): the recent rows give way to the chain's steps so far, CHAIN ×N beside them */
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-recent.chain { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 14px; align-items: center; }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-chain-count { font: 400 30px/0.95 var(--font-head); color: var(--action); text-shadow: 0 3px 0 var(--outline); transform: rotate(-4deg); white-space: nowrap; padding-left: 6px; }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-chain-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; height: 100%; min-height: 0; overflow: hidden; }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-chain-step { display: flex; gap: 10px; align-items: center; color: var(--paper); opacity: 0.62; font: 500 18px/1.2 var(--font-body); }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-chain-step.now { opacity: 1; font-weight: 600; }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-chain-no { flex: none; width: 26px; height: 26px; border-radius: 50%; background: #b9b1cc; color: var(--outline); border: 2px solid var(--outline); display: grid; place-items: center; font: 400 18px/1 var(--font-head); }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-chain-step.now .bv-chain-no { background: var(--action); box-shadow: 0 0 0 3px rgba(240, 194, 75, 0.35); }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-chain-text { min-width: 0; }
 :is(#app[data-screen="battle"], #under) .bt-tray > .bv-below { display: flex; flex-direction: column; max-height: none; font-size: 18px; }
 :is(#app[data-screen="battle"], #under) .bt-tray > .bv-below:not(:has(button)):has(.bv-ledger-foot:empty) { display: none; }
 :is(#app[data-screen="battle"], #under) .bt-tray .bv-ledger { padding: 4px 10px; border-width: 3px; background: color-mix(in srgb, var(--panel) 60%, transparent); }
@@ -313,6 +322,8 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 > .bv-line.mine { left: 190px; top: 298px; width: 900px; height: 188px; }
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > button.bv-caption { left: 16px; top: 16px; width: 560px; min-height: 84px; max-height: 106px; }
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-recent { left: 16px; top: 128px; width: 560px; height: 72px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-recent.chain { top: 114px; height: 88px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray:has(> .bv-recent.chain) > button.bv-caption { max-height: 92px; }
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-below { left: 600px; top: 16px; width: 290px; }
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-controls { left: 904px; top: 16px; width: 334px; height: 150px; grid-template-columns: 1fr 1.6fr 1fr; grid-template-rows: 58px 58px; grid-auto-rows: auto; }
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-controls .bv-keys { position: absolute; left: 0; right: 0; top: 136px; }
@@ -340,6 +351,10 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > button.bv-caption { left: 10px; right: 10px; top: 12px; min-height: 64px; max-height: 96px; font-size: 15px; border-width: 3px; border-radius: 14px; padding: 8px 12px; }
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray button.bv-caption .bv-cap-when { font-size: 13px; }
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-recent { left: 12px; right: 12px; top: 118px; height: 170px; font-size: 14px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-recent.chain { grid-template-columns: minmax(0, 1fr); row-gap: 6px; align-content: start; align-items: start; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray .bv-chain-count { font-size: 24px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray .bv-chain-step { font-size: 14px; gap: 8px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray .bv-chain-no { width: 24px; height: 24px; border-width: 2px; font-size: 14px; }
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-below { left: 10px; right: 10px; bottom: 76px; font-size: 14px; }
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray .bv-ledger-turn, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray .bv-ledger-foot { font-size: 14px; }
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray .bv-ledger button.bv-skip { font-size: 14px; min-height: 40px; }

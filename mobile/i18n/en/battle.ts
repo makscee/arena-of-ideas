@@ -54,6 +54,7 @@ export const battle = {
   "battle.noOneStanding": "No one standing.",
   "battle.totals.turn": "Turn {n} totals",
   "battle.repeat": "Same as the last turn: plays at 2×",
+  "battle.chain.count": "CHAIN ×{n}",
   "battle.chain.summary": "Chain of {n}:",
   "battle.chain.skip": "Skip chain",
   "battle.chain.skipKey": "Jump to the chain’s end (S)",

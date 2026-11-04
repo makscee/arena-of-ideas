@@ -2445,6 +2445,10 @@ button.play-start:active:not(:disabled) { translate: 0 4px; box-shadow: 0 2px 0 
 .coach-body { display: flex; align-items: center; gap: 10px; }
 .coach-pair { display: flex; align-items: center; gap: 4px; flex: none; }
 .coach-arrow { font-size: 18px; font-weight: 800; }
+/* The chain's wire (arena#30), as the battle draws it: a line to the answering piece with its step's number on it */
+.coach-wire { position: relative; flex: none; width: 56px; height: 5px; margin: 0 6px; border-radius: 3px; background: var(--action); }
+.coach-wire::after { content: ""; position: absolute; right: -6px; top: 50%; translate: 0 -50%; border: 7px solid transparent; border-left: 11px solid var(--action); border-right: 0; }
+.coach-wire-n { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--action); border: 3px solid var(--outline); color: var(--outline); font: 400 16px/1 var(--font-head, inherit); }
 .coach-chain { display: none; }
 .coach-text b { font-size: 16px; }
 .coach-by { color: var(--ink-dim); font-size: 12px; margin-top: 2px; }
@@ -2460,3 +2464,8 @@ button.play-start:active:not(:disabled) { translate: 0 4px; box-shadow: 0 2px 0 
   .coach-text b { font-size: 12px; }
   .coach-by { display: inline; margin: 0 0 0 6px; font-size: 11px; }
 }
+
+/* The chain on the field (arena#30): the current step's wire wears its number, a disc on the wire. */
+.bv-beam .bv-bn circle { fill: var(--bv-bc); stroke: var(--outline); stroke-width: 3; }
+.bv-beam .bv-bn text { fill: var(--outline); font-family: var(--font-head, inherit); font-weight: 400; }
+.bv-beam.draw .bv-bn { animation: bv-beam-head calc(0.22s / var(--bv-sp, 1)) step-end calc(var(--bv-bt, 0s) / var(--bv-sp, 1)) both; }

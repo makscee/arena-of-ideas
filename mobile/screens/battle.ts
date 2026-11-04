@@ -34,6 +34,7 @@ import { t as tr } from "../i18n";
 import { icon } from "../ui/icon";
 import { statusesShown, STATUS_ROW_FALLBACK } from "../ui/status-row";
 import { numFormOf, planStrip } from "../ui/strip-fit";
+import { chainCount, chainRows, chainShown, wireMiddle } from "../ui/chain-wire";
 import { effectsOf, statNets, type Effect } from "../ui/effects";
 import { beatCues, endSound } from "../ui/sound-map";
 import { play as playSfx } from "../ui/sound";
@@ -389,6 +390,17 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** The rail's last few events, newest first, small under the one on screen (#1294). */
   const recent = h("div", { class: "bv-recent", "data-testid": "recent" });
   function drawRecent(): void {
+    // A beat of two links or more is a chain (arena#30): the tray lists its steps so far, CHAIN ×N beside them.
+    const beat = beats[at];
+    const rows = beat && ending !== at ? chainRows(beat.waves, wave) : [];
+    recent.classList.toggle("chain", rows.length > 0);
+    if (rows.length) {
+      const list = h("ol", { class: "bv-chain-steps", "data-testid": "chain-steps" }, ...rows.map((r) => h("li", { class: `bv-chain-step ${r.now ? "now" : "past"}`, "data-testid": "chain-step", "data-n": String(r.n) }, h("span", { class: "bv-chain-no", "aria-hidden": "true" }, String(r.n)), h("span", { class: "bv-chain-text" }, ...richCaption(r.step.caption)))));
+      recent.replaceChildren(h("div", { class: "bv-chain-count", "data-testid": "chain-count", "data-n": String(chainCount(wave)) }, tr("battle.chain.count", { n: chainCount(wave) })), list);
+      // A step the list has no room for goes whole, oldest first, never cut mid-line: the numbers keep their place.
+      while (list.children.length > 1 && list.scrollHeight > list.clientHeight + 0.5) list.firstElementChild!.remove();
+      return;
+    }
     const done = rowAt.filter((r) => r.beat < at).slice(-RECENT_ROWS).reverse();
     recent.replaceChildren(...done.map((r) => h("div", { class: "bv-recent-row" }, ...richCaption(r.caption))));
     // A row the rail has no room for goes whole, never cut mid-line (check of #1286, case 4).
@@ -1851,6 +1863,17 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     };
     const reduce = reduced();
     const beamsBy = waves.map(({ step }) => beamsOf(log, step, whenOf));
+    // A chain's wire wears its step's number (arena#30): the same number the tray's list gives that step.
+    const numbered = chainShown(beats[at]?.waves.length ?? 0);
+    /** The step's number: a disc on the wire, drawn at the stage's scale (the layer is in viewport pixels). */
+    const stepDot = (pt: { x: number; y: number }, n: number): SVGElement => {
+      const r = Math.max(8, ox(16));
+      const g = svg("g", { class: "bv-bn", "data-testid": "wire-step", "data-n": n });
+      const t = svg("text", { x: pt.x.toFixed(1), y: (pt.y + Math.max(11, ox(20)) * 0.36).toFixed(1), "text-anchor": "middle", "font-size": Math.max(11, ox(20)).toFixed(1) });
+      t.textContent = String(n);
+      g.append(svg("circle", { cx: pt.x.toFixed(1), cy: pt.y.toFixed(1), r: r.toFixed(1) }), t);
+      return g;
+    };
     // The bright wave is the newest one that has beams: a death wave draws
     // none, so the killing blow's beam stays bright through it.
     const bright = beamsBy.map((bs) => bs.length > 0).lastIndexOf(true);
@@ -1870,6 +1893,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
           const r = to.f;
           g.classList.add("ring");
           g.append(svg("rect", { x: r.left - 3, y: r.top - 3, width: r.width + 6, height: r.height + 6, rx: 6 }));
+          if (numbered) g.append(stepDot({ x: r.right + 3, y: r.top - 3 }, i + 1));
           kids.push(g);
           continue;
         }
@@ -1918,6 +1942,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
           svg("path", { class: "bv-bl", d: `M${p0.x.toFixed(1)},${p0.y.toFixed(1)} Q${c.x.toFixed(1)},${c.y.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`, pathLength: 1 }),
           svg("circle", { class: "bv-bs", cx: p0.x.toFixed(1), cy: p0.y.toFixed(1), r: 3.5 }),
           svg("polygon", { class: "bv-bh", points: `${p1.x.toFixed(1)},${p1.y.toFixed(1)} ${tip(10, 0.45)} ${tip(10, -0.45)}` }),
+          ...(numbered ? [stepDot(wireMiddle(p0, c, p1), i + 1)] : []),
         );
         kids.push(g);
       }
