@@ -91,7 +91,8 @@ try {
     await tid("fight").click();
     const fought = await (await decided).json();
     // The fight uses the bought line against the opponent the shop previewed.
-    if (foe.length > 1 && `@${fought.fight.opponent.player.name}` !== foe) fail(`the first fight is against @${fought.fight.opponent.player.name}, the shop showed ${foe}`);
+    // (a name may have spaces: the shop line gives its first word)
+    if (foe.length > 1 && !`@${fought.fight.opponent.player.name}`.startsWith(foe)) fail(`the first fight is against @${fought.fight.opponent.player.name}, the shop showed ${foe}`);
     await page.getByTestId("battle-end").or(tid("end-card")).first().waitFor({ timeout: 15_000 });
     // The battle on the table (arena#29): no scroll, no text under 11 px as drawn (the stage is scaled), playing, with a unit's inspector open, and the result.
     const drawnFit = () => page.evaluate(() => {

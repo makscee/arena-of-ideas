@@ -70,6 +70,7 @@ export const shop = {
   "shop.reroll": "Обновить",
   "shop.allLocked": "Все карты закреплены",
   "shop.fightChampion": "Бой с чемпионом",
+  "fight.starting": "В бой!",
   "shop.fight": "В бой",
   "shop.fillFirst": { one: "{n} пустой слот", few: "{n} пустых слота", many: "{n} пустых слотов", other: "{n} пустых слота" },
 

@@ -456,6 +456,8 @@ try {
       const gold = await page.getByTestId("gold").textContent();
       await page.getByTestId("reroll").click();
       await page.waitForFunction((g) => document.querySelector('[data-testid="gold"]')?.textContent !== g, gold);
+      // The gold moves at once now (the press shows its result before the answer): wait for the answer too.
+      await page.waitForFunction(() => !document.getElementById("app").classList.contains("busy"));
       if ((await offerName(0)) !== name || !(await isLocked(0))) errors.push(`lock: after a reroll offer 0 is "${await offerName(0)}", not the locked "${name}"`);
       await lockFromSheet(0, "Unlock");
       if (await isLocked(0)) errors.push("lock: offer 0 still locked after Unlock");
@@ -474,6 +476,8 @@ try {
       if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("inspector-close").click(); break; }
       await page.getByTestId("buy").click();
       await page.waitForFunction((g) => !document.querySelector('[data-testid="gold"]') || document.querySelector('[data-testid="gold"]').textContent !== g, L("shop.gold", { n: gold }));
+      // The gold moves at once now (the press shows its result before the answer): wait for the answer too.
+      await page.waitForFunction(() => !document.getElementById("app").classList.contains("busy"));
       // A 3rd copy awakens a unit and brings a gift (R3-15), whose chooser
       // covers the shop: skip it here (R4-19 flake); the gift's own checks come later.
       if (await page.getByTestId("gift-skip").isVisible().catch(() => false)) {
