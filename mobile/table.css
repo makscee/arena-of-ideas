@@ -3,7 +3,7 @@
  * stage to the window, so these sizes are the design's own. Landscape text is 18px and up
  * on the stage (800×450 is 0.625 of it: 11px and up there). */
 
-:is(#app[data-screen="shop"], #under) {
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) {
   position: fixed; inset: 0; max-width: none; min-height: 0; margin: 0; padding: 0; display: block; overflow: hidden; gap: 0;
   background:
     radial-gradient(ellipse 34% 30% at 50% 36%, rgba(240, 194, 75, 0.1), transparent 70%),
@@ -13,165 +13,165 @@
     linear-gradient(180deg, #16111f 0%, #211a30 30%, #2a2240 52%, #1b1529 70%, #100c18 100%);
   user-select: none; -webkit-user-select: none;
 }
-:is(#app[data-screen="shop"], #under) .stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
-:is(#app[data-screen="shop"], #under) .stage.L { width: 1280px; height: 720px; }
-:is(#app[data-screen="shop"], #under) .stage.P { width: 390px; }
-:is(#app[data-screen="shop"], #under) .stage > * { position: absolute; margin: 0; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L { width: 1280px; height: 720px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P { width: 390px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage > * { position: absolute; margin: 0; }
 
 /* HUD plates */
-:is(#app[data-screen="shop"], #under) .tb-hud { left: 16px; right: 16px; top: 12px; height: 56px; display: flex; align-items: center; gap: 12px; z-index: 6; }
-:is(#app[data-screen="shop"], #under) .tb-hud .hud-gap { flex: 1; }
-:is(#app[data-screen="shop"], #under) .plate { display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 14px; background: linear-gradient(#3d3360, #2c2442); border: 4px solid var(--outline); border-radius: 16px; box-shadow: 0 5px 0 var(--outline), inset 0 2px 0 rgba(255, 255, 255, 0.1); }
-:is(#app[data-screen="shop"], #under) .plate.menu, :is(#app[data-screen="shop"], #under) .plate.help { padding: 0 6px; }
-:is(#app[data-screen="shop"], #under) .plate button { background: none; border: 0; box-shadow: none; color: var(--paper); height: 44px; min-width: 44px; min-height: 44px; padding: 0 10px; font: 400 26px/1 var(--font-head); display: inline-flex; align-items: center; gap: 8px; }
-:is(#app[data-screen="shop"], #under) .plate button.small { font-size: 22px; }
-:is(#app[data-screen="shop"], #under) .plate button.new { color: var(--action); font-size: 18px; }
-:is(#app[data-screen="shop"], #under) .plate kbd { font: 600 18px/1 var(--font-body); border: 2px solid currentColor; border-radius: 6px; padding: 2px 6px 3px; opacity: 0.75; }
-:is(#app[data-screen="shop"], #under) .plate .track { padding: 0; background: none; border: 0; gap: 7px; }
-:is(#app[data-screen="shop"], #under) .plate .track-dot { width: 28px; height: 28px; font-size: 18px; background: #1a1428; color: var(--muted); }
-:is(#app[data-screen="shop"], #under) .plate .track-dot.win { background: var(--you); color: var(--outline); }
-:is(#app[data-screen="shop"], #under) .plate .track-dot.loss { background: var(--them); color: var(--outline); }
-:is(#app[data-screen="shop"], #under) .plate .track-dot.draw { background: var(--soft); color: var(--outline); }
-:is(#app[data-screen="shop"], #under) .plate .track-dot.now { width: 40px; height: 40px; transform: none; background: var(--action); color: var(--outline); font-size: 22px; box-shadow: 0 0 0 3px rgba(240, 194, 75, 0.3); }
-:is(#app[data-screen="shop"], #under) .plate .track-dot.crown { width: 40px; height: 32px; padding: 0; border-radius: 9px; background: #4a3a14; font-size: 18px; }
-:is(#app[data-screen="shop"], #under) .plate .track-dot.crown.now { background: var(--action); }
-:is(#app[data-screen="shop"], #under) .plate .round-pill { font: 400 24px/1 var(--font-head); color: var(--paper); background: none; border: 0; box-shadow: none; padding: 0; white-space: nowrap; }
-:is(#app[data-screen="shop"], #under) .plate .heart-icons { gap: 4px; }
-:is(#app[data-screen="shop"], #under) .plate .heart-icons .heart { width: 30px; height: 30px; }
-:is(#app[data-screen="shop"], #under) .plate .gold { font: 400 30px/1 var(--font-head); color: var(--action); }
-:is(#app[data-screen="shop"], #under) .plate .coin { display: block; width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffe9a6, #f0c24b 55%, #bf7425); border: 3px solid var(--outline); flex: none; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-hud { left: 16px; right: 16px; top: 12px; height: 56px; display: flex; align-items: center; gap: 12px; z-index: 6; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-hud .hud-gap { flex: 1; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate { display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 14px; background: linear-gradient(#3d3360, #2c2442); border: 4px solid var(--outline); border-radius: 16px; box-shadow: 0 5px 0 var(--outline), inset 0 2px 0 rgba(255, 255, 255, 0.1); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate.menu, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate.help { padding: 0 6px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate button { background: none; border: 0; box-shadow: none; color: var(--paper); height: 44px; min-width: 44px; min-height: 44px; padding: 0 10px; font: 400 26px/1 var(--font-head); display: inline-flex; align-items: center; gap: 8px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate button.small { font-size: 22px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate button.new { color: var(--action); font-size: 18px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate kbd { font: 600 18px/1 var(--font-body); border: 2px solid currentColor; border-radius: 6px; padding: 2px 6px 3px; opacity: 0.75; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate .track { padding: 0; background: none; border: 0; gap: 7px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate .track-dot { width: 28px; height: 28px; font-size: 18px; background: #1a1428; color: var(--muted); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate .track-dot.win { background: var(--you); color: var(--outline); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate .track-dot.loss { background: var(--them); color: var(--outline); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate .track-dot.draw { background: var(--soft); color: var(--outline); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate .track-dot.now { width: 40px; height: 40px; transform: none; background: var(--action); color: var(--outline); font-size: 22px; box-shadow: 0 0 0 3px rgba(240, 194, 75, 0.3); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate .track-dot.crown { width: 40px; height: 32px; padding: 0; border-radius: 9px; background: #4a3a14; font-size: 18px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate .track-dot.crown.now { background: var(--action); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate .round-pill { font: 400 24px/1 var(--font-head); color: var(--paper); background: none; border: 0; box-shadow: none; padding: 0; white-space: nowrap; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate .heart-icons { gap: 4px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate .heart-icons .heart { width: 30px; height: 30px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate .gold { font: 400 30px/1 var(--font-head); color: var(--action); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .plate .coin { display: block; width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffe9a6, #f0c24b 55%, #bf7425); border: 3px solid var(--outline); flex: none; }
 
 /* Both lines */
-:is(#app[data-screen="shop"], #under) .tb-side { z-index: 4; font: 400 21px/1.15 var(--font-head); letter-spacing: 0.5px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
-:is(#app[data-screen="shop"], #under) .tb-side .label { font: 400 21px/1.15 var(--font-head); color: var(--you); text-transform: uppercase; letter-spacing: 0.5px; }
-:is(#app[data-screen="shop"], #under) .tb-side.them .next-opp { font: 500 18px/1.25 var(--font-body); color: var(--them); white-space: normal; max-width: 176px; }
-:is(#app[data-screen="shop"], #under) .tb-side.them .next-opp .who { font-size: 22px; display: block; }
-:is(#app[data-screen="shop"], #under) .tb-side .pin { max-width: 176px; }
-:is(#app[data-screen="shop"], #under) .tb-side button.pin-btn { max-width: 176px; font-size: 18px; min-height: 36px; padding: 2px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
-:is(#app[data-screen="shop"], #under) .tb-side .pin .dim { font-size: 18px; }
-:is(#app[data-screen="shop"], #under) .tb-row { display: grid; grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); gap: 0; align-items: start; z-index: 3; }
-:is(#app[data-screen="shop"], #under) .tb-their { z-index: 3; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: start; }
-:is(#app[data-screen="shop"], #under) .tb-their .crown-foe { grid-column: 1 / -1; padding: 0; }
-:is(#app[data-screen="shop"], #under) .tb-their .tb-their-cells { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: start; }
-:is(#app[data-screen="shop"], #under) .tb-their .foe-wait { font-size: 18px; padding-top: 30px; }
-:is(#app[data-screen="shop"], #under) .tb-their .cell.ghost { opacity: 0.55; cursor: default; pointer-events: none; }
-:is(#app[data-screen="shop"], #under) .tb-their .cell.ghost .cell-well { font-size: 26px; border-style: dotted; }
-:is(#app[data-screen="shop"], #under) .tb-line .cell-well, :is(#app[data-screen="shop"], #under) .tb-bench .cell-well { font-size: 30px; border-width: 4px; }
-:is(#app[data-screen="shop"], #under) .tb-bench { --n: 3; }
-:is(#app[data-screen="shop"], #under) .tb-bench > .bench-label { position: absolute; right: 100%; margin-right: 14px; top: 20px; display: flex; flex-direction: column; gap: 4px; font: 400 21px/1.15 var(--font-head); letter-spacing: 0.5px; text-transform: uppercase; color: var(--dim); white-space: nowrap; text-align: right; }
-:is(#app[data-screen="shop"], #under) .tb-bench > .bench-label span:first-child { color: var(--paper); opacity: 0.75; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-side { z-index: 4; font: 400 21px/1.15 var(--font-head); letter-spacing: 0.5px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-side .label { font: 400 21px/1.15 var(--font-head); color: var(--you); text-transform: uppercase; letter-spacing: 0.5px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-side.them .next-opp { font: 500 18px/1.25 var(--font-body); color: var(--them); white-space: normal; max-width: 176px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-side.them .next-opp .who { font-size: 22px; display: block; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-side .pin { max-width: 176px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-side button.pin-btn { max-width: 176px; font-size: 18px; min-height: 36px; padding: 2px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-side .pin .dim { font-size: 18px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-row { display: grid; grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); gap: 0; align-items: start; z-index: 3; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-their { z-index: 3; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: start; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-their .crown-foe { grid-column: 1 / -1; padding: 0; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-their .tb-their-cells { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: start; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-their .foe-wait { font-size: 18px; padding-top: 30px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-their .cell.ghost { opacity: 0.55; cursor: default; pointer-events: none; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-their .cell.ghost .cell-well { font-size: 26px; border-style: dotted; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-line .cell-well, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-bench .cell-well { font-size: 30px; border-width: 4px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-bench { --n: 3; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-bench > .bench-label { position: absolute; right: 100%; margin-right: 14px; top: 20px; display: flex; flex-direction: column; gap: 4px; font: 400 21px/1.15 var(--font-head); letter-spacing: 0.5px; text-transform: uppercase; color: var(--dim); white-space: nowrap; text-align: right; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-bench > .bench-label span:first-child { color: var(--paper); opacity: 0.75; }
 
 /* The tray */
-:is(#app[data-screen="shop"], #under) .tb-tray { z-index: 5; border: 4px solid var(--outline); border-radius: 24px; background: linear-gradient(180deg, #3d3360 0, #2f2747 18px, #2a2240 100%); box-shadow: 0 -2px 0 #5b4d85 inset, 0 6px 0 var(--outline), 0 -18px 40px rgba(0, 0, 0, 0.35); }
-:is(#app[data-screen="shop"], #under) .tb-tray::before { content: ""; position: absolute; left: 24px; right: 24px; top: -4px; height: 6px; border-radius: 0 0 6px 6px; background: var(--power); opacity: 0.85; }
-:is(#app[data-screen="shop"], #under) .tb-tray > * { position: absolute; margin: 0; }
-:is(#app[data-screen="shop"], #under) .tb-coach { background: var(--paper); color: var(--outline); border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 6px 0 var(--outline); padding: 12px 16px; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
-:is(#app[data-screen="shop"], #under) .tb-coach.quiet { background: color-mix(in srgb, var(--paper) 88%, var(--panel)); }
-:is(#app[data-screen="shop"], #under) .tb-coach .hint { margin: 0; padding: 0; border: 0; background: none; color: var(--outline); font: 500 20px/1.3 var(--font-body); }
-:is(#app[data-screen="shop"], #under) .tb-coach .gift-banner { color: var(--outline); font: 500 20px/1.3 var(--font-body); background: none; border: 0; padding: 0; gap: 10px; flex-wrap: wrap; }
-:is(#app[data-screen="shop"], #under) .tb-coach .gift-banner button { font-size: 20px; min-height: 44px; }
-:is(#app[data-screen="shop"], #under) .tb-shop { z-index: 2; }
-:is(#app[data-screen="shop"], #under) .tb-shop > .label { font: 600 18px/1 var(--font-body); letter-spacing: 1.5px; color: var(--dim); text-transform: uppercase; padding-bottom: 4px; text-align: center; }
-:is(#app[data-screen="shop"], #under) .tb-offers { align-items: start; }
-:is(#app[data-screen="shop"], #under) .tb-go { display: flex; flex-direction: column; gap: 12px; }
-:is(#app[data-screen="shop"], #under) .tb-go button { min-height: 0; flex: none; border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 6px 0 var(--outline), inset 0 -5px 0 rgba(0, 0, 0, 0.12), inset 0 3px 0 rgba(255, 255, 255, 0.35); font: 400 26px/1 var(--font-head); display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
-:is(#app[data-screen="shop"], #under) .tb-go button.reroll-btn { height: 58px; background: var(--paper); color: var(--outline); }
-:is(#app[data-screen="shop"], #under) .tb-go button.reroll-btn .cost-chip { font-size: 20px; padding: 2px 9px; }
-:is(#app[data-screen="shop"], #under) .tb-go button.primary { flex: 1; background: var(--action); color: var(--outline); font-size: 40px; position: relative; flex-wrap: wrap; align-content: center; }
-:is(#app[data-screen="shop"], #under) .tb-go button.primary:disabled, :is(#app[data-screen="shop"], #under) .tb-go button.reroll-btn:disabled { background: #4a4068; color: #8a7fae; }
-:is(#app[data-screen="shop"], #under) .tb-go button.primary .fight-warn { flex-basis: 100%; font: 600 18px/1.1 var(--font-body); text-align: center; }
-:is(#app[data-screen="shop"], #under) .tb-go kbd { font: 600 18px/1 var(--font-body); border: 2px solid currentColor; border-radius: 6px; padding: 2px 6px 3px; opacity: 0.6; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-tray { z-index: 5; border: 4px solid var(--outline); border-radius: 24px; background: linear-gradient(180deg, #3d3360 0, #2f2747 18px, #2a2240 100%); box-shadow: 0 -2px 0 #5b4d85 inset, 0 6px 0 var(--outline), 0 -18px 40px rgba(0, 0, 0, 0.35); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-tray::before { content: ""; position: absolute; left: 24px; right: 24px; top: -4px; height: 6px; border-radius: 0 0 6px 6px; background: var(--power); opacity: 0.85; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-tray > * { position: absolute; margin: 0; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach { background: var(--paper); color: var(--outline); border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 6px 0 var(--outline); padding: 12px 16px; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach.quiet { background: color-mix(in srgb, var(--paper) 88%, var(--panel)); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach .hint { margin: 0; padding: 0; border: 0; background: none; color: var(--outline); font: 500 20px/1.3 var(--font-body); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach .gift-banner { color: var(--outline); font: 500 20px/1.3 var(--font-body); background: none; border: 0; padding: 0; gap: 10px; flex-wrap: wrap; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach .gift-banner button { font-size: 20px; min-height: 44px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-shop { z-index: 2; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-shop > .label { font: 600 18px/1 var(--font-body); letter-spacing: 1.5px; color: var(--dim); text-transform: uppercase; padding-bottom: 4px; text-align: center; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-offers { align-items: start; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go { display: flex; flex-direction: column; gap: 12px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go button { min-height: 0; flex: none; border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 6px 0 var(--outline), inset 0 -5px 0 rgba(0, 0, 0, 0.12), inset 0 3px 0 rgba(255, 255, 255, 0.35); font: 400 26px/1 var(--font-head); display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go button.reroll-btn { height: 58px; background: var(--paper); color: var(--outline); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go button.reroll-btn .cost-chip { font-size: 20px; padding: 2px 9px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go button.primary { flex: 1; background: var(--action); color: var(--outline); font-size: 40px; position: relative; flex-wrap: wrap; align-content: center; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go button.primary:disabled, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go button.reroll-btn:disabled { background: #4a4068; color: #8a7fae; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go button.primary .fight-warn { flex-basis: 100%; font: 600 18px/1.1 var(--font-body); text-align: center; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go kbd { font: 600 18px/1 var(--font-body); border: 2px solid currentColor; border-radius: 6px; padding: 2px 6px 3px; opacity: 0.6; }
 
 /* The inspector floats over the table: tap any unit and it reads its rule and whose idea it was */
-:is(#app[data-screen="shop"], #under) .tb-insp { z-index: 20; background: var(--paper); color: var(--outline); border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 8px 0 var(--outline), 0 20px 60px rgba(0, 0, 0, 0.6); padding: 12px 16px 14px; overflow-y: auto; overscroll-behavior: contain; font-size: 18px; }
-:is(#app[data-screen="shop"], #under) .tb-insp[hidden] { display: none; }
-:is(#app[data-screen="shop"], #under) .tb-insp .dim, :is(#app[data-screen="shop"], #under) .tb-insp .small, :is(#app[data-screen="shop"], #under) .tb-insp .label { color: #5e5280; font-size: 18px; }
-:is(#app[data-screen="shop"], #under) .tb-insp .actions { flex-wrap: wrap; gap: 8px; }
-:is(#app[data-screen="shop"], #under) .tb-insp button { font-size: 18px; min-height: 44px; }
-:is(#app[data-screen="shop"], #under) .stage > .error { z-index: 30; left: 50%; transform: translateX(-50%); top: 74px; max-width: 70%; padding: 6px 14px; background: var(--paper); color: #8e1f33; border: 3px solid var(--outline); border-radius: 12px; box-shadow: 0 4px 0 var(--outline); font: 600 18px/1.25 var(--font-body); pointer-events: none; }
-:is(#app[data-screen="shop"], #under) .stage > .error:empty { display: none; }
-:is(#app[data-screen="shop"], #under) .cell.selected { background: color-mix(in srgb, var(--action) 14%, transparent); box-shadow: inset 0 0 0 3px var(--action); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp { z-index: 20; background: var(--paper); color: var(--outline); border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 8px 0 var(--outline), 0 20px 60px rgba(0, 0, 0, 0.6); padding: 12px 16px 14px; overflow-y: auto; overscroll-behavior: contain; font-size: 18px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp[hidden] { display: none; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .dim, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .small, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .label { color: #5e5280; font-size: 18px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .actions { flex-wrap: wrap; gap: 8px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp button { font-size: 18px; min-height: 44px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage > .error { z-index: 30; left: 50%; transform: translateX(-50%); top: 74px; max-width: 70%; padding: 6px 14px; background: var(--paper); color: #8e1f33; border: 3px solid var(--outline); border-radius: 12px; box-shadow: 0 4px 0 var(--outline); font: 600 18px/1.25 var(--font-body); pointer-events: none; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage > .error:empty { display: none; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .cell.selected { background: color-mix(in srgb, var(--action) 14%, transparent); box-shadow: inset 0 0 0 3px var(--action); }
 
 /* Landscape stage, 1280×720 */
-:is(#app[data-screen="shop"], #under) .stage.L .tb-side.them { left: 24px; top: 92px; width: 184px; }
-:is(#app[data-screen="shop"], #under) .stage.L .tb-side.you { left: 24px; top: 236px; width: 184px; }
-:is(#app[data-screen="shop"], #under) .stage.L .tb-their { left: 210px; top: 74px; width: 660px; height: 112px; }
-:is(#app[data-screen="shop"], #under) .stage.L .tb-line { left: 210px; top: 192px; width: 660px; --n: 5; }
-:is(#app[data-screen="shop"], #under) .stage.L .tb-bench { left: 210px; top: 360px; width: 396px; }
-:is(#app[data-screen="shop"], #under) .stage.L .tb-tray { left: 14px; right: 14px; top: 494px; bottom: 12px; }
-:is(#app[data-screen="shop"], #under) .stage.L .tb-coach { left: 16px; top: 16px; width: 410px; bottom: 22px; }
-:is(#app[data-screen="shop"], #under) .stage.L .tb-shop { left: 440px; top: 6px; width: 470px; }
-:is(#app[data-screen="shop"], #under) .stage.L .tb-go { right: 18px; top: 16px; bottom: 22px; width: 308px; }
-:is(#app[data-screen="shop"], #under) .stage.L .tb-insp { left: 892px; top: 84px; width: 372px; max-height: 400px; padding-bottom: 8px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-side.them { left: 24px; top: 92px; width: 184px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-side.you { left: 24px; top: 236px; width: 184px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-their { left: 210px; top: 74px; width: 660px; height: 112px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-line { left: 210px; top: 192px; width: 660px; --n: 5; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-bench { left: 210px; top: 360px; width: 396px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-tray { left: 14px; right: 14px; top: 494px; bottom: 12px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-coach { left: 16px; top: 16px; width: 410px; bottom: 22px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-shop { left: 440px; top: 6px; width: 470px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-go { right: 18px; top: 16px; bottom: 22px; width: 308px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp { left: 892px; top: 84px; width: 372px; max-height: 400px; padding-bottom: 8px; }
 
 /* Portrait stage, 390×844 */
-:is(#app[data-screen="shop"], #under) .stage.P .tb-hud { left: 8px; right: 8px; top: 8px; height: 48px; gap: 6px; }
-:is(#app[data-screen="shop"], #under) .stage.P .plate { height: 48px; padding: 0 8px; border-width: 3px; border-radius: 14px; box-shadow: 0 4px 0 var(--outline), inset 0 2px 0 rgba(255, 255, 255, 0.1); }
-:is(#app[data-screen="shop"], #under) .stage.P .plate button { height: 44px; min-width: 44px; min-height: 44px; padding: 0 6px; font-size: 22px; }
-:is(#app[data-screen="shop"], #under) .stage.P .plate button.new { font-size: 14px; }
-:is(#app[data-screen="shop"], #under) .stage.P .plate .round-pill { font-size: 19px; }
-:is(#app[data-screen="shop"], #under) .stage.P .plate .heart-icons { gap: 1px; }
-:is(#app[data-screen="shop"], #under) .stage.P .plate .heart-icons .heart { width: 20px; height: 20px; }
-:is(#app[data-screen="shop"], #under) .stage.P .plate .gold { font-size: 24px; }
-:is(#app[data-screen="shop"], #under) .stage.P .plate .coin { width: 22px; height: 22px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-side { font-size: 15px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-side .label { font-size: 16px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-side.them { left: 14px; top: 66px; right: 14px; flex-direction: row; align-items: center; gap: 8px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-side.them .next-opp { font-size: 14px; max-width: none; flex: none; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-side.them .next-opp .who { font-size: 15px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-side.them .pin, :is(#app[data-screen="shop"], #under) .stage.P .tb-side.them button.pin-btn { max-width: 150px; min-width: 0; flex: 0 1 auto; font-size: 12px; min-height: 28px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-side.you { left: 14px; top: 208px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-their { left: 12px; top: 90px; width: 366px; height: 112px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-line { left: 12px; top: 232px; width: 366px; --n: 5; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-bench { left: 12px; top: 372px; width: 220px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-bench > .bench-label { right: auto; left: calc(100% + 10px); top: 28px; flex-direction: column; text-align: left; font-size: 14px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-tray { left: 8px; right: 8px; top: 470px; bottom: 8px; border-width: 3px; border-radius: 20px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-coach { left: 10px; right: 10px; top: 12px; height: 84px; border-width: 3px; border-radius: 14px; padding: 8px 12px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-coach .hint, :is(#app[data-screen="shop"], #under) .stage.P .tb-coach .gift-banner { font-size: 15px; line-height: 1.25; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-shop { left: 10px; right: 10px; top: 106px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-shop > .label { font-size: 13px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-go { left: 10px; right: 10px; bottom: 14px; height: 60px; flex-direction: row; gap: 10px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-go button { border-width: 3px; border-radius: 16px; box-shadow: 0 5px 0 var(--outline), inset 0 -4px 0 rgba(0, 0, 0, 0.12), inset 0 3px 0 rgba(255, 255, 255, 0.35); font-size: 20px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-go button.reroll-btn { height: auto; width: 120px; font-size: 18px; flex-wrap: wrap; gap: 4px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-go button.reroll-btn .cost-chip { font-size: 13px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-go button.primary { font-size: 30px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-insp { left: 8px; right: 8px; bottom: 90px; max-height: 430px; border-width: 3px; padding: 10px 12px 12px; font-size: 15px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-insp .dim, :is(#app[data-screen="shop"], #under) .stage.P .tb-insp .small, :is(#app[data-screen="shop"], #under) .stage.P .tb-insp .label { font-size: 13px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-insp button { font-size: 15px; min-height: 44px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-hud { left: 8px; right: 8px; top: 8px; height: 48px; gap: 6px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate { height: 48px; padding: 0 8px; border-width: 3px; border-radius: 14px; box-shadow: 0 4px 0 var(--outline), inset 0 2px 0 rgba(255, 255, 255, 0.1); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate button { height: 44px; min-width: 44px; min-height: 44px; padding: 0 6px; font-size: 22px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate button.new { font-size: 14px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate .round-pill { font-size: 19px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate .heart-icons { gap: 1px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate .heart-icons .heart { width: 20px; height: 20px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate .gold { font-size: 24px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate .coin { width: 22px; height: 22px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-side { font-size: 15px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-side .label { font-size: 16px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-side.them { left: 14px; top: 66px; right: 14px; flex-direction: row; align-items: center; gap: 8px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-side.them .next-opp { font-size: 14px; max-width: none; flex: none; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-side.them .next-opp .who { font-size: 15px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-side.them .pin, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-side.them button.pin-btn { max-width: 150px; min-width: 0; flex: 0 1 auto; font-size: 12px; min-height: 28px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-side.you { left: 14px; top: 208px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-their { left: 12px; top: 90px; width: 366px; height: 112px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-line { left: 12px; top: 232px; width: 366px; --n: 5; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-bench { left: 12px; top: 372px; width: 220px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-bench > .bench-label { right: auto; left: calc(100% + 10px); top: 28px; flex-direction: column; text-align: left; font-size: 14px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-tray { left: 8px; right: 8px; top: 470px; bottom: 8px; border-width: 3px; border-radius: 20px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-coach { left: 10px; right: 10px; top: 12px; height: 84px; border-width: 3px; border-radius: 14px; padding: 8px 12px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-coach .hint, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-coach .gift-banner { font-size: 15px; line-height: 1.25; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-shop { left: 10px; right: 10px; top: 106px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-shop > .label { font-size: 13px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-go { left: 10px; right: 10px; bottom: 14px; height: 60px; flex-direction: row; gap: 10px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-go button { border-width: 3px; border-radius: 16px; box-shadow: 0 5px 0 var(--outline), inset 0 -4px 0 rgba(0, 0, 0, 0.12), inset 0 3px 0 rgba(255, 255, 255, 0.35); font-size: 20px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-go button.reroll-btn { height: auto; width: 120px; font-size: 18px; flex-wrap: wrap; gap: 4px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-go button.reroll-btn .cost-chip { font-size: 13px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-go button.primary { font-size: 30px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-insp { left: 8px; right: 8px; bottom: 90px; max-height: 430px; border-width: 3px; padding: 10px 12px 12px; font-size: 15px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-insp .dim, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-insp .small, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-insp .label { font-size: 13px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-insp button { font-size: 15px; min-height: 44px; }
 
-:is(#app[data-screen="shop"], #under) .stage.P .tb-help { right: 12px; top: 200px; height: 34px; padding: 0 4px; border-width: 3px; border-radius: 12px; box-shadow: 0 3px 0 var(--outline); z-index: 4; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-help button { height: 28px; min-height: 28px; min-width: 32px; font-size: 18px; padding: 0 8px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-help button.new { font-size: 13px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-hud .plate.round { padding: 0 10px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-help { right: 12px; top: 200px; height: 34px; padding: 0 4px; border-width: 3px; border-radius: 12px; box-shadow: 0 3px 0 var(--outline); z-index: 4; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-help button { height: 28px; min-height: 28px; min-width: 32px; font-size: 18px; padding: 0 8px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-help button.new { font-size: 13px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-hud .plate.round { padding: 0 10px; }
 
 /* The landscape stage is drawn at 1.6× what 800×450 shows: the piece's small chips grow to match */
-:is(#app[data-screen="shop"], #under) .stage.L .pc-tier { height: 28px; min-width: 30px; font-size: 18px; line-height: 23px; border-radius: 8px; }
-:is(#app[data-screen="shop"], #under) .stage.L .pc-price { height: 28px; font-size: 18px; border-radius: 14px; padding: 0 9px 0 4px; }
-:is(#app[data-screen="shop"], #under) .stage.L .pc-price .coin { width: 18px; height: 18px; }
-:is(#app[data-screen="shop"], #under) .stage.L .pc-flag, :is(#app[data-screen="shop"], #under) .stage.L .pc-lock { font-size: 18px; }
-:is(#app[data-screen="shop"], #under) .stage.L .pc-pips u { width: 13px; height: 13px; }
-:is(#app[data-screen="shop"], #under) .stage.L .pc-meta { gap: 6px; }
-:is(#app[data-screen="shop"], #under) .stage.L .tb-insp :is(.ik-name, .sheet-form, .t-glue, .tw, .ti, .sheet-credit, .credit-line, .num, .rates, [data-testid="unit-rates"]) { font-size: 18px; }
-:is(#app[data-screen="shop"], #under) .stage.L .tb-insp .pc-tab { height: auto; min-height: 26px; }
-:is(#app[data-screen="shop"], #under) .stage.L .pin-emoji { font-size: 18px; }
-:is(#app[data-screen="shop"], #under) .tb-insp .sheet-xl-grid { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 4px 12px; align-items: start; }
-:is(#app[data-screen="shop"], #under) .tb-insp .sheet-hero > .pc { transform: scale(0.72); transform-origin: 0 0; }
-:is(#app[data-screen="shop"], #under) .tb-insp .sheet-hero { overflow: visible; min-width: 0; }
-:is(#app[data-screen="shop"], #under) .tb-insp .sheet-hero { padding-top: 22px; }
-:is(#app[data-screen="shop"], #under) .tb-insp { display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
-:is(#app[data-screen="shop"], #under) .tb-insp .insp-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 8px; }
-:is(#app[data-screen="shop"], #under) .tb-insp > .row { flex: none; }
-:is(#app[data-screen="shop"], #under) .tb-insp .insp-body > .label { margin-bottom: 4px; padding-right: 40px; }
-:is(#app[data-screen="shop"], #under) .tb-go button.primary { flex-direction: column; flex-wrap: nowrap; gap: 2px; }
-:is(#app[data-screen="shop"], #under) .tb-go button.primary .fight-warn { flex-basis: auto; background: none; border: 0; padding: 0; margin: 0; font: 600 18px/1.1 var(--font-body); color: var(--outline); text-shadow: none; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-go button.primary.half-empty { font-size: 24px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-go button.primary .fight-warn { font-size: 13px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-insp { max-height: 300px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .pc-tier { height: 28px; min-width: 30px; font-size: 18px; line-height: 23px; border-radius: 8px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .pc-price { height: 28px; font-size: 18px; border-radius: 14px; padding: 0 9px 0 4px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .pc-price .coin { width: 18px; height: 18px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .pc-flag, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .pc-lock { font-size: 18px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .pc-pips u { width: 13px; height: 13px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .pc-meta { gap: 6px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp :is(.ik-name, .sheet-form, .t-glue, .tw, .ti, .sheet-credit, .credit-line, .num, .rates, [data-testid="unit-rates"]) { font-size: 18px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp .pc-tab { height: auto; min-height: 26px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .pin-emoji { font-size: 18px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .sheet-xl-grid { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 4px 12px; align-items: start; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .sheet-hero > .pc { transform: scale(0.72); transform-origin: 0 0; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .sheet-hero { overflow: visible; min-width: 0; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .sheet-hero { padding-top: 22px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp { display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .insp-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 8px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp > .row { flex: none; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .insp-body > .label { margin-bottom: 4px; padding-right: 40px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go button.primary { flex-direction: column; flex-wrap: nowrap; gap: 2px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go button.primary .fight-warn { flex-basis: auto; background: none; border: 0; padding: 0; margin: 0; font: 600 18px/1.1 var(--font-body); color: var(--outline); text-shadow: none; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-go button.primary.half-empty { font-size: 24px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-go button.primary .fight-warn { font-size: 13px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-insp { max-height: 300px; }
 
-:is(#app[data-screen="shop"], #under) .stage.L .tb-tray.many .tb-coach { width: 300px; }
-:is(#app[data-screen="shop"], #under) .stage.L .tb-tray.many .tb-shop { left: 330px; width: 640px; }
-:is(#app[data-screen="shop"], #under) .stage.L .tb-tray.many .tb-go { width: 250px; }
-:is(#app[data-screen="shop"], #under) .stage.L .tb-tray.many .tb-coach .hint { font-size: 18px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-tray.many .tb-coach { width: 300px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-tray.many .tb-shop { left: 330px; width: 640px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-tray.many .tb-go { width: 250px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-tray.many .tb-coach .hint { font-size: 18px; }
 
 /* Codex and Workshop: windows over the dimmed table */
 #under { position: fixed; inset: 0; z-index: 1; filter: blur(3px) brightness(0.45); pointer-events: none; }
@@ -182,48 +182,220 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 }
 @media (max-width: 600px) { body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="forge"] { inset: 6px; border-width: 3px; border-radius: 20px; } }
 
-:is(#app[data-screen="shop"], #under) .tb-insp { position: absolute; }
-:is(#app[data-screen="shop"], #under) .tb-insp button.insp-x { position: absolute; top: 2px; right: 4px; z-index: 2; min-width: 44px; width: 44px; height: 40px; min-height: 40px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; color: #5e5280; font: 600 20px/1 var(--font-body); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp { position: absolute; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp button.insp-x { position: absolute; top: 2px; right: 4px; z-index: 2; min-width: 44px; width: 44px; height: 40px; min-height: 40px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; color: #5e5280; font: 600 20px/1 var(--font-body); }
 
 /* Portrait, 48px taps: the stage may be scaled to 0.92 on a 360-wide phone, and a tap stays 44px */
-:is(#app[data-screen="shop"], #under) .stage.P .plate { height: 52px; }
-:is(#app[data-screen="shop"], #under) .stage.P .plate button, :is(#app[data-screen="shop"], #under) .stage.P .tb-insp button { min-height: 48px; }
-:is(#app[data-screen="shop"], #under) .stage.P .plate button { height: 48px; min-width: 48px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-hud { height: 52px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-help { height: 40px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-help button { height: 40px; min-height: 48px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-coach .gift-banner button { min-height: 48px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-go { height: 64px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate { height: 52px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate button, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-insp button { min-height: 48px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate button { height: 48px; min-width: 48px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-hud { height: 52px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-help { height: 40px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-help button { height: 40px; min-height: 48px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-coach .gift-banner button { min-height: 48px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-go { height: 64px; }
 /* The compact portrait table (a window under 780 stage px tall): no wells for the hidden team, the tray comes up */
-:is(#app[data-screen="shop"], #under) .stage.P.compact .tb-their:not(:has(.crown-foe)) { display: none; }
-:is(#app[data-screen="shop"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-side.you { top: 98px; }
-:is(#app[data-screen="shop"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-help { top: 90px; }
-:is(#app[data-screen="shop"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-line { top: 128px; }
-:is(#app[data-screen="shop"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-bench { top: 262px; }
-:is(#app[data-screen="shop"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-tray { top: 364px; }
-:is(#app[data-screen="shop"], #under) .stage.P.compact .tb-coach { height: 66px; padding: 6px 12px; }
-:is(#app[data-screen="shop"], #under) .stage.P.compact .tb-shop { top: 90px; }
-:is(#app[data-screen="shop"], #under) .stage.P.compact .tb-insp { max-height: 250px; bottom: 96px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-side.them .next-opp .who { display: inline; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-insp .actions button { min-width: 48px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-hud { gap: 4px; }
-:is(#app[data-screen="shop"], #under) .stage.P .plate { gap: 6px; padding: 0 6px; }
-:is(#app[data-screen="shop"], #under) .stage.P .plate.menu { padding: 0 2px; }
-:is(#app[data-screen="shop"], #under) .stage.P .plate .heart-icons .heart { width: 18px; height: 18px; }
-:is(#app[data-screen="shop"], #under) .stage.P .plate .gold { font-size: 22px; }
-:is(#app[data-screen="shop"], #under) .tb-insp .sheet-hero { padding-left: 12px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P.compact .tb-their:not(:has(.crown-foe)) { display: none; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-side.you { top: 98px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-help { top: 90px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-line { top: 128px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-bench { top: 262px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-tray { top: 364px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P.compact .tb-coach { height: 66px; padding: 6px 12px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P.compact .tb-shop { top: 90px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P.compact .tb-insp { max-height: 250px; bottom: 96px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-side.them .next-opp .who { display: inline; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-insp .actions button { min-width: 48px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-hud { gap: 4px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate { gap: 6px; padding: 0 6px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate.menu { padding: 0 2px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate .heart-icons .heart { width: 18px; height: 18px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate .gold { font-size: 22px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .sheet-hero { padding-left: 12px; }
 
 /* The first run's coach (arena#31) is the tray's card */
-:is(#app[data-screen="shop"], #under) .tb-coach:has(> .coach) { padding: 0; background: none; border: 0; box-shadow: none; border-radius: 0; overflow: visible; justify-content: stretch; }
-:is(#app[data-screen="shop"], #under) .tb-coach > .coach { flex: 1; justify-content: center; margin: 0; padding: 12px 16px; border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 6px 0 var(--outline); font-size: 18px; line-height: 1.25; gap: 4px; min-height: 0; }
-:is(#app[data-screen="shop"], #under) .tb-coach > .coach .coach-step { display: block; font-size: 18px; }
-:is(#app[data-screen="shop"], #under) .tb-coach > .coach .coach-pair { display: flex; }
-:is(#app[data-screen="shop"], #under) .tb-coach > .coach .coach-chain { display: none; }
-:is(#app[data-screen="shop"], #under) .tb-coach > .coach .coach-text b { font-size: 18px; }
-:is(#app[data-screen="shop"], #under) .tb-coach > .coach .coach-by { display: block; margin: 2px 0 0; font-size: 18px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-coach > .coach { padding: 6px 10px; border-width: 3px; border-radius: 14px; font-size: 14px; gap: 2px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-coach > .coach .coach-step { font-size: 12px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-coach > .coach .coach-pair { display: none; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-coach > .coach .coach-chain { display: inline; font-weight: 800; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-coach > .coach .coach-text b { font-size: 14px; }
-:is(#app[data-screen="shop"], #under) .stage.P .tb-coach > .coach .coach-by { font-size: 12px; display: inline; margin-left: 6px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach:has(> .coach) { padding: 0; background: none; border: 0; box-shadow: none; border-radius: 0; overflow: visible; justify-content: stretch; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach > .coach { flex: 1; justify-content: center; margin: 0; padding: 12px 16px; border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 6px 0 var(--outline); font-size: 18px; line-height: 1.25; gap: 4px; min-height: 0; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach > .coach .coach-step { display: block; font-size: 18px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach > .coach .coach-pair { display: flex; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach > .coach .coach-chain { display: none; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach > .coach .coach-text b { font-size: 18px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach > .coach .coach-by { display: block; margin: 2px 0 0; font-size: 18px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-coach > .coach { padding: 6px 10px; border-width: 3px; border-radius: 14px; font-size: 14px; gap: 2px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-coach > .coach .coach-step { font-size: 12px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-coach > .coach .coach-pair { display: none; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-coach > .coach .coach-chain { display: inline; font-weight: 800; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-coach > .coach .coach-text b { font-size: 14px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-coach > .coach .coach-by { font-size: 12px; display: inline; margin-left: 6px; }
+
+/* ===== The battle on the table (arena#29, mission #26 move 1, part 2) =====
+ * The battle plays in the same stage as the shop. The HUD's plates on top, their line and yours in
+ * the middle, the tray at the foot: the event on screen, the controls and, once it ends, the run's
+ * result (the tray's third job). Tap a unit: the inspector. Everything is in stage pixels; the
+ * old viewer's width media queries answer the window, so these rules are explicit per stage. */
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .run-bar { display: contents; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .plate.menu { order: 0; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .plate.round { order: 1; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .plate.vs { order: 2; font: 500 20px/1 var(--font-body); color: var(--paper); max-width: 330px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .plate.vs .who { color: inherit; font: inherit; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .plate.vs a, :is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .plate.vs button { font-size: 18px; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .hud-gap { order: 3; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .plate.turn { order: 4; font: 400 30px/1 var(--font-head); color: var(--action); min-width: 90px; justify-content: center; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .plate.hearts { order: 5; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .plate.coins { display: none; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .bv-repeat::after { content: " ⏩"; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 > .hud { min-height: 0; margin: 0; padding: 0; }
+
+/* The two lines and their side labels */
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-side.bv-lab-them, :is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-side.bv-lab-you { writing-mode: horizontal-tb; rotate: none; margin: 0; padding: 0; background: none; border-radius: 0; overflow: visible; align-items: flex-start; font: 400 24px/1.1 var(--font-head); letter-spacing: 1px; text-transform: uppercase; white-space: normal; z-index: 4; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-side.bv-lab-them { color: var(--them); }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-side.bv-lab-you { color: var(--you); }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-side.bv-lab-them > *, :is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-side.bv-lab-you > * { display: inline; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-side .bv-lab-who { display: block; font: 500 18px/1.25 var(--font-body); letter-spacing: 0; text-transform: none; color: var(--them); overflow-wrap: anywhere; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-side a, :is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-side button { font-size: 18px; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-line { display: grid; margin: 0; padding: 0; gap: 4px; align-items: center; justify-items: center; z-index: 3; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-tl, :is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-clash { display: none; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-banner.on { position: absolute; top: 46%; z-index: 6; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-banner { display: none; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-banner.on { display: flex; font-size: 28px; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-error { position: absolute; z-index: 30; left: 50%; right: auto; top: 74px; width: max-content; max-width: 80%; translate: -50% 0; margin: 0; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-error .error { font-size: 18px; }
+
+/* The tray: the event on screen, the last few, the ledger, the controls */
+:is(#app[data-screen="battle"], #under) .bt-tray > * { margin: 0; }
+:is(#app[data-screen="battle"], #under) .bt-tray button.bv-caption { height: auto; min-height: 0; max-height: none; width: auto; translate: none; overflow: hidden; padding: 10px 14px; border: 4px solid var(--outline); border-radius: 18px; background: var(--paper); color: var(--outline); box-shadow: 0 5px 0 var(--outline); font: 500 20px/1.3 var(--font-body); text-align: left; align-items: flex-start; }
+:is(#app[data-screen="battle"], #under) .bt-tray button.bv-caption .bv-cap-when { font-size: 18px; }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-recent { overflow: hidden; display: flex; flex-direction: column; gap: 4px; font: 500 18px/1.25 var(--font-body); color: var(--paper); }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-recent-row { opacity: 0.85; }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-recent-row:nth-child(n+3) { opacity: 0.6; }
+:is(#app[data-screen="battle"], #under) .bt-tray > .bv-below { display: flex; flex-direction: column; max-height: none; font-size: 18px; }
+:is(#app[data-screen="battle"], #under) .bt-tray > .bv-below:not(:has(button)):has(.bv-ledger-foot:empty) { display: none; }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-ledger { padding: 4px 10px; border-width: 3px; background: color-mix(in srgb, var(--panel) 60%, transparent); }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-ledger-head { height: auto; min-height: 0; }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-ledger-head:not(:has(button)) { display: none; }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-ledger-turn, :is(#app[data-screen="battle"], #under) .bt-tray .bv-ledger-foot { font-size: 18px; height: auto; line-height: 1.25; white-space: normal; }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-ledger button.bv-skip { min-height: 44px; font-size: 18px; padding: 0 14px; }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-controls { display: grid; gap: 10px; }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-controls button { min-width: 0; min-height: 0; margin: 0; padding: 0 4px; border: 4px solid var(--outline); border-radius: 18px; background: var(--paper); color: var(--outline); box-shadow: 0 6px 0 var(--outline), inset 0 3px 0 rgba(255, 255, 255, 0.35); font: 400 26px/1 var(--font-head); clip-path: none; }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-controls button[data-testid="battle-play"], :is(#app[data-screen="battle"], #under) .bt-tray .bv-controls button.primary { background: var(--action); }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-controls button:disabled { background: #4a4068; color: #8a7fae; }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-controls .bv-keys { display: block; grid-column: 1 / -1; margin: 0; color: var(--paper); opacity: 0.8; font: 500 18px/1.3 var(--font-body); white-space: normal; }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-keys kbd { font: 600 18px/1 var(--font-body); border: 2px solid currentColor; border-radius: 6px; padding: 2px 6px 3px; opacity: 0.8; background: none; }
+
+/* The result is the tray's third job: it covers the tray */
+:is(#app[data-screen="battle"], #under) .bt-tray > .bv-end { position: absolute; inset: 0; z-index: 3; width: auto; max-width: none; max-height: none; margin: 0; padding: 12px 18px; border: 0; border-radius: 20px; background: linear-gradient(180deg, #3d3360 0, #2a2240 100%); box-shadow: none; overflow: hidden; color: var(--paper); font-size: 18px; }
+:is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-end-top .bv-word { font: 400 44px/1 var(--font-head); text-align: left; }
+:is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-word.win { color: var(--you); }
+:is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-word.loss { color: var(--them); }
+:is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-word.draw, :is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-word.neutral { color: var(--action); }
+:is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-end-sub { font-size: 18px; line-height: 1.25; white-space: normal; }
+:is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-lost-line { font-size: 18px; line-height: 1.25; margin: 0; }
+:is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-end-run { font-size: 18px; line-height: 1.25; margin: 0; }
+:is(#app[data-screen="battle"], #under) .bt-tray > .bv-end button { font-size: 18px; min-height: 44px; }
+:is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-end-actions { position: static; margin: 0; padding: 0; background: none; gap: 10px; }
+:is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-end-actions button { font-size: 20px; border: 4px solid var(--outline); border-radius: 16px; box-shadow: 0 5px 0 var(--outline); background: var(--paper); color: var(--outline); }
+:is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-end-actions button.primary { background: var(--action); }
+:is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-moment { font-size: 18px; min-height: 44px; }
+:is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-moment-t, :is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-dmg, :is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-dmg .emoji, :is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .label { font-size: 18px; }
+:is(#app[data-screen="battle"], #under) .bt-tray > .bv-end button.bv-end-more, :is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-dmg-more { font-size: 18px; }
+
+/* A traced change opens as a window over the table; the tabs and the log stay off the table */
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-sheet { position: absolute; z-index: 25; display: none; flex-direction: column; gap: 6px; margin: 0; border: 4px solid var(--outline); border-radius: 20px; background: linear-gradient(180deg, #3a3058, #261f38 120px, #211a31); box-shadow: 0 8px 0 var(--outline), 0 30px 80px rgba(0, 0, 0, 0.7); overflow-y: auto; overscroll-behavior: contain; padding: 14px 16px; color: var(--paper); font-size: 18px; clip-path: none; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-sheet.open { display: flex; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-sheet .bv-tabs, :is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-sheet .bv-log, :is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-sheet .bv-unit-body { display: none; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-sheet .bv-why-body { display: flex; flex-direction: column; gap: 8px; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-sheet button { min-height: 44px; font-size: 18px; }
+
+/* Landscape stage, 1280×720 */
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .tb-side.them { left: 24px; top: 134px; width: 150px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .tb-side.you { left: 24px; top: 372px; width: 150px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 > .bv-line.theirs { left: 190px; top: 78px; width: 900px; height: 188px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 > .bv-line.mine { left: 190px; top: 298px; width: 900px; height: 188px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > button.bv-caption { left: 16px; top: 16px; width: 560px; min-height: 84px; max-height: 106px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-recent { left: 16px; top: 128px; width: 560px; height: 72px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-below { left: 600px; top: 16px; width: 290px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-controls { left: 904px; top: 16px; width: 334px; height: 150px; grid-template-columns: 1fr 1.6fr 1fr; grid-template-rows: 58px 58px; grid-auto-rows: auto; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-controls .bv-keys { position: absolute; left: 0; right: 0; top: 136px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end { display: grid; grid-template-columns: 380px minmax(0, 1fr) 236px; grid-template-rows: auto auto auto 1fr; column-gap: 20px; align-content: start; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end > .bv-end-top, :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end > .bv-lost-line, :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end > .bv-end-run { grid-column: 1; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end > .bv-end-actions { grid-column: 3; grid-row: 1 / 5; flex-direction: column; align-self: stretch; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end > .bv-end-body { grid-column: 2; grid-row: 1 / 5; flex-direction: row; gap: 18px; min-height: 0; overflow: hidden; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-end-moments { flex: 1 1 0; min-width: 0; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-dmg-list { flex: 1 1 0; min-width: 0; overflow: hidden; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-dmg { grid-template-columns: 28px minmax(0, 7em) 1fr 36px; line-height: 24px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 > .bv-sheet { left: 190px; top: 84px; width: 900px; height: 396px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bv-line .bv-pill { font-size: 18px; height: 30px; line-height: 26px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bv-line .bv-changes { left: -40px; right: calc(50% + 6px); justify-content: flex-end; }
+
+/* Portrait stage, 390 wide */
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-hud .plate.vs { display: none; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-hud .plate.turn { font-size: 22px; min-width: 0; padding: 0 10px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-side.bv-lab-them, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-side.bv-lab-you { font-size: 15px; flex-direction: row; align-items: baseline; gap: 8px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-side .bv-lab-who { font-size: 13px; display: inline; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-side.them { left: 14px; top: 66px; right: 14px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-side.you { left: 14px; top: 268px; right: 14px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-line.theirs { left: 12px; top: 92px; width: 366px; height: 150px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-line.mine { left: 12px; top: 296px; width: 366px; height: 150px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray { left: 8px; right: 8px; top: 470px; bottom: 8px; border-width: 3px; border-radius: 20px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > button.bv-caption { left: 10px; right: 10px; top: 12px; min-height: 64px; max-height: 96px; font-size: 15px; border-width: 3px; border-radius: 14px; padding: 8px 12px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray button.bv-caption .bv-cap-when { font-size: 13px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-recent { left: 12px; right: 12px; top: 118px; height: 170px; font-size: 14px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-below { left: 10px; right: 10px; bottom: 76px; font-size: 14px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray .bv-ledger-turn, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray .bv-ledger-foot { font-size: 14px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray .bv-ledger button.bv-skip { font-size: 14px; min-height: 40px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-controls { left: 10px; right: 10px; bottom: 14px; height: 56px; grid-template-columns: 1fr 1.3fr 1fr 1fr 1.3fr 1fr; gap: 6px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-controls button { border-width: 3px; border-radius: 14px; box-shadow: 0 4px 0 var(--outline); font-size: 20px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-controls button[data-testid="battle-end"], :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-controls button[data-testid="battle-speed"], :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-controls button[data-testid="battle-next"] { font-size: 15px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-controls .bv-keys { display: none; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end { padding: 8px 12px; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end > * { flex: none; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end > .bv-end-body { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end > .bv-end-actions { flex-direction: row; padding-top: 2px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end > .bv-end-actions button { flex: 1 1 0; min-width: 0; padding: 0 4px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-end-top .bv-word { font-size: 32px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-end-sub, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-lost-line, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-end-run { font-size: 13px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-moment, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-moment-t, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-dmg, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-dmg .emoji, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .label { font-size: 13px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-end-actions button { font-size: 15px; border-width: 3px; box-shadow: 0 4px 0 var(--outline); }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet { left: 8px; right: 8px; top: 70px; bottom: 8px; border-width: 3px; font-size: 14px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet button { font-size: 15px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line .bv-pill { font-size: 13px; height: 22px; line-height: 18px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line .bv-changes { left: -12px; right: -12px; width: auto; justify-content: center; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line.theirs .bv-changes { top: calc(100% + 2px); bottom: auto; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line.mine .bv-changes { top: auto; bottom: calc(100% + 2px); }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-controls button { height: auto; align-self: stretch; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-line { grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)) !important; grid-template-rows: none !important; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .bv-end .bv-dmg-list { order: 0; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-end-actions button { flex: 1 1 0; min-height: 0; }
+/* The compact portrait table (a window under 780 stage px tall, a 360×640 phone): the tray comes up, the lines keep a gap for the result tags */
+:is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 > .bv-line.theirs { top: 90px; height: 128px; }
+:is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 .tb-side.you.bv-lab-you { top: 240px; }
+:is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 > .bv-line.mine { top: 264px; height: 128px; }
+:is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 .tb-tray.bt-tray { top: 408px; }
+:is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 .bt-tray > button.bv-caption { min-height: 56px; }
+:is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 .bt-tray > .bv-recent { top: 96px; height: 90px; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-side.bv-lab-them, :is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-side.bv-lab-you { pointer-events: none; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-side a, :is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-side button { pointer-events: auto; }
+/* Portrait taps stay 44px on a 360-wide phone, where the stage is drawn at 0.92 */
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 button.bv-change { min-height: 48px; height: 48px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet button, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet [data-testid="why-step"], :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 button.bv-also-btn, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end button, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-ledger button { min-height: 48px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet button.bv-close, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet [data-testid="trace-close"] { min-width: 48px; }
+/* The side tags in the result ("You", "Them") and the caption's small words: 18 on the landscape stage */
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bv-who { font-size: 18px; padding: 0 6px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-who { font-size: 12px; }
+/* Small battle text on the landscape stage (800×450 draws it at 0.625): 18 and up */
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bv-nodmg { font-size: 18px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bv-card > .bv-chain-chip { min-width: 34px; height: 34px; font-size: 20px; border-radius: 17px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray .bv-chain-sum { font-size: 18px; max-width: none; flex-wrap: wrap; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray .bv-chain-sum *, :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray .bv-ledger-foot * { font-size: inherit; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray .bv-ledger-foot .bv-chain-sum { line-height: 1.3; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-nodmg { font-size: 12px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray .bv-chain-sum { font-size: 14px; max-width: none; }
+/* The traced change's window and the unit inspector: 18 and up on the landscape stage, 12 on the portrait one */
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 > .bv-sheet :is(.label, .bv-trace-text, .bv-step-by, .bv-why-keys, .dim, .small, .mono, .bv-step, .bv-step *, .bv-chain *, .t, b) { font-size: 18px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet :is(.label, .bv-trace-text, .bv-step-by, .bv-why-keys, .dim, .small, .mono) { font-size: 12px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .tb-insp :is(.bv-live-st, .bv-live-st *, .bv-now *, .credit-line, .bv-now-turn *, .label) { font-size: 18px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-insp :is(.bv-live-st, .bv-live-st *, .credit-line) { font-size: 13px; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-sheet { max-width: none; right: auto; bottom: auto; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 > .bv-sheet { height: 396px; max-height: 396px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet { right: 8px; bottom: 8px; max-height: none; }
+#app[data-screen="battle"]:has(.stage > .bv-sheet.open) .bv-fx { visibility: hidden; }

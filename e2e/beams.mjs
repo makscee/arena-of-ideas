@@ -1,3 +1,4 @@
+import { replayBattle } from "./battle-ctl.mjs";
 // R3-21: target beams. Shared by mvp-phone.mjs and mvp-desktop.mjs.
 //
 // From the battle's start it steps beat by beat (paused: beams stay, still)
@@ -147,7 +148,7 @@ export async function beamChecks(page, errors, { shot, phone, label }) {
   const where = label ?? (phone ? "phone" : "desktop");
   const paused = async () => (await page.getByTestId("battle-play").textContent()) === "▶";
   const toStart = async () => {
-    await page.getByTestId("battle-replay").click();
+    await replayBattle(page);
     if (!(await paused())) await page.getByTestId("battle-play").click();
     for (let i = 0; i < 400 && !(await page.getByTestId("battle-back").isDisabled()); i++) await page.getByTestId("battle-back").click();
   };

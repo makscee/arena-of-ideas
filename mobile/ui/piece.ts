@@ -160,10 +160,10 @@ function emoji(u: PieceUnit, s: number): HTMLElement {
   );
 }
 
-function chips(list: { status: string; stacks: number }[], cz: number): HTMLElement[] {
+function chips(list: { status: string; stacks: number }[], cz: number, floor = 0): HTMLElement[] {
   return list.map(({ status, stacks }) => {
     const [ic, tone] = statusEmoji(status);
-    const fs = Math.round(cz * 0.6);
+    const fs = Math.max(Math.round(cz * 0.6), floor);
     return h("div", { class: `pc-st ${tone}`, "data-status": status, style: css({ height: cz, "font-size": fs }) }, ic, h("i", { style: `font-size:${px(fs)}` }, String(stacks)));
   });
 }
@@ -263,7 +263,7 @@ export function piece(u: PieceUnit, o: PieceOptions): HTMLElement {
     if (shelf.length) {
       const top = s - 8;
       const padB = 4;
-      root.append(h("div", { class: "pc-shelf", "data-k": "chips", style: css({ top, height: y + 3 - top + cz + padB, padding: `0 6px ${padB}px` }) }, ...chips(shelf, cz)));
+      root.append(h("div", { class: "pc-shelf", "data-k": "chips", style: css({ top, height: y + 3 - top + cz + padB, padding: `0 6px ${padB}px` }) }, ...chips(shelf, cz, fl)));
     }
     y += 3 + cz + 4;
   }

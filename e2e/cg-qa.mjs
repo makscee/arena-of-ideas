@@ -16,6 +16,7 @@ import { createServer } from "node:net";
 import { extname, join, normalize } from "node:path";
 import { webkit } from "playwright";
 import { launchChromium } from "./browser.mjs";
+import { replayBattle } from "./battle-ctl.mjs";
 
 const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : undefined; };
@@ -102,7 +103,7 @@ async function battleMs(page) {
   for (const hz of [60, 144]) {
     await page.evaluate((h) => (window.__hz = h), hz);
     const t0 = Date.now();
-    await page.getByTestId("battle-replay").click();
+    await replayBattle(page);
     await page.getByTestId("battle-done").waitFor({ state: "hidden", timeout: 5_000 });
     await page.getByTestId("battle-done").waitFor({ timeout: 120_000 });
     ms[hz] = Date.now() - t0;

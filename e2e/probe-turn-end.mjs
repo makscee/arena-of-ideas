@@ -7,6 +7,7 @@
 //   node e2e/probe-turn-end.mjs --url http://127.0.0.1:8913/arena/ [--out e2e/.shots/turn-end]
 import { mkdirSync } from "node:fs";
 import { launchChromium } from "./browser.mjs";
+import { replayBattle } from "./battle-ctl.mjs";
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const url = arg("--url");
@@ -84,7 +85,7 @@ for (const [label, viewport, mobile] of [["phone", { width: 360, height: 640 }, 
   for (const ms of full) if (ms < 1000 || ms > 1700) errors.push(`${label}: a summary held ${ms} ms (want ~1200)`);
 
   // Paused: the totals stay; stepping with → lands on them after a turn's last beat.
-  await page.getByTestId("battle-replay").click();
+  await replayBattle(page);
   await page.getByTestId("battle-play").click();
   let stepped = 0;
   for (let k = 0; k < 60 && !(await page.getByTestId("battle-step").isDisabled()); k++) {
