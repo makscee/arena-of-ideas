@@ -12,6 +12,14 @@ import { button, h, onGone, show, withKey } from "../ui/dom";
 const CHAIN = ["Gambler", "Drummer", "Hornet"] as const;
 const STEP_MS = 1500;
 
+/** What the caller does to the screen while PLAY works (arena#31's fix round: a press answers at once). */
+export interface StartControl {
+  /** The press is acknowledged now: PLAY reads "Starting…", the chain stops, the field is off. */
+  starting: () => void;
+  /** The start failed: PLAY is ready again. */
+  ready: () => void;
+}
+
 export interface StartOptions {
   content: MvpContent | null;
   /** PLAY: make a generated name, open round 1. */
@@ -58,10 +66,12 @@ function chain(units: UnitContent[]): { root: HTMLElement; stop: () => void } {
   return { root, stop: () => clearInterval(timer) };
 }
 
-export function startScreen(o: StartOptions): void {
+export function startScreen(o: StartOptions): StartControl {
   const demo = chain(chainUnits(o.content));
   const input = h("input", { placeholder: t("start.ownName"), maxlength: "24", autocomplete: "nickname", "aria-label": t("start.ownName"), "data-testid": "name-input" });
   const play = withKey(button(t("start.play"), () => o.onPlay(), "primary play-start", "start-play"), "Enter");
+  const label = [...play.childNodes];
+  const progress = h("div", { class: "start-progress", "aria-hidden": "true" }, h("i"));
   const named = button(t("name.enter"), () => o.onName(input.value.trim()), "small", "name-submit");
   // Enter in the name field plays under that name; anywhere else it is PLAY.
   input.addEventListener("keydown", (e) => {
@@ -75,20 +85,35 @@ export function startScreen(o: StartOptions): void {
     if (e.key === "Enter" && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLButtonElement)) o.onPlay();
   };
   addEventListener("keydown", onKey);
-  show(
-    h(
-      "div",
-      { class: "start", "data-testid": "start" },
+  const root = h("div", { class: "start", "data-testid": "start" });
+  root.append(
       h("h1", { class: "start-brand" }, t("name.title")),
       h("h2", { class: "start-title", "data-testid": "start-title" }, t("start.title")),
       h("p", { class: "start-lead dim" }, t("start.lead")),
       demo.root,
       play,
+      progress,
       h("div", { class: "row start-name" }, input, named),
-      ...(o.extra ?? []),
+      ...(o.extra ?? []).filter((x): x is HTMLElement => x !== null),
       o.err,
-    ),
   );
+  show(root);
   onGone(() => (demo.stop(), removeEventListener("keydown", onKey)));
   play.focus();
+  return {
+    starting: () => {
+      demo.stop();
+      root.classList.add("starting");
+      play.setAttribute("aria-busy", "true");
+      play.replaceChildren(t("start.starting"));
+      input.disabled = named.disabled = true;
+    },
+    ready: () => {
+      root.classList.remove("starting");
+      play.removeAttribute("aria-busy");
+      play.replaceChildren(...label);
+      input.disabled = named.disabled = false;
+      play.focus();
+    },
+  };
 }
