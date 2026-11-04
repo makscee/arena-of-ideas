@@ -155,7 +155,11 @@
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp .pc-tab { height: auto; min-height: 26px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .pin-emoji { font-size: 18px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .sheet-xl-grid { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 4px 12px; align-items: start; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .sheet-hero > .pc { transform: scale(0.72); transform-origin: 0 0; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp .sheet-xl-grid { grid-template-columns: 120px minmax(0, 1fr); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp .sheet-hero > .pc { transform: none; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-insp .sheet-hero > .pc { transform: scale(0.72); transform-origin: 0 0; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .cell .fuse-tag { font-size: 18px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .cell .fuse-mark { font-size: 18px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .sheet-hero { overflow: visible; min-width: 0; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .sheet-hero { padding-top: 22px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp { display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
@@ -332,7 +336,7 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end > .bv-end-actions { grid-column: 3; grid-row: 1 / 5; flex-direction: column; align-self: stretch; }
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end > .bv-end-body { grid-column: 2; grid-row: 1 / 5; flex-direction: row; gap: 18px; min-height: 0; overflow: hidden; }
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-end-moments { flex: 1 1 0; min-width: 0; }
-:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-dmg-list { flex: 1 1 0; min-width: 0; overflow: hidden; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-dmg-list { flex: 1 1 0; min-width: 0; overflow-x: hidden; overflow-y: auto; }
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-dmg { grid-template-columns: 28px minmax(0, 7em) 1fr 36px; line-height: 24px; }
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 > .bv-sheet { left: 190px; top: 84px; width: 900px; height: 396px; }
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bv-line .bv-pill { font-size: 18px; height: 30px; line-height: 26px; }
@@ -434,3 +438,5 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="shop"], #under) .stage.P.compact .tb-coach { height: 70px; }
 :is(#app[data-screen="shop"], #under) .stage.P.compact .tb-coach > .coach .coach-step { display: none; }
 :is(#app[data-screen="shop"], #under) .stage.P.compact .tb-shop { top: 92px; }
+/* Windows over the table are drawn on the scaled stage (arena#32): their small text reads 18px there, 11px at 800×450. */
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L :is(.card .copies, .card .copies.tag, .discovered, .seal-name, .seal-rule, .seal-flavour, .pc-mark) { font-size: 18px; }

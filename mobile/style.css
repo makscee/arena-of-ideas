@@ -298,12 +298,12 @@ input { width: 100%; background: var(--panel); color: var(--text); border: var(-
 .tier.t3 { color: var(--tier-3); }
 .tier.t4 { color: var(--tier-4); }
 .card .foot { min-height: 12px; display: flex; align-items: center; justify-content: center; max-width: 100%; }
-.discovered { font-size: 10px; color: var(--dim); font-family: var(--font-num); }
+.discovered { font-size: 11px; color: var(--dim); font-family: var(--font-num); }
 .card .stats { font-family: var(--font-num); font-size: 12px; font-weight: 600; line-height: 14px; }
 .card .stats .p { color: var(--action); }
 .card .stats .h { color: var(--them); }
-.card .copies { font-family: var(--font-num); font-size: 10px; line-height: 1; color: var(--you); letter-spacing: 0.04em; }
-.card .copies.tag { font-size: 8px; color: var(--action); }
+.card .copies { font-family: var(--font-num); font-size: 11px; line-height: 1; color: var(--you); letter-spacing: 0.04em; }
+.card .copies.tag { font-size: 11px; color: var(--action); }
 .card .cost { font-family: var(--font-num); font-size: 12px; color: var(--action); }
 .label { font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
 .outcome { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 44px; text-align: center; }
@@ -366,7 +366,7 @@ button.small { min-height: 44px; font-size: 14px; padding: 0 12px; }
 .hint { font-size: 15px; color: var(--you); border-left: 2px solid var(--you); padding: 2px 0 2px 8px; background: color-mix(in srgb, var(--you) 6%, transparent); }
 .records { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; text-align: center; }
 .records .num { font-size: 18px; }
-.records .label { font-size: 11px; letter-spacing: 0.04em; }
+.records .label { font-size: 12px; letter-spacing: 0.04em; }
 .champion { border-color: color-mix(in srgb, var(--them) 40%, var(--line)); }
 .games { display: flex; flex-wrap: wrap; gap: 6px; }
 button.game { text-transform: none; letter-spacing: 0; font-family: var(--font-body); }

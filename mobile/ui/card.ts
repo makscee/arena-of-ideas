@@ -306,7 +306,7 @@ export function formRich(form: UnitForm, content: MvpContent): Node[] {
 export function unitSheet(
   u: LineUnit | BattleUnit | UnitContent,
   content: MvpContent,
-  opts: { rates?: UnitRates; from?: Stats; preview?: boolean; candidate?: boolean; credit?: Parameters<typeof creditText>[0]; now?: { pwr: number; hp: number; statuses: { status: string; stacks: number }[] } } = {},
+  opts: { floor?: number; rates?: UnitRates; from?: Stats; preview?: boolean; candidate?: boolean; credit?: Parameters<typeof creditText>[0]; now?: { pwr: number; hp: number; statuses: { status: string; stacks: number }[] } } = {},
 ): HTMLElement {
   const unitId = "forms" in u ? u.id : u.unitId;
   // A unit that left the pool (a champion's, a replay's) is in content.left (M2-2).
@@ -395,7 +395,7 @@ export function unitSheet(
   const hero = h(
     "div",
     { class: "sheet-hero", "data-testid": "sheet-piece" },
-    piece(pu, { size: "M", px: heroPx(), side: "stats" in u ? "you" : "shop", statuses: onIt, counter: ring ? (onIt.find((x) => x.status === ring.status)?.stacks ?? 0) : 0, word: true }),
+    piece(pu, { size: "M", px: heroPx(), side: "stats" in u ? "you" : "shop", statuses: onIt, counter: ring ? (onIt.find((x) => x.status === ring.status)?.stacks ?? 0) : 0, word: true, ...(opts.floor != null ? { floor: opts.floor } : {}) }),
   );
   const tier = "forms" in u ? u.tier : pu.tier;
   const pips = !fused && copies > 0 && !("form" in u && u.form === "awoken")

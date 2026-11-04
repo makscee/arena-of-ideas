@@ -1528,7 +1528,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const mine = at.index === sel;
       inspector.replaceChildren(
         h("div", { class: "label" }, (mine ? t("board.selected") : "") + (at.index < L ? t("board.inLine", { n: at.index + 1 }) : t("board.onBench", { n: at.index - L + 1 }))),
-        unitSheet(unitAt(at.index)!, content),
+        unitSheet(unitAt(at.index)!, content, { floor }),
         mine || pick.mode === "fuse" ? h("div", { class: "row actions", "data-testid": "actions" }, ...actionButtons()) : h("div", { class: "dim small" }, crown ? t("board.crownFinal") : t("board.clickSelect")),
       );
       return ratesToFoot();
@@ -1822,7 +1822,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }
     // Without a preview (no gold, a full line), an owned unit still shows your copy as it is.
     const owned = mine ? null : board.find((x) => x.kind === "unit" && x.unitId === o.unitId) ?? null;
-    const sheet = mine ? unitSheet(mine.next, content, { from: mine.now.stats }) : owned ? unitSheet(owned, content) : u ? unitSheet(u, content) : h("h2", {}, o.unitId);
+    const sheet = mine ? unitSheet(mine.next, content, { from: mine.now.stats, floor }) : owned ? unitSheet(owned, content, { floor }) : u ? unitSheet(u, content, { floor }) : h("h2", {}, o.unitId);
     // What buying does goes inside the sheet, above its last line (the rates hint).
     // The XL sheet's text column holds the rates line (mission #1286).
     const body = sheet.querySelector(".sheet-body") ?? sheet;
