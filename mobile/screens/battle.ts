@@ -1359,7 +1359,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     if (!card || !slotBox || slotBox.width <= 0) return null;
     // The piece's face (#1294), from offsets so a lunge mid-way doesn't move it; the slot is taller than the piece.
     const pc = card.firstElementChild as HTMLElement | null;
-    const box = pc?.classList.contains("pc") && pc.offsetWidth ? new DOMRect(slotBox.left + card.offsetLeft + pc.offsetLeft, slotBox.top + card.offsetTop + pc.offsetTop, pc.offsetWidth, pc.offsetHeight) : slotBox;
+    const box = pc?.classList.contains("pc") && ox(pc.offsetWidth) ? new DOMRect(slotBox.left + ox(card.offsetLeft) + ox(pc.offsetLeft), slotBox.top + ox(card.offsetTop) + ox(pc.offsetTop), ox(pc.offsetWidth), ox(pc.offsetHeight)) : slotBox;
     return { box, card };
   }
   function drawEffect(e: Effect, still: boolean, delay: string, from: string | null): void {
@@ -1446,6 +1446,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     for (const f of fallen) living.splice(f.slot < 0 ? living.length : Math.min(f.slot, living.length), 0, f.card);
     return living;
   }
+
+  /** A layout size (offset*) in viewport pixels: the stage is drawn scaled, and rects are in viewport pixels (arena#29). */
+  const ox = (n: number): number => n * (Number(table.style.getPropertyValue("--k")) || 1);
 
   /** Draws the board; its time goes to window.__bvRenders when a probe asks (#913). */
   function render(): void {
@@ -1762,12 +1765,12 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       // Measured from the slot (never moves) and offsets, not the card's own
       // box: a lunge or shake mid-animation would carry the rows with it.
       const pc = el?.firstElementChild as HTMLElement | null | undefined;
-      if (el && pc && pc.offsetWidth && el.parentElement) {
+      if (el && pc && ox(pc.offsetWidth) && el.parentElement) {
         const sb = el.parentElement.getBoundingClientRect();
-        const top = sb.top + el.offsetTop;
-        const left = sb.left + el.offsetLeft;
-        const whole = { top, bottom: top + el.offsetHeight };
-        const card = { left: left + pc.offsetLeft, right: left + pc.offsetLeft + pc.offsetWidth, top: top + pc.offsetTop, width: pc.offsetWidth, height: pc.offsetHeight };
+        const top = sb.top + ox(el.offsetTop);
+        const left = sb.left + ox(el.offsetLeft);
+        const whole = { top, bottom: top + ox(el.offsetHeight) };
+        const card = { left: left + ox(pc.offsetLeft), right: left + ox(pc.offsetLeft) + ox(pc.offsetWidth), top: top + ox(pc.offsetTop), width: ox(pc.offsetWidth), height: ox(pc.offsetHeight) };
         const theirs = sides.get(unit) !== you;
         const upright = innerWidth < 600 && innerHeight > innerWidth;
         const x = upright ? (theirs ? card.right + 16 : card.left - 12) : card.left + card.width / 2;
@@ -1824,18 +1827,18 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       if (!el || !slot || !box || box.width <= 0) return null;
       // A summon still sliding in (.bv-enter's translate): its final box.
       const [tx = 0, ty = 0] = (getComputedStyle(slot).translate.match(/-?[\d.]+/g) ?? []).map(Number);
-      const at = tx || ty ? new DOMRect(box.left - tx, box.top - ty, box.width, box.height) : box;
+      const at = tx || ty ? new DOMRect(box.left - ox(tx), box.top - ox(ty), box.width, box.height) : box;
       // The piece (#1294): its whole box (tab to name) and its face, from offsets inside the slot.
       const pc = el.firstElementChild as HTMLElement | null;
-      const r = pc?.classList.contains("pc") ? new DOMRect(at.left + el.offsetLeft, at.top + el.offsetTop, el.offsetWidth, el.offsetHeight) : at;
-      const f = pc?.classList.contains("pc") ? new DOMRect(r.left + pc.offsetLeft, r.top + pc.offsetTop, pc.offsetWidth, pc.offsetHeight) : r;
+      const r = pc?.classList.contains("pc") ? new DOMRect(at.left + ox(el.offsetLeft), at.top + ox(el.offsetTop), ox(el.offsetWidth), ox(el.offsetHeight)) : at;
+      const f = pc?.classList.contains("pc") ? new DOMRect(r.left + ox(pc.offsetLeft), r.top + ox(pc.offsetTop), ox(pc.offsetWidth), ox(pc.offsetHeight)) : r;
       // Across, an arrow starts and ends past the rim's discs and the badge
       // that stick out of the face (check of #1286, case 6), never on them.
       let lo = 0;
       let hi = f.width;
       for (const k of pc?.classList.contains("pc") ? pc.querySelectorAll<HTMLElement>(":scope > [data-k=pwr], :scope > [data-k=hp], :scope > [data-k=head], :scope > [data-k=ring], :scope > [data-k=num], :scope > [data-k=star]") : []) {
-        lo = Math.min(lo, k.offsetLeft);
-        hi = Math.max(hi, k.offsetLeft + k.offsetWidth);
+        lo = Math.min(lo, ox(k.offsetLeft));
+        hi = Math.max(hi, ox(k.offsetLeft) + ox(k.offsetWidth));
       }
       const e = new DOMRect(f.left + lo, f.top, hi - lo, f.height);
       return { r, f, e, row: enemy.contains(el) ? "them" : "you" };

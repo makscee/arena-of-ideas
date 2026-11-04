@@ -303,6 +303,7 @@ export const SCENES: Scene[] = [
   { id: "battle-draw", keep: true, group: "Battle", title: "A draw", look: "The draw end card", desktop: true, build: battleOf("round", "draw") },
   { id: "battle-six", keep: true, group: "Battle", title: "Six cards on a side", look: "A line grown past five (R4-11): every card keeps its name and PWR/HP on one line, at 800×450 too (#1271)", desktop: true, build: sixBattle },
   { id: "battle-chain-once", keep: true, group: "Battle", title: "A unit acts once per chain", look: "A chain where a unit would have acted twice before #1030: step numbers, spent cards fade, big numbers", desktop: true, build: chainOnce },
+  { id: "battle-result", keep: true, group: "Battle", title: "The result in the tray", look: "E pressed: the run result takes the tray (word, why, key moments, damage, Replay / Why / Next), the lines stay clear above it", desktop: true, build: battleOf("round", "loss", ["e"]) },
   { id: "battle-ledger", keep: true, group: "Battle", title: "Paused mid-battle", look: "Stepped a few beats and paused: the turn bar, the board", desktop: true, build: battleOf("round", "win", ["Space", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight"]) },
 
   { id: "crown", group: "Crown & day", title: "The Crown fight is next", look: "After round 12: the champion's team, the Crown button", desktop: true, build: async (rt) => shop(await playTo(rt, (r) => r.phase === "crown", "the Crown", 80)) },
