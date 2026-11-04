@@ -158,16 +158,19 @@ async function fullRun(lang) {
       fail(`the gift never settled (${await k.where()})`);
     };
     await gift();
-    // Buy with the number keys, as long as the gold lasts.
+    // Buy on keys, as long as the gold lasts: → takes the first offer in hand, the digit of the first empty slot puts it there.
     for (let n = 0; n < 4; n++) {
       const gold = Number(((await tid("gold").textContent().catch(() => "0")) ?? "0").replace(/\D/g, ""));
       if (gold < 3 || !(await tid("offer-0").count())) break;
       const before = await page.getByTestId("line").locator(".cell.you").count() + await page.getByTestId("bench").locator(".cell.you").count();
-      await press("1");
+      const inLine = await page.getByTestId("line").locator(".cell.you").count();
+      if (inLine >= 5) break;
+      await press("ArrowRight");
+      await press(String(inLine + 1));
       await settle();
       await gift();
       const after = await page.getByTestId("line").locator(".cell.you").count() + await page.getByTestId("bench").locator(".cell.you").count();
-      if (after === before && n === 0 && round === 0) fail("1 didn't buy the first offer");
+      if (after === before && n === 0 && round === 0) fail("→ then 1 didn't buy the first offer");
     }
     const lineCards = () => tid("line").locator(".cell.you");
     // Arrange (round 1 on): Tab to a unit, Enter selects it, → moves it, B benches it.
@@ -175,9 +178,9 @@ async function fullRun(lang) {
       const first = await unitName(lineCards().nth(0));
       if (await tabTo("line-0")) {
         expect("a focused unit shows its ring", (await k.ringOn("line-0")) === "");
-        expect("Tab to a unit reads it in the inspector", ((await tid("inspector").textContent()) ?? "").includes(first));
         await press("Enter");
         await settle();
+        expect("Enter on a unit reads it in the inspector", ((await tid("inspector").textContent()) ?? "").includes(first));
         expect("Enter selects the unit", (await tid("line-0").getAttribute("class"))?.includes("selected"));
         await press("ArrowRight");
         await settle();
@@ -206,6 +209,9 @@ async function fullRun(lang) {
         await press("l");
         await settle();
         expect("L locks the chosen offer", (await page.locator('[data-testid^="offer-"] .lock-mark').count()) >= 1);
+        // A locked offer is put down: take it in hand again, then L unlocks it.
+        await tabTo("offer-0");
+        await press("Enter");
         await press("l");
         await settle();
         expect("L unlocks it", (await page.locator('[data-testid^="offer-"] .lock-mark').count()) === 0);
@@ -308,7 +314,21 @@ async function scenes(lang) {
       return i + 1;
     });
     k.expect("the awaken scene has a 3rd copy on offer", third > 0);
-    if (third > 0) await k.press(String(third));
+    // → walks to it, the digit of the twin's slot merges it there.
+    const twin = await k.page.evaluate(() => {
+      const name = (c) => c.querySelector(".name")?.textContent ?? "";
+      const two = new Set([...document.querySelectorAll('[data-testid^="line-"].cell.you, [data-testid^="bench-"].cell.you')].filter((c) => c.dataset.copies === "2").map(name));
+      const offers = [...document.querySelectorAll('[data-testid^="offer-"].cell')];
+      const o = offers.find((x) => x.classList.contains("owned") && !x.classList.contains("poor") && two.has(name(x)));
+      // The board's numbering: the line's slots 1–5, then the bench's.
+      const board = [...document.querySelectorAll('[data-testid^="line-"], [data-testid^="bench-"]')].filter((c) => !c.dataset.testid.endsWith("-empty"));
+      const at = o ? board.findIndex((c) => c.dataset.copies === "2" && name(c) === name(o)) : -1;
+      if (at < 0) return 0;
+      const bench = board[at].dataset.testid.startsWith("bench-");
+      return bench ? 5 + Number(board[at].dataset.testid.slice(6)) + 1 : Number(board[at].dataset.testid.slice(5)) + 1;
+    });
+    if (third > 0) for (let i = 0; i < third; i++) await k.press("ArrowRight");
+    if (third > 0 && twin > 0) await k.press(String(twin));
     await k.tid("gift-title").waitFor({ timeout: 10_000 }).catch(() => {});
     const gift = await k.tid("gift-title").isVisible().catch(() => false);
     k.expect("buying the 3rd copy by its number awakens (a gift opens)", gift || (await awoken()) > before);

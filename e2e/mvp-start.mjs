@@ -43,9 +43,10 @@ try {
     /** Buys the offer the coach points at, as a player does: a key, or tap the offer then its slot. */
     const buy = async (name, slot) => {
       const cell = page.locator(`[data-testid="offers"] [data-testid^="offer-"][data-name="${name}"]`);
-      const id = await cell.getAttribute("data-testid"); // offer-N
-      if (desk) await page.keyboard.press(String(Number(id.split("-")[1]) + 1));
-      else { await cell.click(); await tid(`line-${slot}-empty`).click(); }
+            // The table's way: the offer in hand (a tap), then its slot (a key or a tap).
+      await cell.click();
+      if (desk) await page.keyboard.press(String(slot + 1));
+      else await tid(`line-${slot}-empty`).click();
     };
 
     await page.goto(url, { timeout: 20_000 });

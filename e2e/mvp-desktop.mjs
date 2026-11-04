@@ -224,8 +224,11 @@ try {
       await page.keyboard.press("l");
       await settle();
       if (!(await locked(1))) errors.push("lock: L didn't lock the chosen offer");
+      // A locked offer is put down: tap it again and the inspector offers Unlock.
+      await offer(1).click();
       await page.getByTestId("inspector").getByTestId("lock").waitFor();
-      if (!(await page.getByTestId("inspector").getByTestId("lock").textContent()).startsWith("🔓 Unlock")) errors.push("lock: the locked offer isn't still in the inspector with Unlock");
+      if (!(await page.getByTestId("inspector").getByTestId("lock").textContent()).startsWith("🔓 Unlock")) errors.push("lock: the locked offer's inspector doesn't say Unlock");
+      await page.keyboard.press("Escape");
       // M5-6: the keys line moved to Codex › How to play; the L sits on the inspector's Lock (checked above).
       await shot("shop-locked");
       const g1 = await gold();
@@ -243,17 +246,16 @@ try {
       // The offers are pieces in cells (#1293): one row, each at least 112 px wide.
       { const box = await page.getByTestId("offers").locator(".cell").first().boundingBox(); if (!box || box.width < 112) errors.push(`shop offers: cell ${box ? Math.round(box.width) : "missing"}px wide, want ≥ 112`); }
       await onScreen("shop: Fight", page.getByTestId("fight"));
-      await onScreen("shop: inspector", page.getByTestId("inspector"));
       await onScreen("shop: last offer", page.getByTestId("offers").locator(".cell").last());
-      // Hover reads an offer in the inspector, with its Buy.
-      await page.getByTestId("offers").locator(".cell").first().hover();
+      // A tap on an offer reads it in the inspector, with its Buy (the table's inspector floats right of the lines).
+      await page.getByTestId("offers").locator(".cell").first().click();
       await page.getByTestId("inspector").getByTestId("unit-sheet").waitFor();
       await page.getByTestId("inspector").getByTestId("buy").waitFor();
-      await shot("shop-hover-offer"); await noOverlay("hover");
-      // The inspector is right of the board.
-      const [boardOffer, insp] = [await page.getByTestId("offers").boundingBox(), await page.getByTestId("inspector").boundingBox()];
-      if (!(insp.x >= boardOffer.x + boardOffer.width)) errors.push("shop: the inspector isn't right of the board");
-      if (Math.abs(insp.width - 380) > 2) errors.push(`shop: inspector ${Math.round(insp.width)}px wide, want 380`);
+      await shot("shop-offer-inspector"); await noOverlay("offer");
+      await onScreen("shop: inspector", page.getByTestId("inspector"));
+      const [lineBox, insp] = [await page.getByTestId("line").boundingBox(), await page.getByTestId("inspector").boundingBox()];
+      if (!(insp.x >= lineBox.x + lineBox.width)) errors.push("shop: the inspector covers the line");
+      await page.keyboard.press("Escape");
       // Double-click buys the first offer.
       const before = await lineCount();
       await page.getByTestId("offers").locator(".cell").first().dblclick();
@@ -281,10 +283,12 @@ try {
         continue;
       }
       const g0 = g;
-      await page.keyboard.press("1");
+      // →: the first offer in hand; the digit of the first empty slot buys it there.
+      await page.keyboard.press("ArrowRight");
+      await page.keyboard.press(String(n + 1));
       await settle();
-      if ((await gold()) === g0) { errors.push(`round ${round}: key 1 didn't buy`); break; }
-      await wantSfx("key 1 (buy)", /^(coin|merge|level-up)$/);
+      if ((await gold()) === g0) { errors.push(`round ${round}: → then ${n + 1} didn't buy`); break; }
+      await wantSfx("key → 1–5 (buy)", /^(coin|merge|level-up)$/);
       // A copy that awakens a unit brings a gift; its chooser (checked below) blocks the keys: skip it.
       await dropOwnGift();
     }
@@ -331,18 +335,17 @@ try {
       await page.getByTestId("run-menu").waitFor({ timeout: 2_000 }).catch(() => errors.push("Esc didn't open the run menu"));
       if (!(await page.getByTestId("run-menu").getByTestId("sound-toggle").count())) errors.push("sound: no Sound row in the run menu");
       await shot("run-menu");
-      // ☰ Codex, then the window narrows below 1024px: Back finds the shop in its phone layout.
+      // ☰ Codex opens as a window over the dimmed table; Back finds the table as it was, at any window size.
       await page.getByTestId("menu-codex").click();
       await page.getByTestId("codex-units").waitFor();
+      if (!(await page.locator("#under [data-testid=stage]").count())) errors.push("codex: the table isn't kept dimmed under the window");
       await page.setViewportSize({ width: 900, height: H });
       await page.waitForTimeout(200);
-      if (await page.getByTestId("inspector").count()) errors.push("codex at 900px: the inspector stays");
       await page.getByTestId("codex-back").click();
       await page.getByTestId("fight").waitFor();
-      if (await page.getByTestId("inspector").count()) errors.push("codex → 900px → Back: the shop kept its desktop layout");
+      if (!(await page.getByTestId("stage").count()) || (await page.locator("#under").count())) errors.push("codex → 900px → Back: the table isn't back");
       await page.setViewportSize({ width: W, height: H });
       await page.waitForTimeout(200);
-      if (!(await page.getByTestId("inspector").count())) errors.push("back at 1440px: the shop has no inspector");
       await page.keyboard.press("Escape");
       await page.getByTestId("run-menu").waitFor({ timeout: 2_000 }).catch(() => {});
       await page.keyboard.press("Escape");
@@ -469,13 +472,15 @@ try {
     // Rules v2 (#1049): the pair fuses only with a design; give it one (as the
     // night batch would), claimed by this player.
     await call("POST", "/dev/codex-pair", { a: run.line.find((u) => u.form === "awoken").unitId, b: almost.unitId, state: "discovered" }, fuser.id);
-    // Hovering the offer shows "Awakens!" in the inspector.
-    await page.getByTestId(`offer-${run.offers[key - 1].slot}`).hover();
+    // A gift still waiting in this run opens over the shop: skip it first.
+    await dropOwnGift();
+    // Tapping the offer shows "Awakens!" in the inspector.
+    await page.getByTestId(`offer-${run.offers[key - 1].slot}`).click();
     await page.getByTestId("inspector").getByTestId("buy-preview").waitFor();
     if (!/Awakens/.test(await page.getByTestId("inspector").getByTestId("buy-preview").textContent())) errors.push("awaken preview: no 'Awakens!' in the inspector");
     await shot("awaken-preview");
-    await page.mouse.move(5, H - 5);
-    await page.keyboard.press(String(key));
+    // The slot digit of the twin it merges into.
+    await page.keyboard.press(String(run.line.findIndex((u) => u.uid === almost.uid) + 1));
     await page.getByTestId("gift-title").waitFor();
     await wantSfx("the awakening copy", /^level-up$/);
     await skipGift();
@@ -511,7 +516,7 @@ try {
       await page.keyboard.press("Escape");
       await page.getByTestId("fusion-reveal").waitFor({ state: "detached" });
     }
-    await page.getByTestId("line").locator(".cell.fused").hover();
+    await page.getByTestId("line").locator(".cell.fused").click();
     await page.getByTestId("inspector").getByTestId("unit-sheet").waitFor();
     if (!/discovered by (you|@\S+)/.test(await page.getByTestId("inspector").textContent())) errors.push("fused: no discovery credit in the inspector");
     if ((await page.getByTestId("bench").locator(".cell.you").count()) !== 0) errors.push("bench: the fused bench unit is still on the bench");
@@ -534,14 +539,14 @@ try {
   if (await page.getByTestId("play").count()) await page.getByTestId("play").click();
   await page.getByTestId("fight").waitFor();
   await shot("shop-1024");
-  if (!(await page.getByTestId("inspector").count())) errors.push("1024px: no inspector");
+  if (!(await page.getByTestId("stage").count())) errors.push("1024px: no table");
   const w1024 = await page.evaluate(() => document.documentElement.scrollWidth);
   if (w1024 > 1024) errors.push(`1024px: horizontal scroll (${w1024}px)`);
   const line1024 = await page.getByTestId("line").locator(".cell").evaluateAll((els) => new Set(els.map((e) => Math.round(e.getBoundingClientRect().top))).size);
   if (line1024 !== 1) errors.push("1024px: the line wraps");
   await page.setViewportSize({ width: 1023, height: 768 });
   await page.waitForTimeout(200);
-  if (await page.getByTestId("inspector").count()) errors.push("1023px: the inspector shows on the phone layout");
+  if (!(await page.getByTestId("stage").count())) errors.push("1023px: no table");
   await shot("shop-1023");
   /** M5-4 (#892): the fight plays on the run board. The run's track (its
    * dots and the Crown), hearts and gold stay in the top bar; the fight

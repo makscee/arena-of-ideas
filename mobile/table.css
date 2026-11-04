@@ -1,0 +1,229 @@
+/* The table (arena#28, mission #26 move 1): the shop as one fixed stage. Everything inside
+ * `.stage` is laid out in stage pixels (L: 1280×720, P: 390×844); ui/stage.ts scales the
+ * stage to the window, so these sizes are the design's own. Landscape text is 18px and up
+ * on the stage (800×450 is 0.625 of it: 11px and up there). */
+
+:is(#app[data-screen="shop"], #under) {
+  position: fixed; inset: 0; max-width: none; min-height: 0; margin: 0; padding: 0; display: block; overflow: hidden; gap: 0;
+  background:
+    radial-gradient(ellipse 34% 30% at 50% 36%, rgba(240, 194, 75, 0.1), transparent 70%),
+    radial-gradient(ellipse 30% 40% at 0% 34%, rgba(63, 185, 160, 0.16), transparent 70%),
+    radial-gradient(ellipse 30% 40% at 100% 34%, rgba(224, 122, 134, 0.16), transparent 70%),
+    radial-gradient(ellipse 62% 30% at 50% 42%, #3b3058 0%, #2c2444 55%, transparent 75%),
+    linear-gradient(180deg, #16111f 0%, #211a30 30%, #2a2240 52%, #1b1529 70%, #100c18 100%);
+  user-select: none; -webkit-user-select: none;
+}
+:is(#app[data-screen="shop"], #under) .stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+:is(#app[data-screen="shop"], #under) .stage.L { width: 1280px; height: 720px; }
+:is(#app[data-screen="shop"], #under) .stage.P { width: 390px; }
+:is(#app[data-screen="shop"], #under) .stage > * { position: absolute; margin: 0; }
+
+/* HUD plates */
+:is(#app[data-screen="shop"], #under) .tb-hud { left: 16px; right: 16px; top: 12px; height: 56px; display: flex; align-items: center; gap: 12px; z-index: 6; }
+:is(#app[data-screen="shop"], #under) .tb-hud .hud-gap { flex: 1; }
+:is(#app[data-screen="shop"], #under) .plate { display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 14px; background: linear-gradient(#3d3360, #2c2442); border: 4px solid var(--outline); border-radius: 16px; box-shadow: 0 5px 0 var(--outline), inset 0 2px 0 rgba(255, 255, 255, 0.1); }
+:is(#app[data-screen="shop"], #under) .plate.menu, :is(#app[data-screen="shop"], #under) .plate.help { padding: 0 6px; }
+:is(#app[data-screen="shop"], #under) .plate button { background: none; border: 0; box-shadow: none; color: var(--paper); height: 44px; min-width: 44px; min-height: 44px; padding: 0 10px; font: 400 26px/1 var(--font-head); display: inline-flex; align-items: center; gap: 8px; }
+:is(#app[data-screen="shop"], #under) .plate button.small { font-size: 22px; }
+:is(#app[data-screen="shop"], #under) .plate button.new { color: var(--action); font-size: 18px; }
+:is(#app[data-screen="shop"], #under) .plate kbd { font: 600 18px/1 var(--font-body); border: 2px solid currentColor; border-radius: 6px; padding: 2px 6px 3px; opacity: 0.75; }
+:is(#app[data-screen="shop"], #under) .plate .track { padding: 0; background: none; border: 0; gap: 7px; }
+:is(#app[data-screen="shop"], #under) .plate .track-dot { width: 28px; height: 28px; font-size: 18px; background: #1a1428; color: var(--muted); }
+:is(#app[data-screen="shop"], #under) .plate .track-dot.win { background: var(--you); color: var(--outline); }
+:is(#app[data-screen="shop"], #under) .plate .track-dot.loss { background: var(--them); color: var(--outline); }
+:is(#app[data-screen="shop"], #under) .plate .track-dot.draw { background: var(--soft); color: var(--outline); }
+:is(#app[data-screen="shop"], #under) .plate .track-dot.now { width: 40px; height: 40px; transform: none; background: var(--action); color: var(--outline); font-size: 22px; box-shadow: 0 0 0 3px rgba(240, 194, 75, 0.3); }
+:is(#app[data-screen="shop"], #under) .plate .track-dot.crown { width: 40px; height: 32px; padding: 0; border-radius: 9px; background: #4a3a14; font-size: 18px; }
+:is(#app[data-screen="shop"], #under) .plate .track-dot.crown.now { background: var(--action); }
+:is(#app[data-screen="shop"], #under) .plate .round-pill { font: 400 24px/1 var(--font-head); color: var(--paper); background: none; border: 0; box-shadow: none; padding: 0; white-space: nowrap; }
+:is(#app[data-screen="shop"], #under) .plate .heart-icons { gap: 4px; }
+:is(#app[data-screen="shop"], #under) .plate .heart-icons .heart { width: 30px; height: 30px; }
+:is(#app[data-screen="shop"], #under) .plate .gold { font: 400 30px/1 var(--font-head); color: var(--action); }
+:is(#app[data-screen="shop"], #under) .plate .coin { display: block; width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffe9a6, #f0c24b 55%, #bf7425); border: 3px solid var(--outline); flex: none; }
+
+/* Both lines */
+:is(#app[data-screen="shop"], #under) .tb-side { z-index: 4; font: 400 21px/1.15 var(--font-head); letter-spacing: 0.5px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+:is(#app[data-screen="shop"], #under) .tb-side .label { font: 400 21px/1.15 var(--font-head); color: var(--you); text-transform: uppercase; letter-spacing: 0.5px; }
+:is(#app[data-screen="shop"], #under) .tb-side.them .next-opp { font: 500 18px/1.25 var(--font-body); color: var(--them); white-space: normal; max-width: 176px; }
+:is(#app[data-screen="shop"], #under) .tb-side.them .next-opp .who { font-size: 22px; display: block; }
+:is(#app[data-screen="shop"], #under) .tb-side .pin { max-width: 176px; }
+:is(#app[data-screen="shop"], #under) .tb-side button.pin-btn { max-width: 176px; font-size: 18px; min-height: 36px; padding: 2px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+:is(#app[data-screen="shop"], #under) .tb-side .pin .dim { font-size: 18px; }
+:is(#app[data-screen="shop"], #under) .tb-row { display: grid; grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); gap: 0; align-items: start; z-index: 3; }
+:is(#app[data-screen="shop"], #under) .tb-their { z-index: 3; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: start; }
+:is(#app[data-screen="shop"], #under) .tb-their .crown-foe { grid-column: 1 / -1; padding: 0; }
+:is(#app[data-screen="shop"], #under) .tb-their .tb-their-cells { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: start; }
+:is(#app[data-screen="shop"], #under) .tb-their .foe-wait { font-size: 18px; padding-top: 30px; }
+:is(#app[data-screen="shop"], #under) .tb-their .cell.ghost { opacity: 0.55; cursor: default; pointer-events: none; }
+:is(#app[data-screen="shop"], #under) .tb-their .cell.ghost .cell-well { font-size: 26px; border-style: dotted; }
+:is(#app[data-screen="shop"], #under) .tb-line .cell-well, :is(#app[data-screen="shop"], #under) .tb-bench .cell-well { font-size: 30px; border-width: 4px; }
+:is(#app[data-screen="shop"], #under) .tb-bench { --n: 3; }
+:is(#app[data-screen="shop"], #under) .tb-bench > .bench-label { position: absolute; right: 100%; margin-right: 14px; top: 20px; display: flex; flex-direction: column; gap: 4px; font: 400 21px/1.15 var(--font-head); letter-spacing: 0.5px; text-transform: uppercase; color: var(--dim); white-space: nowrap; text-align: right; }
+:is(#app[data-screen="shop"], #under) .tb-bench > .bench-label span:first-child { color: var(--paper); opacity: 0.75; }
+
+/* The tray */
+:is(#app[data-screen="shop"], #under) .tb-tray { z-index: 5; border: 4px solid var(--outline); border-radius: 24px; background: linear-gradient(180deg, #3d3360 0, #2f2747 18px, #2a2240 100%); box-shadow: 0 -2px 0 #5b4d85 inset, 0 6px 0 var(--outline), 0 -18px 40px rgba(0, 0, 0, 0.35); }
+:is(#app[data-screen="shop"], #under) .tb-tray::before { content: ""; position: absolute; left: 24px; right: 24px; top: -4px; height: 6px; border-radius: 0 0 6px 6px; background: var(--power); opacity: 0.85; }
+:is(#app[data-screen="shop"], #under) .tb-tray > * { position: absolute; margin: 0; }
+:is(#app[data-screen="shop"], #under) .tb-coach { background: var(--paper); color: var(--outline); border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 6px 0 var(--outline); padding: 12px 16px; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+:is(#app[data-screen="shop"], #under) .tb-coach.quiet { background: color-mix(in srgb, var(--paper) 88%, var(--panel)); }
+:is(#app[data-screen="shop"], #under) .tb-coach .hint { margin: 0; padding: 0; border: 0; background: none; color: var(--outline); font: 500 20px/1.3 var(--font-body); }
+:is(#app[data-screen="shop"], #under) .tb-coach .gift-banner { color: var(--outline); font: 500 20px/1.3 var(--font-body); background: none; border: 0; padding: 0; gap: 10px; flex-wrap: wrap; }
+:is(#app[data-screen="shop"], #under) .tb-coach .gift-banner button { font-size: 20px; min-height: 44px; }
+:is(#app[data-screen="shop"], #under) .tb-shop { z-index: 2; }
+:is(#app[data-screen="shop"], #under) .tb-shop > .label { font: 600 18px/1 var(--font-body); letter-spacing: 1.5px; color: var(--dim); text-transform: uppercase; padding-bottom: 4px; text-align: center; }
+:is(#app[data-screen="shop"], #under) .tb-offers { align-items: start; }
+:is(#app[data-screen="shop"], #under) .tb-go { display: flex; flex-direction: column; gap: 12px; }
+:is(#app[data-screen="shop"], #under) .tb-go button { min-height: 0; flex: none; border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 6px 0 var(--outline), inset 0 -5px 0 rgba(0, 0, 0, 0.12), inset 0 3px 0 rgba(255, 255, 255, 0.35); font: 400 26px/1 var(--font-head); display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+:is(#app[data-screen="shop"], #under) .tb-go button.reroll-btn { height: 58px; background: var(--paper); color: var(--outline); }
+:is(#app[data-screen="shop"], #under) .tb-go button.reroll-btn .cost-chip { font-size: 20px; padding: 2px 9px; }
+:is(#app[data-screen="shop"], #under) .tb-go button.primary { flex: 1; background: var(--action); color: var(--outline); font-size: 40px; position: relative; flex-wrap: wrap; align-content: center; }
+:is(#app[data-screen="shop"], #under) .tb-go button.primary:disabled, :is(#app[data-screen="shop"], #under) .tb-go button.reroll-btn:disabled { background: #4a4068; color: #8a7fae; }
+:is(#app[data-screen="shop"], #under) .tb-go button.primary .fight-warn { flex-basis: 100%; font: 600 18px/1.1 var(--font-body); text-align: center; }
+:is(#app[data-screen="shop"], #under) .tb-go kbd { font: 600 18px/1 var(--font-body); border: 2px solid currentColor; border-radius: 6px; padding: 2px 6px 3px; opacity: 0.6; }
+
+/* The inspector floats over the table: tap any unit and it reads its rule and whose idea it was */
+:is(#app[data-screen="shop"], #under) .tb-insp { z-index: 20; background: var(--paper); color: var(--outline); border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 8px 0 var(--outline), 0 20px 60px rgba(0, 0, 0, 0.6); padding: 12px 16px 14px; overflow-y: auto; overscroll-behavior: contain; font-size: 18px; }
+:is(#app[data-screen="shop"], #under) .tb-insp[hidden] { display: none; }
+:is(#app[data-screen="shop"], #under) .tb-insp .dim, :is(#app[data-screen="shop"], #under) .tb-insp .small, :is(#app[data-screen="shop"], #under) .tb-insp .label { color: #5e5280; font-size: 18px; }
+:is(#app[data-screen="shop"], #under) .tb-insp .actions { flex-wrap: wrap; gap: 8px; }
+:is(#app[data-screen="shop"], #under) .tb-insp button { font-size: 18px; min-height: 44px; }
+:is(#app[data-screen="shop"], #under) .stage > .error { z-index: 30; left: 50%; transform: translateX(-50%); top: 74px; max-width: 70%; padding: 6px 14px; background: var(--paper); color: #8e1f33; border: 3px solid var(--outline); border-radius: 12px; box-shadow: 0 4px 0 var(--outline); font: 600 18px/1.25 var(--font-body); pointer-events: none; }
+:is(#app[data-screen="shop"], #under) .stage > .error:empty { display: none; }
+:is(#app[data-screen="shop"], #under) .cell.selected { background: color-mix(in srgb, var(--action) 14%, transparent); box-shadow: inset 0 0 0 3px var(--action); }
+
+/* Landscape stage, 1280×720 */
+:is(#app[data-screen="shop"], #under) .stage.L .tb-side.them { left: 24px; top: 92px; width: 184px; }
+:is(#app[data-screen="shop"], #under) .stage.L .tb-side.you { left: 24px; top: 236px; width: 184px; }
+:is(#app[data-screen="shop"], #under) .stage.L .tb-their { left: 210px; top: 74px; width: 660px; height: 112px; }
+:is(#app[data-screen="shop"], #under) .stage.L .tb-line { left: 210px; top: 192px; width: 660px; --n: 5; }
+:is(#app[data-screen="shop"], #under) .stage.L .tb-bench { left: 210px; top: 360px; width: 396px; }
+:is(#app[data-screen="shop"], #under) .stage.L .tb-tray { left: 14px; right: 14px; top: 494px; bottom: 12px; }
+:is(#app[data-screen="shop"], #under) .stage.L .tb-coach { left: 16px; top: 16px; width: 410px; bottom: 22px; }
+:is(#app[data-screen="shop"], #under) .stage.L .tb-shop { left: 440px; top: 6px; width: 470px; }
+:is(#app[data-screen="shop"], #under) .stage.L .tb-go { right: 18px; top: 16px; bottom: 22px; width: 308px; }
+:is(#app[data-screen="shop"], #under) .stage.L .tb-insp { left: 892px; top: 84px; width: 372px; max-height: 400px; padding-bottom: 8px; }
+
+/* Portrait stage, 390×844 */
+:is(#app[data-screen="shop"], #under) .stage.P .tb-hud { left: 8px; right: 8px; top: 8px; height: 48px; gap: 6px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate { height: 48px; padding: 0 8px; border-width: 3px; border-radius: 14px; box-shadow: 0 4px 0 var(--outline), inset 0 2px 0 rgba(255, 255, 255, 0.1); }
+:is(#app[data-screen="shop"], #under) .stage.P .plate button { height: 44px; min-width: 44px; min-height: 44px; padding: 0 6px; font-size: 22px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate button.new { font-size: 14px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate .round-pill { font-size: 19px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate .heart-icons { gap: 1px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate .heart-icons .heart { width: 20px; height: 20px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate .gold { font-size: 24px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate .coin { width: 22px; height: 22px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-side { font-size: 15px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-side .label { font-size: 16px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-side.them { left: 14px; top: 66px; right: 14px; flex-direction: row; align-items: center; gap: 8px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-side.them .next-opp { font-size: 14px; max-width: none; flex: none; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-side.them .next-opp .who { font-size: 15px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-side.them .pin, :is(#app[data-screen="shop"], #under) .stage.P .tb-side.them button.pin-btn { max-width: 150px; min-width: 0; flex: 0 1 auto; font-size: 12px; min-height: 28px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-side.you { left: 14px; top: 208px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-their { left: 12px; top: 90px; width: 366px; height: 112px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-line { left: 12px; top: 232px; width: 366px; --n: 5; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-bench { left: 12px; top: 372px; width: 220px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-bench > .bench-label { right: auto; left: calc(100% + 10px); top: 28px; flex-direction: column; text-align: left; font-size: 14px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-tray { left: 8px; right: 8px; top: 470px; bottom: 8px; border-width: 3px; border-radius: 20px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-coach { left: 10px; right: 10px; top: 12px; height: 84px; border-width: 3px; border-radius: 14px; padding: 8px 12px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-coach .hint, :is(#app[data-screen="shop"], #under) .stage.P .tb-coach .gift-banner { font-size: 15px; line-height: 1.25; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-shop { left: 10px; right: 10px; top: 106px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-shop > .label { font-size: 13px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-go { left: 10px; right: 10px; bottom: 14px; height: 60px; flex-direction: row; gap: 10px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-go button { border-width: 3px; border-radius: 16px; box-shadow: 0 5px 0 var(--outline), inset 0 -4px 0 rgba(0, 0, 0, 0.12), inset 0 3px 0 rgba(255, 255, 255, 0.35); font-size: 20px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-go button.reroll-btn { height: auto; width: 120px; font-size: 18px; flex-wrap: wrap; gap: 4px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-go button.reroll-btn .cost-chip { font-size: 13px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-go button.primary { font-size: 30px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-insp { left: 8px; right: 8px; bottom: 90px; max-height: 430px; border-width: 3px; padding: 10px 12px 12px; font-size: 15px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-insp .dim, :is(#app[data-screen="shop"], #under) .stage.P .tb-insp .small, :is(#app[data-screen="shop"], #under) .stage.P .tb-insp .label { font-size: 13px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-insp button { font-size: 15px; min-height: 44px; }
+
+:is(#app[data-screen="shop"], #under) .stage.P .tb-help { right: 12px; top: 200px; height: 34px; padding: 0 4px; border-width: 3px; border-radius: 12px; box-shadow: 0 3px 0 var(--outline); z-index: 4; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-help button { height: 28px; min-height: 28px; min-width: 32px; font-size: 18px; padding: 0 8px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-help button.new { font-size: 13px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-hud .plate.round { padding: 0 10px; }
+
+/* The landscape stage is drawn at 1.6× what 800×450 shows: the piece's small chips grow to match */
+:is(#app[data-screen="shop"], #under) .stage.L .pc-tier { height: 28px; min-width: 30px; font-size: 18px; line-height: 23px; border-radius: 8px; }
+:is(#app[data-screen="shop"], #under) .stage.L .pc-price { height: 28px; font-size: 18px; border-radius: 14px; padding: 0 9px 0 4px; }
+:is(#app[data-screen="shop"], #under) .stage.L .pc-price .coin { width: 18px; height: 18px; }
+:is(#app[data-screen="shop"], #under) .stage.L .pc-flag, :is(#app[data-screen="shop"], #under) .stage.L .pc-lock { font-size: 18px; }
+:is(#app[data-screen="shop"], #under) .stage.L .pc-pips u { width: 13px; height: 13px; }
+:is(#app[data-screen="shop"], #under) .stage.L .pc-meta { gap: 6px; }
+:is(#app[data-screen="shop"], #under) .stage.L .tb-insp :is(.ik-name, .sheet-form, .t-glue, .tw, .ti, .sheet-credit, .credit-line, .num, .rates, [data-testid="unit-rates"]) { font-size: 18px; }
+:is(#app[data-screen="shop"], #under) .stage.L .tb-insp .pc-tab { height: auto; min-height: 26px; }
+:is(#app[data-screen="shop"], #under) .stage.L .pin-emoji { font-size: 18px; }
+:is(#app[data-screen="shop"], #under) .tb-insp .sheet-xl-grid { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 4px 12px; align-items: start; }
+:is(#app[data-screen="shop"], #under) .tb-insp .sheet-hero > .pc { transform: scale(0.72); transform-origin: 0 0; }
+:is(#app[data-screen="shop"], #under) .tb-insp .sheet-hero { overflow: visible; min-width: 0; }
+:is(#app[data-screen="shop"], #under) .tb-insp .sheet-hero { padding-top: 22px; }
+:is(#app[data-screen="shop"], #under) .tb-insp { display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+:is(#app[data-screen="shop"], #under) .tb-insp .insp-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 8px; }
+:is(#app[data-screen="shop"], #under) .tb-insp > .row { flex: none; }
+:is(#app[data-screen="shop"], #under) .tb-insp .insp-body > .label { margin-bottom: 4px; padding-right: 40px; }
+:is(#app[data-screen="shop"], #under) .tb-go button.primary { flex-direction: column; flex-wrap: nowrap; gap: 2px; }
+:is(#app[data-screen="shop"], #under) .tb-go button.primary .fight-warn { flex-basis: auto; background: none; border: 0; padding: 0; margin: 0; font: 600 18px/1.1 var(--font-body); color: var(--outline); text-shadow: none; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-go button.primary.half-empty { font-size: 24px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-go button.primary .fight-warn { font-size: 13px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-insp { max-height: 300px; }
+
+:is(#app[data-screen="shop"], #under) .stage.L .tb-tray.many .tb-coach { width: 300px; }
+:is(#app[data-screen="shop"], #under) .stage.L .tb-tray.many .tb-shop { left: 330px; width: 640px; }
+:is(#app[data-screen="shop"], #under) .stage.L .tb-tray.many .tb-go { width: 250px; }
+:is(#app[data-screen="shop"], #under) .stage.L .tb-tray.many .tb-coach .hint { font-size: 18px; }
+
+/* Codex and Workshop: windows over the dimmed table */
+#under { position: fixed; inset: 0; z-index: 1; filter: blur(3px) brightness(0.45); pointer-events: none; }
+body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="forge"] {
+  position: fixed; inset: 18px 24px 16px; z-index: 10; max-width: none; min-height: 0; margin: 0; overflow-y: auto; overscroll-behavior: contain;
+  border: 4px solid var(--outline); border-radius: 26px; background: linear-gradient(180deg, #3a3058, #261f38 120px, #211a31);
+  box-shadow: 0 8px 0 var(--outline), 0 30px 80px rgba(0, 0, 0, 0.7);
+}
+@media (max-width: 600px) { body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="forge"] { inset: 6px; border-width: 3px; border-radius: 20px; } }
+
+:is(#app[data-screen="shop"], #under) .tb-insp { position: absolute; }
+:is(#app[data-screen="shop"], #under) .tb-insp button.insp-x { position: absolute; top: 2px; right: 4px; z-index: 2; min-width: 44px; width: 44px; height: 40px; min-height: 40px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; color: #5e5280; font: 600 20px/1 var(--font-body); }
+
+/* Portrait, 48px taps: the stage may be scaled to 0.92 on a 360-wide phone, and a tap stays 44px */
+:is(#app[data-screen="shop"], #under) .stage.P .plate { height: 52px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate button, :is(#app[data-screen="shop"], #under) .stage.P .tb-insp button { min-height: 48px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate button { height: 48px; min-width: 48px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-hud { height: 52px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-help { height: 40px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-help button { height: 40px; min-height: 48px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-coach .gift-banner button { min-height: 48px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-go { height: 64px; }
+/* The compact portrait table (a window under 780 stage px tall): no wells for the hidden team, the tray comes up */
+:is(#app[data-screen="shop"], #under) .stage.P.compact .tb-their:not(:has(.crown-foe)) { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-side.you { top: 98px; }
+:is(#app[data-screen="shop"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-help { top: 90px; }
+:is(#app[data-screen="shop"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-line { top: 128px; }
+:is(#app[data-screen="shop"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-bench { top: 262px; }
+:is(#app[data-screen="shop"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-tray { top: 364px; }
+:is(#app[data-screen="shop"], #under) .stage.P.compact .tb-coach { height: 66px; padding: 6px 12px; }
+:is(#app[data-screen="shop"], #under) .stage.P.compact .tb-shop { top: 90px; }
+:is(#app[data-screen="shop"], #under) .stage.P.compact .tb-insp { max-height: 250px; bottom: 96px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-side.them .next-opp .who { display: inline; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-insp .actions button { min-width: 48px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-hud { gap: 4px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate { gap: 6px; padding: 0 6px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate.menu { padding: 0 2px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate .heart-icons .heart { width: 18px; height: 18px; }
+:is(#app[data-screen="shop"], #under) .stage.P .plate .gold { font-size: 22px; }
+:is(#app[data-screen="shop"], #under) .tb-insp .sheet-hero { padding-left: 12px; }
+
+/* The first run's coach (arena#31) is the tray's card */
+:is(#app[data-screen="shop"], #under) .tb-coach:has(> .coach) { padding: 0; background: none; border: 0; box-shadow: none; border-radius: 0; overflow: visible; justify-content: stretch; }
+:is(#app[data-screen="shop"], #under) .tb-coach > .coach { flex: 1; justify-content: center; margin: 0; padding: 12px 16px; border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 6px 0 var(--outline); font-size: 18px; line-height: 1.25; gap: 4px; min-height: 0; }
+:is(#app[data-screen="shop"], #under) .tb-coach > .coach .coach-step { display: block; font-size: 18px; }
+:is(#app[data-screen="shop"], #under) .tb-coach > .coach .coach-pair { display: flex; }
+:is(#app[data-screen="shop"], #under) .tb-coach > .coach .coach-chain { display: none; }
+:is(#app[data-screen="shop"], #under) .tb-coach > .coach .coach-text b { font-size: 18px; }
+:is(#app[data-screen="shop"], #under) .tb-coach > .coach .coach-by { display: block; margin: 2px 0 0; font-size: 18px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-coach > .coach { padding: 6px 10px; border-width: 3px; border-radius: 14px; font-size: 14px; gap: 2px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-coach > .coach .coach-step { font-size: 12px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-coach > .coach .coach-pair { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-coach > .coach .coach-chain { display: inline; font-weight: 800; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-coach > .coach .coach-text b { font-size: 14px; }
+:is(#app[data-screen="shop"], #under) .stage.P .tb-coach > .coach .coach-by { font-size: 12px; display: inline; margin-left: 6px; }
