@@ -940,6 +940,8 @@ try {
     await page.getByTestId("fight").waitFor();
     const almost = run.line.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === 2 && run.offers.some((o) => o.unitId === u.unitId));
     const slot = run.offers.find((o) => o.unitId === almost.unitId).slot;
+    // A gift this run still holds opens over the shop at once: skip it (the gift's own checks follow).
+    if (await page.getByTestId("gift-title").isVisible().catch(() => false)) await page.getByTestId("gift-skip").click();
     await shot("shop-almost"); await noHScroll("shop-almost");
     await page.getByTestId(`offer-${slot}`).click();
     await page.getByTestId("buy-preview").waitFor();
