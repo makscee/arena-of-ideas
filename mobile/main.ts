@@ -31,7 +31,7 @@ import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
 import { actionable, app, button, closable, desktopQuery, dismissable, h, hasKeys, isDesktop, keepFocus, keepScreen, keyboardLost, keyLabel, keyOf, onKeys, onRestore, overlay, screen, show, who, withKey } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
-import { startScreen } from "./screens/start";
+import { startScreen, type StartControl } from "./screens/start";
 import { guestName } from "./ui/guest-name";
 import { coachStep, coaching, type CoachStep } from "./ui/coach";
 import { coachState, coachView } from "./ui/coach-view";
@@ -481,19 +481,32 @@ function nameForm(tg: HTMLElement | null = null, mail = false): void {
 function firstScreen(register: (name: string) => Promise<void>, extra: (HTMLElement | null)[]): void {
   const err = errorLine();
   let going = false;
+  let screen: StartControl | null = null;
   const go = (name: string | null) => {
     if (going) return;
     going = true;
-    void guarded(err, async () => {
-      if (name !== null) {
-        await register(name);
-        return homeScreen();
+    // At once, before any request: a slow server must never look like a dead button.
+    err.textContent = "";
+    screen?.starting();
+    void (async () => {
+      try {
+        if (name !== null) {
+          await register(name);
+          return await homeScreen();
+        }
+        // A player made by an earlier press that failed later is reused, never made twice.
+        if (!api.player) await registerGenerated(register);
+        await playFirst();
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 401 && e.message.startsWith("unknown player")) api.forget();
+        err.textContent = e instanceof ApiError && e.message ? e.message : t("start.failed");
+        screen?.ready();
+      } finally {
+        going = false;
       }
-      await registerGenerated(register);
-      await playFirst();
-    }).finally(() => (going = false));
+    })();
   };
-  void getContent().then((c) => c, () => null).then((content) => startScreen({ content, onPlay: () => go(null), onName: (n) => go(n), extra, err }));
+  void getContent().then((c) => c, () => null).then((content) => (screen = startScreen({ content, onPlay: () => go(null), onName: (n) => go(n), extra, err })));
 }
 
 /** A generated name the server takes (a taken or crude one is rerolled). */
@@ -507,9 +520,12 @@ async function registerGenerated(register: (name: string) => Promise<void>): Pro
   }
 }
 
-/** PLAY: the new player's first run, at once (Home is skipped). */
+/** PLAY: the new player's first run, at once (Home is skipped). The run's start
+ * goes out beside Home and the health check: two round trips from PLAY to the
+ * table, not four (a refused start is told after Home's email check, which wins). */
 async function playFirst(): Promise<void> {
   void loadUnitRates();
+  const started = api.startRun().then((r) => ({ r }), (e: unknown) => ({ e }));
   const [home, content, health]: [HomeView, MvpContent, { codex?: boolean }] = await Promise.all([api.home(), getContent(), api.health().catch(() => ({}))]);
   codexOn = !!health.codex;
   // A server that wants an email first sends the player to add one (homeScreen does it).
@@ -517,7 +533,9 @@ async function playFirst(): Promise<void> {
   rules = home.rules;
   day = home.day;
   firstRun = !home.rating || home.rating.runs === 0;
-  shopScreen(await api.startRun(), content);
+  const run = await started;
+  if ("e" in run) throw run.e;
+  shopScreen(run.r, content);
 }
 
 // ---------- home ----------
@@ -1179,10 +1197,14 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   };
   /** A buy goes to the line while it has room (the audit's "slot 5 went to the bench" was a tap on the lit bench beside it): the bench takes one only once the line is full, or to merge into a twin there. */
   const benchWhileLineHasRoom = (o: Offer, slot: number) => slot >= L && run.line.length < L && twinSlot(o.unitId) !== slot;
+  /** The coach's one slot for the offer it points at: the first free line slot, which is right behind the anchor (arena#31: players put Medic in front of Gambler). Null: no limit. */
+  const coachSlotFor = (o: Offer): number | null => (coachNow && coachNow.step !== "fight" && coachNow.offer === o.slot ? run.line.length : null);
   const lightTarget = (el: HTMLElement, slot: number) => {
     const o = chosen !== null ? run.offers[chosen] : undefined;
     const u = unitAt(slot);
     if (o) {
+      const only = coachSlotFor(o);
+      if (only !== null && slot !== only) return;
       if (benchWhileLineHasRoom(o, slot)) return;
       if (buyBlock(o) && !(u && twinSlot(o.unitId) === slot && run.gold >= o.cost && !run.gift)) return;
       if (u && twinSlot(o.unitId) === slot) {
@@ -1213,9 +1235,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }
     return false;
   };
-  /** Fight with empty line slots and gold left warns (arena#15, #16): a first
+  /** While the coach speaks (it names the one slot to use), no other slot glows and Fight does not warn. Fight with empty line slots and gold left warns (arena#15, #16): a first
    * round lost with one or two units was the commonest unexplained loss. */
-  const wantsFill = () => coachNow?.step !== "fight" && !crown && !run.gift && run.line.length > 0 && run.line.length < L && run.offers.some((o) => o.cost <= run.gold);
+  const wantsFill = () => !coachNow && !crown && !run.gift && run.line.length > 0 && run.line.length < L && run.offers.some((o) => o.cost <= run.gold);
   const slotCard = (slot: number): HTMLElement => {
     const u = unitAt(slot);
     const onBench = slot >= L;
@@ -1385,6 +1407,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const buyAt = (o: Offer, to: number) => {
     const why = buyBlock(o);
     if (why) return void ((err.textContent = why), play("wrong"));
+    const only = coachSlotFor(o);
+    if (only !== null && to !== only && coachNow && coachNow.step !== "fight")
+      return void ((err.textContent = t(coachNow.step === "buy-first" ? "coach.slotFirst" : "coach.slotBehind", { anchor: coachNow.anchor, answer: coachNow.answer, n: only + 1 })), play("wrong"));
     const d = { kind: "buy", slot: o.slot } as const;
     /** The server's side of it: the buy, then the move to where it was dropped. */
     const buyThenMove = async () => {

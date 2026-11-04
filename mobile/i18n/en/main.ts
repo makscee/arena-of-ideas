@@ -100,6 +100,10 @@ export const main = {
   "coach.credit": "{answer} is {name}'s idea.",
   "coach.seed": "{answer} is one of the game's own units.",
   "coach.chain": "{anchor} → {answer}",
+  "start.starting": "Starting…",
+  "start.failed": "Couldn't start. Check your connection and press PLAY again.",
+  "coach.slotFirst": "{anchor} goes first: slot {n}",
+  "coach.slotBehind": "{answer} goes behind {anchor}: slot {n}",
   "name.enter": "Enter",
 
   "home.title": "ARENA",

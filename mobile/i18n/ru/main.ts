@@ -98,6 +98,10 @@ export const main = {
   "coach.credit": "{answer} — идея игрока {name}.",
   "coach.seed": "{answer} — один из юнитов самой игры.",
   "coach.chain": "{anchor} → {answer}",
+  "start.starting": "Запускаем…",
+  "start.failed": "Не получилось начать. Проверь соединение и нажми ИГРАТЬ ещё раз.",
+  "coach.slotFirst": "{anchor} идёт первым: слот {n}",
+  "coach.slotBehind": "{answer} встаёт за {anchor}: слот {n}",
   "name.enter": "Войти",
 
   "home.title": "АРЕНА",

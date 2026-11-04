@@ -2469,3 +2469,15 @@ button.play-start:active:not(:disabled) { translate: 0 4px; box-shadow: 0 2px 0 
 .bv-beam .bv-bn circle { fill: var(--bv-bc); stroke: var(--outline); stroke-width: 3; }
 .bv-beam .bv-bn text { fill: var(--outline); font-family: var(--font-head, inherit); font-weight: 400; }
 .bv-beam.draw .bv-bn { animation: bv-beam-head calc(0.22s / var(--bv-sp, 1)) step-end calc(var(--bv-bt, 0s) / var(--bv-sp, 1)) both; }
+
+/* ---- arena#31, fix round: PLAY answers at once, a loader before the script ---- */
+.start-progress { display: none; width: 220px; height: 8px; border: 2px solid var(--outline); border-radius: 6px; background: var(--ink-dim); overflow: hidden; }
+.start-progress i { display: block; width: 40%; height: 100%; background: var(--action); }
+.start.starting .start-progress { display: block; }
+.start.starting button.play-start { translate: 0 4px; box-shadow: 0 2px 0 var(--outline); animation: none; pointer-events: none; }
+.start.starting .start-name { opacity: 0.5; }
+@media (prefers-reduced-motion: no-preference) {
+  .start.starting .start-progress i { animation: start-bar 1s ease-in-out infinite alternate; }
+}
+@keyframes start-bar { from { translate: 0 0; } to { translate: 150% 0; } }
+.start .error:not(:empty) { color: var(--them); font-size: 15px; font-weight: 700; min-height: 20px; max-width: 420px; }
