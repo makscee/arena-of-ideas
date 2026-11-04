@@ -1310,7 +1310,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const step = !lit ? null : chosen !== null ? t("hint.tapSlotBuy") : pick.mode === "picked" ? t("hint.tapSlotMove") : null;
     const said = banner ? null : (pick.mode === "picked" ? shopHint() : null) ?? step ?? shopHint();
     // The first run's coach (arena#31) is the tray's card: its step, the pair, why.
-    hintSlot.replaceChildren(banner ?? (coachNow ? coachView(coachNow, content) : hint(said ?? (kb ? t("hint.buyDesk") : t("shop.howPhone")))));
+    hintSlot.replaceChildren(banner ?? (coachNow ? coachView(coachNow, content, { slot: run.line.length + 1, keys: kb }) : hint(said ?? (kb ? t("hint.buyDesk") : t("shop.howPhone")))));
     hintSlot.classList.toggle("quiet", !banner && !coachNow && said === null);
   };
 

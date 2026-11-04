@@ -440,3 +440,8 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="shop"], #under) .stage.P.compact .tb-shop { top: 92px; }
 /* Windows over the table are drawn on the scaled stage (arena#32): their small text reads 18px there, 11px at 800×450. */
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L :is(.card .copies, .card .copies.tag, .discovered, .seal-name, .seal-rule, .seal-flavour, .pc-mark) { font-size: 18px; }
+
+/* The coach's how-line (arena#31): how to do the step, dimmer than the step. The small stage drops the why-sentence to make room for it. */
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach > .coach .coach-how { display: block; margin-top: 2px; font-size: 18px; font-weight: 700; color: var(--ink-dim); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-coach > .coach .coach-how { font-size: 13px; margin-top: 0; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-coach > .coach .coach-why { display: none; }
