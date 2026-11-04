@@ -54,6 +54,7 @@ export const battle = {
   "battle.noOneStanding": "Никого не осталось.",
   "battle.totals.turn": "Итоги хода {n}",
   "battle.repeat": "Как в прошлом ходу: идёт в 2×",
+  "battle.chain.count": "ЦЕПЬ ×{n}",
   "battle.chain.summary": "Цепь из {n}:",
   "battle.chain.skip": "Пропуск цепи",
   "battle.chain.skipKey": "К концу цепи (S)",

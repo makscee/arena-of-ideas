@@ -10,6 +10,7 @@ import { mkdirSync } from "node:fs";
 import { createServer } from "node:net";
 import { launchChromium } from "./browser.mjs";
 import { replayBattle } from "./battle-ctl.mjs";
+import { chainProblems, readChain } from "./chain-checks.mjs";
 
 const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : undefined; };
@@ -107,10 +108,16 @@ try {
       await checkBattle("playing");
       await page.keyboard.press("Space");
       // Beat by beat to the end: statuses, result tags and chain steps appear along the way, none under 11 px.
+      let chained = 0;
       for (let i = 0; i < 40 && !(await tid("battle-step").isDisabled()); i++) {
         await page.keyboard.press("ArrowRight");
         if (i % 2 === 0) await checkBattle(`beat ${i + 1}`);
+        // The chain on the field (arena#30): one step's numbered wire, the tray lists the steps so far with CHAIN ×N.
+        const chain = await readChain(page);
+        if (chain.count >= 2) { chained++; if (chained === 1) await page.screenshot({ path: `${out}/battle-chain-${label}.png` }); }
+        for (const bad of chainProblems(chain)) fail(`chain, beat ${i + 1}: ${bad}`);
       }
+      if (!chained) fail("no chain was listed in the tray in the first fight (Gambler hit, Medic answers)");
       await replayBattle(page);
       await page.waitForTimeout(600);
       if ((await tid("battle-play").textContent()) === "❚❚") await page.keyboard.press("Space");

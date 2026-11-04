@@ -46,7 +46,7 @@ export function coachView(step: CoachStep, content: MvpContent): HTMLElement {
     { class: "coach", "data-testid": "coach", "data-step": step.step },
     h("div", { class: "coach-step" }, t("coach.step", { n: STEP_OF[step.step], total: 3 })),
     h("div", { class: "coach-body" },
-      h("div", { class: "coach-pair", "aria-label": t("coach.chain", params) }, p(a, "you"), h("span", { class: "coach-arrow", "aria-hidden": "true" }, "→"), p(r, "shop")),
+      h("div", { class: "coach-pair", "aria-label": t("coach.chain", params) }, p(a, "you"), h("span", { class: "coach-wire", "data-testid": "coach-wire", "aria-hidden": "true" }, h("span", { class: "coach-wire-n" }, "1")), p(r, "shop")),
       h("div", { class: "coach-text" }, h("span", { class: "coach-chain", "aria-hidden": "true" }, t("coach.chain", params), " · "), h("b", {}, title), " ", why, credit ? h("div", { class: "coach-by dim" }, credit) : null),
     ),
   );
