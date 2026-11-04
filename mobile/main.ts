@@ -2214,10 +2214,11 @@ async function fightScreens(run: RunView, fight: FightResult, content: MvpConten
  * track on desktop), hearts and gold; the Crown has no gold. The phone's pill
  * names the round fought (`fought`), as the end card does. */
 function runBar(run: RunView, fought: RunView = run): HTMLElement[] {
+  const plate = (cls: string, ...kids: HTMLElement[]) => h("div", { class: `plate ${cls}` }, ...kids);
   return [
-    isDesktop() ? runTrack(run) : h("span", { class: "round-pill", "data-testid": "round" }, roundLabel(fought.round)),
-    heartIcons(run.hearts),
-    ...(run.phase === "crown" || run.round > rules.rounds ? [] : [h("span", { class: "gold", "data-testid": "gold" }, t("shop.gold", { n: run.gold }))]),
+    plate("round", orient() === "P" ? h("span", { class: "round-pill", "data-testid": "round" }, roundLabel(fought.round)) : runTrack(run)),
+    plate("hearts", heartIcons(run.hearts)),
+    ...(run.phase === "crown" || run.round > rules.rounds ? [] : [plate("coins", h("span", { class: "coin", "aria-hidden": "true" }), h("span", { class: "gold", "data-testid": "gold" }, t("shop.gold", { n: run.gold })))]),
   ];
 }
 

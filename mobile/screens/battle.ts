@@ -24,7 +24,8 @@ import { isChain, chainSummaryOf, chainSideText, FATIGUE_BANNER_MS, NO_ROOM, NO_
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { summonId } from "../../src/describe";
-import { card, formRich, summonById, summonSheet, summonText, unitSheet } from "../ui/card";
+import { card, creditOf, creditText, formRich, summonById, summonSheet, summonText, unitSheet } from "../ui/card";
+import { orient, stage as tableStage } from "../ui/stage";
 import { isMine, reportLink } from "../ui/report";
 import { lineToPiece, piece, PIECE_PX, whenTone, type PieceSize, type PieceUnit } from "../ui/piece";
 import { faceFallback, V2_FACE } from "../../src/mvp/face";
@@ -290,7 +291,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     setSpeedVar();
   };
 
-  const hud = h("div", { class: "hud" });
+  const hud = h("div", { class: "hud tb-hud", "data-testid": "hud" });
+  const plate = (cls: string, ...kids: (Node | null)[]) => h("div", { class: `plate ${cls}` }, ...kids);
+  /** The unit inspector floating over the table (arena#29): a tap on any unit reads its rule and whose idea it was. */
+  const inspector = h("aside", { class: "inspector tb-insp stack", "data-testid": "inspector", hidden: "" });
+  let inspected: string | null = null;
   // A run's fight keeps the run's ☰ (Codex, Rules, Title menu, Abandon), as the shop has it.
   const menuBtn = a.outro ? button("☰", () => openMenu(), "menu-btn", "menu-open") : null;
   if (menuBtn) {
@@ -393,7 +398,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   replayBtn.setAttribute("aria-label", tr("battle.replayAria"));
   // Desktop's keys, as the mockup lists them (the phone hides the line).
   const kbd = (k: string) => h("kbd", {}, keyLabel(k));
-  const keys = h("div", { class: "bv-keys dim", "data-testid": "battle-keys", "aria-hidden": "true" }, kbd(tr("battle.keys.space")), tr("battle.keys.pause"), kbd("←"), kbd("→"), tr("battle.keys.beat"), kbd("R"), tr("battle.keys.replay"));
+  const keys = h("div", { class: "bv-keys dim", "data-testid": "battle-keys", "aria-hidden": "true" }, kbd(tr("battle.keys.space")), tr("battle.keys.pause"), kbd("←"), kbd("→"), tr("battle.keys.beat"), kbd("R"), tr("battle.keys.replay"), kbd("E"), tr("battle.keys.end"), tr("battle.keys.tap"));
   const controls = h("div", { class: "row bv-controls" }, backBtn, playBtn, fwdBtn, speedBtn, endBtn, replayBtn, keys);
   // How long playback should take at 1× (the line-up plus every beat), for
   // the e2e to compare with what the screen takes.
@@ -475,7 +480,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     if (finished || atEnd()) return finish();
     setPlaying(true);
     trace = null;
-    docked = null;
+    closeInspector();
     landed = [];
     endingAt = null;
     playBtn.textContent = "❚❚";
@@ -501,6 +506,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   }
   /** Jumps to beat i, every wave landed. */
   function go(i: number): void {
+    closeInspector();
     hudTurn = null;
     ending = null;
     at = Math.max(-1, Math.min(beats.length - 1, i));
@@ -510,6 +516,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   }
   function openTrace(eventId: number, group: Change[] = []): void {
     pause();
+    closeInspector();
     trace = traceOf(log, eventId, name, sides);
     // Tagged names: Why's steps colour each unit by its own side (R2-17).
     chain = chainOf(log, eventId, { name: TAGGED, sides, whenOf });
@@ -571,6 +578,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** Jumps to the result: the last beat's board under the end card. */
   function finish(): void {
     pause();
+    closeInspector();
     hudTurn = null;
     finished = true;
     // The end sound plays once, the first time the card shows (played out,
@@ -588,6 +596,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** Plays from beat i (-1: the line-up), the end card put away. */
   function playFrom(i: number, holdTurnEnds = false): void {
     pause();
+    closeInspector();
     hudTurn = null;
     ending = null;
     holds = holdTurnEnds;
@@ -841,19 +850,16 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * how many units stand. `stage` is the line's box, read before a draw. */
   let stage = { w: 0, h: 0, cols: 5 };
   function pieceFit(compact: boolean): { size: PieceSize; px?: number } {
-    const phone = innerWidth < 600 && innerHeight > innerWidth;
-    // Six on a line keeps the names (cg-layout's battle-six): M drawn smaller; the phone's columns S.
-    const size: PieceSize = phone ? "S" : "M";
-    const fallback = phone ? (compact ? 44 : undefined) : compact ? (innerHeight < 520 ? 40 : 52) : innerHeight < 520 ? 46 : innerHeight < 700 ? 56 : undefined;
-    if (stage.h <= 0 || stage.w <= 0) return fallback === undefined ? { size } : { size, px: fallback };
-    // The phone: a column of five rows; landscape: one row of five or more slots.
-    const tall = phone ? stage.h / (compact ? stage.cols : 5) : stage.h;
-    const wide = phone ? stage.w : stage.w / (compact ? stage.cols : 5);
-    const cap = phone ? 64 : compact ? 60 : innerHeight >= 700 ? 96 : 76;
-    // A phone's line past five is one more row: the same piece, smaller (never XS: it drops PWR and HP).
+    // The table's stage sets the size, not the window: one line's box in stage pixels (arena#29).
+    const tall = orient() === "P";
+    const size: PieceSize = "M";
+    if (stage.h <= 0 || stage.w <= 0) return { size, px: tall ? (compact ? 40 : 52) : compact ? 60 : 84 };
+    const wide = stage.w / (compact ? stage.cols : 5);
+    const cap = tall ? 64 : compact ? 76 : 96;
+    // A line past five is one more slot across: the same piece, smaller (never XS: it drops PWR and HP).
     let px = 36;
     for (let s = cap; s >= 36; s--) {
-      if (boxHeight(size, s) <= tall - 4 && s * 1.4 <= wide) { px = s; break; }
+      if (boxHeight(size, s) <= stage.h - 4 && s * 1.4 <= wide) { px = s; break; }
     }
     return { size, px };
   }
@@ -1054,6 +1060,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       // "Full card" sits up here, not last: at 640 tall the last line went under the Close bar (R3-26).
       h("div", { class: "row spread bv-now-turn" }, h("div", { class: "label", "data-testid": "now-turn" }, tr("battle.now.thisBeat", { turn: shownTurn >= 1 ? tr("battle.turn", { n: shownTurn }) : tr("battle.battleStart") })), full),
       h("div", { class: "num", "data-testid": "now-stats" }, pwr, " · ", hp),
+      h("div", { class: "label" }, tr("battle.now.ability")),
+      h("div", { class: "sheet-form", "data-testid": "now-ability" }, ...ability),
+      entered && creditOf(entered.unitId) ? creditText(creditOf(entered.unitId)!) : null,
       h("div", { class: "label" }, tr("battle.now.statuses")),
       h(
         "div",
@@ -1070,8 +1079,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         }),
         !u.statuses.length && !u.silenced ? h("div", { class: "dim", "data-testid": "now-no-statuses" }, tr("battle.now.noStatuses")) : null,
       ),
-      h("div", { class: "label" }, tr("battle.now.ability")),
-      h("div", { class: "sheet-form", "data-testid": "now-ability" }, ...ability),
       base ? h("div", { class: "dim", "data-testid": "now-base" }, tr(summon ? "battle.now.enteredSummoned" : "battle.now.entered", { pwr: base.pwr, hp: base.hp })) : null,
     );
   }
@@ -1158,7 +1165,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const enter = enterOf.get(el);
     return h("div", { class: `bv-slot${enter ? " bv-enter" : ""}`, ...(enter ? { style: `--bv-t:${enter}` } : {}) }, el, triggerBadge(id, v), skullsOf.get(el) ?? null);
   }
-  /** A card tap (or one of its status chips): the unit's Now sheet, paused on this beat (R3-18). */
+  /** A card tap (or one of its status chips): the unit's inspector over the table, paused on this beat
+   * (R3-18, arena#29): its live numbers, its rule in words and whose idea it was. */
   function openUnit(id: string): void {
     pause();
     render();
@@ -1168,14 +1176,23 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       const fell = live ? undefined : shownBoard.graves[side].find((x) => x.id === id);
       const u = live ?? fell;
       if (!u) continue;
-      // A run's fight on desktop: the card shows in the docked column (M5-4).
-      if (a.outro && isDesktop()) {
-        trace = null;
-        docked = nowSheet(u, side, !live);
-        return void render();
-      }
-      return void closable(nowSheet(u, side, !live));
+      inspected = id;
+      inspector.replaceChildren(
+        button("✕", () => void closeInspector(), "insp-x", "inspector-close"),
+        h("div", { class: "insp-body" }, nowSheet(u, side, !live)),
+      );
+      inspector.hidden = false;
+      inspector.classList.toggle("by-them", side === them);
+      return;
     }
+  }
+  /** The inspector over the table; Esc and its ✕ put it away. */
+  function closeInspector(): boolean {
+    if (inspector.hidden) return false;
+    inspector.hidden = true;
+    inspector.replaceChildren();
+    inspected = null;
+    return true;
   }
   /** Whether a fallen unit still stands in its slot this beat (deadCard). */
   function showsDead(id: string, v: View): boolean {
@@ -1465,14 +1482,14 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     shownTurn = hudTurn ?? turn;
     const repeating = !finished && repeats.has(hudTurn ?? turn);
     hud.replaceChildren(
-      ...(menuBtn ? [menuBtn] : []),
+      ...(menuBtn ? [plate("menu", menuBtn)] : []),
+      // The run bar's plates (the round's track, hearts, gold) come from the run; without a run the round names itself.
       ...runBar(),
-      // The run bar names the round itself.
-      ...(a.outro?.bar ? [] : [h("span", {}, battle.kind === "crown" ? tr("battle.hud.crown") : battle.kind === "playoff" ? tr("battle.hud.playoff") : tr("battle.hud.round", { n: battle.round }))]),
-      h("span", { class: "dim who", "data-testid": "battle-vs", title: battle.opponent.name }, tr("battle.hud.vs", { name: battle.opponent.name })),
-      ...(a.outro?.bar ? [] : reportFoe()),
+      ...(a.outro?.bar ? [] : [plate("round", h("span", { class: "round-pill" }, battle.kind === "crown" ? tr("battle.hud.crown") : battle.kind === "playoff" ? tr("battle.hud.playoff") : tr("battle.hud.round", { n: battle.round })))]),
+      plate("vs", h("span", { class: "dim who", "data-testid": "battle-vs", title: battle.opponent.name }, tr("battle.hud.vs", { name: battle.opponent.name })), ...(a.outro?.bar ? [] : reportFoe())),
+      h("span", { class: "hud-gap" }),
       // A repeat turn's ⏩ is drawn by CSS, so the label's text stays "T7" and the row keeps its spacing.
-      h("span", { "data-testid": "battle-turn", ...(repeating ? { class: "bv-repeat", title: tr("battle.repeat"), "aria-label": `${turnLabel(hudTurn ?? turn)} · ${tr("battle.repeat")}` } : {}) }, turnLabel(hudTurn ?? turn)),
+      plate("turn", h("span", { "data-testid": "battle-turn", ...(repeating ? { class: "bv-repeat", title: tr("battle.repeat"), "aria-label": `${turnLabel(hudTurn ?? turn)} · ${tr("battle.repeat")}` } : {}) }, turnLabel(hudTurn ?? turn))),
     );
     clash.replaceChildren(clashMark, ...[triggerBadge("clash", v)].filter((x): x is HTMLElement => x !== null));
     drawBanner(v);
@@ -1608,7 +1625,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       if (kept) end.querySelectorAll<HTMLElement>(`[data-testid="${kept.id}"]`)[kept.i]?.focus();
       placeEnd();
     }
-    if (errBox) errBox.style.top = `${Math.round(hud.getBoundingClientRect().bottom + 4)}px`;
     backBtn.disabled = at < 0;
     fwdBtn.disabled = finished;
     endBtn.disabled = finished;
@@ -1851,7 +1867,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         if (b.from !== "clash" && !from) continue;
         const cx = (r: DOMRect) => r.left + r.width / 2;
         let p0: { x: number; y: number }, p1: { x: number; y: number }, c: { x: number; y: number };
-        const columns = !stacked && innerWidth < 600 && innerHeight > innerWidth;
+        const columns = false;
         if (columns) {
           // The phone's two columns (#1294): across, facing edges at the faces' middles;
           // within a column, a bow on its outer side.
@@ -2138,52 +2154,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     return document.createTextNode(t);
   }
 
-  /** The end card sits under the caption on the phone (its last line, "They
-   * win", stays readable) and under the HUD on desktop, as tall as what it
-   * holds and clear of the timeline; it scrolls inside itself when it runs
-   * long (R2-17). On a short phone screen (a phone on its side) the room
-   * under the caption is too small for the card, so it covers the caption
-   * (its own word says who won), else the board too. */
-  function placeEnd(): void {
-    if (end.style.display === "none" || !end.isConnected) return;
-    const gap = 8;
-    if (isDesktop()) {
-      // Over the lines, never over the caption's result line ("They win"): at
-      // 1024×768 it touched it (R3-26). A card taller than that scrolls.
-      const top = hud.getBoundingClientRect().bottom + 2 * gap;
-      const cap = caption.getBoundingClientRect();
-      // The v3 layout keeps the caption in the side rail, beside the end card: only a caption the card
-      // overlaps sideways bounds it (else the card's room was the caption's top minus the HUD: 0 px).
-      // The rail (caption, recent lines, controls) stands inside the board's column: the card keeps left of it.
-      const rail = document.querySelector(".bv-rail")?.getBoundingClientRect();
-      end.style.right = rail && rail.width > 0 ? `${Math.round(innerWidth - rail.left + 2 * gap)}px` : "";
-      const er = end.getBoundingClientRect();
-      const capOver = cap.height > 0 && cap.left < er.right && cap.right > er.left;
-      const bottom = Math.min(timeline.getBoundingClientRect().top, capOver ? cap.top : Infinity) - 2 * gap;
-      end.style.top = `${Math.round(top)}px`;
-      end.style.bottom = "auto";
-      end.style.maxHeight = `${Math.max(0, Math.round(bottom - top))}px`;
-    } else {
-      end.style.right = "";
-      // A narrow gap on the phone: every pixel goes to the three key moments.
-      // Never below the screen's foot, whatever the controls do (R2-17 batch E).
-      const bottom = Math.min(controls.getBoundingClientRect().top, innerHeight) - gap / 2;
-      const cap = caption.getBoundingClientRect();
-      // Its text, when a short screen squeezes the caption's box.
-      const text = caption.firstElementChild?.getBoundingClientRect().bottom ?? cap.bottom;
-      // The first that leaves the card room, each cutting nothing in half:
-      // under the caption, over it, under the HUD, the screen's top. At
-      // 360×640 the caption shrinks to its line once the card is up, and the
-      // card's spacing is tight, so three whole moments fit under it (R2-17 batch F).
-      const tops = [Math.max(cap.bottom, text) + gap / 2, cap.top, hud.getBoundingClientRect().bottom + gap / 2].filter((t) => t >= gap);
-      const top = tops.find((t) => bottom - t >= END_MIN_PX) ?? gap;
-      // It fills the room from its top down, so no card or "No one standing."
-      // peeks between the caption and a short card (390×844, R3-26).
-      end.style.top = `${Math.round(top)}px`;
-      end.style.bottom = `${Math.round(innerHeight - bottom)}px`;
-      end.style.maxHeight = `${Math.max(0, Math.round(bottom - top))}px`;
-    }
-  }
+  /** The end card is the tray's third job (arena#29): CSS lays it over the tray, nothing to place. */
+  function placeEnd(): void {}
   /** The phone's Why sheet (a trace) sits under the caption, down to the
    * control bar, so its top never cuts the caption in half and its last line
    * is in the sheet, scrolled to if long (R3-26); a short screen without that
@@ -2198,23 +2170,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     caption.style.translate = "";
   }
 
-  function placeSheet(): void {
-    if (isDesktop() || !trace) {
-      sheet.style.top = sheet.style.bottom = sheet.style.maxHeight = "";
-      return;
-    }
-    const gap = 8;
-    const bottom = Math.min(controls.getBoundingClientRect().top, innerHeight) - gap / 2;
-    const top = caption.getBoundingClientRect().bottom + gap / 2;
-    if (bottom - top < END_MIN_PX) {
-      sheet.style.top = sheet.style.bottom = sheet.style.maxHeight = "";
-      return;
-    }
-    // From under the caption, as tall as what it holds, never past the control bar.
-    sheet.style.top = `${Math.round(top)}px`;
-    sheet.style.bottom = "auto";
-    sheet.style.maxHeight = `${Math.round(bottom - top)}px`;
-  }
+  /** A traced change's Why is a window over the table (CSS places it). */
+  function placeSheet(): void {}
 
   function traceView(t: Trace): Node[] {
     const target = t.change ? name(t.change.unit) : "";
@@ -2386,39 +2343,29 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   }
   // The battle fills the screen and never scrolls: the beat list below your
   // line takes what room is left, and the control bar stays pinned at the foot.
-  show(
-    h(
-      "div",
-      { class: "bv-screen bv-v3" },
+  // The table (arena#29): the battle plays on the same stage as the shop. The HUD's plates on top, their line and
+  // yours in the middle, the tray at the foot: the event on screen and the last few, the controls, and, once it
+  // ends, the run's result. A tapped unit reads in the floating inspector; a traced change opens as a window.
+  const tray = h("div", { class: "tb-tray bt-tray", "data-testid": "tray" }, caption, recent, h("div", { class: "bv-below" }, ledger), controls, end);
+  const table = tableStage(
+    [
       hud,
-      // On the phone .bv-board is display: contents (the stacked rows as before);
-      // on desktop it lays your line left of the clash and theirs right, fronts in the middle.
-      h(
-        "div",
-        { class: "bv-board" },
-        // Where each front is (R2-17): on the phone both run front first from
-        // the left; on desktop the fronts meet in the middle.
-        // On the phone a run's fight names them here: its HUD row holds the run bar (M5-4).
-        h("div", { class: "label bv-lab-them" }, h("span", { class: "bv-dk" }, tr("battle.lab.frontLeft")), sideLabel(them), a.outro?.bar ? h("span", { class: "bv-lab-who", "data-testid": "battle-them-who" }, ` · ${owner(them)}`) : null, ...(a.outro?.bar ? reportFoe() : []), h("span", { class: "bv-ph" }, tr("battle.lab.frontFirst"))),
-        enemy,
-        h("div", { class: "bv-gap", "aria-hidden": "true" }),
-        banner,
-        clash,
-        mine,
-        h("div", { class: "label bv-lab-you" }, sideLabel(you), h("span", { class: "bv-ph" }, tr("battle.lab.frontFirst")), h("span", { class: "bv-dk" }, tr("battle.lab.frontRight"))),
-      ),
+      h("div", { class: "label tb-side them bv-lab-them" }, h("span", {}, sideLabel(them)), a.outro?.bar ? h("span", { class: "bv-lab-who", "data-testid": "battle-them-who" }, owner(them)) : null, ...(a.outro?.bar ? reportFoe() : [])),
+      enemy,
+      banner,
+      clash,
+      mine,
+      h("div", { class: "label tb-side you bv-lab-you" }, sideLabel(you)),
       timeline,
-      // The rail (#1294): the play-by-play (the event on screen big, the last
-      // few small) and the controls; on the phone it sits at the foot.
-      h("div", { class: "bv-rail" }, caption, recent, h("div", { class: "bv-below" }, ledger), controls),
-    ),
-    fx,
-    fxNums,
-    runs,
-    sheet,
-    end,
-    errBox,
+      tray,
+      sheet,
+      inspector,
+      errBox,
+    ],
+    () => { free(); battleScreen(a); },
   );
+  table.classList.add("bv-v3");
+  show(table, fx, fxNums, runs);
   screen("battle");
   addEventListener("resize", placeEnd, { signal: freed.signal });
   addEventListener("resize", placeRuns, { signal: freed.signal });
@@ -2449,8 +2396,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     if (keyOf(e) === "ArrowLeft") return back(), true;
     if (keyOf(e) === "ArrowRight") return forward(), true;
     if (keyOf(e) === "r") return replay(), true;
+    if (keyOf(e) === "e" && !finished) return finish(), true;
     if (keyOf(e) === "s" && inChain()) return skipChain(), true;
-    if (keyOf(e) === "Escape" && docked) return (docked = null), render(), true;
+    if (keyOf(e) === "Escape" && closeInspector()) return true;
     if (keyOf(e) === "Escape" && trace) return (trace = null), render(), true;
     if (keyOf(e) === "Escape" && a.outro) return openMenu(), true;
     if (keyOf(e) === "Escape") return leave(), true;

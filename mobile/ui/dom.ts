@@ -122,7 +122,7 @@ export function keepScreen(): () => void {
   const kept = keys;
   const y = window.scrollY;
   // The table stays where it is, dimmed behind the Codex and the Workshop, which open as windows over it (arena#28).
-  const under = name === "shop" ? h("div", { id: "under", "aria-hidden": "true" }, ...kids) : null;
+  const under = name === "shop" || name === "battle" ? h("div", { id: "under", "aria-hidden": "true" }, ...kids) : null;
   if (under) {
     document.body.append(under);
     document.body.classList.add("over-table");
