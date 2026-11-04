@@ -347,7 +347,11 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-controls button { border-width: 3px; border-radius: 14px; box-shadow: 0 4px 0 var(--outline); font-size: 20px; }
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-controls button[data-testid="battle-end"], :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-controls button[data-testid="battle-speed"], :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-controls button[data-testid="battle-next"] { font-size: 15px; }
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-controls .bv-keys { display: none; }
-:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end { padding: 8px 12px; border-radius: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end { padding: 8px 12px; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end > * { flex: none; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end > .bv-end-body { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end > .bv-end-actions { flex-direction: row; padding-top: 2px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end > .bv-end-actions button { flex: 1 1 0; min-width: 0; padding: 0 4px; }
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-end-top .bv-word { font-size: 32px; }
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-end-sub, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-lost-line, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-end-run { font-size: 13px; }
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-moment, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-moment-t, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-dmg, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-dmg .emoji, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .label { font-size: 13px; }
@@ -362,3 +366,16 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-line { grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)) !important; grid-template-rows: none !important; }
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 .bv-end .bv-dmg-list { order: 0; }
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-end-actions button { flex: 1 1 0; min-height: 0; }
+/* The compact portrait table (a window under 780 stage px tall, a 360×640 phone): the tray comes up, the lines keep a gap for the result tags */
+:is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 > .bv-line.theirs { top: 90px; height: 128px; }
+:is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 .tb-side.you.bv-lab-you { top: 240px; }
+:is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 > .bv-line.mine { top: 264px; height: 128px; }
+:is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 .tb-tray.bt-tray { top: 408px; }
+:is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 .bt-tray > button.bv-caption { min-height: 56px; }
+:is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 .bt-tray > .bv-recent { top: 96px; height: 90px; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-side.bv-lab-them, :is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-side.bv-lab-you { pointer-events: none; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-side a, :is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-side button { pointer-events: auto; }
+/* Portrait taps stay 44px on a 360-wide phone, where the stage is drawn at 0.92 */
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 button.bv-change { min-height: 48px; height: 48px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet button, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet [data-testid="why-step"], :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 button.bv-also-btn, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end button, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-ledger button { min-height: 48px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet button.bv-close, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet [data-testid="trace-close"] { min-width: 48px; }

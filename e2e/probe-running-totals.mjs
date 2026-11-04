@@ -14,6 +14,7 @@
 //   node e2e/probe-running-totals.mjs --url http://127.0.0.1:8927/arena/ [--out e2e/.shots/running-totals]
 import { mkdirSync } from "node:fs";
 import { launchChromium } from "./browser.mjs";
+import { replayBattle } from "./battle-ctl.mjs";
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const url = arg("--url");
@@ -134,7 +135,7 @@ for (const [label, viewport, mobile] of [["phone", { width: 360, height: 640 }, 
   seen.multi ||= mine.multi; seen.between += mine.between; seen.midDeath ||= mine.midDeath;
 
   // Paused: stepping shows the running sums of the beat on screen, and ← undoes a step's sums.
-  await page.getByTestId("battle-replay").click();
+  await replayBattle(page);
   await page.getByTestId("battle-play").click();
   let checked = 0;
   for (let k = 0; k < 80 && !(await page.getByTestId("battle-step").isDisabled()); k++) {

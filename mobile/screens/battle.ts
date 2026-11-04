@@ -1045,11 +1045,13 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const full = entered
       ? button(tr("battle.now.fullCard"), () => {
           app.querySelector('[data-testid="now-sheet"]')?.closest(".overlay")?.remove();
+          closeInspector();
           closable(unitSheet(entered, a.content, { now: { pwr: u.pwr, hp: u.hp, statuses: u.statuses } }));
         }, "small link", "now-full-card")
       : body
         ? button(tr("battle.now.fullCard"), () => {
             app.querySelector('[data-testid="now-sheet"]')?.closest(".overlay")?.remove();
+          closeInspector();
             closable(summonSheet(body, a.content));
           }, "small link", "now-full-card")
         : null;

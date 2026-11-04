@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { launchChromium } from "./browser.mjs";
 import { localeOf } from "./lang.mjs";
+import { replayBattle } from "./battle-ctl.mjs";
 const args = process.argv.slice(2);
 const measureOnly = args.includes("--measure-only");
 const out = args.find((x) => !x.startsWith("--")) ?? "e2e/.shots/chain-read";
@@ -100,7 +101,7 @@ try {
     console.log(`${r.label}: frames ${gaps.length}, over 50 ms ${gaps.filter((g) => g > 50).length}, p95 ${p(0.95)} ms, max ${p(1)} ms; long tasks ${perf.long.length} (${Math.round(perf.long.reduce((s, x) => s + x, 0))} ms); layouts ${m1.LayoutCount - m0.LayoutCount} (${Math.round((m1.LayoutDuration - m0.LayoutDuration) * 1000)} ms), style recalcs ${m1.RecalcStyleCount - m0.RecalcStyleCount}; render ${rs.length} × ${rs.length ? `median ${rs[rs.length >> 1].toFixed(1)} ms, max ${rs.at(-1).toFixed(1)} ms` : "n/a"}`);
     console.log(`  chain: steps seen ${seen.maxN}, chip frames ${seen.chip}, summary "${seen.summary.trim()}"`);
     // A frame sequence of the Start chain, from a replay (a screenshot stalls the page, so not while measuring).
-    await page.getByTestId("battle-replay").click().catch(() => {});
+    await replayBattle(page).catch(() => {});
     for (let f = 0; f < 14; f++) {
       await page.waitForTimeout(f ? 650 : 1200);
       await page.screenshot({ path: `${out}/${r.label}-${String(f).padStart(2, "0")}.png` });
@@ -112,7 +113,7 @@ try {
       if (!seen.summary) fail("no chain summary after the Start chain");
       if (r.lang === "ru" && seen.summary && /[A-Za-z]{4,}/.test(seen.summary.replace(/@\S+/g, ""))) fail(`summary not in Russian: ${seen.summary}`);
       // Skip chain: Replay, then skip the Start chain at once.
-      await page.getByTestId("battle-replay").click().catch(() => {});
+      await replayBattle(page).catch(() => {});
       const skip = page.getByTestId("chain-skip");
       try {
         await skip.waitFor({ state: "visible", timeout: 5000 });
