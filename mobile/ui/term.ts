@@ -132,14 +132,15 @@ export function richText(segs: DescribeSegment[], o: RichOptions = {}): Node[] {
 }
 
 /** A term is a button, and a line may break after a button: "self" then
- * a lone "." on the next line. The punctuation that follows a term goes into
- * one unbreakable box with it. */
+ * a lone "." on the next line, or "heal" then a lone "s". The punctuation and the
+ * word ending that follow a term go into one unbreakable box with it. */
 function glueStops(nodes: Node[]): Node[] {
   const out: Node[] = [];
   for (const n of nodes) {
     const prev = out[out.length - 1];
-    const stop = n instanceof Text ? /^[.,;:!?)]+/.exec(n.data)?.[0] : undefined;
-    if (stop && prev instanceof HTMLElement && prev.matches("button.t")) {
+    // The letters of a word the term is the stem of ("heal" + "s") go in the box too, then any stop.
+    const stop = n instanceof Text ? /^(?:\p{Ll}+)?[.,;:!?)]*/u.exec(n.data)?.[0] : undefined;
+    if (stop && prev instanceof HTMLElement && (prev.matches("button.t") || (prev.matches(".tpill") && /^\p{Ll}/u.test(stop)))) {
       out[out.length - 1] = h("span", { class: "t-glue" }, prev, stop);
       const rest = (n as Text).data.slice(stop.length);
       if (rest) out.push(document.createTextNode(rest));
