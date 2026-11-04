@@ -155,7 +155,11 @@
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp .pc-tab { height: auto; min-height: 26px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .pin-emoji { font-size: 18px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .sheet-xl-grid { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 4px 12px; align-items: start; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp .sheet-xl-grid { grid-template-columns: 120px minmax(0, 1fr); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp .sheet-xl-grid { display: block; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp .sheet-hero { float: left; width: 120px; height: 120px; margin: 0 12px 4px 0; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp .sheet-body { display: block; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp .sheet-body > * { margin-bottom: 6px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp .sheet-body > .row.sheet-head { margin-top: 0; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp .sheet-hero > .pc { transform: none; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-insp .sheet-hero > .pc { transform: scale(0.72); transform-origin: 0 0; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .cell .fuse-tag { font-size: 18px; }
