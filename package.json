@@ -57,6 +57,7 @@
     "mvp:fusion-marks": "node e2e/fusion-marks.mjs",
     "mvp:keyboard": "node e2e/mvp-keyboard.mjs",
     "mvp:cg-layout": "node e2e/cg-layout.mjs",
+    "mvp:battle-field": "node e2e/battle-field.mjs",
     "mvp:table-fit": "node e2e/table-fit.mjs",
     "mvp:next": "node e2e/mvp-next.mjs",
     "mvp:plan": "node e2e/mvp-plan.mjs",
