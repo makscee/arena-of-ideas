@@ -244,6 +244,9 @@ export interface UnitContent {
    * counter ring the designer picked. Absent on a v1 unit: the client falls
    * back to the trigger (faceFallback). */
   face?: Face;
+  /** Mission arena#34 (slice B): the unit's sigil spec (./portraits.ts, by name).
+   * Absent on a unit with none of its own: the client draws the generic sigil. */
+  portrait?: Spec;
   /** M4-4, GET /content only: the name and line (`archetype`) in Russian,
    * when the unit has been translated. Never part of the version. */
   texts?: { ru?: { name: string; line: string } };
@@ -260,6 +263,8 @@ export interface SummonContent {
   emoji: string;
   base: Stats;
   form: UnitForm | null;
+  /** Mission arena#34 (slice B): the body's sigil spec (./portraits.ts, by name). */
+  portrait?: Spec;
 }
 
 /** Everything a run plays with, carried with a version so logs stay replayable. */
