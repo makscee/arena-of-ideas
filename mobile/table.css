@@ -469,7 +469,7 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-line .cell-well { width: var(--s); height: var(--s); }
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-line .cell, :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-bench .cell { border-radius: 14px; }
 /* A docked panel narrows the field: the tabs lose their words so five columns of 136px stay clean */
-:is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel .tb-line .pc-tab .tw, :is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel .tb-bench .pc-tab .tw { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel .tb-bench .pc-tab .tw { display: none; }
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel .tb-line .pc-tab, :is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel .tb-bench .pc-tab { padding-right: 8px; }
 
 /* The unit panel docks in the right column of the field, from under the HUD to above the tray */
