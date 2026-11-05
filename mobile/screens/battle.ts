@@ -26,6 +26,7 @@ import type { Side } from "../../src/types";
 import { summonId } from "../../src/describe";
 import { card, creditOf, creditText, formRich, summonById, summonSheet, summonText, unitSheet } from "../ui/card";
 import { orient, stage as tableStage } from "../ui/stage";
+import { linePitch, pieceCap } from "../ui/line-layout";
 import { isMine, reportLink } from "../ui/report";
 import { lineToPiece, piece, PIECE_PX, whenTone, type PieceSize, type PieceUnit } from "../ui/piece";
 import { faceFallback, V2_FACE } from "../../src/mvp/face";
@@ -861,17 +862,17 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * of the board holds (tab to name) and its slot's width allows, never by
    * how many units stand. `stage` is the line's box, read before a draw. */
   let stage = { w: 0, h: 0, cols: 5 };
+  /** The columns' pitch and the biggest piece for the lines on screen (ui/line-layout.ts): both lines share one, so
+   * their pieces match; each line is centred in the field with its own count of columns (arena#29, round 4). */
+  let lay = { pitch: linePitch(orient(), 5), cap: pieceCap(orient(), 5) };
   function pieceFit(compact: boolean): { size: PieceSize; px?: number } {
-    // The table's stage sets the size, not the window: one line's box in stage pixels (arena#29).
-    const tall = orient() === "P";
     const size: PieceSize = "M";
-    if (stage.h <= 0 || stage.w <= 0) return { size, px: tall ? (compact ? 40 : 52) : compact ? 60 : 84 };
-    const wide = stage.w / (compact ? stage.cols : 5);
-    const cap = tall ? 64 : compact ? 76 : 96;
-    // A line past five is one more slot across: the same piece, smaller (never XS: it drops PWR and HP).
+    const tall = orient() === "P";
+    if (stage.h <= 0) return { size, px: Math.min(lay.cap, tall ? (compact ? 40 : 52) : compact ? 60 : 84) };
+    // The biggest piece the line's height and its column allow (a piece's name and rim take 1.4× its face); never XS: it drops PWR and HP.
     let px = 36;
-    for (let s = cap; s >= 36; s--) {
-      if (boxHeight(size, s) <= stage.h - 4 && s * 1.4 <= wide) { px = s; break; }
+    for (let s = lay.cap; s >= 36; s--) {
+      if (boxHeight(size, s) <= stage.h - 4 && s * 1.4 <= lay.pitch + 0.5) { px = s; break; }
     }
     return { size, px };
   }
@@ -1525,16 +1526,20 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     // Both lines read first, then both write, then one fit (#913): reading a
     // line after the other's write forced a layout per read, every wave.
     // The stage the pieces grow into (#1294): one line's box, before any write.
-    const most = Math.max(...([them, you] as const).map((sd) => board.lines[sd].length + board.graves[sd].filter((u) => showsDead(u.id, v)).length));
-    stage = { w: enemy.clientWidth, h: enemy.clientHeight, cols: Math.max(6, most) };
+    const countOf = (sd: Side) => board.lines[sd].length + board.graves[sd].filter((u) => showsDead(u.id, v)).length;
+    // A line keeps the columns it started with, so its units don't shift as others fall; one grown past it (a summon) adds columns.
+    const colsOf = (sd: Side) => Math.max(sd === "A" ? battle.teamA.length : battle.teamB.length, countOf(sd), 1);
+    const cols = Math.max(colsOf(them), colsOf(you));
+    lay = { pitch: linePitch(orient(), cols), cap: pieceCap(orient(), cols) };
+    stage = { w: enemy.clientWidth, h: enemy.clientHeight, cols };
     const lines = ([[them, enemy], [you, mine]] as const).map(([side, row]) => {
       // A line of more than 5 cards (summons and revives grow it to 8, R4-10)
       // draws them compact: emoji, PWR over HP, one status row (R4-11). Set
       // before measuring, so the status row is measured at its compact width.
-      const count = board.lines[side].length + board.graves[side].filter((u) => showsDead(u.id, v)).length;
-      const compact = count > COMPACT_OVER;
+      const compact = cols > COMPACT_OVER;
       row.classList.toggle("bv-compact", compact);
-      row.style.gridTemplateColumns = `repeat(${Math.max(5, count)}, minmax(0, 1fr))`;
+      row.style.setProperty("--n", String(colsOf(side)));
+      row.style.setProperty("--pitch", `${lay.pitch}px`);
       return { side, row, compact };
     }).map(({ side, row, compact }) => ({
       side,
@@ -1551,8 +1556,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       if (closing) fadeCleared(row, cards);
       row.replaceChildren(...cards);
       // A falling card beside a full line widens the row instead of wrapping it.
-      row.style.gridTemplateColumns = `repeat(${Math.max(5, cards.length)}, minmax(0, 1fr))`;
-      row.style.setProperty("--n", String(Math.max(5, cards.length)));
+      row.style.setProperty("--n", String(Math.max(colsOf(side), cards.length)));
       row.classList.toggle("empty", !cards.length);
       if (!cards.length) row.append(h("div", { class: "dim" }, tr("battle.noOneStanding")));
     }
@@ -2308,7 +2312,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
           "div",
           { class: "bv-end-moments stack" },
           moments.length ? h("div", { class: "label row spread" }, h("span", {}, tr("battle.end.keyMoments"), h("span", { class: "bv-dk" }, tr("battle.end.click")), h("span", { class: "bv-ph" }, tr("battle.end.tap")), tr("battle.end.toWatch")), h("span", { class: "bv-end-more bv-ph" }, tr("battle.end.damageDown"))) : null,
-          ...moments.map((m) => {
+          ...moments.slice(0, orient() === "P" && !dmgAll ? 1 : moments.length).map((m) => {
             const b = button("", () => playFrom(m.beat), `bv-moment ${m.kind}`, "key-moment");
             // Fatigue's label brings its own hourglass, and its turn is in the T column.
             b.append(h("span", { class: "bv-moment-t dim mono" }, turnLabel(beats[m.beat]?.turn ?? 0)), momentIcon(m.kind), h("span", { class: "bv-moment-l" }, ...richCaption(m.kind === "fatigue" ? m.label.replace(/\s*\(T\d+\)$/, "") : m.label, null, true)), h("span", { class: "dim bv-moment-go" }, "▶"));
@@ -2338,7 +2342,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const bySide = (side: Side) => damage.filter((d) => d.side === side);
     const all = bySide(you).length + bySide(them).length;
     // The landscape tray holds two rows a side without cutting the last one (arena#32): the rest is behind All.
-    const cap = dmgAll ? 99 : orient() === "L" ? Math.min(2, DMG_ROWS) : DMG_ROWS;
+    // The portrait tray holds your best and their best, whole; the rest is behind All (arena#29, round 4).
+    const cap = dmgAll ? 99 : orient() === "L" ? Math.min(2, DMG_ROWS) : 1;
     const rows = (side: Side) =>
       bySide(side)
         .slice(0, cap)

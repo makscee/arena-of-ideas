@@ -386,7 +386,7 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line.theirs .bv-changes { top: calc(100% + 2px); bottom: auto; }
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line.mine .bv-changes { top: auto; bottom: calc(100% + 2px); }
 :is(#app[data-screen="battle"], #under) .bt-tray .bv-controls button { height: auto; align-self: stretch; }
-:is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-line { grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)) !important; grid-template-rows: none !important; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-line { grid-template-columns: repeat(var(--n, 5), var(--pitch, 1fr)) !important; grid-template-rows: none !important; justify-content: center; }
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 .bv-end .bv-dmg-list { order: 0; }
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-end-actions button { flex: 1 1 0; min-height: 0; }
 /* The compact portrait table (a window under 780 stage px tall, a 360×640 phone): the tray comes up, the lines keep a gap for the result tags */
@@ -554,3 +554,20 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="shop"], #under) .tb-insp > .insp-more.done { display: none; }
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp > .insp-more { bottom: 62px; }
 :is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact .sheet-hero { padding-right: 24px; }
+
+/* Round 4 (arena#29): the side labels are headings at their row's left edge on the portrait stage, in the left gutter on the landscape one */
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-side.bv-lab-them, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-side.bv-lab-you { justify-content: flex-start; text-align: left; right: auto; width: auto; max-width: 366px; }
+/* Round 4 result tray (arena#29): three buttons whole on the landscape stage; on the portrait one the All-N button's tap area (44) overlaps its row instead of making it tall */
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end > .bv-end-actions { display: grid; grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 8px; align-self: stretch; overflow: hidden; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end > .bv-end-actions button { height: auto; min-height: 0; padding: 0 8px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end button.bv-dmg-more { margin: -2px 0 2px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-dmg-list > .label { min-height: 0; }
+/* Long names and a two-line "why I lost" never push the result's buttons out (arena#29, round 4) */
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end { grid-template-columns: 430px minmax(0, 1fr) 230px; grid-template-rows: auto auto auto minmax(0, 1fr); }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-end-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-lost-line { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-end-run { overflow: hidden; white-space: nowrap; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .bt-tray > .bv-end .bv-end-moments > .label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .bt-tray > .bv-end .bv-end-moments > .label > * { display: inline; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .bt-tray > .bv-end .bv-end-moments > .label .bv-end-more { display: none; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .tb-side .bv-lab-who { overflow: hidden; text-overflow: ellipsis; }
