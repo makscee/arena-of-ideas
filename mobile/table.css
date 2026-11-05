@@ -721,3 +721,13 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 .bt-tray > .bv-end .bv-end-moments > .label { overflow: visible; text-overflow: clip; }
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end > .bv-end-actions { grid-template-columns: minmax(0, 1fr); }
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end > .bv-end-actions button { min-width: 0; max-width: 100%; width: 100%; }
+/* The result's columns that span the rows never stretch them: the head's rows keep their own height */
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end > .bv-end-body, :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end > .bv-end-actions { height: 0; min-height: 100%; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-end-top .bv-word { font-size: 40px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end { row-gap: 2px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-end-run { overflow: visible; }
+/* A chain's caption keeps its tab and two lines; its steps start under it (arena#29, round 5) */
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray:has(> .bv-recent.chain) > button.bv-caption { max-height: 108px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-recent.chain { top: 126px; height: 76px; }
+/* A piece's name is one line whose box holds its letters whole */
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .bv-card .pc-nm { line-height: 1.25; overflow: visible; }

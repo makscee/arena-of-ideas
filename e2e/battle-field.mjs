@@ -89,6 +89,7 @@ const readResult = (page) => page.evaluate(() => {
   const clip = (e) => { let p = e.parentElement; const r = e.getBoundingClientRect(); while (p && p !== card.parentElement) { const s = getComputedStyle(p); if (/(auto|scroll|hidden)/.test(s.overflowY)) { const pr = p.getBoundingClientRect(); if (r.bottom > pr.bottom + 0.5 || r.top < pr.top - 0.5) return true; } p = p.parentElement; } return false; };
   const buttons = [...card.querySelectorAll('[data-testid="battle-done"], [data-testid="end-replay"], [data-testid="end-why"]')].map((b) => { const r = b.getBoundingClientRect(); return { id: b.dataset.testid, whole: inside(r) && !clip(b), h: r.height, w: r.width }; });
   const rowH = rows.length ? Math.min(...rows.map((r) => r.getBoundingClientRect().height)) : 0;
+  if (window.__dump) console.log("DUMP", JSON.stringify([...card.children].map((e) => e.className.toString().slice(0, 24) + " " + [Math.round((e.getBoundingClientRect().top - cr.top) / k), Math.round(e.getBoundingClientRect().height / k)].join("+"))));
   return { wide: innerWidth, clipped: card.scrollHeight - card.clientHeight, rowH, rows: rows.length, whole: rows.filter((r) => inside(r.getBoundingClientRect()) && !clip(r)).length, all: card.querySelector('[data-testid="damage-more"]')?.textContent ?? "", scrolls: body ? body.scrollHeight - body.clientHeight : 0, buttons, k, phone: innerWidth < 600 };
 });
 
@@ -126,6 +127,8 @@ try {
       const page = await ctx.newPage();
       const what = `${label} ${n} unit${n > 1 ? "s" : ""}`;
       page.on("pageerror", (e) => note([`${what}: pageerror ${e.message}`]));
+      if (process.env.DUMP) page.on("console", (m) => m.text().startsWith("DUMP") && console.log(what, m.text()));
+      if (process.env.DUMP) await page.addInitScript(() => (window.__dump = true));
       const tid = (id) => page.getByTestId(id);
       await page.goto(url); await tid("start").waitFor(); await page.keyboard.press("Enter"); await tid("coach").waitFor();
       for (let i = 0; i < n; i++) {
