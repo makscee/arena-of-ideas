@@ -1016,7 +1016,7 @@ button.bv-moment { display: grid; grid-template-columns: 38px 18px minmax(0, 1fr
  * wrappers the desktop grids place (.topbar, .board, .home-main, …) are
  * display: contents on the phone, so its layout is as it was. */
 .topbar, .board, .home-main, .home-side, .result-main, .result-teams, .over-line { display: contents; }
-kbd { display: inline-block; min-width: 1.6em; padding: 0 4px; margin: 0 1px; border: var(--bw) solid var(--outline); border-bottom-width: 2px; border-radius: 3px; font-family: var(--font-num); font-size: 0.8em; line-height: 1.4; text-align: center; color: var(--text); background: var(--panel); }
+kbd { display: inline-block; min-width: 1.6em; padding: 0 4px; margin: 0 1px; border: var(--bw) solid var(--outline); border-bottom-width: 2px; border-radius: 3px; font-family: var(--font-num); font-size: max(11px, 0.8em); line-height: 1.4; text-align: center; color: var(--text); background: var(--panel); }
 button kbd { color: inherit; background: transparent; border-color: currentColor; opacity: 0.7; text-transform: none; letter-spacing: 0; margin-left: 6px; }
 @media (min-width: 1024px) {
   #app[data-screen] { --cw: 120px; --gap: 8px; --insp: 340px; max-width: none; }
@@ -1988,7 +1988,7 @@ button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padd
 
 /* Report (#1271): a small dim link beside a player's name or a player-made unit's credit. It never
  * takes a row of its own on a short screen: 24 px tall, and the sheet's tap area is the whole link. */
-button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; border: 0; background: none; box-shadow: none; font-size: 11px; line-height: 14px; text-decoration: underline; opacity: 0.85; }
+button.link.report-link { min-height: 32px; min-width: 44px; align-self: center; padding: 0 8px; border: 0; background: none; box-shadow: none; font-size: 11px; line-height: 14px; text-decoration: underline; opacity: 0.85; }
 .throne-hero button.link.report-link { color: inherit; align-self: flex-start; margin-top: -8px; }
 .report-sheet .report-about { font-weight: 700; word-break: break-word; }
 .report-sheet input { min-height: 44px; }
@@ -2481,3 +2481,16 @@ button.play-start:active:not(:disabled) { translate: 0 4px; box-shadow: 0 2px 0 
 }
 @keyframes start-bar { from { translate: 0 0; } to { translate: 150% 0; } }
 .start .error:not(:empty) { color: var(--them); font-size: 15px; font-weight: 700; min-height: 20px; max-width: 420px; }
+
+/* A control a finger or a mouse must hit is never under 32 px (44 on touch) (arena#32): Skip on the vote card */
+button.link.keep { min-height: 32px; min-width: 44px; }
+@media (pointer: coarse) { button.link.keep, button.link.report-link { min-height: 44px; } }
+@media (pointer: coarse) { .forge-wish, .forge-picker button { min-height: 44px; min-width: 44px; } }
+@media (max-width: 600px) { .forge-wish { min-height: 44px; min-width: 88px; } }
+
+/* A scroll area the layout lint accepts (arena#32): marked data-scroll, and it shows there is more below: a fade at its foot */
+[data-scroll] { --scroll-cue: fade; }
+[data-scroll]::after { content: ""; display: block; flex: none; position: sticky; bottom: 0; height: 24px; margin-top: -24px; background: linear-gradient(to bottom, transparent, rgba(33, 26, 49, 0.9)); pointer-events: none; }
+
+/* The idea picks on a short window (800×450): the player's quote and the "read it again" button keep their height, the page scrolls instead of squeezing them to nothing (arena#32) */
+.idea-quote, button.pick-none { flex: none; }

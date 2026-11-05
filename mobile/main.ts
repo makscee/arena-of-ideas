@@ -632,7 +632,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
     // right (.home-main, .home-side; on the phone they are one column).
     h(
       "div",
-      { class: "home-main" },
+      { class: "home-main", "data-scroll": "" },
       ended !== null ? h("div", { class: "notice", "data-testid": "day-ended" }, t("home.dayEnded", { ended, today: home.day.seq })) : null,
       justEnded ? playoff : null,
       h(
@@ -650,7 +650,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
     ),
     h(
       "div",
-      { class: "home-side" },
+      { class: "home-side", "data-scroll": "" },
       h(
         "div",
         { class: "stack title-menu", "data-testid": "home-actions" },
@@ -1644,7 +1644,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
             button(t("fuse.swap"), () => keepFocus(() => ((at = 1 - at), render())), "", "preview-swap"),
             withKey(button(t("fuse.confirm"), () => (close(), void fuse(o, views[at]!)), "primary grow", "preview-confirm"), "Enter"),
           ),
-          unitSheet(fused, content, { preview: true }),
+          unitSheet(fused, content, { preview: true, floor: sheetFloor }),
         );
       };
       render();
@@ -1676,7 +1676,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         h("div", { class: "preview-card" }, card(fused, { side: "you", extra: [copiesBadge(fused)] })),
         h("div", { class: "dim small", "data-testid": "forge-credit" }, t("forge.by", { name: slot.claimedBy?.name ?? "?", date })),
         h("div", { class: "row sheet-actions" }, cancel(), withKey(button(t("fuse.confirm"), () => (close(), void fuse(o, fused)), "primary grow", "preview-confirm"), "Enter")),
-        unitSheet(fused, content, { preview: true }),
+        unitSheet(fused, content, { preview: true, floor: sheetFloor }),
       );
     } else if (slot.state === "ready") {
       const designs = await Promise.all((slot.candidates ?? []).map((_, pick) => api.preview(run.runId, { kind: "fuse", ...o, pick }).then(fusedOf)));
@@ -1702,7 +1702,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
             }),
           ),
           h("div", { class: "row sheet-actions" }, cancel(), withKey(button(t("forge.claim", { name: chosen.name }), () => (close(), void fuse({ ...o, pick: at }, chosen, slot)), "primary grow", "forge-claim"), "Enter")),
-          unitSheet(chosen, content, { preview: true }),
+          unitSheet(chosen, content, { preview: true, floor: sheetFloor }),
         );
       };
       render();
@@ -1766,7 +1766,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         h("div", { class: "label" }, t("fuse.new")),
         h("h2", { class: "reveal", "data-testid": "fusion-reveal" }, t(claimed ? "forge.claimed" : "fuse.discovered", { name: fused.name })),
         h("div", { class: "preview-card" }, card(fused, { side: "you", extra: [copiesBadge(fused)] })),
-        unitSheet(fused, content),
+        unitSheet(fused, content, { floor: sheetFloor }),
       );
     });
 
