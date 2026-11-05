@@ -767,3 +767,15 @@ button.ws-back { min-height: 44px; min-width: 44px; padding: 0 12px; flex: none;
 :is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 > .bv-line.theirs { top: 108px; }
 :is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 .tb-side.you.bv-lab-you { top: 242px; }
 :is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 > .bv-line.mine { top: 268px; }
+
+/* ===== Round 7 (arena#29): nothing floats over a control ===== */
+/* Result labels, floaters and running numbers are drawings: a press goes through them to the chip or control under */
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .bv-line .bv-pill, :is(#app[data-screen="battle"], #under) .stage.bv-v3 .bv-line .bv-pill *, :is(#app[data-screen="battle"], #under) .stage.bv-v3 .bv-line .bv-l, :is(#app[data-screen="battle"], #under) .stage.bv-v3 .bv-card .bv-chain-chip { pointer-events: none; }
+:is(#app[data-screen="battle"], #under) .bv-fxnums, :is(#app[data-screen="battle"], #under) .bv-fxnums *, :is(#app[data-screen="battle"], #under) .bv-runs, :is(#app[data-screen="battle"], #under) .bv-runs *, :is(#app[data-screen="battle"], #under) .bv-banner { pointer-events: none; }
+/* A phone's chips stay in their own piece's column, so one chip never covers the next one's middle */
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line .bv-changes { left: 0; right: 0; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line button.bv-change { min-width: 0; max-width: 100%; }
+/* Their chips sit right of the arrow, yours left of it: the two rows' chips share the gap between the lines without covering each other */
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bv-line.theirs .bv-changes { left: calc(50% + 6px); right: -40px; justify-content: flex-start; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line.theirs .bv-changes { left: 50%; right: 0; justify-content: flex-start; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line.mine .bv-changes { left: 0; right: 50%; justify-content: flex-end; }
