@@ -10,6 +10,7 @@ import type { AbilityRegistry, BattleEvent, Condition, Selector, Side, Stats, St
 import type { AwokenRow, WhenKey, WhoKey } from "./units.js";
 import type { FusionDesign } from "./codex.js";
 import type { Face } from "./face.js";
+import type { Spec } from "../../mobile/ui/sigil/spec.js";
 
 export const MVP_API_VERSION = 1;
 /** Every API path hangs off this prefix, relative to the app's base URL
@@ -844,6 +845,10 @@ export interface IdeaArchetype {
    * Russian goes beside the unit (`StoredUnit.texts.ru`) once it is picked.
    * Absent on ideas read before M4-5 and on versions of untranslated units. */
   texts?: { ru?: { name: string; line: string } };
+  /** Mission arena#34 (slice C): the unit's sigil spec its LLM wrote, checked by
+   * the sigil `validate` (the generic sigil when the model failed twice). It
+   * rides in the idea's JSON and then in the unit's: no migration. */
+  portrait?: Spec;
 }
 
 /** M2-5: a reading of an idea as When → Who → Does in the words of

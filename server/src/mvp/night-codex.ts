@@ -42,6 +42,7 @@ export function designOf(c: Candidate, emoji?: string): FusionDesign {
     texts: { ru: { name: c.name.ru, ...(c.flavour.ru ? { flavour: c.flavour.ru } : {}) } },
   };
   if (emoji) d.emoji = emoji;
+  if (c.portrait) d.portrait = structuredClone(c.portrait);
   if (c.flavour.en) d.flavour = c.flavour.en;
   if (Object.keys(c.abilities).length) d.abilities = structuredClone(c.abilities);
   if (Object.keys(c.statuses).length) d.statuses = structuredClone(c.statuses);
