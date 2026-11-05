@@ -19,6 +19,8 @@ export function stage(kids: (Node | null)[], onFlip: () => void, flex = false): 
   const el = h("div", { class: `stage ${o}`, "data-testid": "stage", "data-orient": o }, ...kids);
   const place = () => {
     if (!el.isConnected) return removeEventListener("resize", place);
+    // Under a window (the Codex, the Workshop) the table only follows the window's size: drawing it again would close the window.
+    if (el.closest("#under")) return apply();
     if (orient() !== o) {
       removeEventListener("resize", place);
       return onFlip();

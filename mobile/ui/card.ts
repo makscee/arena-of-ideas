@@ -330,7 +330,7 @@ export function unitSheet(
   const summons = h("div", { class: "stack" });
   const shownForm = fused && "recipe" in u ? u.recipe : now;
   const icons = h("div", {}, ...[iconKey(shownForm)].filter((n): n is HTMLElement => n !== null));
-  if (shownForm) summons.replaceChildren(...[summonsBlock(shownForm, content)].filter((n): n is HTMLElement => n !== null));
+  if (shownForm) summons.replaceChildren(...[summonsBlock(shownForm, content, opts.compact)].filter((n): n is HTMLElement => n !== null));
   if (fused && "fusion" in u && u.fusion) {
     const [a, b] = [unit(u.fusion.first), unit(u.fusion.second)];
     box.append(...formRich(u.recipe, content));
@@ -368,7 +368,7 @@ export function unitSheet(
     btn.addEventListener("click", () => {
       showing = !showing;
       // The Summons block follows the form shown: Planter's Imp, its awoken Treant.
-      summons.replaceChildren(...[summonsBlock(showing ? c.forms.awoken : now, content)].filter((n): n is HTMLElement => n !== null));
+      summons.replaceChildren(...[summonsBlock(showing ? c.forms.awoken : now, content, opts.compact)].filter((n): n is HTMLElement => n !== null));
       icons.replaceChildren(...[iconKey(showing ? c.forms.awoken : now)].filter((n): n is HTMLElement => n !== null));
       box.classList.toggle("other", showing);
       box.replaceChildren(...(showing ? [h("div", { class: "label" }, t("card.awokenAfter", { n: MVP_RULES.copiesToAwaken })), ...richText(awokePieces, { content: markChangedPieces(sleepPieces, awokePieces) })] : richText(sleepPieces)));
@@ -528,7 +528,7 @@ export function summonText(s: SummonContent, content: MvpContent): Node[] {
 
 /** A summoner's "Summons" block: each summoned unit's compact card and its
  * text, inline, so nothing needs a second tap. Null when the form summons nothing. */
-function summonsBlock(form: UnitForm, content: MvpContent): HTMLElement | null {
+function summonsBlock(form: UnitForm, content: MvpContent, compact = false): HTMLElement | null {
   const list = summonsOf(form, content);
   if (!list.length) return null;
   return h(
@@ -539,8 +539,9 @@ function summonsBlock(form: UnitForm, content: MvpContent): HTMLElement | null {
       h(
         "div",
         { class: "summon-row", "data-testid": "sheet-summon", "data-summon": s.id },
-        summonCard(s, { side: "you", testid: "summon-card", onOpen: () => openSummon(s, content) }),
-        h("div", { class: "sheet-form" }, ...summonText(s, content)),
+        // The shop's panel has no room for the summoned unit's piece: its name leads its rule.
+        compact ? null : summonCard(s, { side: "you", testid: "summon-card", onOpen: () => openSummon(s, content) }),
+        h("div", { class: "sheet-form" }, ...(compact ? [h("b", { class: "summon-name" }, `${s.emoji} ${s.name} `)] : []), ...summonText(s, content)),
       ),
     ),
   );
