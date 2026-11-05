@@ -753,3 +753,17 @@ button.ws-back { min-height: 44px; min-width: 44px; padding: 0 12px; flex: none;
 :is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact button.see-awoken, .stage.P button.see-awoken { min-height: 44px; }
 :is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp [data-testid="fuse-preview"] { padding-right: 44px; }
 .sheet[data-scroll] { background: linear-gradient(var(--panel) 30%, transparent) top / 100% 28px no-repeat local, linear-gradient(transparent, var(--panel) 70%) bottom / 100% 28px no-repeat local, linear-gradient(rgba(0, 0, 0, 0.35), transparent) top / 100% 10px no-repeat scroll, linear-gradient(transparent, rgba(0, 0, 0, 0.35)) bottom / 100% 10px no-repeat scroll, var(--panel); }
+
+/* ===== Round 6 (arena#29): the header and the THEM label's Report link ===== */
+/* "vs @name" shrinks with an ellipsis inside its plate and never runs under the Report link beside it */
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .plate.vs { max-width: 440px; overflow: visible; gap: 12px; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .plate.vs .who { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .plate.vs > :not(.who) { flex: none; }
+/* Portrait: THEM @name and its Report link (44 px on a phone) have a band of their own above their row */
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-side.them.bv-lab-them { top: 62px; min-height: 44px; flex-wrap: nowrap; align-items: center; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-side.them .bv-lab-who { min-width: 0; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-side.them button, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-side.them a { flex: none; min-height: 44px; padding: 0 8px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-line.theirs { top: 108px; }
+:is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 > .bv-line.theirs { top: 108px; }
+:is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 .tb-side.you.bv-lab-you { top: 242px; }
+:is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 > .bv-line.mine { top: 268px; }

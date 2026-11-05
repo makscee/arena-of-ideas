@@ -167,6 +167,25 @@ try {
       const long = (f.you?.n ?? 0) > 5 || (f.them?.n ?? 0) > 5;
       const bad = fieldProblems(f, what).filter((e) => !(long && /pieces are/.test(e)));
       note(bad);
+      // The header: "vs @name" never reaches the Report link beside it, however long the name (arena#29, round 6).
+      const hdr = await page.evaluate(() => {
+        const who = document.querySelector('[data-testid="battle-vs"]');
+        let rep = document.querySelector('[data-testid="report-name"]');
+        if (!who) return null;
+        // A bot opponent has no Report link: add one as the real one is (a button after the name in the vs plate), to test the room.
+        if (!rep) { rep = document.createElement("button"); rep.dataset.testid = "report-name"; rep.className = "report-link"; rep.textContent = "Report"; who.closest(".plate")?.append(rep); }
+        const probe = (text) => {
+          who.textContent = text;
+          const w = who.getBoundingClientRect(), r = rep.getBoundingClientRect();
+          // The name's own box, and its text as a range (what the lint measures), against the Report link.
+          const range = document.createRange(); range.selectNodeContents(who);
+          const t = range.getBoundingClientRect();
+          const plate = rep.closest('.plate')?.getBoundingClientRect();
+          return { box: w.right <= r.left + 0.5 && (!plate || r.right <= plate.right + 0.5), text: t.right <= r.left + 0.5 || who.scrollWidth <= who.clientWidth + 0.5 ? true : t.right - r.left };
+        };
+        return { short: probe("vs @Ash Heron 12"), long: probe("vs @Crimson Badger Extraordinary Magnificent Thundering Heron the Third 99999") };
+      });
+      if (hdr) for (const [k, v] of Object.entries(hdr)) if (!v.box) note([`${what}: the ${k} name reaches the Report link or pushes it out of its plate`]);
       await page.screenshot({ path: `${out}/${scene}-${label}.png` });
       if (scene === "battle-chain-once") {
         // Step to a chain of three links; its wire joins the real pieces, its number sits on the wire.
