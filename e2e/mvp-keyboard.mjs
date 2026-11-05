@@ -468,9 +468,11 @@ async function menus(lang) {
   if (await tid("ideas").count()) {
     await press("i");
     await settle();
-    expect("I leaves Home for the ideas", !(await tid("play").count()));
+    // The Workshop is a window over the dimmed Home table (arena#32): Home stays under it.
+    expect("I opens the Workshop, a window over Home", (await tid("workshop-back").count()) > 0);
     await press("Escape");
-    await tid("play").waitFor({ timeout: 5_000 }).catch(() => fail("Esc didn't leave the ideas"));
+    await page.waitForFunction(() => !document.body.classList.contains("over-table"), null, { timeout: 5_000 }).catch(() => fail("Esc didn't close the Workshop"));
+    await tid("play").waitFor({ timeout: 5_000 }).catch(() => fail("Esc didn't return to Home"));
   }
   expect("no mouse (menus)", (await k.mouseClicks()) === 0);
   await k.ctx.close();
