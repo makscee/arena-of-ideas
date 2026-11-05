@@ -684,7 +684,6 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 /* A result chip's two lines keep their height: the chip grows with its lines instead of clipping them */
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bv-line .bv-pill.two { height: auto; line-height: 1.2; padding: 2px 8px; }
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line .bv-pill.two { height: auto; line-height: 1.2; padding: 1px 4px; font-size: 12px; }
-:is(#app[data-screen="battle"], #under) .stage.bv-v3 .bv-line .bv-pill.two .bv-l { overflow: visible; }
 /* The step number on a card pops in without shrinking below its size (a chip drawn at 0.4× read as 8 px) */
 @keyframes bv-chip-pop { from { opacity: 0; translate: 0 6px; } to { opacity: 1; translate: 0 0; } }
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 .bv-card > .bv-chain-chip { animation-name: bv-chip-pop; }
