@@ -1,6 +1,7 @@
 // The piece (mission #1286, slice 1, makscee/void-board#1291): one unit drawn
-// the same way on every screen, at four sizes. A big emoji on a rim in its
-// side's colour, PWR and HP on the rim, the when tab on top, one headline
+// the same way on every screen, at four sizes. A sigil (arena#38, ./sigil: a bold
+// silhouette on a canvas, no plate behind it, bound to its hp, pwr, charge and
+// shield; a battle pulses it on hit, fire and die), PWR and HP on the rim, the when tab on top, one headline
 // badge (with a counter ring when the unit builds one), statuses on a shelf
 // hanging below, ★ / ✦ when awoken / fused, the name under it (L, M) and the
 // tier with copies (L). The design: r/arena-redesign/final/ (its P()).
@@ -8,12 +9,13 @@
 //   L  · shop 800      everything
 //   M  · battle 800    − tier, − copies
 //   S  · phone battle  − name, − when word (its icon stays)
-//   XS · chips         the emoji on a rim in the when colour, the headline icon
+//   XS · chips         the sigil, the headline icon
 import { faceFallback, fusedFace, type Face } from "../../src/mvp/face";
 import type { LineUnit, MvpContent, UnitContent } from "../../src/mvp/contract";
 import type { Stats } from "../../src/types";
 import { h } from "./dom";
 import { roman } from "./roman";
+import { mountSigil, specOrFallback, type Pulse, type SigilHandle, type Spec } from "./sigil";
 
 export type PieceSize = "L" | "M" | "S" | "XS";
 
@@ -28,14 +30,16 @@ export interface PieceUnit {
   face: Face;
   tier?: number;
   awoken?: boolean;
-  /** A fusion: its second part's emoji sits small at the bottom right. */
+  /** A fusion: its second part's emoji (the text lines keep it; the piece draws its first part's sigil). */
   fused?: { emoji: string };
   copies?: number;
+  /** The sigil spec (arena#38): the unit's own portrait; absent or invalid draws the generic sigil. */
+  portrait?: Spec;
 }
 
 export interface PieceOptions {
   size: PieceSize;
-  /** Whose rim: yours, theirs, or the shop's neutral one. */
+  /** Whose stand and numbers: yours, theirs, or the shop's neutral one. */
   side?: "you" | "them" | "shop";
   /** Statuses on it, by status name, in order. A status the counter ring shows stays off the shelf. */
   statuses?: { status: string; stacks: number }[];
@@ -52,6 +56,9 @@ export interface PieceOptions {
   /** The smallest text, px, on a stage that is drawn scaled down (the table's landscape stage,
    * where 18px is 11px at 800×450): every number, word and tab grows to it, and the piece's parts with them. */
   floor?: number;
+  /** The numbers the sigil is bound to when the piece's own do not say them: hp is the fraction left (a battle's live
+   * hp over its max), charge and shield the stacks. Left out, hp is whole and the stacks come from `statuses` and `counter`. */
+  bound?: { hp?: number; charge?: number; shield?: number };
   /** Shows the when tab's word (default: L, M and a px override); off keeps its icon only (a narrow row). */
   word?: boolean;
 }
@@ -128,6 +135,7 @@ export function lineToPiece(u: LineUnit, content: Pick<MvpContent, "units">): Pi
     stats: u.stats,
     face: faceOfLine(u, content),
     ...(unit ? { tier: unit.tier } : {}),
+    ...(unit?.portrait ? { portrait: unit.portrait } : {}),
     awoken: u.kind !== "fused" && u.form === "awoken",
     ...(u.kind === "fused" ? { fused: { emoji: second?.emoji ?? "✨" } } : {}),
     copies: u.copies,
@@ -142,15 +150,45 @@ const css = (o: Record<string, string | number>) =>
     .map(([k, v]) => `${k}:${typeof v === "number" ? px(v) : v}`)
     .join(";");
 
-function emoji(u: PieceUnit, s: number): HTMLElement {
-  if (!u.fused) return h("span", { class: "pc-em", style: `font-size:${px(s)}` }, u.emoji);
-  return h(
-    "span",
-    { class: "pc-em2" },
-    h("span", { class: "pc-em a", style: `font-size:${px(s * 0.72)}` }, u.emoji),
-    h("span", { class: "pc-em b", style: `font-size:${px(s * 0.58)}` }, u.fused.emoji),
-  );
+const handles = new WeakMap<HTMLCanvasElement, SigilHandle>();
+const SIGIL_BOX = 1.12; // the sigil's canvas, in face boxes: its outline and stand sit just past the box
+
+/** A piece's sigil, to drive its reactions (a battle's hit, fire and die pulses); null when it has none. */
+export function sigilOf(el: Element | null | undefined): { pulse: SigilHandle["pulse"]; update: SigilHandle["update"] } | null {
+  const cv = el?.querySelector<HTMLCanvasElement>("canvas.pc-sg");
+  return (cv && handles.get(cv)) || null;
 }
+
+/** Paints each sigil canvas of `from` onto the same canvas of its `cloneNode(true)` copy (a copy is not mounted: it keeps one still frame). */
+export function copySigils(from: Element, to: Element): void {
+  const a = from.querySelectorAll<HTMLCanvasElement>("canvas.pc-sg");
+  const b = to.querySelectorAll<HTMLCanvasElement>("canvas.pc-sg");
+  a.forEach((src, i) => b[i]?.getContext("2d")?.drawImage(src, 0, 0));
+}
+
+const stacksOf = (o: PieceOptions, ring: Face["counter"], status: string): number =>
+  ring?.status === status ? (o.counter ?? 0) : ((o.statuses ?? []).find((x) => x.status === status)?.stacks ?? 0);
+
+/** The unit's sigil on a canvas of `s` px, mounted in the shared loop with its numbers bound (hp, pwr, charge, shield). */
+function sigil(u: PieceUnit, o: PieceOptions, s: number, side: "you" | "them" | "shop"): HTMLCanvasElement {
+  const cv = document.createElement("canvas");
+  cv.className = "pc-sg";
+  cv.setAttribute("aria-hidden", "true");
+  const seed = [...u.name].reduce((n, c) => (n * 31 + c.charCodeAt(0)) % 997, 7) / 100;
+  handles.set(cv, mountSigil(cv, {
+    spec: specOrFallback(u.portrait),
+    S: Math.round(s * SIGIL_BOX),
+    team: side === "them" ? "them" : "you",
+    hp: o.bound?.hp ?? 1,
+    pwr: u.stats.pwr,
+    charge: o.bound?.charge ?? stacksOf(o, u.face.counter, "Charge"),
+    shield: o.bound?.shield ?? stacksOf(o, u.face.counter, "Shield"),
+    seed,
+  }));
+  return cv;
+}
+
+export type { Pulse };
 
 function chips(list: { status: string; stacks: number }[], cz: number, floor = 0): HTMLElement[] {
   return list.map(({ status, stacks }) => {
@@ -175,7 +213,7 @@ export function piece(u: PieceUnit, o: PieceOptions): HTMLElement {
   const s = o.px ?? PIECE_PX[o.size];
   const face = u.face;
   const side = o.side ?? "you";
-  const cls = ["pc", `pc-${o.size}`, `side-${side}`, u.awoken ? "aw" : "", u.fused ? "fu" : ""].filter(Boolean).join(" ");
+  const cls = ["pc", "sg", `pc-${o.size}`, `side-${side}`, u.awoken ? "aw" : "", u.fused ? "fu" : ""].filter(Boolean).join(" ");
   const attrs: Record<string, string> = { class: cls, style: css({ width: s, height: s }), "data-name": u.name };
   if (o.testid) attrs["data-testid"] = o.testid;
   const root = h("div", attrs);
@@ -184,7 +222,7 @@ export function piece(u: PieceUnit, o: PieceOptions): HTMLElement {
   if (o.size === "XS") {
     const fx = Math.round(s * 0.5);
     root.append(
-      h("div", { class: "pc-face", "data-k": "face", style: `border-width:2.5px;box-shadow:inset 0 0 0 4px ${when},0 2px 0 var(--outline)` }, emoji(u, s * 0.6)),
+      h("div", { class: "pc-face", "data-k": "face" }, sigil(u, o, s, side)),
       h(
         "div",
         { class: "pc-hb", "data-k": "head", style: css({ left: s - fx * 0.62, top: s - fx * 0.62, width: fx, height: fx }) },
@@ -206,11 +244,8 @@ export function piece(u: PieceUnit, o: PieceOptions): HTMLElement {
   const hb = Math.round(Math.max(23, s * 0.42, fl * 1.5));
   const big = s >= 120;
 
-  // the face, on a rim in its side's colour (awoken lilac, fused gold and pink)
-  const inset = Math.max(4, Math.round(s * 0.07));
-  const rim = u.awoken ? "var(--awoken)" : side === "them" ? "var(--them)" : side === "shop" ? "#8b7fb0" : "var(--you)";
-  const shadow = u.fused ? `inset 0 0 0 ${inset}px #f0c24b,inset 0 0 0 ${inset * 2}px #d65db1` : `inset 0 0 0 ${inset}px ${rim},inset 0 0 0 ${inset + 2}px #120e1c55`;
-  root.append(h("div", { class: "pc-face", "data-k": "face", style: `border-width:${big ? 4 : 3}px;box-shadow:${shadow},0 ${big ? 5 : 3}px 0 var(--outline)` }, emoji(u, s * 0.64)));
+  // the face: the sigil, no plate (its stand is in the side's colour)
+  root.append(h("div", { class: "pc-face", "data-k": "face" }, sigil(u, o, s, side)));
 
   // the when tab
   const pad = Math.round(tabH * 0.32);

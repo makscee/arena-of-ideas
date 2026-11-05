@@ -19,6 +19,7 @@ const asPiece = (u: UnitContent, extra: Partial<PieceUnit> = {}): PieceUnit => (
   face: faceOfUnit(u),
   tier: u.tier,
   copies: 1,
+  ...(u.portrait ? { portrait: u.portrait } : {}),
   ...extra,
 });
 

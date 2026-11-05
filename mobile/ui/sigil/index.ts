@@ -6,7 +6,7 @@ export { compile, evalNum, expressionProblem, ExprError, FUNCTION_NAMES, VARS, t
 export { PALETTE_NAMES, isPaletteName, type Team } from "./palette";
 export { MAX_COPIES, MAX_SHAPES, SHAPES, shapeCount, validate, type Layer, type Spec, type Validation } from "./spec";
 export { beatAt, drawSigil, type DrawOptions, type DrawState } from "./draw";
-export { mountSigil, mountedCount, resetSigils, type LiveOptions, type SigilHandle } from "./live";
+export { mountSigil, mountedCount, resetSigils, type LiveOptions, type Pulse, type SigilHandle } from "./live";
 export { FALLBACK_SPEC };
 
 /** A unit's spec when it validates, else the generic one. */
