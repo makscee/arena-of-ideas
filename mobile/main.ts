@@ -1518,7 +1518,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const layoutInspector = () => {
     inspector.querySelector(":scope > button.insp-x")?.remove();
     const rows = [...inspector.children].filter((c) => c.classList.contains("row"));
-    const body = h("div", { class: "insp-body" }, ...[...inspector.children].filter((c) => !rows.includes(c)).map((c) => c as HTMLElement));
+    const body = h("div", { class: "insp-body", "data-scroll": "", style: "--scroll-cue:1" }, ...[...inspector.children].filter((c) => !rows.includes(c)).map((c) => c as HTMLElement));
     inspector.replaceChildren(...(body.childElementCount ? [body] : []), ...rows);
     cueWatch.disconnect();
     if (body.childElementCount) cueWatch.observe(body, { childList: true, subtree: true, characterData: true });
@@ -1583,7 +1583,13 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       card_(own ? unitSheet(own, content, sheetOpts(t("panel.offer", { n: n + 1 }))) : pool ? unitSheet(pool, content, sheetOpts(t("panel.offer", { n: n + 1 }))) : h("h2", {}, o.unitId), buyBlock(o));
       void offerBody(o).then(
         ({ sheet, blocked }) => {
-          if (inspected === key) card_(sheet, blocked);
+          // What buying does arrives after the rule: swapped in once no term's tip is open on it (the swap would close the tip under the reader's finger).
+          const swap = () => {
+            if (inspected !== key) return;
+            if (document.querySelector('[data-testid="term-popover"]')) return void setTimeout(swap, 300);
+            card_(sheet, blocked);
+          };
+          swap();
         },
         (e: unknown) => {
           if (inspected === key) inspector.append(h("div", { class: "error" }, e instanceof Error ? e.message : String(e)));
