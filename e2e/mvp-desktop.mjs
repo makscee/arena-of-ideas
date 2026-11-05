@@ -140,15 +140,15 @@ try {
     const touch = reach.some((a, i) => reach.some((b, j) => j > i && a.r > b.l && b.r > a.l && a.b > b.t && b.b > a.t));
     if (reach.length !== 5 || touch) errors.push(`home champion: ${reach.length} pieces${touch ? ", two touch" : ""}`);
   }
-  // Home's two columns: Play sits right of the champion panel.
-  const [champBox, playBox] = [await page.getByTestId("champion").boundingBox(), await page.getByTestId("play").boundingBox()];
-  if (!(playBox.x > champBox.x + champBox.width)) errors.push("home: Play isn't in the right column");
+  // Home is a table state (arena#31): PLAY sits under the champion's line, over the middle of your slots.
+  const [champBox, playBox] = [await page.getByTestId("home-their").boundingBox(), await page.getByTestId("play").boundingBox()];
+  if (!(playBox.y > champBox.y + champBox.height * 0.8)) errors.push("home: Play isn't under the champion's line");
   {
-    // At 1024px the champion's 5 cards stay on one line (R2-10).
+    // At 1024px the champion's 5 pieces stay on one row.
     const size = page.viewportSize();
     await page.setViewportSize({ width: 1024, height: size.height });
-    const tops = await page.getByTestId("champion").locator(".card").evaluateAll((els) => els.map((e) => e.offsetTop));
-    if (new Set(tops).size > 1) errors.push(`home at 1024px: the champion's cards wrap (${tops.join(",")})`);
+    const tops = await page.getByTestId("champion").locator(".pc").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+    if (tops.length !== 5 || new Set(tops).size > 1) errors.push(`home at 1024px: the champion's pieces wrap (${tops.join(",")})`);
     await shot("home-1024");
     await page.setViewportSize(size);
   }

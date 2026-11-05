@@ -107,7 +107,7 @@ async function fullRun(lang) {
   await tid("play").waitFor();
   await settle();
   expect("Home: Play has the keyboard", (await k.active()) === "play");
-  for (const id of ["codex", "forge-open", "dictionary-open", "stats", "settings"]) if (!(await tid(id).count())) fail(`Home: no ${id}`);
+  for (const id of ["codex", "forge-open", "stats", "settings"]) if (!(await tid(id).count())) fail(`Home: no ${id}`);
   expect("Home: the links wear their keys", (await tid("codex").locator("kbd").count()) === 1 && (await tid("forge-open").locator("kbd").count()) === 1);
   await press("Enter");
   await tid("fight").waitFor();
