@@ -306,7 +306,7 @@ export function formRich(form: UnitForm, content: MvpContent): Node[] {
 export function unitSheet(
   u: LineUnit | BattleUnit | UnitContent,
   content: MvpContent,
-  opts: { floor?: number; rates?: UnitRates; from?: Stats; preview?: boolean; candidate?: boolean; credit?: Parameters<typeof creditText>[0]; now?: { pwr: number; hp: number; statuses: { status: string; stacks: number }[] } } = {},
+  opts: { floor?: number; compact?: boolean; where?: string; heroWord?: boolean; heroPx?: number; rates?: UnitRates; from?: Stats; preview?: boolean; candidate?: boolean; credit?: Parameters<typeof creditText>[0]; now?: { pwr: number; hp: number; statuses: { status: string; stacks: number }[] } } = {},
 ): HTMLElement {
   const unitId = "forms" in u ? u.id : u.unitId;
   // A unit that left the pool (a champion's, a replay's) is in content.left (M2-2).
@@ -395,7 +395,7 @@ export function unitSheet(
   const hero = h(
     "div",
     { class: "sheet-hero", "data-testid": "sheet-piece" },
-    piece(pu, { size: "M", px: heroPx(), side: "stats" in u ? "you" : "shop", statuses: onIt, counter: ring ? (onIt.find((x) => x.status === ring.status)?.stacks ?? 0) : 0, word: true, ...(opts.floor != null ? { floor: opts.floor } : {}) }),
+    piece(pu, { size: "M", px: opts.heroPx ?? heroPx(), side: "stats" in u ? "you" : "shop", statuses: onIt, counter: ring ? (onIt.find((x) => x.status === ring.status)?.stacks ?? 0) : 0, word: opts.heroWord ?? true, ...(opts.floor != null ? { floor: opts.floor } : {}) }),
   );
   const tier = "forms" in u ? u.tier : pu.tier;
   const pips = !fused && copies > 0 && !("form" in u && u.form === "awoken")
@@ -422,46 +422,53 @@ export function unitSheet(
 
   // The sheet measures its own width (a container): two columns in a wide
   // dialog, one in the shop's inspector or on a phone.
+  const headRow = h(
+    "div",
+    { class: "row sheet-head" },
+    h("span", { class: `sheet-portrait${fused ? " fused" : ""}`, "aria-hidden": "true" }, u.emoji),
+    h(
+      "div",
+      { class: "sheet-title" },
+      h("div", { class: "row sheet-name" }, h("h2", {}, fused ? fusionName("fusion" in u ? u.fusion : undefined, u.name) : unitName(unitId, u.name)), tier ? h("span", { class: `pc-tier pc-t${tier}` }, roman(tier)) : null, pips),
+      state,
+      // Where it stands (the shop's panel): the offer, the line slot, the bench slot.
+      opts.where ? h("span", { class: "dim small sheet-where", "data-testid": "sheet-where" }, ` · ${opts.where}`) : null,
+    ),
+  );
+  // What the unit is about, in one sentence (R4-8); a fused unit has none.
+  const top: (Node | null)[] = [
+    headRow,
+    c?.archetype ? h("div", { class: "archetype", "data-testid": "sheet-archetype" }, c.archetype) : null,
+    opts.candidate ? h("div", { class: "dim small", "data-testid": "sheet-unset" }, SET_BY_SIM()) : "stats" in u ? statsLine(u.stats) : sheetStats(u.base.pwr, u.base.hp),
+    opts.from ? h("div", { class: "dim small" }, t("card.yourCopyNow")) : null,
+  ];
+  const rest: (Node | null)[] = [
+    h("div", { class: "label sheet-rule-head" }, t("card.ruleHead")),
+    icons.childNodes.length ? icons : null,
+    box,
+    ...children,
+    summons.childNodes.length || (sleeping && c) ? summons : null,
+    onNow,
+    // opts.credit: a Library unit's own (M3-8), not a live version's that shares its id.
+    fused ? null : opts.credit ? creditText(opts.credit) : creditLine(unitId),
+    // #1271: a unit a player made can be reported (not your own).
+    fused ? null : reportUnit(opts.credit ?? creditOf(unitId), unitId, u.name),
+    "forms" in u ? null : discoveredLine(u, { preview: opts.preview ?? false }),
+    fused || opts.candidate ? null : unitStatsLine(unitId, opts.rates),
+  ];
+  // The shop's panel (arena#28, round 4): the piece beside the head, the rule across the whole width under both.
+  if (opts.compact) {
+    return h(
+      "div",
+      { class: "sheet-xl sheet-compact", "data-testid": "unit-sheet" },
+      h("div", { class: "sheet-top" }, hero, h("div", { class: "stack sheet-top-text" }, ...top)),
+      h("div", { class: "stack sheet-body" }, ...rest),
+    );
+  }
   return h(
     "div",
     { class: "sheet-xl", "data-testid": "unit-sheet" },
-    h(
-      "div",
-      { class: "sheet-xl-grid" },
-      hero,
-      h(
-      "div",
-      { class: "stack sheet-body" },
-      // M5-2 (C-Shop's inspector): the name big, tier and copies beside it, its state under it.
-      h(
-        "div",
-        { class: "row sheet-head" },
-        h("span", { class: `sheet-portrait${fused ? " fused" : ""}`, "aria-hidden": "true" }, u.emoji),
-        h(
-          "div",
-          { class: "sheet-title" },
-          h("div", { class: "row sheet-name" }, h("h2", {}, fused ? fusionName("fusion" in u ? u.fusion : undefined, u.name) : unitName(unitId, u.name)), tier ? h("span", { class: `pc-tier pc-t${tier}` }, roman(tier)) : null, pips),
-          state,
-        ),
-      ),
-      // What the unit is about, in one sentence (R4-8); a fused unit has none.
-      c?.archetype ? h("div", { class: "archetype", "data-testid": "sheet-archetype" }, c.archetype) : null,
-      opts.candidate ? h("div", { class: "dim small", "data-testid": "sheet-unset" }, SET_BY_SIM()) : "stats" in u ? statsLine(u.stats) : sheetStats(u.base.pwr, u.base.hp),
-      opts.from ? h("div", { class: "dim small" }, t("card.yourCopyNow")) : null,
-      h("div", { class: "label sheet-rule-head" }, t("card.ruleHead")),
-      icons.childNodes.length ? icons : null,
-      box,
-      ...children,
-      summons.childNodes.length || (sleeping && c) ? summons : null,
-      onNow,
-      // opts.credit: a Library unit's own (M3-8), not a live version's that shares its id.
-      fused ? null : opts.credit ? creditText(opts.credit) : creditLine(unitId),
-      // #1271: a unit a player made can be reported (not your own).
-      fused ? null : reportUnit(opts.credit ?? creditOf(unitId), unitId, u.name),
-      "forms" in u ? null : discoveredLine(u, { preview: opts.preview ?? false }),
-      fused || opts.candidate ? null : unitStatsLine(unitId, opts.rates),
-      ),
-    ),
+    h("div", { class: "sheet-xl-grid" }, hero, h("div", { class: "stack sheet-body" }, ...top, ...rest)),
   );
 }
 
