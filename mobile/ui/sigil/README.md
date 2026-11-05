@@ -43,3 +43,14 @@ Where a screen used to print a unit's emoji it draws the sigil instead: `mobile/
 - **`aw`:** a piece passes `aw: 1` to its sigil when the unit is awoken (`PieceUnit.awoken`), so a spec's `aw` terms grow what its designer said (a halo, more arcs, a higher count) on every piece the game draws, with the frame's gold stand and crown. A fused unit is drawn with `aw: 1` too: both its parts were awoken to fuse.
 - **`fuse(a, b)`** (`fuse.ts`, the duel's `Sigil.fuse`): `{body: a.body, mark: b.mark}`. A part with no valid spec counts as the generic sigil; if the pair together draws more than the shape budget it keeps `a`'s whole portrait (none of the 60 × 60 live pairs does: `fuse.test.ts` checks them all). `lineToPiece`, the card's piece (`pieceCard`) and the gallery's fused state use it, replacing the two-emoji piece.
 - **Visual only:** a fusion's rule, name and stats come from the fusion; nothing here reads or changes them. The designer's own `FusionDesign.portrait` (slice C) is not drawn by the client.
+
+## Words and glyphs (slice G, arena#41)
+
+No emoji is left in a piece's chrome.
+
+- **The When tab is its word alone** (`face.when.label`, 11 px and up, at every size; the old `word` option and the docked panel's "hide the words" rule are gone). Its colour still follows the glyph family.
+- **Glyphs** (`sigil/glyphs.ts`): 29 small drawn marks, each a sigil spec (bold flat shapes, the same thick ink outline, the closed palette, no state expressions), drawn by `glyphIcon(name, px)` in `ui/glyph.ts` as one still frame. The names are the closed set in `src/mvp/glyph-names.ts` (`GLYPH_NAMES`). The headline badge, the status chips (`statusGlyph`: Shield, Strength, Vitality, Blessing, Charge, Poison, Curse, Freeze, Silence, anything else the spark), the sheet's "now" chips and the offer's lock use them.
+- **Faces hold names.** `Face.when.icon` and `Face.headline.icon` are glyph names; `V2_FACE` and the trigger fallbacks were converted. A face saved with an emoji draws through `LEGACY_GLYPH` (`glyphName`), and `normalizeFace` maps one when a face is checked; an icon that is neither a name nor a known emoji fails `faceProblems`.
+- **The night designer** gets the names in its `face` prompt and as an `enum` in its JSON schema; `draftFace` maps a known emoji, else falls back to the trigger's face.
+- `npm run mvp:sigil-glyphs` validates all of them in a browser, checks each fills its 16 px box with ink outline and that no two look alike, and writes a contact sheet (`e2e/.shots/glyphs/`). `npm run mvp:sigil-table` also fails on an emoji in a tab, badge, chip or lock.
+- **Kept:** the ★ / ✦ marks (text symbols, not emoji) and the card's 💡 "idea by" mark, which is a card line, not the piece's chrome.

@@ -19,8 +19,8 @@ import { isMine, reportLink } from "./report";
 import { icon } from "./icon";
 import { roman } from "./roman";
 import { fuse, type Spec } from "./sigil";
-import { portraitOf, setPortraits, sigilIcon, unitSigil } from "./glyph";
-import { faceOfUnit, lineToPiece, piece, pieceReach, statusEmoji, type PieceUnit } from "./piece";
+import { glyphIcon, portraitOf, setPortraits, sigilIcon, unitSigil } from "./glyph";
+import { faceOfUnit, lineToPiece, piece, pieceReach, statusGlyph, type PieceUnit } from "./piece";
 import { faceFallback, fusedFace, type Face } from "../../src/mvp/face";
 import { termDef } from "../../src/glossary";
 import { markChangedPieces, richText } from "./term";
@@ -51,9 +51,9 @@ export interface CardOptions {
   /** M3-8: a unit the live credits don't know (the Library's): its archetype
    * version, and no live credit (NEW, 💡). */
   version?: number;
-  /** The piece's face side and whether its tab shows the word, in place of the
+  /** The piece's face side, in place of the
    * screen's default (Home's champion sizes them from its panel). */
-  piece?: { px: number; word: boolean };
+  piece?: { px: number };
 }
 
 /** A tier's colour class (R4-4): .t1–.t4 on the --tier-1..4 tokens, .ts for a summoned unit. */
@@ -174,7 +174,7 @@ function pieceCard(u: CardUnit, o: CardOptions): HTMLElement {
     awoken: u.kind !== "fused" && u.form === "awoken",
     ...(u.kind === "fused" ? { fused: { emoji: ems.slice(1).join("") || "✨" } } : {}),
   };
-  const pc = piece(pu, { size: "M", px: o.piece?.px ?? (window.innerWidth < 600 ? 46 : 60), side: o.side === "ghost" ? "them" : "you", word: o.piece?.word ?? window.innerWidth >= 600 });
+  const pc = piece(pu, { size: "M", px: o.piece?.px ?? (window.innerWidth < 600 ? 46 : 60), side: o.side === "ghost" ? "them" : "you" });
   const reach = o.piece ? pieceReach(o.piece.px) : undefined;
   const credit = u.kind === "fused" || o.version !== undefined ? undefined : creditOf(u.unitId);
   const version = o.version ?? credit?.version ?? 1;
@@ -310,7 +310,7 @@ export function formRich(form: UnitForm, content: MvpContent): Node[] {
 export function unitSheet(
   u: LineUnit | BattleUnit | UnitContent,
   content: MvpContent,
-  opts: { floor?: number; compact?: boolean; where?: string; heroWord?: boolean; heroPx?: number; rates?: UnitRates; from?: Stats; preview?: boolean; candidate?: boolean; credit?: Parameters<typeof creditText>[0]; now?: { pwr: number; hp: number; statuses: { status: string; stacks: number }[] } } = {},
+  opts: { floor?: number; compact?: boolean; where?: string; heroPx?: number; rates?: UnitRates; from?: Stats; preview?: boolean; candidate?: boolean; credit?: Parameters<typeof creditText>[0]; now?: { pwr: number; hp: number; statuses: { status: string; stacks: number }[] } } = {},
 ): HTMLElement {
   const unitId = "forms" in u ? u.id : u.unitId;
   // A unit that left the pool (a champion's, a replay's) is in content.left (M2-2).
@@ -399,7 +399,7 @@ export function unitSheet(
   const hero = h(
     "div",
     { class: "sheet-hero", "data-testid": "sheet-piece" },
-    piece(pu, { size: "M", px: opts.heroPx ?? heroPx(), side: "stats" in u ? "you" : "shop", statuses: onIt, counter: ring ? (onIt.find((x) => x.status === ring.status)?.stacks ?? 0) : 0, word: opts.heroWord ?? true, ...(opts.floor != null ? { floor: opts.floor } : {}) }),
+    piece(pu, { size: "M", px: opts.heroPx ?? heroPx(), side: "stats" in u ? "you" : "shop", statuses: onIt, counter: ring ? (onIt.find((x) => x.status === ring.status)?.stacks ?? 0) : 0, ...(opts.floor != null ? { floor: opts.floor } : {}) }),
   );
   const tier = "forms" in u ? u.tier : pu.tier;
   const pips = !fused && copies > 0 && !("form" in u && u.form === "awoken")
@@ -416,7 +416,7 @@ export function unitSheet(
           return h(
             "div",
             { class: "sheet-now-row", "data-status": status },
-            h("span", { class: `sheet-now-chip ${statusEmoji(status)[1]}` }, statusEmoji(status)[0], h("b", {}, max ? `${stacks}/${max}` : String(stacks))),
+            h("span", { class: `sheet-now-chip ${statusGlyph(status)[1]}` }, glyphIcon(statusGlyph(status)[0], 18), h("b", {}, max ? `${stacks}/${max}` : String(stacks))),
             // A counter's own tip says nothing ("No effect"): its ring's fill says what it is.
             h("span", {}, h("b", {}, `${def?.label ?? status} ${stacks}`), max ? ` · ${t("card.counterTip", { n: stacks, max })}` : def?.tip ? ` · ${def.tip}` : ""),
           );
