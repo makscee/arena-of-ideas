@@ -21,6 +21,8 @@ export interface ArchetypeDraft {
   line: string;
   /** M4-5: the name and line in Russian, whichever language the idea was in. */
   ru?: { name: string; line: string };
+  /** Mission arena#34 (slice C): the sigil spec the model wrote, unchecked (portrait.ts resolves it). */
+  portrait?: unknown;
 }
 
 /** A reading as the reader drafted it: unchecked strings. */

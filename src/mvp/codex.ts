@@ -14,6 +14,7 @@
 import { fuseCheck, fusedStats } from "./forms.js";
 import type { LineUnit, PlayerRef, UnitForm, UnitId } from "./contract.js";
 import type { AbilityRegistry, StatusRegistry } from "../types.js";
+import type { Spec } from "../../mobile/ui/sigil/spec.js";
 
 export type PairState = "discovered" | "ready" | "unforged";
 
@@ -28,6 +29,9 @@ export interface FusionDesign {
   /** A line of flavour. */
   flavour?: string;
   texts?: { ru?: { name: string; flavour?: string } };
+  /** Mission arena#34 (slice C): the night designer's sigil spec for the fusion
+   * (checked by the sigil `validate`). Rides in the design's JSON. */
+  portrait?: Spec;
   /** Forged words the design uses (design §7: a claim can bring a word in). */
   words?: string[];
   /** The registry entries the rule coins (the night batch's own abilities and

@@ -24,6 +24,8 @@ import { battle } from "../../../src/battle.js";
 import type { DescribeSegment, Lang } from "../../../src/describe.js";
 import { formSegments } from "../../../src/mvp/form-text.js";
 import { faceFallback, faceProblems, type Face } from "../../../src/mvp/face.js";
+import type { Spec } from "../../../mobile/ui/sigil/spec.js";
+import { resolvePortrait } from "./portrait.js";
 import { fusedStats } from "../../../src/mvp/forms.js";
 import type { AbilityDef, AbilityRegistry, Amount, BattleEvent, Effect, StatusDef, StatusRegistry, UnitDef } from "../../../src/types.js";
 import { validateAbilityRegistry, validateTeam } from "../../../src/validate.js";
@@ -145,6 +147,8 @@ export interface DesignDraft {
   wordRequest?: { word: string; meaning: string };
   /** The piece's face the designer picked (#1291, src/mvp/face.ts). */
   face?: Face;
+  /** Mission arena#34 (slice C): the fusion's sigil spec as the model wrote it, unchecked (portrait.ts resolves it). */
+  portrait?: unknown;
 }
 
 export interface Naming {
@@ -161,6 +165,9 @@ export interface Designer {
    * RU, for the compiled and tuned rule (`rule`, the composer's text). `fix`:
    * why the last try didn't match. Without it the card reads the composer. */
   say?(a: Parent, b: Parent, d: DesignDraft, rule: Say, fix?: string[]): Promise<Say>;
+  /** Slice C: the fusion's sigil spec again, after the draft's failed the sigil
+   * `validate` (`problems`). Unchecked. Without it a bad first try gets the generic sigil. */
+  portrait?(a: Parent, b: Parent, d: DesignDraft, naming: Naming, problems: string[]): Promise<unknown>;
 }
 
 export interface Say {
@@ -278,6 +285,8 @@ export interface Candidate {
    * or, when it wrote none that fits, the one its trigger gives. Absent on
    * a candidate stored before it. */
   face?: Face;
+  /** Slice C: the fusion's sigil spec; it passed the sigil `validate` or is the generic one. Ready candidates only. */
+  portrait?: Spec;
 }
 
 /** A draft's face: the designer's when it fits the piece, else its trigger's. */
@@ -568,6 +577,8 @@ async function designPair(pair: ListedPair, a: Parent, b: Parent, o: BatchOption
       const state = tuned.check.inBand ? "ready" : "rejected";
       // the card's sentence, written for the tuned numbers (#1122)
       const say = state === "ready" ? await writeSay(o.designer, a, b, d, text, (l) => log(`${pair.key} ${naming.name.en}: ${l}`)) : undefined;
+      // its sigil spec (slice C): validated, asked once more, else the generic sigil
+      const portrait = state === "ready" ? await resolvePortrait(d.portrait, o.designer.portrait ? (problems) => o.designer.portrait!(a, b, d, naming, problems) : undefined, (l) => log(`${pair.key} ${naming.name.en}: ${l}`)) : undefined;
       const why = !tuned.check.terminates ? `doesn't terminate (${tuned.check.capped} capped, ${tuned.check.timeUp} time-up of ${tuned.check.games})` : `out of band: wins ${Math.round(tuned.check.score * 100)}% at best (band ${BAND.low * 100}-${BAND.high * 100}%)`;
       return {
         ...base,
@@ -577,6 +588,7 @@ async function designPair(pair: ListedPair, a: Parent, b: Parent, o: BatchOption
         statuses: tuned.compiled.statuses,
         text,
         ...(say ? { say } : {}),
+        ...(portrait ? { portrait } : {}),
         check: tuned.check,
         state,
         ...(state === "rejected" ? { why } : {}),

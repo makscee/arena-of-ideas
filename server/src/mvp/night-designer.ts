@@ -9,7 +9,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { DejaVu, FIXTURE_ABILITIES, FIXTURE_STATUSES, GraveTree } from "../../../src/words/fixtures.js";
 import { MACROS } from "../../../src/words/macros.js";
-import { callClaude } from "./idea-reader.js";
+import { callClaude, fakePortrait } from "./idea-reader.js";
+import { PORTRAIT_SCHEMA, portraitRetryNote, sigilBrief } from "./portrait.js";
 import { V2_SAY } from "../../../src/mvp/units-v2-say.js";
 import { type DesignDraft, type Designer, LEANS, type Naming, type Parent, type Say } from "./night-batch.js";
 
@@ -63,8 +64,13 @@ export function designerSystemPrompt(examples?: DesignerExamples): string {
     `Déjà Vu (Hourglass + Mirror): ${JSON.stringify(DejaVu)}`,
     `Grave Tree (Raven + Seed): ${JSON.stringify(GraveTree)}`,
     "",
+    "Each candidate also has `portrait`: the fusion's sigil spec, its picture, in the format below. Draw the third creature, not either parent.",
+    "",
     "The language (TypeScript types):",
     language(),
+    "",
+    "THE SIGIL FORMAT",
+    sigilBrief(),
   ].join("\n");
 }
 
@@ -89,6 +95,7 @@ export const DESIGN_SCHEMA = {
           abilities: OBJ,
           statuses: OBJ,
           wordRequest: { type: "object", properties: { word: { type: "string" }, meaning: { type: "string" } }, required: ["word", "meaning"] },
+          portrait: PORTRAIT_SCHEMA,
           face: {
             type: "object",
             properties: {
@@ -99,12 +106,23 @@ export const DESIGN_SCHEMA = {
             required: ["when", "headline"],
           },
         },
-        required: ["lean", "intent", "rule", "abilities"],
+        required: ["lean", "intent", "rule", "abilities", "portrait"],
       },
     },
   },
   required: ["candidates"],
 };
+
+/** Slice C: the retry for a refused portrait; the sigil format alone, no engine language. */
+export const PORTRAIT_SYSTEM = [
+  "You draw the picture (the sigil) of a fused unit in Arena of Ideas, an auto-battler. You answer with the sigil spec only.",
+  "",
+  sigilBrief(),
+].join("\n");
+
+export function portraitPrompt(a: Parent, b: Parent, d: DesignDraft, naming: Naming, problems: string[]): string {
+  return `Parents: ${a.emoji ?? ""} ${a.id} and ${b.emoji ?? ""} ${b.id}.\nThe fusion ${naming.name.en}: ${d.intent}\nDraw the fusion as a third creature.\n${portraitRetryNote(problems)}`;
+}
 
 export const NAMER_SYSTEM =
   "You name fusions in Arena of Ideas, an auto-battler whose units are players' ideas. Give the new creature a short evocative name (one or two words, not the parents' names glued) and one line of flavour (under 90 characters), in English and in Russian. The Russian is written natively, not translated word for word.";
@@ -159,6 +177,9 @@ export function claudeDesigner(o: ClaudeDesignerOptions): Designer {
       if (!out?.name?.en || !out?.name?.ru) throw new Error("claude -p gave no name");
       return out;
     },
+    async portrait(a, b, d, naming, problems) {
+      return callClaude({ model: o.namerModel, bin: o.bin, timeoutMs: o.timeoutMs }, PORTRAIT_SYSTEM, portraitPrompt(a, b, d, naming, problems), PORTRAIT_SCHEMA);
+    },
     async say(a, b, d, rule, fix) {
       return (await callClaude({ model: o.namerModel, bin: o.bin, timeoutMs: o.timeoutMs }, saySystem(), sayPrompt(a, b, d, rule, fix), PAIR)) as Say;
     },
@@ -177,7 +198,11 @@ export function fakeDesigner(): Designer {
         intent: `${a.id} and ${b.id}, lean ${lean}: hits the front enemy.`,
         rule: { triggers: [{ kind: "trigger", on: on[lean] }], selectors: [{ kind: "frontEnemy" }], abilities: ["Hit"] },
         abilities: { Hit: { name: "Hit", family: "Strike", effects: [{ kind: "damage", amount: { kind: "const", value: 2 } }] } },
+        portrait: fakePortrait(`${a.id}+${b.id}:${lean}`),
       })) as DesignDraft[];
+    },
+    async portrait(a, b, d) {
+      return fakePortrait(`${a.id}+${b.id}:${d.lean}`);
     },
     async name(a, b, d) {
       return { name: { en: `${a.id}${b.id} ${d.lean}`, ru: `${a.id}${b.id} ${d.lean}` }, flavour: { en: "A test fusion.", ru: "Пробное слияние." } };
