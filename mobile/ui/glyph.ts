@@ -3,7 +3,7 @@
 // own (./piece.ts); this is for the places beside a name, on a card, in a sheet's head,
 // a chip, a list row. Small ones (inline with text) are one still frame; a big one
 // (a sheet's head, a card) is mounted in the shared loop and moves.
-import { drawSigil, mountSigil, specOrFallback, type Spec, type Team } from "./sigil";
+import { drawSigil, fuse, mountSigil, specOrFallback, type Spec, type Team } from "./sigil";
 
 /** The live units' specs by id, set once the content loads (setCardFaces). */
 let specs = new Map<string, Spec>();
@@ -52,7 +52,9 @@ export function sigilIcon(spec: unknown, px: number, o: GlyphOptions = {}): HTML
 }
 
 /** The sigil of a unit-like thing: its own spec, else its pool unit's (a fusion shows its first part's body), else the generic one. */
-export function unitSigil(u: { portrait?: Spec | undefined; unitId?: string | undefined; fusion?: { first: string } | undefined }, px: number, o: GlyphOptions = {}): HTMLCanvasElement {
+export function unitSigil(u: { portrait?: Spec | undefined; unitId?: string | undefined; fusion?: { first: string; second?: string } | undefined; kind?: string | undefined }, px: number, o: GlyphOptions = {}): HTMLCanvasElement {
+  // a fusion: one part's body and the other's mark (slice F, ./sigil fuse)
+  if (u.fusion?.second && (u.kind === undefined || u.kind === "fused")) return sigilIcon(fuse(portraitOf(u.fusion.first), portraitOf(u.fusion.second)), px, o);
   return sigilIcon(u.portrait ?? portraitOf(u.fusion?.first ?? u.unitId), px, o);
 }
 

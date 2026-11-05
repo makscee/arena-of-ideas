@@ -15,7 +15,7 @@ import type { LineUnit, MvpContent, UnitContent } from "../../src/mvp/contract";
 import type { Stats } from "../../src/types";
 import { h } from "./dom";
 import { roman } from "./roman";
-import { mountSigil, specOrFallback, type Pulse, type SigilHandle, type Spec } from "./sigil";
+import { fuse, mountSigil, specOrFallback, type Pulse, type SigilHandle, type Spec } from "./sigil";
 
 export type PieceSize = "L" | "M" | "S" | "XS";
 
@@ -30,10 +30,10 @@ export interface PieceUnit {
   face: Face;
   tier?: number;
   awoken?: boolean;
-  /** A fusion: its second part's emoji (the text lines keep it; the piece draws its first part's sigil). */
+  /** A fusion: its second part's emoji (the text lines keep it). Its sigil is `portrait`, `fuse(a, b)`: the first part's body, the second's mark. */
   fused?: { emoji: string };
   copies?: number;
-  /** The sigil spec (arena#38): the unit's own portrait; absent or invalid draws the generic sigil. */
+  /** The sigil spec (arena#38): the unit's own portrait, a fusion's `fuse(a, b)` (arena#40); absent or invalid draws the generic sigil. */
   portrait?: Spec;
 }
 
@@ -129,13 +129,14 @@ export function faceOfLine(u: Pick<LineUnit, "unitId" | "recipe" | "fusion">, co
 export function lineToPiece(u: LineUnit, content: Pick<MvpContent, "units">): PieceUnit {
   const unit = content.units.find((x) => x.id === u.unitId);
   const second = u.fusion ? content.units.find((x) => x.id === u.fusion!.second) : undefined;
+  const portrait = u.kind === "fused" ? fuse(unit?.portrait, second?.portrait) : unit?.portrait;
   return {
     name: u.name,
     emoji: u.emoji,
     stats: u.stats,
     face: faceOfLine(u, content),
     ...(unit ? { tier: unit.tier } : {}),
-    ...(unit?.portrait ? { portrait: unit.portrait } : {}),
+    ...(portrait ? { portrait } : {}),
     awoken: u.kind !== "fused" && u.form === "awoken",
     ...(u.kind === "fused" ? { fused: { emoji: second?.emoji ?? "✨" } } : {}),
     copies: u.copies,
@@ -183,6 +184,7 @@ function sigil(u: PieceUnit, o: PieceOptions, s: number, side: "you" | "them" | 
     pwr: u.stats.pwr,
     charge: o.bound?.charge ?? stacksOf(o, u.face.counter, "Charge"),
     shield: o.bound?.shield ?? stacksOf(o, u.face.counter, "Shield"),
+    aw: u.awoken || u.fused ? 1 : 0, // the 3rd copy grows what the spec says; a fusion's parts were both awoken
     seed,
   }));
   return cv;

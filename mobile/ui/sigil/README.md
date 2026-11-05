@@ -37,3 +37,9 @@ Where a screen used to print a unit's emoji it draws the sigil instead: `mobile/
 - **Strings:** the `{emoji}` placeholder is gone from every catalog line (`vote.*`, `pick.newVersionTitle`, `ideas.*`, `codex.pairsOf`); the screen puts the sigil beside the name as an element. Text-only strings (a toast, a `title`, a `<select>` option, the Codex's "A + B" sentences) say the name alone.
 - **Kept:** server texts that print emoji for players (`daily-post.ts`, the Telegram post) and the share-card PNGs (`server/src/mvp/share.ts`, Twemoji on the server: no canvas there). The dev gallery's `fused: {emoji}` field is not drawn.
 - `npm run mvp:sigil-screens` opens 20 scenes in a browser: sigils on the page, none of the live units' emoji left in its text, small ones inked, no page error.
+
+## The 3rd copy and a fusion (slice F, arena#40)
+
+- **`aw`:** a piece passes `aw: 1` to its sigil when the unit is awoken (`PieceUnit.awoken`), so a spec's `aw` terms grow what its designer said (a halo, more arcs, a higher count) on every piece the game draws, with the frame's gold stand and crown. A fused unit is drawn with `aw: 1` too: both its parts were awoken to fuse.
+- **`fuse(a, b)`** (`fuse.ts`, the duel's `Sigil.fuse`): `{body: a.body, mark: b.mark}`. A part with no valid spec counts as the generic sigil; if the pair together draws more than the shape budget it keeps `a`'s whole portrait (none of the 60 × 60 live pairs does: `fuse.test.ts` checks them all). `lineToPiece`, the card's piece (`pieceCard`) and the gallery's fused state use it, replacing the two-emoji piece.
+- **Visual only:** a fusion's rule, name and stats come from the fusion; nothing here reads or changes them. The designer's own `FusionDesign.portrait` (slice C) is not drawn by the client.
