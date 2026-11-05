@@ -56,7 +56,7 @@ export const screens = {
   "ideas.stage.library": "в архиве",
   "ideas.why": "Идеи вернутся в {time}",
   "ideas.back": "Назад",
-  "ideas.title": "МОИ ИДЕИ",
+  "ideas.title": "МАСТЕРСКАЯ",
   "ideas.hold": { one: "💡 На сегодня у тебя ещё {n} идея.", few: "💡 На сегодня у тебя ещё {n} идеи.", many: "💡 На сегодня у тебя ещё {n} идей.", other: "💡 На сегодня у тебя ещё {n} идеи." },
   "ideas.holdMax": " Это весь запас на день: неотправленные не копятся.",
   "ideas.holdNone": "💡 На сегодня идей нет.",

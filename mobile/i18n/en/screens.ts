@@ -55,7 +55,7 @@ export const screens = {
   "ideas.stage.library": "in the library",
   "ideas.why": "Ideas come back at {time}",
   "ideas.back": "Back",
-  "ideas.title": "MY IDEAS",
+  "ideas.title": "WORKSHOP",
   "ideas.hold": { one: "💡 You have {n} idea left today.", other: "💡 You have {n} ideas left today." },
   "ideas.holdMax": " That's a full day's worth: unsent ones don't stack.",
   "ideas.holdNone": "💡 No ideas left today.",

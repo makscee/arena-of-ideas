@@ -2490,7 +2490,7 @@ button.link.keep { min-height: 32px; min-width: 44px; }
 
 /* A scroll area the layout lint accepts (arena#32): marked data-scroll, and it shows there is more below: a fade at its foot */
 [data-scroll] { --scroll-cue: fade; }
-[data-scroll]::after { content: ""; display: block; flex: none; position: sticky; bottom: 0; height: 24px; margin-top: -24px; background: linear-gradient(to bottom, transparent, rgba(33, 26, 49, 0.9)); pointer-events: none; }
+[data-scroll]::after { content: ""; display: block; flex: none; position: sticky; bottom: 0; height: 24px; margin-top: -24px; background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--ground) 92%, transparent)); pointer-events: none; }
 
 /* The idea picks on a short window (800×450): the player's quote and the "read it again" button keep their height, the page scrolls instead of squeezing them to nothing (arena#32) */
 .idea-quote, button.pick-none { flex: none; }

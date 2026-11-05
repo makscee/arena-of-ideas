@@ -723,7 +723,7 @@ function settingsSheet(home: HomeView, err: HTMLElement): void {
 function ideasMeter(ideas: IdeasView): HTMLElement {
   // M2-6: an idea waiting for its pick comes first: "💡 Your idea is ready".
   const label = ideas.ready ? t("home.ideasReady", { n: ideas.ready }) : ideas.held > 0 ? t("home.ideasHeld", { n: ideas.held }) : t("home.ideasNone");
-  const b = button("", () => void ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => (api.forget(), nameScreen()) }), "idea-meter", "ideas");
+  const b = button("", () => void openWorkshop(), "idea-meter", "ideas");
   b.append(h("span", { class: "grow idea-label", "data-testid": "ideas-label" }, label));
   if (!ideas.ready && ideas.held < ideas.perDay)
     b.append(h("span", { class: "idea-runs", "data-testid": "ideas-refill" }, t("home.ideaRefill", { n: ideas.perDay - ideas.held, time: refillTime(ideas.refillsAt) })));
@@ -852,6 +852,12 @@ let codexOn = false;
 let firstRun = false;
 void api.health().then((h) => (codexOn = !!h.codex), () => undefined);
 setReporter((r) => api.report(r), () => api.player?.id ?? savedPlayer()?.id ?? "");
+/** The Workshop (My ideas, its write and pick screens) opens over the current screen as the Codex does: from a table
+ * (the shop, a battle, Home) the table stays dimmed behind it, and Back or Esc returns to it untouched (arena#32). */
+async function openWorkshop(notice: string | null = null): Promise<void> {
+  const back = keepScreen();
+  await ideasScreen({ onBack: back, onUnknown: () => (api.forget(), nameScreen()) }, notice);
+}
 async function openForge(tab: ForgeTab = "units"): Promise<void> {
   const back = keepScreen();
   let view = await api.codex();
@@ -910,6 +916,7 @@ function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: F
   const crown = fought ? fought.kind === "crown" : round > rules.rounds;
   const codex = button(t("menu.codex"), () => (close(), void guarded(err, () => openCodex())), "", "menu-codex");
   const forge = codexOn ? button(t("menu.forge"), () => (close(), void guarded(err, () => openForge())), "", "menu-forge") : null;
+  const workshop = button(t("menu.workshop"), () => (close(), void guarded(err, () => openWorkshop())), "", "menu-ideas");
   const menu = h(
     "div",
     { class: "stack run-menu", "data-testid": "run-menu" },
@@ -918,6 +925,7 @@ function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: F
     withKey(button(t("menu.resume"), () => (close(), resume?.()), "primary", "menu-resume"), "Esc"),
     codex,
     forge,
+    workshop,
     soundRow(),
     langRow(),
     themeRow(),

@@ -183,12 +183,12 @@
 
 /* Codex and Workshop: windows over the dimmed table */
 #under { position: fixed; inset: 0; z-index: 1; filter: blur(3px) brightness(0.45); pointer-events: none; }
-body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="forge"] {
+body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="forge"], body.over-table #app[data-screen="ideas"] {
   position: fixed; inset: 18px 24px 16px; z-index: 10; max-width: none; height: auto; min-height: 0; margin: 0; overflow-y: auto; overscroll-behavior: contain;
   border: 4px solid var(--outline); border-radius: 26px; background: linear-gradient(180deg, #3a3058, #261f38 120px, #211a31);
   box-shadow: 0 8px 0 var(--outline), 0 30px 80px rgba(0, 0, 0, 0.7);
 }
-@media (max-width: 600px) { body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="forge"] { inset: 6px; border-width: 3px; border-radius: 20px; } }
+@media (max-width: 600px) { body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="forge"], body.over-table #app[data-screen="ideas"] { inset: 6px; border-width: 3px; border-radius: 20px; } }
 
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp { position: absolute; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp button.insp-x { position: absolute; top: 2px; right: 4px; z-index: 2; min-width: 44px; width: 44px; height: 40px; min-height: 40px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; color: #5e5280; font: 600 20px/1 var(--font-body); }
@@ -472,3 +472,10 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 .bt-tray > .bv-end .bv-end-moments > .label > * { display: inline; }
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 .bt-tray > .bv-end .bv-end-moments > .label .bv-end-more { display: none; }
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .tb-side .bv-lab-who { overflow: hidden; text-overflow: ellipsis; }
+
+/* The Workshop's head: a ‹ Esc plate at the top left of the window, then the title (arena#32) */
+body.over-table #app[data-screen="ideas"] .ws-head { display: flex; align-items: center; gap: 14px; }
+body.over-table #app[data-screen="ideas"] .ws-head h1 { margin: 0; }
+button.ws-back { min-height: 44px; min-width: 44px; padding: 0 12px; flex: none; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .seal > .card { min-height: 0; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .seal > .card .pcard-stage { height: 64px; }

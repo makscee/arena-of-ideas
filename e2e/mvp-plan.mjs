@@ -43,6 +43,7 @@ const BULLETS = [
   [1, "HUD plates (round track, hearts at every size, gold)"],
   [1, "a tray that changes job: shop counter, chain list, run result"],
   [1, "The Workshop and Codex open as windows over the dimmed table, not as pages"],
+  [1, "The Workshop opens as a window over the dimmed table, with a ‹ Esc plate and the title WORKSHOP"],
   [1, "Esc closes a window"],
   [1, "tap an offer, then a slot"],
   [1, "←/→ and 1–5"],
@@ -275,19 +276,26 @@ try {
     const closed = (await tid("codex-tab-units").count()) === 0;
     rec(S, "Esc closes a window", closed, closed ? "Esc closed the Codex" : "the Codex stayed open on Esc");
 
-    // ---- the Workshop (Ideas) on its scene
-    await page.goto("about:blank"); await page.goto(`${url}#scene=ideas&lang=en`);
-    await page.waitForSelector('[data-testid="ideas-held"], [data-testid="ideas-sent"]', { timeout: 20_000 }).catch(() => {});
-    await page.waitForTimeout(600);
-    const wk = await page.evaluate(() => {
+    // ---- the Workshop: opened from the table (the run's menu), a window over the dimmed table
+    const winOf = () => page.evaluate(() => {
       const app = document.getElementById("app"); const under = document.getElementById("under"); const r = app.getBoundingClientRect(); const cs = getComputedStyle(app);
-      return { fixed: cs.position === "fixed", inset: Math.round(Math.min(r.left, r.top, innerWidth - r.right, innerHeight - r.bottom)), table: !!under?.querySelector('[data-testid="stage"]'), over: document.body.classList.contains("over-table") };
+      return { screen: app.dataset.screen, fixed: cs.position === "fixed", inset: Math.round(Math.min(r.left, r.top, innerWidth - r.right, innerHeight - r.bottom)), table: !!under?.querySelector('[data-testid="stage"]'), over: document.body.classList.contains("over-table"), h1: document.querySelector("#app h1")?.textContent?.trim() ?? "", plate: !!document.querySelector('[data-testid="workshop-back"]'), plateText: document.querySelector('[data-testid="workshop-back"]')?.textContent ?? "" };
     });
+    await tid("menu-open").click().catch(() => {});
+    const wkOpened = await tid("menu-ideas").click({ timeout: 4_000 }).then(() => true, () => false);
+    await page.waitForTimeout(900);
+    const wk = await winOf();
     await shot("workshop");
+    const wkWindow = wkOpened && wk.screen === "ideas" && wk.fixed && wk.table && wk.over && wk.inset >= 4;
     const base = results.find((x) => x.title.startsWith("The Workshop and Codex"));
     const prior = base.sizes[S];
-    const wkOk = wk.fixed && wk.table && wk.over && wk.inset >= 4;
-    base.sizes[S] = { ok: prior.ok === true && wkOk, detail: `${prior.detail}; Workshop (Ideas): ${wkOk ? "a window over the table" : `a page (window ${wk.fixed}, table behind ${wk.table})`}` };
+    base.sizes[S] = { ok: prior.ok === true && wkWindow, detail: `${prior.detail}; Workshop: ${wkOpened ? (wkWindow ? "a window over the table" : `a page (window ${wk.fixed}, table behind ${wk.table})`) : "no way to open it from the table (no menu entry)"}` };
+    rec(S, "The Workshop opens as a window over the dimmed table, with a ‹ Esc plate and the title WORKSHOP", wkWindow && wk.h1 === "WORKSHOP" && wk.plate && (touch || /Esc/.test(wk.plateText)), `title "${wk.h1}", plate ${wk.plate ? `"${wk.plateText.trim()}"` : "none"}, window ${wkWindow}`);
+    await page.keyboard.press("Escape"); await page.waitForTimeout(600);
+    const wkClosed = (await tid("offers").count()) > 0 && !(await page.evaluate(() => document.body.classList.contains("over-table")));
+    const cl = results.find((x) => x.title === "Esc closes a window");
+    const clPrev = cl.sizes[S];
+    cl.sizes[S] = { ok: clPrev.ok === true && wkClosed, detail: `${clPrev.detail}; Workshop: ${wkClosed ? "Esc returned to the shop" : "Esc did not return to the shop"}` };
 
     // ---- bullet 1: the stage, in every state
     const bad = [];

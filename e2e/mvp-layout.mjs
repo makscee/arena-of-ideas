@@ -14,6 +14,7 @@
 // Prints one line a failing scene and size, groups the failures by who owns the screen, writes
 // layout.json. Without --url it builds the client and starts a scenes server. The v2-unit-* battle
 // fixtures (all one layout) are sampled, 4 of them, unless --all.
+//   (--windows runs the Codex and Workshop window states even with --only)
 //   npm run mvp:layout -- [--url http://127.0.0.1:PORT/arena/] [--out e2e/.shots/mvp-layout] [--only shop-r3,codex-units] [--sizes 1280x720,390x844] [--all] [--shots]
 import { spawn, execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -184,6 +185,29 @@ try {
       const owner = ownerOf(s);
       results.push({ scene: s.id, group: s.group, size: S, owner, bad: why });
       console.log(`${why.length ? "FAIL" : "ok  "} ${s.id} ${S} [${owner}]${why.length ? ": " + why.map((x) => `(${x.rule}) ${x.what}`).join("; ").slice(0, 600) : ""}`);
+      await ctx.close();
+    }
+  }
+  // The windows over the table: the Codex and the Workshop, opened from the shop (not a scene of their own).
+  if (!only || args.includes("--windows")) for (const [w, h] of sizes) {
+    const S = `${w}x${h}`;
+    const touchSize = w < 600;
+    for (const [id, open] of [
+      ["window-codex", async (page) => { await page.getByTestId("legend-open").click(); await page.waitForSelector('[data-testid="codex-tab-units"]', { timeout: 10_000 }); }],
+      ["window-workshop", async (page) => { await page.getByTestId("menu-open").click(); await page.getByTestId("menu-ideas").click(); await page.waitForSelector('[data-testid="workshop-back"]', { timeout: 10_000 }); }],
+    ]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: h }, isMobile: touchSize, hasTouch: touchSize, deviceScaleFactor: 1 });
+      const page = await ctx.newPage();
+      const why = [];
+      await page.goto(`${url}#scene=shop-r3&lang=en`, { timeout: 120_000 });
+      await page.waitForSelector('[data-testid="fight"]', { timeout: 60_000 }).catch(() => why.push({ rule: "x", what: "no shop" }));
+      await page.waitForTimeout(800);
+      await open(page).catch((e) => why.push({ rule: "x", what: `open: ${e.message.split("\n")[0]}` }));
+      await page.waitForTimeout(900);
+      why.push(...(await page.evaluate(lint, { touchSize, minTouch: 44, minDesk: 32, minFrame: 24 }).catch((e) => [{ rule: "x", what: `lint: ${e.message.split("\n")[0]}` }])));
+      if (shots || why.length) await page.screenshot({ path: `${out}/${id}-${S}.png` }).catch(() => {});
+      results.push({ scene: id, group: "Windows", size: S, owner: "F", bad: why });
+      console.log(`${why.length ? "FAIL" : "ok  "} ${id} ${S} [F]${why.length ? ": " + why.map((x) => `(${x.rule}) ${x.what}`).join("; ").slice(0, 600) : ""}`);
       await ctx.close();
     }
   }
