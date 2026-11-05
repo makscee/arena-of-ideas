@@ -279,24 +279,24 @@ export const SCENES: Scene[] = [
   { id: "shop-r1", group: "Shop", title: "Shop, round 1 (empty board)", look: "Empty line and bench, the first offers, gold Pieces draw sigils (arena#38): no plate, no emoji.", desktop: true, build: async (rt) => shop(await playTo(rt, shopAt(1), "round 1")) },
   { id: "shop-r3", group: "Shop", title: "Shop, round 3", look: "A few units on the line, offers, hearts, run track Pieces draw sigils (arena#38): no plate, no emoji.", desktop: true, build: async (rt) => shop(await playTo(rt, shopAt(3), "round 3")) },
   { id: "shop-offer", group: "Shop", title: "Shop, an offer in hand", look: "The table: tap an offer and the inspector reads its rule, with Buy and Lock; the lit slots are where it goes Pieces draw sigils (arena#38): no plate, no emoji.", desktop: true, build: async (rt) => shop(await playTo(rt, shopAt(3), "round 3"), "offer-0") },
-  { id: "shop-unit", group: "Shop", title: "Shop, a unit tapped", look: "The table: tap a unit of yours and the inspector reads its rule and whose idea it was, with move, bench and sell Pieces draw sigils (arena#38): no plate, no emoji.", desktop: true, build: async (rt) => shop(await playTo(rt, shopAt(3), "round 3"), "line-0") },
+  { id: "shop-unit", group: "Shop", title: "Shop, a unit tapped", look: "The table: tap a unit of yours and the inspector reads its rule and whose idea it was, with move, bench and sell Pieces draw sigils (arena#38): no plate, no emoji. Units show their sigil, never an emoji (arena#39).", desktop: true, build: async (rt) => shop(await playTo(rt, shopAt(3), "round 3"), "line-0") },
   { id: "shop-r8", group: "Shop", title: "Shop, round 8", look: "A late line, tier offers, the run track near the Crown Pieces draw sigils (arena#38): no plate, no emoji.", desktop: true, build: async (rt) => shop(await playTo(rt, shopAt(8), "round 8")) },
   { id: "shop-bench-full", group: "Shop", title: "Shop, full bench", look: "Line of 5 plus a full bench: does it all fit? Pieces draw sigils (arena#38): no plate, no emoji.", desktop: true, build: async (rt) => shop(await playTo(rt, (r) => r.phase === "shop" && !r.gift && r.line.length >= rt.rules.lineSize && (r.bench ?? []).length >= benchSizeOf(rt.rules), "a full bench", 80)) },
   { id: "shop-merge-hint", group: "Shop", title: "Shop, a merge hint", look: "An offer that is a copy of a unit you own: its hint Pieces draw sigils (arena#38): no plate, no emoji.", desktop: true, build: async (rt) => shop(await playTo(rt, copyOffer(1), "a copy on offer")) },
 
   { id: "awaken", group: "Awaken & fuse", title: "Awaken: the 3rd copy on offer", look: "Buying it awakens the unit: the hint on the offer", desktop: true, build: async (rt) => shop(await playTo(rt, copyOffer(2), "a 3rd copy on offer", 80)) },
-  { id: "gift", group: "Awaken & fuse", title: "The awakening gift", look: "The gift's choices after an awakening", desktop: true, build: async (rt) => shop(await playTo(rt, (r) => r.phase === "shop" && !!r.gift, "a gift", 80)) },
+  { id: "gift", group: "Awaken & fuse", title: "The awakening gift", look: "The gift's choices after an awakening Units show their sigil, never an emoji (arena#39).", desktop: true, build: async (rt) => shop(await playTo(rt, (r) => r.phase === "shop" && !!r.gift, "a gift", 80)) },
   {
     id: "fuse", group: "Awaken & fuse", title: "Two Awoken from play", look: "Two Awoken units reached in play; with the Codex on their pair has no design yet, so no Fuse (fusion-now shows one that fuses)", desktop: true,
     build: async (rt) => shop(await playTo(rt, (r) => r.phase === "shop" && !r.gift && botDecision(r, rt.contentFor(r.contentVersion), rt.rules, 9).kind === "fuse", "two Awoken to fuse", 80)),
   },
 
-  { id: "forge-unforged", group: "Awaken & fuse", title: "The forge: not forged yet (Wish)", look: "Rules v2 (#1049): a pair with no designs yet: 'not forged yet', today's wishes, Wish", desktop: true, build: forge("unforged") },
-  { id: "forge-ready", group: "Awaken & fuse", title: "The forge: ready to claim", look: "Rules v2 (#1049, #1120): three sealed designs, a row each: card, rule, flavour; pick one (1–3), Claim", desktop: true, build: forge("ready") },
-  { id: "forge-claim", group: "Awaken & fuse", title: "The forge: a claim", look: "Rules v2 (#1049): Claim pressed on the first design: 'You claimed …', the fused unit", desktop: true, build: forge("ready", "forge-claim") },
-  { id: "forge-discovered", group: "Awaken & fuse", title: "The forge: discovered", look: "Rules v2 (#1049): the canonical design, 'Discovered by @… · date', Fuse", desktop: true, build: forge("discovered") },
+  { id: "forge-unforged", group: "Awaken & fuse", title: "The forge: not forged yet (Wish)", look: "Rules v2 (#1049): a pair with no designs yet: 'not forged yet', today's wishes, Wish Units show their sigil, never an emoji (arena#39).", desktop: true, build: forge("unforged") },
+  { id: "forge-ready", group: "Awaken & fuse", title: "The forge: ready to claim", look: "Rules v2 (#1049, #1120): three sealed designs, a row each: card, rule, flavour; pick one (1–3), Claim Units show their sigil, never an emoji (arena#39).", desktop: true, build: forge("ready") },
+  { id: "forge-claim", group: "Awaken & fuse", title: "The forge: a claim", look: "Rules v2 (#1049): Claim pressed on the first design: 'You claimed …', the fused unit Units show their sigil, never an emoji (arena#39).", desktop: true, build: forge("ready", "forge-claim") },
+  { id: "forge-discovered", group: "Awaken & fuse", title: "The forge: discovered", look: "Rules v2 (#1049): the canonical design, 'Discovered by @… · date', Fuse Units show their sigil, never an emoji (arena#39).", desktop: true, build: forge("discovered") },
   { id: "fusion-none", group: "Awaken & fuse", title: "Two Awoken, no design: no fuse", look: "Rules v2 (#1049): their pair isn't forged: no ⚗, no glow, no Fuse button, no fuse hint", desktop: true, build: fusionMarks("none") },
-  { id: "fusion-now", group: "Awaken & fuse", title: "A fusion you can make now", look: "Rules v2 (#1049): two Awoken of a discovered pair: ⚗ and a glow on both; Fuse opens the forge", desktop: true, build: fusionMarks("now") },
+  { id: "fusion-now", group: "Awaken & fuse", title: "A fusion you can make now", look: "Rules v2 (#1049): two Awoken of a discovered pair: ⚗ and a glow on both; Fuse opens the forge Units show their sigil, never an emoji (arena#39).", desktop: true, build: fusionMarks("now") },
   { id: "fusion-shop", group: "Awaken & fuse", title: "A fusion one buy away", look: "Rules v2 (#1049): the first offer's 3rd copy awakens into a pair ready to claim (its pill); the second needs awakening (a quiet ⚗); the third pairs with nothing designed (no mark)", desktop: true, build: fusionMarks("shop") },
   { id: "battle-win", keep: true, group: "Battle", title: "A battle you win", look: "Pacing, the current beam, step numbers and spent cards, the end card Pieces draw sigils (arena#38): no plate, no emoji.", desktop: true, build: battleOf("round", "win") },
   { id: "battle-loss", keep: true, group: "Battle", title: "A battle you lose", look: "The loss end card, hearts lost Pieces draw sigils (arena#38): no plate, no emoji.", desktop: true, build: battleOf("round", "loss") },
@@ -306,7 +306,7 @@ export const SCENES: Scene[] = [
   { id: "battle-result", keep: true, group: "Battle", title: "The result in the tray", look: "E pressed: the run result takes the tray (word, why, key moments, damage, Replay / Why / Next), the lines stay clear above it Pieces draw sigils (arena#38): no plate, no emoji.", desktop: true, build: battleOf("round", "loss", ["e"]) },
   { id: "battle-ledger", keep: true, group: "Battle", title: "Paused mid-battle", look: "Stepped a few beats and paused: the turn bar, the board Pieces draw sigils (arena#38): no plate, no emoji.", desktop: true, build: battleOf("round", "win", ["Space", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight"]) },
 
-  { id: "crown", group: "Crown & day", title: "The Crown fight is next", look: "After round 12: the champion's team, the Crown button Pieces draw sigils (arena#38): no plate, no emoji.", desktop: true, build: async (rt) => shop(await playTo(rt, (r) => r.phase === "crown", "the Crown", 80)) },
+  { id: "crown", group: "Crown & day", title: "The Crown fight is next", look: "After round 12: the champion's team, the Crown button Pieces draw sigils (arena#38): no plate, no emoji. Units show their sigil, never an emoji (arena#39).", desktop: true, build: async (rt) => shop(await playTo(rt, (r) => r.phase === "crown", "the Crown", 80)) },
   { id: "crown-fight", keep: true, group: "Crown & day", title: "The Crown fight, lost", look: "Your team against the champion Pieces draw sigils (arena#38): no plate, no emoji.", desktop: true, build: battleOf("crown", "loss") },
   { id: "slay", keep: true, group: "Crown & day", title: "A slay (the Crown won)", look: "Beating the champion: the battle and its end Pieces draw sigils (arena#38): no plate, no emoji.", desktop: true, build: battleOf("crown", "win") },
   {
@@ -329,7 +329,7 @@ export const SCENES: Scene[] = [
   { id: "run-out", keep: true, group: "Run end", title: "Run over: out of hearts", look: "The run's end with no hearts left", desktop: true, build: ended(["out-of-hearts"]) },
 
   {
-    id: "ideas", group: "Ideas", title: "My ideas", look: "Ideas held, refill line, sent ideas at different stages", desktop: true,
+    id: "ideas", group: "Ideas", title: "My ideas", look: "Ideas held, refill line, sent ideas at different stages Units show their sigil, never an emoji (arena#39).", desktop: true,
     build: async (rt) => {
       const { player } = await ideaAtArchetypes(rt);
       grantIdea(rt, player.id);
@@ -345,21 +345,21 @@ export const SCENES: Scene[] = [
       return { player, entry: { screen: "ideas", click: "idea-new" } };
     },
   },
-  { id: "idea-archetype", group: "Ideas", title: "Pick an archetype", look: "The idea's three archetype options", desktop: true, build: async (rt) => {
+  { id: "idea-archetype", group: "Ideas", title: "Pick an archetype", look: "The idea's three archetype options Units show their sigil, never an emoji (arena#39).", desktop: true, build: async (rt) => {
     const { player, ideaId } = await ideaAtArchetypes(rt);
     return { player, entry: { screen: "pick", ideaId } };
   } },
   // #1122: the archetype icon pictures the idea's subject, the same on all three
-  { id: "idea-archetype-ru", group: "Ideas", title: "Pick an archetype (a Russian idea)", look: "#1122: 'Старый волк…' gives 🐺 on all three archetypes", desktop: true, build: async (rt) => {
+  { id: "idea-archetype-ru", group: "Ideas", title: "Pick an archetype (a Russian idea)", look: "#1122: 'Старый волк…' gives one wolf-like sigil on all three archetypes (arena#39: sigils, never an emoji)", desktop: true, build: async (rt) => {
     const { player, ideaId } = await ideaAtArchetypes(rt, "Старый волк, который бьёт сильнее, когда остаётся один");
     return { player, entry: { screen: "pick", ideaId } };
   } },
-  { id: "idea-archetype-plain", group: "Ideas", title: "Pick an archetype (nothing to picture)", look: "#1122: an idea with no subject to picture gives one neutral ✨ on all three, never random animals", desktop: true, build: async (rt) => {
+  { id: "idea-archetype-plain", group: "Ideas", title: "Pick an archetype (nothing to picture)", look: "#1122: an idea with no subject to picture gives one neutral sigil on all three, never random animals (arena#39: sigils, never an emoji)", desktop: true, build: async (rt) => {
     const { player, ideaId } = await ideaAtArchetypes(rt, "Whenever an ally is healed, it gets a little stronger");
     return { player, entry: { screen: "pick", ideaId } };
   } },
   {
-    id: "idea-implementation", group: "Ideas", title: "Pick an implementation", look: "The archetype's readings as cards", desktop: true,
+    id: "idea-implementation", group: "Ideas", title: "Pick an implementation", look: "The archetype's readings as cards Units show their sigil, never an emoji (arena#39).", desktop: true,
     build: async (rt) => {
       const { player, ideaId } = await ideaAtArchetypes(rt);
       pickArchetype(rt, player.id, ideaId, 0);
@@ -368,7 +368,7 @@ export const SCENES: Scene[] = [
     },
   },
   {
-    id: "vote", group: "Ideas", title: "Voting", look: "The either/or vote card under the menu", desktop: true,
+    id: "vote", group: "Ideas", title: "Voting", look: "The either/or vote card under the menu Units show their sigil, never an emoji (arena#39).", desktop: true,
     build: async (rt) => {
       await world(rt);
       const author = fixturePlayer(rt);
@@ -382,18 +382,18 @@ export const SCENES: Scene[] = [
     },
   },
 
-  { id: "codex-units", group: "Codex", title: "Codex: units", look: "The unit grid, tiers, filters", desktop: true, build: codex("units") },
-  { id: "codex-fusions", group: "Codex", title: "Codex: fusions", look: "Discovered fusions and their names", desktop: true, build: codex("fusions") },
-  { id: "codex-library", group: "Codex", title: "Codex: library", look: "Units out of the pool, their versions", desktop: true, build: codex("library") },
-  { id: "codex-keywords", group: "Codex", title: "Codex: keywords", look: "Terms and the units that use them", desktop: true, build: codex("keywords") },
-  { id: "codex-champions", group: "Codex", title: "Codex: champions / stats", look: "Records and past champions", desktop: true, build: codex("champions") },
+  { id: "codex-units", group: "Codex", title: "Codex: units", look: "The unit grid, tiers, filters Units show their sigil, never an emoji (arena#39).", desktop: true, build: codex("units") },
+  { id: "codex-fusions", group: "Codex", title: "Codex: fusions", look: "Discovered fusions and their names Units show their sigil, never an emoji (arena#39).", desktop: true, build: codex("fusions") },
+  { id: "codex-library", group: "Codex", title: "Codex: library", look: "Units out of the pool, their versions Units show their sigil, never an emoji (arena#39).", desktop: true, build: codex("library") },
+  { id: "codex-keywords", group: "Codex", title: "Codex: keywords", look: "Terms and the units that use them Units show their sigil, never an emoji (arena#39).", desktop: true, build: codex("keywords") },
+  { id: "codex-champions", group: "Codex", title: "Codex: champions / stats", look: "Records and past champions Units show their sigil, never an emoji (arena#39).", desktop: true, build: codex("champions") },
   { id: "codex-howto", group: "Codex", title: "Codex: how to play", look: "The rules page", desktop: true, build: codex("howto") },
-  { id: "codex-unit", group: "Codex v2 (#1051)", title: "A unit's Codex page", look: "Hourglass: its partners Discovered (credit), Ready to claim (sealed), Not forged yet (Wish, a pair waiting for a word)", desktop: true, build: codexV2("units", "hourglass") },
-  { id: "codex-unit-mine", group: "Codex v2 (#1051)", title: "A page with your own claim", look: "Raven: Grave Tree discovered by you; the unit picker", desktop: true, build: codexV2("units", "raven") },
+  { id: "codex-unit", group: "Codex v2 (#1051)", title: "A unit's Codex page", look: "Hourglass: its partners Discovered (credit), Ready to claim (sealed), Not forged yet (Wish, a pair waiting for a word) Units show their sigil, never an emoji (arena#39).", desktop: true, build: codexV2("units", "hourglass") },
+  { id: "codex-unit-mine", group: "Codex v2 (#1051)", title: "A page with your own claim", look: "Raven: Grave Tree discovered by you; the unit picker Units show their sigil, never an emoji (arena#39).", desktop: true, build: codexV2("units", "raven") },
   { id: "codex-today", group: "Codex v2 (#1051)", title: "Today: the daily feed", look: "What tonight's batch brought, who claimed what, words found, by day", desktop: true, build: codexV2("feed") },
   { id: "codex-dictionary", group: "Codex v2 (#1051)", title: "The Dictionary", look: "'N words forged, not yet found'; each found word with credit and lineage", desktop: true, build: codexV2("words") },
-  { id: "claim", group: "Codex v2 (#1051)", title: "The claim moment", look: "Three sealed cards turn over (lean A, lean B, the twist with a new word); tap one, then Claim", desktop: true, build: claim() },
-  { id: "claim-done", group: "Codex v2 (#1051)", title: "Claimed: your name on it", look: "The picked design with 'Forged by @you', the other two sealed away", desktop: true, build: claim(2) },
+  { id: "claim", group: "Codex v2 (#1051)", title: "The claim moment", look: "Three sealed cards turn over (lean A, lean B, the twist with a new word); tap one, then Claim Units show their sigil, never an emoji (arena#39).", desktop: true, build: claim() },
+  { id: "claim-done", group: "Codex v2 (#1051)", title: "Claimed: your name on it", look: "The picked design with 'Forged by @you', the other two sealed away Units show their sigil, never an emoji (arena#39).", desktop: true, build: claim(2) },
   { id: "v2-hourglass", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Hourglass: a counter, then Archer acts again", look: "3.3 counter (Grains) and 3.5 actAgain: the grain count on the card, 'Hourglass: Archer acts again'", desktop: true, build: v2("hourglass") },
   { id: "v2-mirror", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Mirror copies the front enemy's rule", look: "3.5 copyRule at battle start: Mirror then fights with Hedgehog's rule", desktop: true, build: v2("mirror") },
   { id: "v2-candle", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Candle survives at 1 HP, pays 1 PWR", look: "3.4 preventDeath: the intercepted Death, the stat drop, death at 0 PWR", desktop: true, build: v2("candle") },

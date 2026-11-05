@@ -162,8 +162,8 @@ export function sigilOf(el: Element | null | undefined): { pulse: SigilHandle["p
 
 /** Paints each sigil canvas of `from` onto the same canvas of its `cloneNode(true)` copy (a copy is not mounted: it keeps one still frame). */
 export function copySigils(from: Element, to: Element): void {
-  const a = from.querySelectorAll<HTMLCanvasElement>("canvas.pc-sg");
-  const b = to.querySelectorAll<HTMLCanvasElement>("canvas.pc-sg");
+  const a = from.querySelectorAll<HTMLCanvasElement>("canvas.pc-sg, canvas.sg-ic");
+  const b = to.querySelectorAll<HTMLCanvasElement>("canvas.pc-sg, canvas.sg-ic");
   a.forEach((src, i) => b[i]?.getContext("2d")?.drawImage(src, 0, 0));
 }
 

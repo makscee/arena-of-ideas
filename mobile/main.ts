@@ -26,6 +26,7 @@ import { votePanel } from "./screens/vote";
 import { homeTable } from "./screens/home";
 import { pickScreen } from "./screens/pick";
 import { card, formRich, roman, setCardCredits, unitSheet, type CardUnit } from "./ui/card";
+import { unitSigil } from "./ui/glyph";
 import { isMine, reportLink, setReporter } from "./ui/report";
 import { previewName } from "./ui/fusion";
 import { fuseWarning } from "./ui/fuse-warn";
@@ -769,7 +770,7 @@ function candidatesSheet(list: CandidateScore[]): HTMLElement {
           h(
             "div",
             { class: "idea-row", "data-testid": "candidate-row", "data-qualified": String(c.qualified) },
-            h("div", { class: "grow" }, `${c.emoji} ${c.name}`, h("div", { class: "dim small num" }, t("dev.candidateScore", { won: c.won, votes: c.votes, share: pct(c.share), novelty: pct(c.novelty), score: pct(c.score) }))),
+            h("div", { class: "grow" }, unitSigil({ unitId: c.unitId }, 22), ` ${c.name}`, h("div", { class: "dim small num" }, t("dev.candidateScore", { won: c.won, votes: c.votes, share: pct(c.share), novelty: pct(c.novelty), score: pct(c.score) }))),
             h("div", { class: c.qualified ? "keep" : "dim keep" }, c.qualified ? t("dev.qualified") : t("dev.notYet")),
           ),
         )
@@ -1123,8 +1124,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const fusesWith = (first: number, slot: number) => awokenAt(slot) && (!codexOn || designedPairs(first).some((p) => p.first === slot || p.second === slot));
   const anyFuse = () => !run.gift && (codexOn ? (forge?.pairs ?? []).some((p) => p.state !== "unforged") : awoken >= 2);
   /** A designed pair's fusion as a mark says it: its name once discovered, else "ready to claim". */
-  const fusionName = (p: { state: string; design?: { name: string; emoji?: string; texts?: { ru?: { name?: string } } } }) =>
-    p.design ? `${p.design.emoji ?? ""} ${(uiLang() === "ru" ? p.design.texts?.ru?.name : undefined) ?? p.design.name}`.trim() : t("fuse.toClaim");
+  const fusionName = (p: { state: string; design?: { name: string; texts?: { ru?: { name?: string } } } }) =>
+    p.design ? ((uiLang() === "ru" ? p.design.texts?.ru?.name : undefined) ?? p.design.name) : t("fuse.toClaim");
   const nameOf = (id: string) => unitOf(id)?.name ?? id;
   /** The mark on a board unit of a fusion you can make now: ⚗, the fusions in its label. */
   const fuseMark = (pairs: ForgeSlot[], slot: number) => {
@@ -1135,7 +1136,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const offerFusions = (slot: number): ForgeOffer[] => (forge?.offers ?? []).filter((f) => f.slot === slot).sort((x, y) => Number(y.awakens) - Number(x.awakens));
   const offerLine = (f: ForgeOffer) => {
     const partner = unitAt(f.partner);
-    const pair = `${partner ? `${partner.emoji} ${partner.name}` : "?"} + ${nameOf(f.a === partner?.unitId ? f.b : f.a)}`;
+    const pair = `${partner ? partner.name : "?"} + ${nameOf(f.a === partner?.unitId ? f.b : f.a)}`;
     return t(f.awakens ? "fuse.offerNow" : "fuse.offerNear", { pair, fusion: fusionName(f) });
   };
 
@@ -1976,7 +1977,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const fillPin = (d: DayView | null) => {
     const ch = d?.champion;
     if (!ch) return pin.replaceChildren(h("span", { class: "dim" }, t("pin.noChampion")));
-    const b = h("button", { class: "pin-btn", "data-testid": "champion-pin-open" }, h("span", {}, "👑"), who(ch.player.name, "ghost-name"), h("span", { class: "pin-emoji" }, ch.line.map((u) => u.emoji).join("")));
+    const b = h("button", { class: "pin-btn", "data-testid": "champion-pin-open" }, h("span", {}, "👑"), who(ch.player.name, "ghost-name"), h("span", { class: "pin-emoji" }, ...ch.line.map((u) => unitSigil(u, 30))));
     b.addEventListener("click", () => closable(h("div", { class: "label" }, t("pin.championOfDay", { seq: d!.seq }), who(ch.player.name)), team(ch.line, "ghost", content)));
     pin.replaceChildren(b);
   };
@@ -2034,7 +2035,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const u = unitOf(id);
       // Yours: a copy merges in, a fused unit's part included (owns()).
       const mine = board[mergeTarget(board, id)] ?? null;
-      const cu: CardUnit = { unitId: id, emoji: u?.emoji ?? "?", name: u?.name ?? id, stats: u?.base ?? { pwr: 0, hp: 0 }, ...(u ? { recipe: u.forms.sleeping } : {}) };
+      const cu: CardUnit = { unitId: id, emoji: u?.emoji ?? "?", name: u?.name ?? id, stats: u?.base ?? { pwr: 0, hp: 0 }, ...(u?.portrait ? { portrait: u.portrait } : {}), ...(u ? { recipe: u.forms.sleeping } : {}) };
       const c = actionable(card(cu, { side: "you", ...(u ? { tier: u.tier } : {}), extra: mine ? [h("div", { class: "cost" }, "＋")] : [], testid: `gift-card-${i}` }), cu.name);
       if (mine) c.classList.add("owned");
       const sheetOf = () => (mine ? unitSheet(mine, content) : u ? unitSheet(u, content) : h("h2", {}, id));

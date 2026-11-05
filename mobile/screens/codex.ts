@@ -44,6 +44,7 @@ import { loadUnitRates, pct } from "../ui/unit-stats";
 import { ideaWhy, proposeScreen } from "./ideas";
 import { championsTab } from "./stats";
 import { rulesLangOpt } from "../lang";
+import { pairSigils, sigilIcon } from "../ui/glyph";
 import { discoveryName, englishName } from "../unit-names";
 
 export type CodexTab = "units" | "fusions" | "library" | "keywords" | "champions" | "howto";
@@ -333,7 +334,7 @@ function unitsTab(
         const r = st.sort === "tier" ? undefined : rateOf(u);
         // The rate shows on a card only while a rate sort is on: a quiet number under it.
         const extra = st.sort === "tier" ? [] : [h("span", { class: "codex-rate", "data-testid": "codex-rate" }, r === undefined ? "–" : pct(r))];
-        const el = card({ emoji: u.emoji, name: u.name, stats: u.base, recipe: u.forms.sleeping, unitId: u.id }, { side: "you", tier: u.tier, testid: "codex-unit", extra, onOpen: () => open(sheetOf(u), el) });
+        const el = card({ emoji: u.emoji, name: u.name, stats: u.base, recipe: u.forms.sleeping, unitId: u.id, ...(u.portrait ? { portrait: u.portrait } : {}) }, { side: "you", tier: u.tier, testid: "codex-unit", extra, onOpen: () => open(sheetOf(u), el) });
         return el;
       }),
     );
@@ -429,7 +430,7 @@ function fusionsTab(
   const mine = fusions.filter((f) => f.discoveredBy?.id === me);
 
   const pick = h("select", { "data-testid": "codex-fusions-of", "aria-label": t("codex.pairsLabel") }) as HTMLSelectElement;
-  pick.append(h("option", { value: "" }, t("codex.everyDiscovery")), ...[...content.units].sort((x, y) => x.name.localeCompare(y.name)).map((u) => h("option", { value: u.id }, t("codex.pairsOf", { emoji: u.emoji, name: u.name }))));
+  pick.append(h("option", { value: "" }, t("codex.everyDiscovery")), ...[...content.units].sort((x, y) => x.name.localeCompare(y.name)).map((u) => h("option", { value: u.id }, t("codex.pairsOf", { name: u.name }))));
   pick.value = st.fusionsOf ?? "";
   pick.addEventListener("change", () => go({ fusionsOf: pick.value || null }));
   const mineBtn = button(t("codex.mine", { n: mine.length }), () => go({ mine: !st.mine }), st.mine ? "chip on" : "chip", "codex-fusions-mine");
@@ -458,7 +459,7 @@ function fusionsTab(
     const el = h(
       "div",
       { class: `stat-row fusion-row${f ? "" : " unknown"}`, "data-testid": f ? "codex-fusion" : "codex-fusion-unknown" },
-      h("span", { class: "emoji pair" }, `${a.emoji}${b.emoji}`),
+      h("span", { class: "emoji pair" }, pairSigils(a, b, 30)),
       h(
         "span",
         { class: "grow" },
@@ -554,7 +555,7 @@ function librarySheet(content: MvpContent, lib: LibraryView, l: LibraryUnit, pro
     return h(
       "div",
       { class: "stat-row fusion-row", "data-testid": "library-fusion" },
-      h("span", { class: "emoji pair" }, `${a?.emoji ?? "?"}${b?.emoji ?? "?"}`),
+      h("span", { class: "emoji pair" }, pairSigils(a, b, 30)),
       h("span", { class: "grow" }, h("div", { class: "fusion-name" }, discoveryName(f)), h("div", { class: "dim small" }, `${a?.name ?? f.first} + ${b?.name ?? f.second}`), h("div", { class: "discovered" }, ...(by ? [t("codex.discoveredBy"), by] : [t("codex.byBots")]))),
     );
   });
@@ -574,7 +575,7 @@ function libraryTab(content: MvpContent, lib: LibraryView, open: (node: HTMLElem
     { class: "slots codex-grid", "data-testid": "codex-library" },
     ...lib.units.map((l) => {
       const u = l.unit;
-      const el = card({ emoji: u.emoji, name: u.name, stats: u.base, recipe: u.forms.sleeping, unitId: u.id }, { side: "ghost", tier: u.tier, testid: "library-unit", version: l.version, onOpen: () => open(sheet(l), el) });
+      const el = card({ emoji: u.emoji, name: u.name, stats: u.base, recipe: u.forms.sleeping, unitId: u.id, ...(u.portrait ? { portrait: u.portrait } : {}) }, { side: "ghost", tier: u.tier, testid: "library-unit", version: l.version, onOpen: () => open(sheet(l), el) });
       el.dataset.unit = u.id;
       return el;
     }),
@@ -636,7 +637,8 @@ function keywordsTab(content: MvpContent, open: (node: HTMLElement, from?: HTMLE
   const ids: TermId[] = [...statusIds, ...(Object.keys(GLOSSARY) as FixedTermId[])];
   const chipsOf = (used: UnitContent[]): HTMLElement => {
     const chip = (u: UnitContent) => {
-      const b = button(`${u.emoji} ${u.name}`, () => open(unitSheet(u, content), b), "chip unit-chip", "codex-term-unit");
+      const b = button("", () => open(unitSheet(u, content), b), "chip unit-chip", "codex-term-unit");
+      b.append(sigilIcon(u.portrait, 22), ` ${u.name}`);
       return b;
     };
     const chips = h("div", { class: "chips" }, ...used.slice(0, CHIPS).map(chip));

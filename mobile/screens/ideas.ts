@@ -9,11 +9,13 @@
 // ideas names a proposal "new version of 🦔 Quillback".
 import { IDEA_TEXT_MAX, IDEA_TEXT_MIN, type CreditsView, type IdeaState, type MvpContent, type MyIdea, type MyIdeasView, type UnitContent } from "../../src/mvp/contract";
 import { formSegments } from "../../src/mvp/form-text";
+import type { Spec } from "../ui/sigil";
 import { api, ApiError } from "../api";
 import { getContent } from "../content";
 import { currentLang, t } from "../i18n";
 import type { Key } from "../i18n/en";
 import { unitSheet } from "../ui/card";
+import { sigilIcon } from "../ui/glyph";
 import { button, closable, h, keyOf, onGone, onKeys, overlay, screen, show, withKey } from "../ui/dom";
 import { richText } from "../ui/term";
 import { pickScreen } from "./pick";
@@ -114,22 +116,26 @@ function creatorLine(you: NonNullable<CreditsView["you"]>): HTMLElement {
   );
 }
 
-/** A proposal's unit, "🦔 Quillback", by its target's id (M3-5): the
+/** A proposal's unit, its name and sigil, by its target's id (M3-5): the
  * reading stages carry it as the archetype; before that the Library has it. */
-const targetNames = new Map<string, string>();
+const targetNames = new Map<string, { name: string; portrait?: Spec | undefined }>();
 async function nameTargets(sent: MyIdea[]): Promise<void> {
   if (!sent.some((i) => i.data.kind === "evolve" && !i.data.archetype && i.data.target && !targetNames.has(i.data.target))) return;
   const lib = await api.library().catch(() => null);
-  for (const l of lib?.units ?? []) targetNames.set(l.unit.id, `${l.unit.emoji} ${localUnit(l.unit).name}`);
+  for (const l of lib?.units ?? []) targetNames.set(l.unit.id, { name: localUnit(l.unit).name, portrait: l.unit.portrait });
 }
 
-/** What My ideas calls an idea before its stage: "🦔 Quillback · ", or for a
- * proposal (M3-5) "new version of 🦔 Quillback · ". */
-export function ideaNamed(i: MyIdea): string {
+/** What My ideas calls an idea before its stage: its sigil and name ("Quillback · "), or for a
+ * proposal (M3-5) "new version of Quillback · " (the sigil beside the name). */
+export function ideaNamed(i: MyIdea): (Node | string)[] {
   const a = i.data.archetype && localArchetype(i.data.archetype);
-  if (i.data.kind !== "evolve") return a ? t("ideas.named", { emoji: a.emoji, name: a.name }) : "";
-  const unit = a ? `${a.emoji} ${a.name}` : (i.data.target && targetNames.get(i.data.target)) || t("ideas.aLibraryUnit");
-  return t("ideas.namedVersion", { unit });
+  const sig = (spec: Spec | undefined) => sigilIcon(spec, 20);
+  if (i.data.kind !== "evolve") return a ? [sig(a.portrait), " ", t("ideas.named", { name: a.name })] : [];
+  const target = i.data.target ? targetNames.get(i.data.target) : undefined;
+  const unit: (Node | string)[] = a ? [sig(a.portrait), ` ${a.name}`] : target ? [sig(target.portrait), ` ${target.name}`] : [t("ideas.aLibraryUnit")];
+  // the sentence has {unit} in it: the sigil and name go where it is
+  const [before = "", after = ""] = t("ideas.namedVersion", { unit: "\u0000" }).split("\u0000");
+  return [before, ...unit, after];
 }
 
 function sentRow(i: MyIdea, nav: IdeasNav, err: HTMLElement): HTMLElement {
@@ -150,7 +156,7 @@ function sentRow(i: MyIdea, nav: IdeasNav, err: HTMLElement): HTMLElement {
       "div",
       { class: "grow" },
       h("div", { class: "idea-text" }, i.text),
-      h("div", { class: ready ? "small idea-ready" : "dim small", "data-testid": "idea-stage" }, `${named}${t(IDEA_STAGE[i.state])}`),
+      h("div", { class: ready ? "small idea-ready" : "dim small", "data-testid": "idea-stage" }, ...named, t(IDEA_STAGE[i.state])),
       i.state === "failed" && i.data.failure ? h("div", { class: "dim small", "data-testid": "idea-failure" }, t("ideas.failure", { failure: i.data.failure })) : null,
     ),
     action,
@@ -211,7 +217,8 @@ function writeScreen(nav: IdeasNav): void {
  * spends one held idea and opens My ideas. `content` has the unit's abilities. */
 export function proposeScreen(unit: UnitContent, content: MvpContent, nav: IdeasNav): void {
   textScreen({
-    title: t("ideas.proposeTitle", { emoji: unit.emoji, name: unit.name }),
+    title: t("ideas.proposeTitle", { name: unit.name }),
+    mark: sigilIcon(unit.portrait, 36, { live: true }),
     long: true,
     above: [
       h("div", { class: "dim small", "data-testid": "propose-line" }, unit.archetype),
@@ -225,7 +232,7 @@ export function proposeScreen(unit: UnitContent, content: MvpContent, nav: Ideas
     label: t("ideas.proposeLabel"),
     placeholder: t("ideas.proposePlaceholder"),
     send: (text) => api.proposeVersion(unit.id, text),
-    sent: t("ideas.proposeSent", { emoji: unit.emoji, name: unit.name }),
+    sent: t("ideas.proposeSent", { name: unit.name }),
     onBack: nav.onBack,
     nav,
   });
@@ -233,6 +240,8 @@ export function proposeScreen(unit: UnitContent, content: MvpContent, nav: Ideas
 
 interface TextScreen {
   title: string;
+  /** The unit's sigil, after the title. */
+  mark?: Node;
   /** A title too long for the big h1 (a unit's name in it). */
   long?: boolean;
   above: Node[];
@@ -285,7 +294,7 @@ function textScreen(o: TextScreen): void {
   box.addEventListener("input", update);
   update();
   show(
-    h("h1", { class: o.long ? "h1-long" : "", "data-testid": "write-title" }, o.title),
+    h("h1", { class: o.long ? "h1-long" : "", "data-testid": "write-title" }, o.title, ...(o.mark ? [" ", o.mark] : [])),
     ...o.above,
     h("label", { class: "label", for: "idea-box" }, o.label),
     box,
