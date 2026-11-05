@@ -2,6 +2,7 @@
 // drawn on a canvas. Nothing in the client mounts one yet.
 import { FALLBACK_SPEC } from "./fallback";
 import { validate, type Spec } from "./spec";
+export { fuse } from "./fuse";
 export { compile, evalNum, expressionProblem, ExprError, FUNCTION_NAMES, VARS, type Env } from "./grammar";
 export { PALETTE_NAMES, isPaletteName, type Team } from "./palette";
 export { MAX_COPIES, MAX_SHAPES, SHAPES, shapeCount, validate, type Layer, type Spec, type Validation } from "./spec";
