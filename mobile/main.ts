@@ -1161,6 +1161,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
    * five keeps the when tab's icon only, the bench is a size down. */
   /** A panel is open: it docks on the right and the field narrows, so the line's pieces are drawn smaller. */
   const docked = () => chosen !== null || pick.mode !== "none" || fuseView !== null;
+  /** With a panel open the columns are narrow: a When word stays wherever it fits its column (10 characters at the floor size). */
+  const whenFits = (u: LineUnit) => lineToPiece(u, content).face.when.label.length <= 10;
   const pieceSizes = () =>
     tall || !lay ? { line: 56, bench: 44, offer: 64, their: 48, lineWord: false, benchWord: false, benchBare: true } : { line: docked() ? lay.sDock : lay.s, bench: lay.sb, offer: 72, their: lay.sb, lineWord: !docked(), benchWord: false, benchBare: true };
   /** Tap-tap: the offer in hand (chosen) or the unit in hand (picked) lights
@@ -1239,7 +1241,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }
     const sz = pieceSizes();
     const c = actionable(
-      h("div", { class: ["cell", "you", onBench && sz.benchBare ? "bare" : "", u.kind === "fused" ? "fused" : u.form === "awoken" ? "awoken" : ""].filter(Boolean).join(" "), "data-copies": String(u.copies), "data-testid": id, style: onBench ? cellStyle(sz.bench, sz.benchBare) : cellStyle(sz.line) }, piece(lineToPiece(u, content), { size: "L", side: "you", px: onBench ? sz.bench : sz.line, word: onBench ? sz.benchWord : sz.lineWord, floor })),
+      h("div", { class: ["cell", "you", onBench && sz.benchBare ? "bare" : "", u.kind === "fused" ? "fused" : u.form === "awoken" ? "awoken" : ""].filter(Boolean).join(" "), "data-copies": String(u.copies), "data-testid": id, style: onBench ? cellStyle(sz.bench, sz.benchBare) : cellStyle(sz.line) }, piece(lineToPiece(u, content), { size: "L", side: "you", px: onBench ? sz.bench : sz.line, word: onBench ? sz.benchWord : sz.lineWord || whenFits(u), floor })),
       `${u.name}, ${onBench ? t("board.onBench", { n: slot - L + 1 }) : t("board.inLine", { n: slot + 1 })}`,
     );
     if (pick.mode === "picked" && pick.index === slot) c.classList.add("selected");
