@@ -41,7 +41,7 @@ const errors = [];
 let shots = 0;
 try {
   const page = await browser.newPage({ viewport: { width: W, height: H } });
-  page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));
+  page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}\n${(e.stack ?? "").split("\n").slice(1, 6).join("\n")}`));
   page.on("console", (m) => m.type() === "error" && errors.push(`console: ${m.text()}`));
   // A refused decision (409) names what was sent and why, beside its console line.
   page.on("response", async (r) => {
