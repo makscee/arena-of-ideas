@@ -44,6 +44,7 @@
     "mvp:start": "node e2e/mvp-start.mjs",
     "mvp:start-screen": "node e2e/mvp-start-screen.mjs",
     "mvp:home": "node e2e/mvp-home.mjs",
+    "mvp:home-keys": "node e2e/mvp-home-keys.mjs",
     "mvp:feedback": "node e2e/mvp-feedback.mjs",
     "mvp:race": "node e2e/mvp-race.mjs",
     "mvp:play-feedback": "node e2e/mvp-play-feedback.mjs",

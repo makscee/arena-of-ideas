@@ -355,9 +355,10 @@ addEventListener("popstate", (e) => {
   at = s.at;
   trail[at] = s.group;
   const target = s.group;
-  // The Codex and the Forge sit over a kept screen: their Back puts it back as it was.
+  // The Codex, the Forge and the Workshop are windows over a kept table: their Back puts it back as it was.
+  // (Without this the screen the Back rebuilds is a second copy beside the kept one, and both take the keys.)
   const shown = groupOf(app.dataset.screen);
-  if (shown !== target && (shown === "codex" || shown === "forge")) keys?.(new KeyboardEvent("keydown", { key: "Escape" }));
+  if (shown !== target && (shown === "codex" || shown === "forge" || shown === "ideas")) keys?.(new KeyboardEvent("keydown", { key: "Escape" }));
   if (groupOf(app.dataset.screen) !== target && restore) {
     restoring = true;
     void restore(target).finally(() => ((restoring = false), syncBack()));
