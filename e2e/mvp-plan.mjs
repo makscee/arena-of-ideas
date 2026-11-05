@@ -305,6 +305,17 @@ try {
     await page.waitForTimeout(700);
     await stageNow("home");
     await shot("home");
+    // The Workshop from Home (the plan's tray card): a window over the dimmed Home table, Esc back to Home
+    const homeIdeas = await tid("ideas").click({ timeout: 4_000 }).then(() => true, () => false);
+    await page.waitForTimeout(900);
+    const wh = await winOf();
+    await shot("workshop-home");
+    const whWindow = homeIdeas && wh.screen === "ideas" && wh.fixed && wh.table && wh.over && wh.inset >= 4 && wh.h1 === "WORKSHOP";
+    await page.keyboard.press("Escape"); await page.waitForTimeout(600);
+    const whBack = (await tid("play").count()) > 0 && !(await page.evaluate(() => document.body.classList.contains("over-table")));
+    const wb = results.find((x) => x.title.startsWith("The Workshop opens as a window"));
+    const wbPrev = wb.sizes[S];
+    wb.sizes[S] = { ok: wbPrev.ok === true && whWindow && whBack, detail: `${wbPrev.detail}; from Home: ${homeIdeas ? (whWindow ? "a window over the table" : `a page (window ${wh.fixed}, table behind ${wh.table}, title "${wh.h1}")`) : "no Workshop card"}, Esc ${whBack ? "back to Home" : "did not return to Home"}` };
 
     // ---- bullet 1: the stage, in every state
     const bad = [];

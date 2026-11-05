@@ -198,15 +198,16 @@ try {
   if (!only || args.includes("--windows")) for (const [w, h] of sizes) {
     const S = `${w}x${h}`;
     const touchSize = w < 600;
-    for (const [id, open] of [
+    for (const [id, open, fromScene] of [
       ["window-codex", async (page) => { await page.getByTestId("legend-open").click(); await page.waitForSelector('[data-testid="codex-tab-units"]', { timeout: 10_000 }); }],
+      ["window-workshop-home", async (page) => { await page.getByTestId("ideas").click(); await page.waitForSelector('[data-testid="workshop-back"]', { timeout: 10_000 }); }, "home"],
       ["window-workshop", async (page) => { await page.getByTestId("menu-open").click(); await page.getByTestId("menu-ideas").click(); await page.waitForSelector('[data-testid="workshop-back"]', { timeout: 10_000 }); }],
     ]) {
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, isMobile: touchSize, hasTouch: touchSize, deviceScaleFactor: 1 });
       const page = await ctx.newPage();
       const why = [];
-      await page.goto(`${url}#scene=shop-r3&lang=en`, { timeout: 120_000 });
-      await page.waitForSelector('[data-testid="fight"]', { timeout: 60_000 }).catch(() => why.push({ rule: "x", what: "no shop" }));
+      await page.goto(`${url}#scene=${fromScene ?? "shop-r3"}&lang=en`, { timeout: 120_000 });
+      await page.waitForSelector(fromScene === "home" ? '[data-testid="play"]' : '[data-testid="fight"]', { timeout: 60_000 }).catch(() => why.push({ rule: "x", what: "no table" }));
       await page.waitForTimeout(800);
       await open(page).catch((e) => why.push({ rule: "x", what: `open: ${e.message.split("\n")[0]}` }));
       await page.waitForTimeout(900);
