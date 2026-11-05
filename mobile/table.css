@@ -469,7 +469,7 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-line .cell-well { width: var(--s); height: var(--s); }
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-line .cell, :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-bench .cell { border-radius: 14px; }
 /* A docked panel narrows the field: the tabs lose their words so five columns of 136px stay clean */
-:is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel .tb-line .pc-tab .tw, :is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel .tb-bench .pc-tab .tw { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel .tb-bench .pc-tab .tw { display: none; }
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel .tb-line .pc-tab, :is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel .tb-bench .pc-tab { padding-right: 8px; }
 
 /* The unit panel docks in the right column of the field, from under the HUD to above the tray */
@@ -731,3 +731,13 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-recent.chain { top: 126px; height: 76px; }
 /* A piece's name is one line whose box holds its letters whole */
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 .bv-card .pc-nm { line-height: 1.25; overflow: visible; }
+
+/* Round 5 (the layout lint): controls are 32 px or more (44 on a phone), scroll areas say so, the close button stays off the text */
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-side button.pin-btn { min-height: 36px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-side.them button.pin-btn { min-height: 44px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop:not(.compact) .tb-their { top: 114px; height: 104px; }
+.sheet-xl button.see-awoken { min-height: 36px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact button.see-awoken { min-height: 36px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact button.see-awoken, .stage.P button.see-awoken { min-height: 44px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp [data-testid="fuse-preview"] { padding-right: 44px; }
+.sheet[data-scroll] { background: linear-gradient(var(--panel) 30%, transparent) top / 100% 28px no-repeat local, linear-gradient(transparent, var(--panel) 70%) bottom / 100% 28px no-repeat local, linear-gradient(rgba(0, 0, 0, 0.35), transparent) top / 100% 10px no-repeat scroll, linear-gradient(transparent, rgba(0, 0, 0, 0.35)) bottom / 100% 10px no-repeat scroll, var(--panel); }
