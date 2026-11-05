@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FIELD, GROW_MAX, linePitch, pieceCap, SHOP_PX } from "./line-layout";
+import { FIELD, GROW_MAX, linePitch, pieceCap, REACH_X, SHOP_PX, spreadLine } from "./line-layout";
 
 describe("line layout (arena#29 round 4)", () => {
   it("a line's columns fit the field, 1 to 8 units, on both stages", () => {
@@ -20,5 +20,11 @@ describe("line layout (arena#29 round 4)", () => {
   it("a long line (past five) shrinks with its columns", () => {
     expect(pieceCap("L", 8)).toBeLessThan(pieceCap("L", 5));
     expect(pieceCap("P", 8)).toBeLessThan(pieceCap("P", 5));
+  });
+  it("a full-width line's pieces leave their neighbours' reach clear (390 px, five units: faces of 48, 30 px apart)", () => {
+    const { pitch, px } = spreadLine(390, 5);
+    expect(pitch).toBe(78);
+    expect(px).toBeGreaterThanOrEqual(48);
+    expect(pitch - px).toBeGreaterThanOrEqual(px * REACH_X);
   });
 });

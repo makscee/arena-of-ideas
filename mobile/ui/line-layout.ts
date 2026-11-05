@@ -23,3 +23,14 @@ export function linePitch(o: Orient, cols: number): number {
 /** The largest piece a line of `cols` may draw: the shop's × GROW_MAX, and no wider than its column allows
  * (the piece's name and rim take 1.4× its face). */
 export const pieceCap = (o: Orient, cols: number): number => Math.min(Math.floor(SHOP_PX[o] * GROW_MAX), Math.floor(linePitch(o, cols) / 1.4));
+
+/** How far a piece's star, rim, counter and status chips reach past its face, both sides together, as a share of the
+ * face (measured on the table: 30 px beside a 50 px face). Two neighbours' reaches must not meet. */
+export const REACH_X = 0.6;
+
+/** A full-width line of `cols` units (Home's TO BEAT on the phone, where the line spreads over the whole stage):
+ * the column pitch, and the largest face whose reach still leaves its neighbour's clear. */
+export function spreadLine(width: number, cols: number): { pitch: number; px: number } {
+  const pitch = Math.floor(width / Math.max(1, cols));
+  return { pitch, px: Math.floor(pitch / (1 + REACH_X)) };
+}

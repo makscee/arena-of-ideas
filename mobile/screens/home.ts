@@ -5,7 +5,7 @@
 // tray: the Workshop card, the vote when one is open, and the rows Codex, Forge, Champions.
 // This file lays the table out; main.ts makes what needs the game (the buttons, the banner's words).
 import type { LineUnit, MvpContent } from "../../src/mvp/contract";
-import { linePitch, pieceCap, SHOP_PX } from "../ui/line-layout";
+import { linePitch, pieceCap, spreadLine } from "../ui/line-layout";
 import { lineToPiece, piece, pieceReach } from "../ui/piece";
 import { h } from "../ui/dom";
 import { orient, stage } from "../ui/stage";
@@ -51,9 +51,10 @@ export function landscapePiece(stageH: number): number {
 /** Where the line's five columns sit (stage x of each centre) and how large its piece and slot are. */
 export function homeGeometry(o: Orient): { px: number; pitch: number; cx: number[]; above: number; rowH: number } {
   // The phone's line spreads over the stage's whole width (the tray is as wide), and its piece is the one that
-  // leaves a counter chip or a star room beside its neighbour; the landscape line is the shop's pitch.
-  const pitch = o === "L" ? linePitch(o, 5) : Math.floor(STAGE.P.w / 5);
-  const px = o === "L" ? landscapePiece(fit("L", window.innerWidth, window.innerHeight, true).h) : 50;
+  // leaves a counter chip or a star room beside its neighbour (ui/line-layout.ts spreadLine); the landscape line is the shop's pitch.
+  const wide = spreadLine(STAGE.P.w, 5);
+  const pitch = o === "L" ? linePitch(o, 5) : wide.pitch;
+  const px = o === "L" ? landscapePiece(fit("L", window.innerWidth, window.innerHeight, true).h) : wide.px;
   const mid = o === "L" ? 640 : 195;
   const reach = pieceReach(px, FLOOR[o]);
   return { px, pitch, cx: [0, 1, 2, 3, 4].map((i) => mid + (i - 2) * pitch), above: reach.above, rowH: reach.above + reach.below + 4 };

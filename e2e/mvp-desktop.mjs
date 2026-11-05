@@ -161,18 +161,40 @@ try {
   await page.getByTestId("codex").click();
   await page.getByTestId("codex-units").waitFor();
   await shot("codex"); await noHScroll("codex"); await wide("codex", 1200);
+  // The Codex is a window over the dimmed table (arena#28/#32; Home is a table state, arena#31): the kept Home
+  // sits under it, the window is framed inside the viewport, and its unit grid fits the window.
+  const win = await page.locator('#app[data-screen="codex"]').boundingBox();
   {
-    // 7 a row beside the 380px inspector.
-    const tops = await page.getByTestId("codex-unit").evaluateAll((els) => els.slice(0, 7).map((e) => Math.round(e.getBoundingClientRect().top)));
-    if (new Set(tops).size > 1) errors.push(`codex: the first 7 cards wrap (${tops.join(",")})`);
+    const under = await page.evaluate(() => ({ cls: document.body.classList.contains("over-table"), home: !!document.querySelector('#under [data-testid="home"]'), dim: getComputedStyle(document.getElementById("under") ?? document.body).filter }));
+    if (!under.cls || !under.home) errors.push(`codex: the window is not over the kept table (over-table ${under.cls}, Home under it ${under.home})`);
+    else if (!/brightness/.test(under.dim)) errors.push(`codex: the table under the window is not dimmed (${under.dim})`);
+    if (!win || win.x < 8 || win.y < 8 || win.x + win.width > W - 8 || win.x + win.width < W - 80 || win.y + win.height > H) errors.push(`codex: the window is not framed in the viewport (${JSON.stringify(win)})`);
+    // The grid fits the window: no horizontal overflow, every card inside it, no two cards touching.
+    const grid = await page.getByTestId("codex-units").evaluate((g) => {
+      const win = document.querySelector('#app[data-screen="codex"]').getBoundingClientRect();
+      const cards = [...g.querySelectorAll('[data-testid="codex-unit"]')].slice(0, 24).map((e) => e.getBoundingClientRect());
+      const hit = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
+      return {
+        over: g.scrollWidth - g.clientWidth, n: cards.length,
+        out: cards.filter((r) => r.left < win.left - 0.5 || r.right > win.right + 0.5).length,
+        overlap: cards.flatMap((a, i) => cards.slice(i + 1).map((b, j) => (hit(a, b) ? `${i}/${i + 1 + j}` : null))).filter(Boolean),
+        page: document.scrollingElement.scrollWidth - document.scrollingElement.clientWidth,
+      };
+    });
+    if (grid.n < 7) errors.push(`codex: only ${grid.n} unit cards drawn`);
+    if (grid.over > 0 || grid.page > 0) errors.push(`codex: the unit grid overflows sideways (${grid.over}px in the grid, ${grid.page}px on the page)`);
+    if (grid.out) errors.push(`codex: ${grid.out} unit cards stick out of the window`);
+    if (grid.overlap.length) errors.push(`codex: unit cards overlap (${grid.overlap.slice(0, 4).join(", ")})`);
   }
-  // A unit opens in the inspector on the right (no overlay on desktop), which ends at the window's edge.
+  // A unit opens in the inspector on the right (no overlay on desktop), which lies inside the window's right edge.
   await page.getByTestId("codex-unit").nth(2).click();
   await page.locator('[data-testid="inspector"] [data-testid="unit-sheet"]').waitFor({ timeout: 2_000 }).catch(() => errors.push("codex: a unit doesn't open in the inspector"));
   if (await page.getByTestId("overlay").count()) errors.push("codex: a unit opened in an overlay");
   {
     const box = await page.getByTestId("inspector").boundingBox();
-    if (!box || box.x + box.width < W - 2) errors.push(`codex: the inspector ends at ${box ? Math.round(box.x + box.width) : "?"}px, not the window's edge`);
+    const right = win ? win.x + win.width : W;
+    // Inside the window (its 4px border and padding take the last stretch), and not stopping short of it.
+    if (!box || box.x + box.width > right + 0.5 || box.x + box.width < right - 48 || box.x < (win?.x ?? 0) || box.y < (win?.y ?? 0) - 0.5) errors.push(`codex: the inspector is not inside the window's right edge (${box ? `${Math.round(box.x)}–${Math.round(box.x + box.width)}px` : "?"}, the window ends at ${Math.round(right)}px)`);
   }
   await page.locator('[data-testid="inspector"] [data-testid="see-awoken"]').click().catch(() => {});
   await shot("codex-inspector");
