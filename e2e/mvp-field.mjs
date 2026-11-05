@@ -259,6 +259,19 @@ async function runSize([label, w, h]) {
   await ctx.close();
 }
 
+/** In the page: the line's When tabs. Words are the plan at every size; with a panel open the columns are narrow, so a word stays wherever it fits its column (≤ 10 characters) and never overlaps a neighbour. */
+function tabs() {
+  const R = (e) => { const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, r: r.right, b: r.bottom }; };
+  const list = [...document.querySelectorAll('.tb-line .pc-tab')].filter((e) => e.getClientRects().length);
+  const boxes = list.map((e) => ({ label: e.title, word: !!e.querySelector(".tw") && getComputedStyle(e.querySelector(".tw")).display !== "none", ...R(e) }));
+  const clash = [];
+  for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+    const a = boxes[i], b = boxes[j];
+    if (Math.min(a.r, b.r) - Math.max(a.x, b.x) > 1 && Math.min(a.b, b.b) - Math.max(a.y, b.y) > 1) clash.push(`${a.label} × ${b.label}`);
+  }
+  return { n: boxes.length, noWord: boxes.filter((b) => !b.word && b.label.length <= 10).map((b) => b.label), clash: clash.slice(0, 3) };
+}
+
 /** The shop's scenes: controls at least 32 px (44 on a phone), every scroll area marked with a cue, the close button off the text. */
 async function runScenes([label, w, h]) {
   const portrait = w < h * 0.8;
@@ -270,6 +283,17 @@ async function runScenes([label, w, h]) {
     await page.waitForTimeout(1200);
     const m = await page.evaluate(controls);
     const why = [];
+    // The line's tabs, with the panel closed and open (landscape).
+    if (scene === "shop-unit" && !portrait) {
+      for (const open of [false, true]) {
+        if (!open) { await page.keyboard.press("Escape"); await page.waitForTimeout(250); }
+        else { await page.locator('[data-testid="line-0"]').click(); await page.waitForTimeout(300); }
+        const t = await page.evaluate(tabs);
+        if (t.n < 3) why.push(`tabs: only ${t.n} on the line`);
+        if (t.noWord.length) why.push(`${open ? "panel open" : "panel closed"}: no word on the When tab of ${t.noWord.join(", ")}`);
+        if (t.clash.length) why.push(`${open ? "panel open" : "panel closed"}: tabs overlap (${t.clash.join("; ")})`);
+      }
+    }
     if (m.small.length) why.push(`controls under ${portrait ? 44 : 32} px: ${m.small.join(", ")}`);
     if (m.unmarked.length) why.push(`unmarked scroll: ${m.unmarked.join(", ")}`);
     if (m.noCue) why.push("a scrolling panel with no cue");
