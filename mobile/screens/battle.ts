@@ -2301,18 +2301,19 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const replayEnd = button("", replay, "bv-end-replay", "end-replay");
     replayEnd.append(tr("battle.replayEnd"), h("span", { class: "bv-dk" }, tr("battle.replayFromStart")));
     return [
-      h("div", { class: "row spread bv-end-top" }, h("div", { class: "bv-end-head" }, h("div", { class: `bv-word ${cls}`, "data-testid": "battle-word" }, word), h("div", { class: "bv-end-sub dim", "data-testid": "end-sub" }, ...endSubtitle())), hide),
+      h("div", { class: "row spread bv-end-top" }, h("div", { class: "bv-end-head" }, h("div", { class: `bv-word ${cls}${word.length > 14 ? " long" : ""}`, "data-testid": "battle-word" }, word), h("div", { class: "bv-end-sub dim", "data-testid": "end-sub" }, ...endSubtitle())), hide),
       // The run line spans the card, not the head beside ✕: on a 360px phone the head is too narrow and the line wrapped (R2-17).
       ...(lostLine ? [h("div", { class: "bv-lost-line", "data-testid": "lost-line" }, lostLine)] : []),
       ...(a.outro ? [h("div", { class: "bv-end-run", "data-testid": "end-run" }, ...a.outro.status())] : []),
       h(
         "div",
-        { class: "bv-end-body" },
+        // The body scrolls on the portrait tray behind "All n": marked, so its foot shows there is more (arena#32's cue).
+        { class: "bv-end-body", "data-scroll": "" },
         h(
           "div",
           { class: "bv-end-moments stack" },
-          moments.length ? h("div", { class: "label row spread" }, h("span", {}, tr("battle.end.keyMoments"), h("span", { class: "bv-dk" }, tr("battle.end.click")), h("span", { class: "bv-ph" }, tr("battle.end.tap")), tr("battle.end.toWatch")), h("span", { class: "bv-end-more bv-ph" }, tr("battle.end.damageDown"))) : null,
-          ...moments.slice(0, orient() === "P" && !dmgAll ? 1 : moments.length).map((m) => {
+          moments.length ? h("div", { class: "label row spread" }, h("span", {}, tr("battle.end.keyMoments"), ...(orient() === "P" ? [h("span", { class: "bv-ph" }, tr("battle.end.tap")), tr("battle.end.toWatch")] : [])), h("span", { class: "bv-end-more bv-ph" }, tr("battle.end.damageDown"))) : null,
+          ...moments.slice(0, dmgAll ? moments.length : orient() === "P" ? 1 : 2).map((m) => {
             const b = button("", () => playFrom(m.beat), `bv-moment ${m.kind}`, "key-moment");
             // Fatigue's label brings its own hourglass, and its turn is in the T column.
             b.append(h("span", { class: "bv-moment-t dim mono" }, turnLabel(beats[m.beat]?.turn ?? 0)), momentIcon(m.kind), h("span", { class: "bv-moment-l" }, ...richCaption(m.kind === "fatigue" ? m.label.replace(/\s*\(T\d+\)$/, "") : m.label, null, true)), h("span", { class: "dim bv-moment-go" }, "▶"));
@@ -2341,9 +2342,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const top = Math.max(1, ...damage.map((d) => d.damage));
     const bySide = (side: Side) => damage.filter((d) => d.side === side);
     const all = bySide(you).length + bySide(them).length;
-    // The landscape tray holds two rows a side without cutting the last one (arena#32): the rest is behind All.
-    // The portrait tray holds your best and their best, whole; the rest is behind All (arena#29, round 4).
-    const cap = dmgAll ? 99 : orient() === "L" ? Math.min(2, DMG_ROWS) : 1;
+    // The tray holds your best and their best, whole, in two columns; the rest is behind All (arena#29, rounds 4 and 5).
+    const cap = dmgAll ? 99 : 1;
     const rows = (side: Side) =>
       bySide(side)
         .slice(0, cap)
@@ -2372,7 +2372,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         });
     const shown = Math.min(cap, bySide(you).length) + Math.min(cap, bySide(them).length);
     const more = all > shown || dmgAll ? button(dmgAll ? tr("battle.dmg.top3") : tr("battle.dmg.all", { n: all }), () => { dmgAll = !dmgAll; render(); }, "small bv-dmg-more", "damage-more") : null;
-    return h("div", { class: "bv-dmg-list stack", "data-testid": "damage-by-unit" }, h("div", { class: "label row spread" }, h("span", {}, tr("battle.dmg.dealt")), more), ...rows(you), ...rows(them));
+    // Yours in one column, theirs in the other, so a row is a touch target tall enough without the list growing (arena#29, round 5).
+    return h("div", { class: "bv-dmg-list stack", "data-testid": "damage-by-unit" }, h("div", { class: "label row spread" }, h("span", {}, tr("battle.dmg.dealt")), more), h("div", { class: "bv-dmg-cols" }, h("div", { class: "bv-dmg-col" }, ...rows(you)), h("div", { class: "bv-dmg-col" }, ...rows(them))));
   }
 
   /** A side's label (#1294): in a run Them and You; a watched battle names

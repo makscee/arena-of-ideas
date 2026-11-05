@@ -680,6 +680,58 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach > .coach .coach-pair .pc-hb { display: none; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-coach > .coach .coach-wire-n { width: 32px; height: 32px; font-size: 18px; }
 
+/* ===== Round 5 (arena#29): what the layout lint found in the battle ===== */
+/* A result chip's two lines keep their height: the chip grows with its lines instead of clipping them */
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bv-line .bv-pill.two { height: auto; line-height: 1.2; padding: 2px 8px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line .bv-pill.two { height: auto; line-height: 1.2; padding: 1px 4px; font-size: 12px; }
+/* The step number on a card pops in without shrinking below its size (a chip drawn at 0.4× read as 8 px) */
+@keyframes bv-chip-pop { from { opacity: 0; translate: 0 6px; } to { opacity: 1; translate: 0 0; } }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .bv-card > .bv-chain-chip { animation-name: bv-chip-pop; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-card > .bv-chain-chip { min-width: 22px; height: 22px; font-size: 13px; }
+/* The result's labels keep their line height; a long winner's name is smaller and may wrap, never clipped */
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .bt-tray > .bv-end .bv-end-moments > .label { line-height: 1.3; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-word.long { font-size: 30px; line-height: 1.1; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-word.long { font-size: 24px; line-height: 1.1; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-end-sub { white-space: normal; overflow: visible; text-overflow: clip; }
+/* Damage: yours in one column, theirs in the other; each row a target (32 px at 1024+, 24 drawn at 800×450, 44 on a phone) */
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .bt-tray > .bv-end .bv-dmg-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 14px; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .bt-tray > .bv-end .bv-dmg-col { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .bt-tray > .bv-end .bv-dmg { grid-template-columns: 28px minmax(0, 1fr) auto; min-height: 40px; align-items: center; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .bt-tray > .bv-end .bv-dmg .bv-dmg-bar { display: none; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-end .bv-dmg { min-height: 48px; }
+/* The caption has room for three lines and its tab on the landscape tray; the last events and the ledger sit under it */
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > button.bv-caption { width: 720px; max-height: 108px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-below { left: 596px; top: 128px; width: 296px; }
+/* CHAIN ×N sits level on the portrait tray: a tilted word reached 4 px into the step beside it */
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray .bv-chain-count { transform: none; padding-left: 0; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray .bv-recent.chain { column-gap: 12px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray .bv-ledger button.bv-skip { min-height: 48px; }
+/* Landscape result: head, moments with room for two lines each, damage (best each side), buttons */
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end { grid-template-columns: 340px minmax(0, 1fr) 190px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-dmg-list { flex: 0 0 250px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-lost-line { display: block; -webkit-line-clamp: unset; overflow: visible; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-end-actions button { font-size: 18px; line-height: 1.1; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-moment { min-height: 52px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-moment-l { line-height: 1.2; -webkit-line-clamp: 2; max-height: calc(2 * 1.2em); }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-dmg-cols { grid-template-columns: minmax(0, 1fr); }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-dmg-col { display: contents; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-dmg-list { flex: 0 0 270px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-dmg { margin-bottom: 4px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-end-actions button { white-space: normal; }
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .bt-tray > .bv-end .bv-end-moments > .label { overflow: visible; text-overflow: clip; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end > .bv-end-actions { grid-template-columns: minmax(0, 1fr); }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end > .bv-end-actions button { min-width: 0; max-width: 100%; width: 100%; }
+/* The result's columns that span the rows never stretch them: the head's rows keep their own height */
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end > .bv-end-body, :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end > .bv-end-actions { height: 0; min-height: 100%; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-end-top .bv-word { font-size: 40px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end { row-gap: 2px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-end .bv-end-run { overflow: visible; }
+/* A chain's caption keeps its tab and two lines; its steps start under it (arena#29, round 5) */
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray:has(> .bv-recent.chain) > button.bv-caption { max-height: 108px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bt-tray > .bv-recent.chain { top: 126px; height: 76px; }
+/* A piece's name is one line whose box holds its letters whole */
+:is(#app[data-screen="battle"], #under) .stage.bv-v3 .bv-card .pc-nm { line-height: 1.25; overflow: visible; }
+
 /* Round 5 (the layout lint): controls are 32 px or more (44 on a phone), scroll areas say so, the close button stays off the text */
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-side button.pin-btn { min-height: 36px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-side.them button.pin-btn { min-height: 44px; }
