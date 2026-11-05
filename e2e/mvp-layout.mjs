@@ -153,7 +153,9 @@ function lint({ touchSize, minTouch, minDesk, minFrame }) {
   if (new Set(small).size > 6) add("e", `… and ${new Set(small).size - 6} more under ${min} px`);
   // (f) the units fill the field: in a line with ≥ 3 units, the slots they stand in (the slot's own box, not the piece's)
   // span ≥ 60% of the stage's width. Tray offers and the bench are not the field.
-  if (stageEl && !overTable) {
+  // With the unit panel open the field narrows by design (the panel docks right): rule (f) is for the panel closed.
+  const panelOpen = !!stageEl?.querySelector('.tb-insp:not([hidden])');
+  if (stageEl && !overTable && !panelOpen) {
     const sr = stageEl.getBoundingClientRect();
     const rows = stageEl.querySelectorAll('[data-testid="line"], [data-testid="battle-you"], [data-testid="battle-them"], [data-testid="crown-foe-line"]');
     for (const row of rows) {
