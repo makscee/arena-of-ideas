@@ -634,7 +634,7 @@ function homeMenu(home: HomeView, err: HTMLElement, lastRun: HTMLElement | null,
   const close = closable(
     h(
       "div",
-      { class: "stack settings", "data-testid": "settings-sheet" },
+      { class: "stack settings", "data-testid": "settings-sheet", "data-scroll": "" },
       h("h2", {}, t("home.settings")),
       h("div", { class: "row me" }, h("span", { class: "dim keep" }, t("home.playingAs")), who(api.player?.name ?? "")),
       home.email?.address ? h("div", { class: "row me", "data-testid": "settings-email" }, h("span", { class: "dim keep" }, t("email.label")), h("span", { class: "grow" }, home.email.address)) : null,

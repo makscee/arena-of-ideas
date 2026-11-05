@@ -149,6 +149,7 @@ try {
 
     // ---- 1–5 keys put the offer in hand into that slot (desktop); a phone only taps
     await offer("Medic").click();
+    await page.waitForTimeout(250); // the offer in hand settles (its panel opens) before a key reads it
     if (touch) {
       await tid("line-1-empty").click();
       na(S, "←/→ and 1–5", "touch: the tap path only");
