@@ -1174,9 +1174,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   /** A panel is open: it docks on the right and the field narrows, so the line's pieces are drawn smaller. */
   const docked = () => chosen !== null || pick.mode !== "none" || fuseView !== null;
   /** With a panel open the columns are narrow: a When word stays wherever it fits its column (10 characters at the floor size). */
-  const whenFits = (u: LineUnit) => lineToPiece(u, content).face.when.label.length <= 10;
   const pieceSizes = () =>
-    tall || !lay ? { line: 56, bench: 44, offer: 64, their: 48, lineWord: false, benchWord: false, benchBare: true } : { line: docked() ? lay.sDock : lay.s, bench: lay.sb, offer: 72, their: lay.sb, lineWord: !docked(), benchWord: false, benchBare: true };
+    tall || !lay ? { line: 56, bench: 44, offer: 64, their: 48, benchBare: true } : { line: docked() ? lay.sDock : lay.s, bench: lay.sb, offer: 72, their: lay.sb, benchBare: true };
   /** Tap-tap: the offer in hand (chosen) or the unit in hand (picked) lights
    * every slot it can go to; the twin it merges into is gold. */
   /** The board slot an offer's copy merges into, or -1. */
@@ -1189,7 +1188,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   /** The inspector's piece is drawn at 0.72 on the portrait stage: its text floor grows to read 11 px there. */
   const sheetFloor = tall ? 16 : 18;
   /** The panel's sheet: compact (the piece beside the head), its hero a piece of 96 stage px (a phone's 56). */
-  const sheetOpts = (where?: string) => ({ floor: sheetFloor, compact: true, heroPx: tall ? 60 : 88, heroWord: !tall, ...(where ? { where } : {}) });
+  const sheetOpts = (where?: string) => ({ floor: sheetFloor, compact: true, heroPx: tall ? 60 : 88, ...(where ? { where } : {}) });
   const cellStyle = (s: number, bare = false) => {
     const r = pieceReach(s, floor);
     const top = Math.max(15, r.above + 2);
@@ -1253,7 +1252,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }
     const sz = pieceSizes();
     const c = actionable(
-      h("div", { class: ["cell", "you", onBench && sz.benchBare ? "bare" : "", u.kind === "fused" ? "fused" : u.form === "awoken" ? "awoken" : ""].filter(Boolean).join(" "), "data-copies": String(u.copies), "data-testid": id, style: onBench ? cellStyle(sz.bench, sz.benchBare) : cellStyle(sz.line) }, piece(lineToPiece(u, content), { size: "L", side: "you", px: onBench ? sz.bench : sz.line, word: onBench ? sz.benchWord : sz.lineWord || whenFits(u), floor })),
+      h("div", { class: ["cell", "you", onBench && sz.benchBare ? "bare" : "", u.kind === "fused" ? "fused" : u.form === "awoken" ? "awoken" : ""].filter(Boolean).join(" "), "data-copies": String(u.copies), "data-testid": id, style: onBench ? cellStyle(sz.bench, sz.benchBare) : cellStyle(sz.line) }, piece(lineToPiece(u, content), { size: "L", side: "you", px: onBench ? sz.bench : sz.line, floor })),
       `${u.name}, ${onBench ? t("board.onBench", { n: slot - L + 1 }) : t("board.inLine", { n: slot + 1 })}`,
     );
     if (pick.mode === "picked" && pick.index === slot) c.classList.add("selected");
@@ -1876,7 +1875,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       // The piece (mission #1286): price and lock on its foot, the tier beside them.
       const pu = { name: u?.name ?? o.unitId, emoji: u?.emoji ?? "?", stats: u?.base ?? { pwr: 0, hp: 0 }, face: u ? faceOfUnit(u) : { when: { icon: "✨", label: "" }, headline: { icon: "✨" } }, tier: o.tier, copies: 1, ...(u?.portrait ? { portrait: u.portrait } : {}) };
       const c = actionable(
-        h("div", { class: "cell offer", "data-testid": `offer-${o.slot}`, "data-name": pu.name, style: cellStyle(offerPx) }, piece(pu, { size: "L", side: "shop", px: offerPx, floor, word: !tall && offerPx >= 68, price: o.cost, lock: o.locked === true })),
+        h("div", { class: "cell offer", "data-testid": `offer-${o.slot}`, "data-name": pu.name, style: cellStyle(offerPx) }, piece(pu, { size: "L", side: "shop", px: offerPx, floor, price: o.cost, lock: o.locked === true })),
         `${pu.name}, ${price}`,
       );
       if (run.gold < o.cost) c.classList.add("poor");
@@ -1961,7 +1960,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   /** One unit of the Crown's team, as a piece on their rim; a tap reads it in a sheet. */
   const theirCell = (u: LineUnit) =>
     actionable(
-      h("div", { class: "cell them bare", style: cellStyle(pieceSizes().their, true) }, piece(lineToPiece(u, content), { size: "L", side: "them", px: pieceSizes().their, word: false, floor })),
+      h("div", { class: "cell them bare", style: cellStyle(pieceSizes().their, true) }, piece(lineToPiece(u, content), { size: "L", side: "them", px: pieceSizes().their, floor })),
       u.name,
     );
   const fillFoe = (d: DayView | null, settled = d !== null) => {

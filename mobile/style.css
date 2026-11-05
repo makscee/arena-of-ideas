@@ -2011,6 +2011,7 @@ button.link.report-link { min-height: 32px; min-width: 44px; align-self: center;
 .pc.sg > .pc-face { border: 0; background: none; box-shadow: none; overflow: visible; }
 .pc-sg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; }
 /* A unit's sigil as a small picture beside a name, on a card, in a sheet's head (arena#39, mobile/ui/glyph.ts): no plate. */
+.sg-gl { display: block; flex: none; pointer-events: none; }
 .sg-ic { display: inline-block; vertical-align: middle; flex: none; pointer-events: none; }
 .sg-label { white-space: nowrap; }
 .sg-pair { display: inline-flex; align-items: center; }

@@ -913,7 +913,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const sum = summoned.get(id);
     const base: PieceUnit = bu
       ? lineToPiece(bu, a.content)
-      : { name: live?.name ?? name(id), emoji: emojiOf(id), stats: { pwr: live?.pwr ?? 0, hp: live?.hp ?? 0 }, face: sum?.form ? faceFallback(sum.form) : { when: { icon: "✨", label: "" }, headline: { icon: "✨" } }, ...(sum?.portrait ? { portrait: sum.portrait } : {}) };
+      : { name: live?.name ?? name(id), emoji: emojiOf(id), stats: { pwr: live?.pwr ?? 0, hp: live?.hp ?? 0 }, face: sum?.form ? faceFallback(sum.form) : { when: { icon: "spark", label: "" }, headline: { icon: "spark" } }, ...(sum?.portrait ? { portrait: sum.portrait } : {}) };
     // A v2 pool battle can field units the served content lacks: their face is by name (V2_FACE).
     if (!bu || !a.content.units.some((x) => x.id === bu.unitId)) base.face = V2_FACE[base.name] ?? base.face;
     const unit: PieceUnit = { ...base, name: live?.name ?? base.name, stats: { pwr: live?.pwr ?? base.stats.pwr, hp: live ? live.hp : 0 } };
@@ -938,7 +938,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const bu = units.get(id);
     const sum = summoned.get(id);
     const base = bu ? lineToPiece(bu, a.content) : null;
-    const face = base?.face ?? (sum?.form ? faceFallback(sum.form) : { when: { icon: "✨", label: "" }, headline: { icon: "✨" } });
+    const face = base?.face ?? (sum?.form ? faceFallback(sum.form) : { when: { icon: "spark", label: "" }, headline: { icon: "spark" } });
     if (!bu || !a.content.units.some((x) => x.id === bu.unitId)) return V2_FACE[base?.name ?? name(id)] ?? face;
     return face;
   }
@@ -954,7 +954,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     // The tab is the rule that fired (it lights on its piece too); a plain strike has none.
     const c = causeOf(log, step, whenOf);
     const f = c?.kind === "ability" && c.at ? faceFor(c.at) : null;
-    const tab = f?.when.label || f?.when.icon ? [h("span", { class: "bv-cap-when", "data-testid": "caption-when", style: `background:${whenTone(f.when.icon)}` }, f.when.icon, f.when.label ? h("span", {}, f.when.label) : null)] : [];
+    const tab = f?.when.label ? [h("span", { class: "bv-cap-when", "data-testid": "caption-when", style: `background:${whenTone(f.when.icon)}` }, h("span", {}, f.when.label))] : [];
     return [...tab, h("span", { class: "bv-strip-text bv-rail-line" }, ...richCaption(step.caption))];
   }
   function unitCard(u: BoardUnit, side: Side, v: View, _stsWidth: number, compact: boolean): HTMLElement {
