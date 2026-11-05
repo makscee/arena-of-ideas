@@ -753,3 +753,7 @@ button.ws-back { min-height: 44px; min-width: 44px; padding: 0 12px; flex: none;
 :is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact button.see-awoken, .stage.P button.see-awoken { min-height: 44px; }
 :is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp [data-testid="fuse-preview"] { padding-right: 44px; }
 .sheet[data-scroll] { background: linear-gradient(var(--panel) 30%, transparent) top / 100% 28px no-repeat local, linear-gradient(transparent, var(--panel) 70%) bottom / 100% 28px no-repeat local, linear-gradient(rgba(0, 0, 0, 0.35), transparent) top / 100% 10px no-repeat scroll, linear-gradient(transparent, rgba(0, 0, 0, 0.35)) bottom / 100% 10px no-repeat scroll, var(--panel); }
+
+/* Round 8: the landscape stage is scaled (0.8 at 1024 wide, 0.625 at 800), so a control must be 40 stage px to be 32 / 25 drawn */
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-side button.pin-btn { min-height: 40px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp button.see-awoken, :is(#app[data-screen="shop"], #under) .stage.t-shop.L .tb-insp .sheet-compact button.see-awoken { min-height: 40px; }
