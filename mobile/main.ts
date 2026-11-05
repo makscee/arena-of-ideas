@@ -1034,7 +1034,10 @@ function pressReroll(run: RunView): void {
   const gold = document.querySelector('[data-testid="gold"]');
   if (gold) gold.textContent = t("shop.gold", { n: Math.max(0, run.gold - rules.rerollCost) });
 }
-function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -1, offer = -1): void {
+/** `predicted`: `run` is the table drawn before the server answers (what a press will do, worked out here); the server
+ * does not have that board yet, so nothing is asked of it about this board (its forge, an offer's buy preview): the
+ * answer would describe the board before the press, and its slots would point at units that are not there. */
+function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -1, offer = -1, predicted = false): void {
   if (run.phase === "over") return runOverScreen(run, content, notice);
   // The table (arena#28): one stage and one set of controls at every size. `kb`
   // is only a keyboard being there: it adds the key caps and the key hints.
@@ -1087,7 +1090,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       if (d.kind === "fight") pressFight();
       else if (d.kind === "reroll") pressReroll(run);
       const next = predictRun(run, d, content, rules);
-      if (next) shopScreen(next, content, "", select, offer);
+      if (next) shopScreen(next, content, "", select, offer, true);
       await answered(d, select, offer, next !== null || d.kind === "fight" || d.kind === "reroll");
     });
   /** Lock or unlock an offer (free); the offer is put down, so the inspector never covers the shop. */
@@ -1436,7 +1439,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         const from = j < 0 ? -1 : j < bought.line.length ? j : L + j - bought.line.length;
         const dest = from < 0 ? null : destFor(bought, from, to);
         const moved = dest === null ? bought : predictRun(bought, { kind: "reorder", from, to: dest }, content, rules) ?? bought;
-        shopScreen(moved, content, "", dest ?? -1, -1);
+        shopScreen(moved, content, "", dest ?? -1, -1, true);
       }
       try {
         await Promise.allSettled([...previewsOut]);
@@ -1819,7 +1822,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const offerBody = async (o: Offer): Promise<OfferBody> => {
     const u = unitOf(o.unitId);
     let blocked = buyBlock(o);
-    const affordable = blocked === "";
+    // A predicted board has no buy preview to ask for (the server has not got it yet): the rule shows, the preview comes with the answer.
+    const affordable = blocked === "" && !predicted;
     let ask = previews.get(o.slot);
     if (affordable && !ask) {
       ask = buyPreview(o);
@@ -1910,7 +1914,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       c.append(h("div", { class: "fuse-tag", "data-testid": `fuse-offer-${o.slot}`, title: offerLine(f) }, f.awakens ? (f.design ? `⚗ ${fusionName(f)}` : t("fuse.offerClaim")) : "⚗"));
     }
   };
-  if (codexOn && !crown)
+  if (codexOn && !crown && !predicted)
     void api.forge(run.runId).then(
       (f) => {
         forge = f;
@@ -2127,7 +2131,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       inspector,
       err,
     ],
-    () => shopScreen(run, content, err.textContent ?? "", pick.mode === "picked" ? pick.index : -1, chosen ?? -1),
+    () => shopScreen(run, content, err.textContent ?? "", pick.mode === "picked" ? pick.index : -1, chosen ?? -1, predicted),
     !tall,
   );
   table.classList.add("t-shop");
@@ -2151,7 +2155,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   // The gift opens by itself, unless it was set aside (and, if set aside for
   // a full board, there is still no room).
   if (run.gift && !crown && (giftAside?.key !== giftKey || (giftAside.full && !cramped(run.gift)))) openGift();
-  rerender = () => shopScreen(run, content, err.textContent ?? "", pick.mode === "picked" ? pick.index : -1);
+  rerender = () => shopScreen(run, content, err.textContent ?? "", pick.mode === "picked" ? pick.index : -1, -1, predicted);
   // Keys: Esc steps back (the fusion, the selection), then opens the ☰ run
   // menu, at every width (a sheet over the shop closes first: ui/dom.ts).
   // With a keyboard: ← → pick an offer (or move the unit in hand), 1–5 put the offer in hand
