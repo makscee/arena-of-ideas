@@ -62,6 +62,7 @@
     "mvp:table-fit": "node e2e/table-fit.mjs",
     "mvp:next": "node e2e/mvp-next.mjs",
     "mvp:panel": "node e2e/mvp-panel.mjs",
+    "mvp:field": "node e2e/mvp-field.mjs",
     "mvp:cg-store-kit": "node e2e/cg-store-kit.mjs",
     "mvp:cg-qa": "node e2e/cg-qa.mjs",
     "mvp:history": "node e2e/mvp-history.mjs",

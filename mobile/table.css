@@ -450,6 +450,111 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-coach > .coach .coach-how { font-size: 13px; margin-top: 0; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-coach > .coach .coach-why { display: none; }
 
+/* ===== The shop's field and unit panel, round 4 (arena#28): the landscape table spends its whole width ===== */
+/* The columns are the same five for their wells, your line and (the first three) the bench; the labels sit in a left gutter of 120px; the tray takes the foot. A taller window gives the rows more height (--sh). */
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop { --fx: 140px; --fw: 1132px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel { --fw: 678px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-their { left: var(--fx); top: var(--wells-top); width: var(--fw); height: var(--wells-h); }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-line { left: var(--fx); top: var(--line-top); width: var(--fw); --n: 5; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-bench { left: var(--fx); top: var(--bench-top); width: calc(var(--fw) * 3 / 5); }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-tray { top: var(--tray-top); }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-side.them { left: 16px; top: var(--wells-top); width: 118px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-side.you { left: 16px; top: calc(var(--line-top) + 36px); width: 118px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-side.them .next-opp { max-width: 118px; font-size: 18px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-side.them .next-opp .who { font-size: 20px; overflow-wrap: anywhere; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-side .pin, :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-side button.pin-btn { max-width: 118px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-side .label { font-size: 20px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-bench > .bench-label { margin-right: 10px; top: 28px; font-size: 20px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-their .cell.ghost { padding-top: 4px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-line .cell-well { width: var(--s); height: var(--s); }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-line .cell, :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-bench .cell { border-radius: 14px; }
+/* A docked panel narrows the field: the tabs lose their words so five columns of 136px stay clean */
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel .tb-line .pc-tab .tw, :is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel .tb-bench .pc-tab .tw { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel .tb-line .pc-tab, :is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel .tb-bench .pc-tab { padding-right: 8px; }
+
+/* The unit panel docks in the right column of the field, from under the HUD to above the tray */
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp { left: 832px; top: 76px; width: 432px; max-height: calc(var(--tray-top) - 82px); padding: 12px 16px 12px; gap: 8px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp .insp-body { gap: 8px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp .insp-body > .label { margin: 0; padding-right: 44px; line-height: 1.1; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact { container-type: normal; display: flex; flex-direction: column; gap: 6px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-top { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: start; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-hero { position: static; display: block; padding: 20px 10px 4px 12px; width: auto; height: auto; float: none; margin: 0; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-hero > .pc { transform: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-hero:has(.pc-shelf) { padding-bottom: 36px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-top-text { min-width: 0; gap: 4px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-name h2 { font-size: 24px; line-height: 1.1; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-body { min-width: 0; gap: 4px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-body > * { margin: 0; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-rule-head { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-icons { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .archetype { font-size: 18px; line-height: 1.25; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-form { font-size: 18px; line-height: 1.3; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .preview-card { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .after > .label { margin: 0; }
+
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact :is(.sheet-body, .sheet-top-text) > :empty { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact button.see-awoken { min-height: 30px; padding: 0; }
+
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-form :is(button, .t), :is(#app[data-screen="shop"], #under) .tb-insp .sheet-form button.t { min-height: 0; height: auto; padding-top: 0; padding-bottom: 0; line-height: 1.25; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp .insp-body > .label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Small facts share a row so the panel stays short: how long it has been live, what buying does, the pick rate */
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp .insp-body > .label { line-height: 1.35; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-body { display: flex; flex-flow: row wrap; align-items: baseline; column-gap: 14px; row-gap: 2px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-body > * { flex: 1 1 100%; min-width: 0; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-body > :is(.credit-line, [data-testid="unit-rates"], [data-testid="buy-preview"], [data-testid="sheet-credit"], .discovered, button.see-awoken) { flex: 0 1 auto; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-body > .dim.small:not(.credit-line):not([data-testid="unit-rates"]) { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-side.them .next-opp .who { white-space: normal; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-hero { padding-right: 24px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-body { row-gap: 0; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-hero { padding-top: 16px; padding-bottom: 0; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp { padding-top: 10px; padding-bottom: 10px; gap: 6px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp .insp-body { gap: 4px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact { gap: 2px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-hero { padding-bottom: 14px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .after > .label { letter-spacing: 0; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .after { flex: 0 0 auto; }
+
+/* The panel at 16:9 has 412px: the summoned unit's piece is drawn small and its status chips ride on the hero's shelf */
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-hero:has(.pc-shelf) { padding-bottom: 46px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-now { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .summons > .label { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .summon-row { display: flex; align-items: center; gap: 4px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .summon-row > :first-child { zoom: 0.62; flex: none; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp { top: 72px; width: 440px; left: 824px; max-height: calc(var(--tray-top) - 76px); }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel { --fw: 668px; }
+
+/* The first run's coach on the landscape stage: the step and the pair on one row, the text across the card */
+:is(#app[data-screen="shop"], #under) .stage.L .tb-coach > .coach { display: grid; grid-template-columns: 1fr auto; align-content: center; column-gap: 10px; row-gap: 4px; }
+:is(#app[data-screen="shop"], #under) .stage.L .tb-coach > .coach .coach-step { grid-column: 1; grid-row: 1; align-self: center; }
+:is(#app[data-screen="shop"], #under) .stage.L .tb-coach > .coach .coach-body { display: contents; }
+:is(#app[data-screen="shop"], #under) .stage.L .tb-coach > .coach .coach-pair { grid-column: 2; grid-row: 1; }
+:is(#app[data-screen="shop"], #under) .stage.L .tb-coach > .coach .coach-text { grid-column: 1 / -1; grid-row: 2; }
+
+/* Where the unit stands rides on its state line; the label row above it goes (the panel keeps the height for the rule) */
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .insp-body > .label { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-title > .sheet-where, :is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-title > [data-testid="sheet-state"] { display: inline; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-hero { padding-top: 18px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .summon-row > :first-child { zoom: 0.5; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .summon-row .pc-nm, :is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .summon-row .name { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .summons { border-top: 0; padding-top: 0; margin-top: 0; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-where { margin-left: 4px; white-space: nowrap; }
+/* The small facts (the way back to sleeping, its age, what buying does, the rates) follow the summons and share rows */
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-body > :is(button.see-awoken, button[data-testid="see-sleeping"], .credit-line, [data-testid="buy-preview"], [data-testid="unit-rates"], .discovered) { order: 5; }
+
+/* The phone's panel: a bottom sheet as tall as its content, at most 55% of the window, above Reroll and Fight; its text scrolls only when it must, with a cue */
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp { left: 6px; right: 6px; bottom: 90px; max-height: calc(var(--sh) * 0.55px); padding: 8px 12px 10px; font-size: 15px; gap: 6px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop.compact .tb-insp { max-height: calc(var(--sh) * 0.55px); bottom: 96px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .insp-body > .label { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact .sheet-form { font-size: 15px; line-height: 1.3; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact .sheet-name h2 { font-size: 22px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact .archetype { font-size: 14px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact .sheet-hero { padding: 12px 6px 14px 8px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact .sheet-hero:has(.pc-shelf) { padding-bottom: 36px; }
+:is(#app[data-screen="shop"], #under) .tb-insp > .insp-more { position: absolute; left: 0; right: 0; z-index: 3; bottom: 56px; height: 26px; display: grid; place-items: end center; font: 600 18px/1 var(--font-body); color: #5e5280; pointer-events: none; background: linear-gradient(to bottom, transparent, var(--paper) 85%); }
+:is(#app[data-screen="shop"], #under) .tb-insp > .insp-more.done { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp > .insp-more { bottom: 62px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact .sheet-hero { padding-right: 24px; }
+
 /* The first screen (arena#31, round 4): the table's stage, the duel's first screen on it. L is 1280×720 and P 390 × the window's
  * height, scaled by ui/stage.ts, so these sizes are the design's own; landscape text is 18px and up (800×450 is 0.625 of it). */
 #app[data-screen="start"] {

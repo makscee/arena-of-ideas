@@ -41,6 +41,7 @@ import { galleryScreen } from "./screens/gallery";
 import { faceOfUnit, lineToPiece, piece, pieceReach } from "./ui/piece";
 import { predictRun } from "./ui/predict";
 import { orient, stage } from "./ui/stage";
+import { fieldLayout, fit } from "./ui/stage-fit";
 import { initSound, music, onSoundChange, play, setSound, soundSettings } from "./ui/sound";
 import { shopSound } from "./ui/sound-map";
 import { t, withNodes } from "./i18n";
@@ -1055,6 +1056,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   // is only a keyboard being there: it adds the key caps and the key hints.
   const kb = hasKeys();
   const tall = orient() === "P";
+  /** The landscape stage's rows (their wells, your line, the bench, the tray) for the height this window gives it. */
+  const lay = tall ? null : fieldLayout(fit("L", window.innerWidth, window.innerHeight, true).h);
   const crown = run.phase === "crown";
   // The reigning champion's Crown is their own team; a win is still a slay.
   const ownCrown = crown && run.nextOpponent?.player.id === run.player.id;
@@ -1180,8 +1183,10 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   };
   /** The piece's side per layout (mission #1286 slice 2): the phone's line of
    * five keeps the when tab's icon only, the bench is a size down. */
+  /** A panel is open: it docks on the right and the field narrows, so the line's pieces are drawn smaller. */
+  const docked = () => chosen !== null || pick.mode !== "none" || fuseView !== null;
   const pieceSizes = () =>
-    tall ? { line: 56, bench: 44, offer: 64, their: 48, lineWord: false, benchWord: false, benchBare: true } : { line: 70, bench: 46, offer: 72, their: 52, lineWord: true, benchWord: false, benchBare: true };
+    tall || !lay ? { line: 56, bench: 44, offer: 64, their: 48, lineWord: false, benchWord: false, benchBare: true } : { line: docked() ? lay.sDock : lay.s, bench: lay.sb, offer: 72, their: lay.sb, lineWord: !docked(), benchWord: false, benchBare: true };
   /** Tap-tap: the offer in hand (chosen) or the unit in hand (picked) lights
    * every slot it can go to; the twin it merges into is gold. */
   /** The board slot an offer's copy merges into, or -1. */
@@ -1193,6 +1198,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const floor = tall ? 0 : 18;
   /** The inspector's piece is drawn at 0.72 on the portrait stage: its text floor grows to read 11 px there. */
   const sheetFloor = tall ? 16 : 18;
+  /** The panel's sheet: compact (the piece beside the head), its hero a piece of 96 stage px (a phone's 56). */
+  const sheetOpts = (where?: string) => ({ floor: sheetFloor, compact: true, heroPx: tall ? 60 : 88, heroWord: !tall, ...(where ? { where } : {}) });
   const cellStyle = (s: number, bare = false) => {
     const r = pieceReach(s, floor);
     const top = Math.max(15, r.above + 2);
@@ -1488,21 +1495,40 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
    * README.md): the inspector's last line, at its foot, not mid-panel. */
   const ratesToFoot = () => {
     const r = inspector.querySelector('[data-testid="unit-rates"]');
-    if (r) inspector.append(r);
+    // The sheet's last line, in its body (the compact sheet lets it share a row with the small facts).
+    if (r) (inspector.querySelector(".sheet-compact > .sheet-body") ?? inspector).append(r);
   };
   /** Desktop: the hovered card, else the selected one (or a fusion waiting
    * for its Fuse), else how to use the board. `force` redraws even when the
    * same card is shown (the selection changed). */
   let inspected = "";
+  /** A cue that the text goes on (a phone's sheet scrolls only when the rule is taller than it): a fade and a chevron at the foot of the body. */
+  const cueScroll = () => {
+    const body = inspector.querySelector<HTMLElement>(".insp-body");
+    inspector.querySelector('[data-testid="insp-more"]')?.remove();
+    if (!body || body.scrollHeight <= body.clientHeight + 1) return;
+    const cue = h("div", { class: "insp-more", "data-testid": "insp-more", "aria-hidden": "true" }, "▾");
+    inspector.append(cue);
+    const sync = () => cue.classList.toggle("done", body.scrollTop + body.clientHeight >= body.scrollHeight - 2);
+    body.addEventListener("scroll", sync);
+    sync();
+  };
+  /** The body's text changes (See Awoken, the preview arriving): the cue is worked out again. */
+  const cueWatch = new MutationObserver(() => requestAnimationFrame(cueScroll));
   const layoutInspector = () => {
     inspector.querySelector(":scope > button.insp-x")?.remove();
     const rows = [...inspector.children].filter((c) => c.classList.contains("row"));
     const body = h("div", { class: "insp-body" }, ...[...inspector.children].filter((c) => !rows.includes(c)).map((c) => c as HTMLElement));
     inspector.replaceChildren(...(body.childElementCount ? [body] : []), ...rows);
+    cueWatch.disconnect();
+    if (body.childElementCount) cueWatch.observe(body, { childList: true, subtree: true, characterData: true });
+    if (inspector.isConnected) cueScroll();
   };
   const renderInspector = (force = false) => {
     drawInspector(force);
     inspector.hidden = inspector.childElementCount === 0;
+    // The field narrows to make room for a docked panel (landscape).
+    inspector.closest(".stage")?.classList.toggle("with-panel", !inspector.hidden);
     // What reads scrolls; the buttons (Buy, Lock, move, sell) stay at the card's foot.
     layoutInspector();
     // A close on the card (the mockup's "Esc ✕"): the offers under it on a phone are out of reach otherwise.
@@ -1531,7 +1557,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const mine = at.index === sel;
       inspector.replaceChildren(
         h("div", { class: "label" }, (mine ? t("board.selected") : "") + (at.index < L ? t("board.inLine", { n: at.index + 1 }) : t("board.onBench", { n: at.index - L + 1 }))),
-        unitSheet(unitAt(at.index)!, content, { floor: sheetFloor }),
+        unitSheet(unitAt(at.index)!, content, sheetOpts(at.index < L ? t("panel.slot", { n: at.index + 1 }) : t("panel.bench", { n: at.index - L + 1 }))),
         mine || pick.mode === "fuse" ? h("div", { class: "row actions", "data-testid": "actions" }, ...actionButtons()) : h("div", { class: "dim small" }, crown ? t("board.crownFinal") : t("board.clickSelect")),
       );
       return ratesToFoot();
@@ -1554,7 +1580,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       // At once: the unit's own rule and numbers (your copy, if you own one); what buying does follows with the preview.
       const own = board.find((x) => x.kind === "unit" && x.unitId === o.unitId);
       const pool = unitOf(o.unitId);
-      card_(own ? unitSheet(own, content) : pool ? unitSheet(pool, content) : h("h2", {}, o.unitId), buyBlock(o));
+      card_(own ? unitSheet(own, content, sheetOpts(t("panel.offer", { n: n + 1 }))) : pool ? unitSheet(pool, content, sheetOpts(t("panel.offer", { n: n + 1 }))) : h("h2", {}, o.unitId), buyBlock(o));
       void offerBody(o).then(
         ({ sheet, blocked }) => {
           if (inspected === key) card_(sheet, blocked);
@@ -1825,7 +1851,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }
     // Without a preview (no gold, a full line), an owned unit still shows your copy as it is.
     const owned = mine ? null : board.find((x) => x.kind === "unit" && x.unitId === o.unitId) ?? null;
-    const sheet = mine ? unitSheet(mine.next, content, { from: mine.now.stats, floor: sheetFloor }) : owned ? unitSheet(owned, content, { floor: sheetFloor }) : u ? unitSheet(u, content, { floor: sheetFloor }) : h("h2", {}, o.unitId);
+    const where = t("panel.offer", { n: run.offers.findIndex((x) => x.slot === o.slot) + 1 });
+    const sheet = mine ? unitSheet(mine.next, content, { from: mine.now.stats, ...sheetOpts(where) }) : owned ? unitSheet(owned, content, sheetOpts(where)) : u ? unitSheet(u, content, sheetOpts(where)) : h("h2", {}, o.unitId);
     // What buying does goes inside the sheet, above its last line (the rates hint).
     // The XL sheet's text column holds the rates line (mission #1286).
     const body = sheet.querySelector(".sheet-body") ?? sheet;
@@ -2087,7 +2114,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     "div",
     { class: "tb-their", "data-testid": "their-line" },
     // Their line stays hidden until the fight (the Crown shows the champion's team); wells keep its place.
-    ...(crown ? [foe!] : Array.from({ length: L }, (_, i) => h("div", { class: "cell empty ghost", "aria-hidden": "true", style: cellStyle(pieceSizes().their) }, h("div", { class: "cell-well" }, "?")))),
+    ...(crown ? [foe!] : Array.from({ length: L }, (_, i) => h("div", { class: "cell empty ghost", "data-testid": `their-${i}`, "aria-hidden": "true", style: lay ? `--s:${Math.round(lay.wellsH * 0.8)}px;padding-top:4px;height:${lay.wellsH}px` : cellStyle(pieceSizes().their) }, h("div", { class: "cell-well" }, "?")))),
   );
   const table = stage(
     [
@@ -2109,7 +2136,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       err,
     ],
     () => shopScreen(run, content, err.textContent ?? "", pick.mode === "picked" ? pick.index : -1, chosen ?? -1),
+    !tall,
   );
+  table.classList.add("t-shop");
+  table.classList.toggle("with-panel", !inspector.hidden);
+  cueScroll();
+  if (lay) for (const [k, v] of Object.entries({ "wells-top": lay.wellsTop, "wells-h": lay.wellsH, "line-top": lay.lineTop, "bench-top": lay.benchTop, "tray-top": lay.trayTop })) table.style.setProperty(`--${k}`, `${v}px`);
   show(table);
   screen("shop");
   if (coachNow) mountCoach(coachNow);
