@@ -96,6 +96,9 @@ function lint({ touchSize, minTouch, minDesk, minFrame }) {
       if (qr - ql < 1 || qb - qt < 1) continue;
       l = Math.min(l, ql); t = Math.min(t, qt); r = Math.max(r, qr); b = Math.max(b, qb); } }
     if (l === Infinity) continue;
+    // Text another element covers (under a result card, a sheet) is not on screen either: look at what is on top at its centre.
+    const top = document.elementFromPoint(Math.min(innerWidth - 1, Math.max(0, (l + r) / 2)), Math.min(innerHeight - 1, Math.max(0, (t + b) / 2)));
+    if (top && !e.contains(top) && !top.contains(e) && !top.closest("[aria-hidden='true']")) continue;
     texts.push({ e, l, t, r, b });
   }
   const seen = new Set();
