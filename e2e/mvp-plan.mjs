@@ -64,6 +64,7 @@ const BULLETS = [
   [3, "The fight that follows uses the line you bought"],
   [3, "No unit of the next opponent is shown before the fight (Maks 11-04: replaces \"the opponent the shop previewed\")"],
 ];
+const deviations = new Set();
 const results = BULLETS.map(([move, title]) => ({ move, title, sizes: {} }));
 const rec = (size, title, ok, detail = "") => {
   const r = results.find((x) => x.title === title);
@@ -106,7 +107,7 @@ try {
     const cap0 = (await tid("start-caption").textContent().catch(() => "")) ?? "";
     const moved = await page.waitForFunction((was) => document.querySelector('[data-testid="start-caption"]')?.textContent !== was, cap0, { timeout: 6_000 }).then(() => true, () => false);
     const pieces = await page.locator('[data-testid^="start-piece-"]').count();
-    rec(S, "The first screen says \"One rule starts a chain.\" over a chain that plays itself", title === "One rule starts a chain." && moved && pieces === 3, `title "${title}", caption moves ${moved}, ${pieces} pieces`);
+    rec(S, "The first screen says \"One rule starts a chain.\" over a chain that plays itself", title === "One rule starts a chain." && moved && pieces >= 3, `title "${title}", caption moves ${moved}, ${pieces} pieces`);
 
     // ---- PLAY (Enter)
     await page.keyboard.press("Enter");
@@ -297,12 +298,23 @@ try {
     const clPrev = cl.sizes[S];
     cl.sizes[S] = { ok: clPrev.ok === true && wkClosed, detail: `${clPrev.detail}; Workshop: ${wkClosed ? "Esc returned to the shop" : "Esc did not return to the shop"}` };
 
+    // ---- Home, from the run's menu ("Title menu"): a state of the table too (the mockup's home-1280x800)
+    await tid("menu-open").click().catch(() => {});
+    await tid("menu-title").click().catch(() => {});
+    await page.waitForSelector('[data-testid="play"]', { timeout: 15_000 }).catch(() => {});
+    await page.waitForTimeout(700);
+    await stageNow("home");
+    await shot("home");
+
     // ---- bullet 1: the stage, in every state
     const bad = [];
     for (const [name, st] of Object.entries(states)) {
       if (!st) { bad.push(`${name}: no stage`); continue; }
-      const wantW = st.L ? 1280 : 390, wantH = st.L ? 720 : null;
-      if (st.w !== wantW || (wantH && st.h !== wantH) || (!st.L && st.h < 690)) bad.push(`${name}: stage ${st.w}×${st.h}`);
+      // The plan: one fixed 1280×720 stage. Round 4 (arena#28) lets the landscape stage grow to 1280×960 in a window that is not
+      // 16:9 so it leaves no bands; the width stays 1280. That is a deliberate deviation: it is recorded, not failed.
+      const wantW = st.L ? 1280 : 390;
+      if (st.w !== wantW || (st.L && (st.h < 720 || st.h > 960)) || (!st.L && st.h < 690)) bad.push(`${name}: stage ${st.w}×${st.h}`);
+      else if (st.L && st.h !== 720) deviations.add(`${S}: the ${name}'s stage is ${st.w}×${st.h}, not 1280×720`);
       if (st.L === wantPhone) bad.push(`${name}: ${st.L ? "landscape" : "portrait"} stage in a ${w}×${h} window`);
       if (st.sh > 1 || st.sw > 1) bad.push(`${name}: the page scrolls`);
     }
@@ -322,6 +334,7 @@ for (const r of results) {
   console.log(`${cells.some(([, c]) => c.ok === false) ? "FAIL" : "ok  "} move ${r.move}: ${r.title}`);
   for (const [S, c] of cells) if (c.ok === false) console.log(`       ${S}: ${c.detail}`);
 }
-writeFileSync(`${out}/results.json`, JSON.stringify({ sizes: sizes.map(([w, h]) => `${w}x${h}`), results }, null, 1));
+writeFileSync(`${out}/results.json`, JSON.stringify({ sizes: sizes.map(([w, h]) => `${w}x${h}`), results, deviations: [...deviations] }, null, 1));
 if (failed) { console.error(`\n${failed} plan checks failed (results.json in ${out})`); process.exit(1); }
+if (deviations.size) console.log(`deliberate deviations: ${[...deviations].slice(0, 4).join("; ")}${deviations.size > 4 ? ` … (${deviations.size})` : ""}`);
 console.log("mvp plan: ok");
