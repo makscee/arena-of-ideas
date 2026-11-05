@@ -570,3 +570,7 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 .bt-tray > .bv-end .bv-end-moments > .label > * { display: inline; }
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 .bt-tray > .bv-end .bv-end-moments > .label .bv-end-more { display: none; }
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .tb-side .bv-lab-who { overflow: hidden; text-overflow: ellipsis; }
+
+/* The coach's pair (arena#31) is a picture of who answers whom: no badge glyphs (they read under 11 px at 800×450) and a step number at the table's text floor. */
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach > .coach .coach-pair .pc-hb { display: none; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-coach > .coach .coach-wire-n { width: 32px; height: 32px; font-size: 18px; }
