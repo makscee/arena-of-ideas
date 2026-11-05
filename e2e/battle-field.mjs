@@ -207,6 +207,30 @@ try {
       });
       if (hdr) for (const [k, v] of Object.entries(hdr)) if (!v.box) note([`${what}: the ${k} name reaches the Report link or pushes it out of its plate`]);
       await page.screenshot({ path: `${out}/${scene}-${label}.png` });
+      // Result chips and the side labels never share a place, a long owner name included (arena#29, round 8).
+      {
+        await page.evaluate(() => {
+          for (const el of document.querySelectorAll(".tb-side.bv-lab-them > span:first-child, .tb-side.bv-lab-you > span:first-child, .tb-side .bv-lab-who")) if (/^@/.test(el.textContent.trim())) el.textContent = "@Crimson Bear Extraordinary 99999";
+        });
+        const clash = new Set();
+        for (let i = 0; i < 60 && !(await page.getByTestId("battle-step").isDisabled()); i++) {
+          await page.keyboard.press("ArrowRight");
+          const hits = await page.evaluate(() => {
+            const labels = [...document.querySelectorAll(".tb-side *, .tb-side")].filter((e) => e.getClientRects().length).map((e) => { const r = e.getBoundingClientRect(); r.tag = (e.className.toString() + "|" + e.textContent.trim().slice(0, 12)); return r; });
+            const out = [];
+            for (const c of document.querySelectorAll(".bv-line .bv-changes .bv-pill, .bv-line .bv-changes .bv-pill *")) {
+              const r = c.getBoundingClientRect();
+              if (r.width < 2 || r.height < 2) continue;
+              const l = labels.find((l) => l.width > 1 && l.left < r.right && l.right > r.left && l.top < r.bottom && l.bottom > r.top);
+              if (l) out.push(`a result chip "${c.textContent.trim().slice(0, 10)}" [${Math.round(r.left)},${Math.round(r.top)},${Math.round(r.right)},${Math.round(r.bottom)}] overlaps a side label ${l.tag} [${Math.round(l.left)},${Math.round(l.top)},${Math.round(l.right)},${Math.round(l.bottom)}]`);
+            }
+            return out;
+          });
+          hits.forEach((h) => clash.add(h));
+        }
+        note([...clash].slice(0, 3).map((c) => `${what}: ${c}`));
+        await toLineUp(page);
+      }
       // Step through the fight: at every beat nothing floats over a control.
       {
         const covered = new Set();
