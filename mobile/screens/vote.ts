@@ -65,7 +65,7 @@ export function votePanel(content: MvpContent, compact = false): HTMLElement {
         const el = h(
           "button",
           { class: "hm-pick", "data-testid": "vote-pick", "data-unit": u.id, "aria-label": u.name, title: `${u.name}: ${formText(u.forms.sleeping, pool)}` },
-          piece({ name: u.name, emoji: u.emoji, stats: u.base, face: faceOfUnit(u), tier: u.tier, copies: 1 }, { size: "M", side: "shop", px: wide ? 60 : 44, word: false, floor: wide ? 18 : 0 }),
+          piece({ name: u.name, emoji: u.emoji, stats: u.base, face: faceOfUnit(u), tier: u.tier, copies: 1, ...(u.portrait ? { portrait: u.portrait } : {}) }, { size: "M", side: "shop", px: wide ? 60 : 44, word: false, floor: wide ? 18 : 0 }),
         );
         el.addEventListener("click", () => void send(u.id));
         return el;

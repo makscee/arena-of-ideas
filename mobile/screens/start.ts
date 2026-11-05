@@ -47,7 +47,7 @@ const byName = (pool: UnitContent[], names: readonly string[], skip = 0): UnitCo
   return named.every(Boolean) ? (named as UnitContent[]) : pool.slice(skip, skip + 4);
 };
 
-const asPiece = (u: UnitContent): PieceUnit => ({ name: u.name, emoji: u.emoji, stats: u.base, face: faceOfUnit(u), tier: u.tier, copies: 1 });
+const asPiece = (u: UnitContent): PieceUnit => ({ name: u.name, emoji: u.emoji, stats: u.base, face: faceOfUnit(u), tier: u.tier, copies: 1, ...(u.portrait ? { portrait: u.portrait } : {}) });
 
 /** The geometry of one orientation, in stage pixels. */
 interface Layout {

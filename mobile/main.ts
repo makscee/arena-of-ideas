@@ -39,7 +39,7 @@ import { coachState, coachView } from "./ui/coach-view";
 import { telegramSheet } from "./screens/telegram";
 import { emailAttach, emailSignIn, emailSignUp } from "./screens/email";
 import { galleryScreen } from "./screens/gallery";
-import { faceOfUnit, lineToPiece, piece, pieceReach } from "./ui/piece";
+import { copySigils, faceOfUnit, lineToPiece, piece, pieceReach } from "./ui/piece";
 import { predictRun } from "./ui/predict";
 import { orient, stage } from "./ui/stage";
 import { fieldLayout, fit } from "./ui/stage-fit";
@@ -1353,6 +1353,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
           if (Math.hypot(e.clientX - x0, e.clientY - y0) < 6) return;
           const r = c.getBoundingClientRect();
           ghost = c.cloneNode(true) as HTMLElement;
+          copySigils(c, ghost);
           ghost.removeAttribute("data-testid");
           ghost.className = `${c.className} drag-ghost`;
           ghost.style.width = `${r.width}px`;
@@ -1872,7 +1873,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const owned = owns(o.unitId);
       const price = `${t("shop.gold", { n: o.cost })}${owned ? " ＋" : ""}`;
       // The piece (mission #1286): price and lock on its foot, the tier beside them.
-      const pu = { name: u?.name ?? o.unitId, emoji: u?.emoji ?? "?", stats: u?.base ?? { pwr: 0, hp: 0 }, face: u ? faceOfUnit(u) : { when: { icon: "✨", label: "" }, headline: { icon: "✨" } }, tier: o.tier, copies: 1 };
+      const pu = { name: u?.name ?? o.unitId, emoji: u?.emoji ?? "?", stats: u?.base ?? { pwr: 0, hp: 0 }, face: u ? faceOfUnit(u) : { when: { icon: "✨", label: "" }, headline: { icon: "✨" } }, tier: o.tier, copies: 1, ...(u?.portrait ? { portrait: u.portrait } : {}) };
       const c = actionable(
         h("div", { class: "cell offer", "data-testid": `offer-${o.slot}`, "data-name": pu.name, style: cellStyle(offerPx) }, piece(pu, { size: "L", side: "shop", px: offerPx, floor, word: !tall && offerPx >= 68, price: o.cost, lock: o.locked === true })),
         `${pu.name}, ${price}`,

@@ -28,7 +28,7 @@ import { card, creditOf, creditText, formRich, summonById, summonSheet, summonTe
 import { orient, stage as tableStage } from "../ui/stage";
 import { linePitch, pieceCap } from "../ui/line-layout";
 import { isMine, reportLink } from "../ui/report";
-import { lineToPiece, piece, PIECE_PX, whenTone, type PieceSize, type PieceUnit } from "../ui/piece";
+import { copySigils, lineToPiece, piece, PIECE_PX, sigilOf, whenTone, type PieceSize, type PieceUnit } from "../ui/piece";
 import { faceFallback, V2_FACE } from "../../src/mvp/face";
 import { actionable, app, button, closable, fitText, h, isDesktop, keyLabel, keyOf, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
 import { t as tr } from "../i18n";
@@ -62,6 +62,10 @@ const ARROWED = new Set<Change["kind"]>(["damage", "heal", "buff", "debuff", "st
 const CROWN_LINEUP_MS = 1200;
 /** How long a landed wave's motion runs, in animation time (real time × speed): the longest animation (a killing blow's shake, its 120 ms freeze, then its 0.5 s pop, ends at 1.1 s; a float, 0.9 s, after up to 220 ms). A beat holds its last wave at least 0.8 s (1.15 s after a kill), so a beat change cuts motion off at most in its fade. */
 const MOTION_MS = 1300;
+/** The sigil's pulses, animation ms (arena#38): a hit's flash and shake, a rule's ring, a death's shatter. */
+const HIT_PULSE_MS = 450;
+const FIRE_PULSE_MS = 700;
+const DIE_PULSE_MS = 600;
 /** How long a card's When icon flashes when it fires (R3-19). */
 const TRIG_FLASH_MS = 400;
 /** When a hit's shake ends, in animation ms after its wave lands (80 ms in, 400 ms long). */
@@ -896,13 +900,14 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const wide = fit.size === "M" ? `;min-width:${s + 28}px` : "";
     return `padding-top:${Math.round(tabH * 0.62) + 2}px;height:${boxHeight(fit.size, s)}px${wide}`;
   }
+  const stacks = (list: { status: string; stacks: number }[], status: string): number => list.find((st) => st.status === status)?.stacks ?? 0;
   /** A unit as the piece (mobile/ui/piece.ts): its face, live stats, statuses on the shelf. */
   function pieceOf(id: string, live: BoardUnit | null, side: Side, compact: boolean): HTMLElement {
     const bu = units.get(id);
     const sum = summoned.get(id);
     const base: PieceUnit = bu
       ? lineToPiece(bu, a.content)
-      : { name: live?.name ?? name(id), emoji: emojiOf(id), stats: { pwr: live?.pwr ?? 0, hp: live?.hp ?? 0 }, face: sum?.form ? faceFallback(sum.form) : { when: { icon: "✨", label: "" }, headline: { icon: "✨" } } };
+      : { name: live?.name ?? name(id), emoji: emojiOf(id), stats: { pwr: live?.pwr ?? 0, hp: live?.hp ?? 0 }, face: sum?.form ? faceFallback(sum.form) : { when: { icon: "✨", label: "" }, headline: { icon: "✨" } }, ...(sum?.portrait ? { portrait: sum.portrait } : {}) };
     // A v2 pool battle can field units the served content lacks: their face is by name (V2_FACE).
     if (!bu || !a.content.units.some((x) => x.id === bu.unitId)) base.face = V2_FACE[base.name] ?? base.face;
     const unit: PieceUnit = { ...base, name: live?.name ?? base.name, stats: { pwr: live?.pwr ?? base.stats.pwr, hp: live ? live.hp : 0 } };
@@ -915,6 +920,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       floor: textFloor(),
       side: side === you ? "you" : "them",
       statuses: onShelf.slice(0, compact ? 2 : 3),
+      // the sigil's numbers are the unit's own, whatever the shelf has room for
+      bound: { hp: live && live.maxHp > 0 ? Math.max(0, live.hp) / live.maxHp : 1, charge: stacks(statuses, "Charge"), shield: stacks(statuses, "Shield") },
       ...(ring ? { counter: statuses.find((st) => st.status === ring.status)?.stacks ?? 0 } : {}),
     });
     if (live && live.hp < live.maxHp) el.querySelector<HTMLElement>(".pc-b.h")?.classList.add("hurt");
@@ -1273,6 +1280,13 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       const t = `${-Math.round(age * speed)}ms`;
       const mine = step.changes.filter((c) => c.unit === id);
       let move: string | null = null;
+      // The sigil reacts as the card does (real ms: the animations run `speed` times faster): a hit flashes and shakes it,
+      // its rule firing bursts a ring, and a death shatters it once the killing blow's shake and the freeze are over.
+      const sg = sigilOf(el);
+      if (sg) {
+        if (mine.some((c) => c.kind === "damage")) sg.pulse("hit", HIT_PULSE_MS / speed, age);
+        if (step.actor === id) sg.pulse("fire", FIRE_PULSE_MS / speed, age);
+      }
       if (step.actor === id) {
         const first = log[step.eventIds[0]!];
         const struck = first?.type === "Hurt" && first.source === "kernel" && first.causedBy !== null && log[first.causedBy]?.type === "Strike";
@@ -1298,6 +1312,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         const start = hitAge !== null ? Math.max(-own, SHAKE_END_MS + KILL_FREEZE_MS - hitAge) : -own;
         el.classList.add("bv-dying");
         el.style.setProperty("--bv-dt", `${Math.round(start)}ms`);
+        sigilOf(el)?.pulse("die", DIE_PULSE_MS / speed, -start / speed);
         skullsOf.set(el, h("span", { class: "bv-skull", "aria-hidden": "true", style: `--bv-dt:${Math.round(start)}ms` }, "✝"));
         if (hitAge === null) el.classList.remove("bv-lunge-up", "bv-lunge-down", "bv-pulse");
         move = null;
@@ -1823,6 +1838,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       if (!card || stays.has(card.dataset.unit)) continue;
       const r = sl.getBoundingClientRect();
       const ghost = sl.cloneNode(true) as HTMLElement;
+      copySigils(sl, ghost);
       ghost.classList.add("bv-cleared");
       Object.assign(ghost.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
       runs.append(ghost);

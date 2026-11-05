@@ -18,6 +18,7 @@ import { discoveredLine } from "./fusion";
 import { isMine, reportLink } from "./report";
 import { icon } from "./icon";
 import { roman } from "./roman";
+import type { Spec } from "./sigil";
 import { faceOfUnit, lineToPiece, piece, pieceReach, statusEmoji, type PieceUnit } from "./piece";
 import { faceFallback, fusedFace, type Face } from "../../src/mvp/face";
 import { termDef } from "../../src/glossary";
@@ -168,6 +169,7 @@ function pieceCard(u: CardUnit, o: CardOptions): HTMLElement {
     emoji: ems[0] ?? u.emoji,
     stats: u.stats,
     face,
+    ...(first && portraits.get(first) ? { portrait: portraits.get(first)! } : {}),
     awoken: u.kind !== "fused" && u.form === "awoken",
     ...(u.kind === "fused" ? { fused: { emoji: ems.slice(1).join("") || "✨" } } : {}),
   };
@@ -230,8 +232,11 @@ export function setCardAbilities(a: AbilityRegistry): void {
 /** The units' faces (mission #1286), so a card draws its piece with the
  * designer's when tab and headline (set once the content loads: ../content.ts). */
 let faces = new Map<string, Face>();
-export function setCardFaces(units: Pick<UnitContent, "id" | "face" | "forms">[]): void {
+/** The units' sigil specs (arena#38), by unit id, for the same pieces. */
+let portraits = new Map<string, Spec>();
+export function setCardFaces(units: Pick<UnitContent, "id" | "face" | "forms" | "portrait">[]): void {
   faces = new Map(units.map((u) => [u.id, faceOfUnit(u)]));
+  portraits = new Map(units.flatMap((u) => (u.portrait ? [[u.id, u.portrait] as const] : [])));
 }
 /** Adds abilities the content lacks (a vote card's candidate, M2-8; a
  * designed fusion's own, #1065). Sheets read them too (#1120: a sealed
@@ -385,7 +390,7 @@ export function unitSheet(
   // its statuses on the shelf; the name, the rule in words, sleeping vs
   // awoken and what is on it now, explained, on the right.
   const pu: PieceUnit =
-    "forms" in u ? { name: u.name, emoji: u.emoji, stats: u.base, face: faceOfUnit(u), tier: u.tier } : lineToPiece(u, content);
+    "forms" in u ? { name: u.name, emoji: u.emoji, stats: u.base, face: faceOfUnit(u), tier: u.tier, ...(u.portrait ? { portrait: u.portrait } : {}) } : lineToPiece(u, content);
   if ("stats" in u) pu.stats = u.stats;
   const now$ = opts.now?.statuses ?? ("recipe" in u ? u.recipe.statuses : undefined) ?? [];
   const onIt = now$.filter((x) => x.stacks > 0);

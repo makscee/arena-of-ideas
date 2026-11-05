@@ -1,7 +1,7 @@
 # Sigil engine (mission arena#34, slice A)
 
 A unit's portrait is a JSON spec `{body: Layer[], mark?: Layer[]}` drawn on a canvas.
-Nothing in the client mounts one yet; later slices do.
+The table's pieces mount them (slice D, below); later slices do the other screens.
 
 - `grammar.ts` the closed expression grammar (known names and functions, compiled once, no eval).
 - `spec.ts` types and `validate(spec) -> {ok, problems[]}` (schema, palette, expressions, shape budget).
@@ -18,3 +18,12 @@ Every live unit has one (slice B, arena#36): `src/mvp/portraits.ts` keys 73 spec
 ## Who writes a spec (slice C, arena#37)
 
 New units get theirs from their LLM: the idea reader's archetypes (`server/src/mvp/idea-reader.ts`, kept on `IdeaArchetype.portrait` and then `StoredUnit.portrait`) and the night designer's fusions (`night-designer.ts`, kept on `FusionDesign.portrait`). `server/src/mvp/portrait.ts` holds the brief, the JSON schema and `resolvePortrait`: `validate`, one more ask with the problem list, else `FALLBACK_SPEC`. The spec rides in the existing JSON: no migration.
+
+## The table's pieces (slice D, arena#38)
+
+`mobile/ui/piece.ts` draws a sigil in place of the emoji on every piece (shop offers, the line, the bench, the battle viewer, and every other screen that builds a `piece`): a `canvas.pc-sg` in the face box, no plate behind it (the stand under it carries the side's colour). The piece mounts it in the shared loop when it is built, and the loop drops it by itself once it leaves the document (a redraw of the table leaves none behind; a canvas not yet attached is waited for 2 s). A unit with no valid spec draws `FALLBACK_SPEC`.
+
+- **Bound state:** `hp` is the fraction left (a battle's live hp over its max; whole on the shop's line), `pwr` the piece's PWR, `charge` and `shield` the stacks of those statuses (a battle passes them from the full list, whatever the shelf has room for).
+- **Pulses:** the battle viewer's `motion()` drives them from the wave's events through `sigilOf(piece).pulse(...)`: `hit` (a damage change), `fire` (the unit's rule acts) and `die` (a death change, after the killing blow's shake and freeze), each at the card's own timing and speed. `die` shatters it and the portrait comes back whole for the ghost the card greys.
+- **Copies:** a `cloneNode` copy is not mounted; `copySigils(from, to)` paints a still frame onto it (the drag ghost, a fading ghost card).
+- `npm run mvp:sigil-table` checks it in a browser: every piece has a canvas, no emoji, the loop draws what is on the page after redraws, a hit and a rule firing reach a sigil.
