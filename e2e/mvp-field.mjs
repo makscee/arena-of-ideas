@@ -129,10 +129,11 @@ function panel() {
 /** In the page: the shop's controls and its scroll areas (round 5, from the layout lint). */
 function controls() {
   const touch = innerWidth < innerHeight * 0.8;
-  const want = touch ? 44 : 32;
+  // As drawn (the stage is scaled): 44 on a phone, 32 from 1024 wide, 24 in the 800×450 frame (a mouse), the lint's own thresholds.
+  const want = touch ? 44 : innerWidth >= 1024 ? 32 : 24;
   const small = [...document.querySelectorAll("#app button")]
-    .filter((e) => e.getClientRects().length && !e.closest(".t, .sheet-form, .tb-bench-help") && e.offsetHeight < want)
-    .map((e) => `${e.dataset.testid || e.className || e.textContent.trim().slice(0, 10)} ${e.offsetWidth}×${e.offsetHeight}`);
+    .filter((e) => e.getClientRects().length && !e.closest(".t, .sheet-form, .tb-bench-help") && e.getBoundingClientRect().height < want - 0.5)
+    .map((e) => `${e.dataset.testid || e.className || e.textContent.trim().slice(0, 10)} ${Math.round(e.getBoundingClientRect().width)}×${Math.round(e.getBoundingClientRect().height)}`);
   // A scroll area that scrolls says so: marked, with its cue.
   const areas = [...document.querySelectorAll(".insp-body, .sheet")].filter((e) => e.getClientRects().length && e.scrollHeight > e.clientHeight + 1);
   const unmarked = areas.filter((e) => !e.hasAttribute("data-scroll")).map((e) => `${e.className} scrolls ${e.scrollHeight - e.clientHeight} px`);
@@ -294,7 +295,7 @@ async function runScenes([label, w, h]) {
         if (t.clash.length) why.push(`${open ? "panel open" : "panel closed"}: tabs overlap (${t.clash.join("; ")})`);
       }
     }
-    if (m.small.length) why.push(`controls under ${portrait ? 44 : 32} px: ${m.small.join(", ")}`);
+    if (m.small.length) why.push(`controls under ${portrait ? 44 : w >= 1024 ? 32 : 24} px drawn: ${m.small.join(", ")}`);
     if (m.unmarked.length) why.push(`unmarked scroll: ${m.unmarked.join(", ")}`);
     if (m.noCue) why.push("a scrolling panel with no cue");
     if (m.covers.length) why.push(`the ✕ covers text: ${m.covers.join(", ")}`);
