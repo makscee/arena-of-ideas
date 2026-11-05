@@ -48,7 +48,7 @@ Where a screen used to print a unit's emoji it draws the sigil instead: `mobile/
 
 - `npm run mvp:sigil-sheet` builds one self-contained page, `e2e/.shots/sheet/contact-sheet.html` (and a PNG): every portrait at 44 px, sleeping and awoken, both sides, live. A person reviews it; the script only checks that every canvas drew.
 - `npm run mvp:sigil-timing` draws 10 units for 5 s each at 390×844 with a 4× CPU throttle (`--rate`, `--seconds`, `--units A,B` to change) and prints frame time per unit beside its shape count, then the 10 at once. The 10 are the costliest per draw. The frame time is the main-thread cost of the live loop's draw callback; canvas rasterising runs off the main thread and is not throttled, so a clean result is no proof of a low-end GPU (the gap between frames shows a frame that came late).
-=======
+
 ## Words and glyphs (slice G, arena#41)
 
 No emoji is left in a piece's chrome.
@@ -59,4 +59,3 @@ No emoji is left in a piece's chrome.
 - **The night designer** gets the names in its `face` prompt and as an `enum` in its JSON schema; `draftFace` maps a known emoji, else falls back to the trigger's face.
 - `npm run mvp:sigil-glyphs` validates all of them in a browser, checks each fills its 16 px box with ink outline and that no two look alike, and writes a contact sheet (`e2e/.shots/glyphs/`). `npm run mvp:sigil-table` also fails on an emoji in a tab, badge, chip or lock.
 - **Kept:** the ★ / ✦ marks (text symbols, not emoji) and the card's 💡 "idea by" mark, which is a card line, not the piece's chrome.
->>>>>>> 85a30401df710210981ea8b0815927ec67b56929
