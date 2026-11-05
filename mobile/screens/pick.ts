@@ -18,6 +18,7 @@ import { api, ApiError } from "../api";
 import { getContent } from "../content";
 import { t } from "../i18n";
 import { card, setCardAbilities, unitSheet } from "../ui/card";
+import { sigilIcon } from "../ui/glyph";
 import { button, fitText, h, isDesktop, keyOf, onKeys, screen, show } from "../ui/dom";
 import { richText } from "../ui/term";
 import { rulesLangOpt } from "../lang";
@@ -75,7 +76,7 @@ function head(title: string, step: string, idea: MyIdea): Node[] {
   const a = idea.data.archetype && localArchetype(idea.data.archetype);
   const top =
     idea.data.kind === "evolve" && a
-      ? h("h1", { class: "h1-long", "data-testid": "pick-title" }, t("pick.newVersionTitle", { emoji: a.emoji, name: a.name }))
+      ? h("h1", { class: "h1-long", "data-testid": "pick-title" }, t("pick.newVersionTitle", { name: a.name }), " ", sigilIcon(a.portrait, 36, { live: true }))
       : h("div", { class: "row spread" }, h("h1", { "data-testid": "pick-title" }, title), h("span", { class: "dim small num" }, step));
   return [top, h("div", { class: "dim small idea-quote", "data-testid": "pick-idea" }, t("pick.quoted", { text: idea.text }))];
 }
@@ -139,7 +140,7 @@ function archetypeRow(a: IdeaArchetype, i: number, onTap: () => void): HTMLButto
   const row = h(
     "button",
     { class: "pick-arch", "data-testid": "pick-archetype", "data-index": String(i), "aria-pressed": "false" },
-    h("span", { class: "pick-emoji" }, a.emoji),
+    h("span", { class: "pick-emoji" }, sigilIcon(a.portrait, 52, { live: true })),
     h("span", { class: "pick-words" }, h("span", { class: "pick-name" }, a.name), h("span", { class: "dim small" }, a.line)),
   );
   row.addEventListener("click", onTap);
@@ -179,7 +180,7 @@ function archetypeScreen(idea: MyIdea, nav: PickNav): void {
 function readingPool(a: IdeaArchetype, r: IdeaReading, i: number) {
   const row: Row = { name: a.name, emoji: a.emoji, archetype: a.line, tier: 1, pwr: 0, hp: 0, when: r.when, who: r.who, does: r.does, awoken: r.awoken };
   const pool = mvpPool([row]);
-  return { ...pool.units[0]!, id: `reading-${i}`, pool };
+  return { ...pool.units[0]!, ...(a.portrait ? { portrait: a.portrait } : {}), id: `reading-${i}`, pool };
 }
 
 function readingScreen(idea: MyIdea, content0: MvpContent, nav: PickNav, current?: UnitContent): void {
@@ -238,7 +239,7 @@ function readingScreen(idea: MyIdea, content0: MvpContent, nav: PickNav, current
     ...head(t("pick.readingTitle"), t("pick.step2"), idea),
     idea.data.kind === "evolve"
       ? h("div", { class: "dim small", "data-testid": "pick-archline" }, a.line)
-      : h("div", { class: "pick-archline", "data-testid": "pick-archline" }, `${a.emoji} ${a.name}`, h("span", { class: "dim small" }, ` · ${a.line}`)),
+      : h("div", { class: "pick-archline", "data-testid": "pick-archline" }, sigilIcon(a.portrait, 24), ` ${a.name}`, h("span", { class: "dim small" }, ` · ${a.line}`)),
     now,
     h("div", { class: "pick-cards", "data-testid": "pick-readings" }, ...cols),
     cantLine(idea),

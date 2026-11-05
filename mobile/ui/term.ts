@@ -25,22 +25,22 @@ export function setCodexLink(open: ((id: TermId, scope?: UnitFilter) => void) | 
   codexLink = open;
 }
 
-/** A unit-ref run's emoji and what a click on it opens (R3-5: a summoned
+/** A unit-ref run's sigil (a small canvas) and what a click on it opens (R3-5: a summoned
  * unit's card); set once the content loads (../content.ts). Unset: plain text. */
-let unitRefs: { emoji: (id: string) => string | undefined; open: (id: string) => void } | null = null;
+let unitRefs: { sigil: (id: string) => HTMLElement | undefined; open: (id: string) => void } | null = null;
 export function setUnitRefs(refs: typeof unitRefs): void {
   unitRefs = refs;
 }
 
 /** A summoned unit named in a sentence ("Imp (1/2)"): a button with its
- * emoji that opens its card. */
+ * sigil that opens its card. */
 function unitRefButton(seg: DescribeSegment, kids: (Node | string)[]): Node[] {
   const id = seg.unitRef!;
-  const emoji = unitRefs?.emoji(id);
-  if (!unitRefs || !emoji) return kids.map((k) => (typeof k === "string" ? document.createTextNode(k) : k));
+  const sigil = unitRefs?.sigil(id);
+  if (!unitRefs || !sigil) return kids.map((k) => (typeof k === "string" ? document.createTextNode(k) : k));
   const open = unitRefs.open;
   return edgeSpaced(kids, (inner) => {
-    const b = h("button", { type: "button", class: `t t-unit${seg.side ? ` tone-${seg.side}` : ""}`, "data-unit-ref": id, "data-testid": "unit-ref", "aria-label": t("term.openCardAria", { text: seg.text }) }, h("span", { class: "t-emoji", "aria-hidden": "true" }, emoji), ...inner);
+    const b = h("button", { type: "button", class: `t t-unit${seg.side ? ` tone-${seg.side}` : ""}`, "data-unit-ref": id, "data-testid": "unit-ref", "aria-label": t("term.openCardAria", { text: seg.text }) }, h("span", { class: "t-emoji", "aria-hidden": "true" }, sigil), ...inner);
     b.addEventListener("click", (ev) => {
       ev.stopPropagation();
       open(id);

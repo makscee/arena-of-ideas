@@ -7,6 +7,7 @@
 import type { MvpContent, UnitContent, VoteCard } from "../../src/mvp/contract";
 import { api } from "../api";
 import { addCardAbilities, card, formText } from "../ui/card";
+import { sigilIcon } from "../ui/glyph";
 import { faceOfUnit, piece } from "../ui/piece";
 import { t } from "../i18n";
 import { actionable, button, h } from "../ui/dom";
@@ -45,13 +46,13 @@ export function votePanel(content: MvpContent, compact = false): HTMLElement {
         ? []
         : u.id !== c.candidateId
           ? [h("div", { class: "small vote-tag" }, "\u00a0")]
-          : [h("div", { class: "small vote-tag", "data-testid": "vote-tag" }, c.candidateKind === "version" ? t("vote.newVersionOf", { emoji: u.emoji, name: u.name }) : t("vote.unchanged", { emoji: u.emoji, name: u.name }))];
+          : [h("div", { class: "small vote-tag", "data-testid": "vote-tag" }, c.candidateKind === "version" ? t("vote.newVersionOf", { name: u.name }) : t("vote.unchanged", { name: u.name }), " ", sigilIcon(u.portrait, 20))];
     const choice = (u: UnitContent) => {
       const el = h(
         "button",
         { class: "vote-pick", "data-testid": "vote-pick", "data-unit": u.id, "aria-label": `${u.name}` },
         ...tag(u),
-        card({ emoji: u.emoji, name: u.name, stats: u.base, recipe: u.forms.sleeping, unitId: u.id }, { side: "you", tier: u.tier }),
+        card({ emoji: u.emoji, name: u.name, stats: u.base, recipe: u.forms.sleeping, unitId: u.id, ...(u.portrait ? { portrait: u.portrait } : {}) }, { side: "you", tier: u.tier }),
         h("div", { class: "small vote-text" }, formText(u.forms.sleeping, pool)),
         h("div", { class: "dim small vote-text" }, t("vote.awoken", { text: formText(u.forms.awoken, pool) })),
       );

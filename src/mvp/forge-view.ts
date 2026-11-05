@@ -11,6 +11,7 @@
 // with the mappers below; the test scenes draw it from forgeFixture().
 import type { FusionDesign } from "./codex.js";
 import type { MvpContent, UnitContent } from "./contract.js";
+import type { Spec } from "../../mobile/ui/sigil/spec.js";
 import { sentenceText } from "./form-text.js";
 
 /** One text in both languages (unit and word texts aren't in the client catalog). */
@@ -22,6 +23,8 @@ export interface Both {
 export interface ForgeUnit {
   id: string;
   emoji: string;
+  /** The unit's sigil spec (arena#39); absent: the client looks the unit up by id. */
+  portrait?: Spec;
   name: Both;
   hp: number;
   pwr: number;
@@ -34,6 +37,8 @@ export type PairState = "discovered" | "ready" | "unforged";
 /** A designed fusion: a candidate before the claim, the canonical one after. */
 export interface ForgeDesign {
   emoji: string;
+  /** The design's sigil spec its LLM wrote (arena#37); absent: the client draws its first part's. */
+  portrait?: Spec;
   name: Both;
   rule: Both;
   flavour: Both;
@@ -120,7 +125,7 @@ function sentence(form: UnitContent["forms"]["sleeping"] | undefined, content: T
 
 /** A pool unit as the Codex shows it: its sleeping sentence, its RU name when translated. */
 export function forgeUnitOf(u: UnitContent, content: Texts): ForgeUnit {
-  return { id: u.id, emoji: u.emoji, name: b(u.name, u.texts?.ru?.name ?? u.name), hp: u.base.hp, pwr: u.base.pwr, rule: sentence(u.forms.sleeping, content) };
+  return { id: u.id, emoji: u.emoji, name: b(u.name, u.texts?.ru?.name ?? u.name), hp: u.base.hp, pwr: u.base.pwr, rule: sentence(u.forms.sleeping, content), ...(u.portrait ? { portrait: u.portrait } : {}) };
 }
 
 /** A designed fusion as the Codex shows it: its own RU name and flavour when it has them. */
@@ -128,6 +133,7 @@ export function forgeDesignOf(d: FusionDesign, pair: [UnitContent | undefined, U
   const ru = d.texts?.ru;
   return {
     emoji: d.emoji ?? pair.map((u) => u?.emoji ?? "").join(""),
+    ...(d.portrait ? { portrait: d.portrait } : {}),
     name: b(d.name, ru?.name ?? d.name),
     // its own coined words read as sentences, never as ids (#1120: "keep inherit")
     rule: sentence(d.recipe, { abilities: { ...content.abilities, ...d.abilities }, statuses: { ...content.statuses, ...d.statuses } }),

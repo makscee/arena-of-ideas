@@ -1624,8 +1624,8 @@ img.tg-qr { align-self: center; width: 200px; height: 200px; image-rendering: pi
 .sheet-head { align-items: center; gap: 12px; }
 .sheet-title { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .sheet-title h2 { line-height: 1.1; overflow-wrap: anywhere; }
-.sheet-portrait { flex: none; width: 56px; height: 56px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 32px; line-height: 1; background: var(--face); border: var(--bw) solid var(--outline); border-radius: 50%; box-shadow: var(--drop); }
-.sheet-portrait.fused { font-size: 20px; letter-spacing: -0.08em; background: color-mix(in srgb, var(--awoken) 45%, var(--face)); }
+.sheet-portrait { flex: none; width: 56px; height: 56px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+.sheet-portrait .sg-ic { display: block; width: 100%; height: 100%; }
 .sheet-stats { display: flex; gap: 8px; }
 .sheet-stat { flex: 1; display: flex; align-items: baseline; gap: 6px; padding: 4px 10px; color: var(--outline); border: var(--bw) solid var(--outline); border-radius: var(--radius); box-shadow: var(--drop); }
 .sheet-stat b { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 22px; line-height: 26px; }
@@ -1638,8 +1638,7 @@ img.tg-qr { align-self: center; width: 200px; height: 200px; image-rendering: pi
 .sheet-stat.h { background: var(--them); }
 .sheet-form { border-radius: var(--radius); }
 @media (min-width: 1024px) {
-  .sheet-portrait { width: 72px; height: 72px; font-size: 42px; }
-  .sheet-portrait.fused { font-size: 26px; }
+  .sheet-portrait { width: 72px; height: 72px; }
 }
 /* M5-4: the Run board as C-Shop. The line, the bench and the shop sit in
  * three outlined panels; the HUD draws the hearts, the gold as a coin pill
@@ -2011,6 +2010,17 @@ button.link.report-link { min-height: 32px; min-width: 44px; align-self: center;
 /* The sigil (arena#38): no plate, no rim; the canvas is the face box's 1.12 and its stand carries the side's colour. */
 .pc.sg > .pc-face { border: 0; background: none; box-shadow: none; overflow: visible; }
 .pc-sg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+/* A unit's sigil as a small picture beside a name, on a card, in a sheet's head (arena#39, mobile/ui/glyph.ts): no plate. */
+.sg-ic { display: inline-block; vertical-align: middle; flex: none; pointer-events: none; }
+.sg-label { white-space: nowrap; }
+.sg-pair { display: inline-flex; align-items: center; }
+.sg-pair .sg-ic + .sg-ic { margin-left: -9px; }
+.t-unit .t-emoji .sg-ic { vertical-align: -7px; margin: -4px 0; }
+.card .emoji .sg-ic { display: block; height: 100%; width: auto; aspect-ratio: 1; margin: 0 auto; }
+.pin-emoji { display: inline-flex; align-items: center; }
+.forge-picker button .sg-ic { display: block; margin: auto; }
+.bv-dmg .emoji .sg-ic { display: block; }
+.vote-tag .sg-ic, .idea-row .sg-ic, .chip .sg-ic { margin: -3px 0; }
 .pc-em { line-height: 1; transform: translateY(4%); font-family: system-ui, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
 .pc-em2 { position: relative; width: 100%; height: 100%; }
 .pc-em2 .pc-em { position: absolute; }

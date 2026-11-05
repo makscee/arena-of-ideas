@@ -28,6 +28,7 @@ import { card, creditOf, creditText, formRich, summonById, summonSheet, summonTe
 import { orient, stage as tableStage } from "../ui/stage";
 import { linePitch, pieceCap } from "../ui/line-layout";
 import { isMine, reportLink } from "../ui/report";
+import { unitSigil, sigilIcon } from "../ui/glyph";
 import { copySigils, lineToPiece, piece, PIECE_PX, sigilOf, whenTone, type PieceSize, type PieceUnit } from "../ui/piece";
 import { faceFallback, V2_FACE } from "../../src/mvp/face";
 import { actionable, app, button, closable, fitText, h, isDesktop, keyLabel, keyOf, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
@@ -202,6 +203,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   // are unique (mvpPool), so the name finds one body. A revived unit keeps its own id.
   const summoned = new Map(log.flatMap((e) => (e.type === "Summon" && !e.resurrected && !units.has(e.unit) ? [[e.unit, summonById(a.content, summonId(e.name))] as const] : [])));
   const emojiOf = (id: string) => units.get(id)?.emoji ?? summoned.get(id)?.emoji ?? "✨";
+  /** A unit's sigil (arena#39), small, beside its name: a fighter's own, a summoned body's, else the generic one. */
+  const sigilOfId = (id: string, px: number, team: "you" | "them" = "you"): HTMLCanvasElement => {
+    const bu = units.get(id);
+    return bu ? unitSigil(bu, px, { team }) : sigilIcon(summoned.get(id)?.portrait, px, { team });
+  };
   const whenOf = whenLookup(units, a.content, summoned);
   // The end card's numbers (R2-14).
   const damage = damageByUnit(log, name, sides);
@@ -1083,7 +1089,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     return h(
       "div",
       { class: "stack bv-now", "data-testid": "now-sheet", "data-unit": u.id },
-      h("h2", {}, `${emojiOf(u.id)} `, unitName(u.id), " ", sideTag(side, "now-side")),
+      h("h2", {}, sigilOfId(u.id, 36, side === you ? "you" : "them"), " ", unitName(u.id), " ", sideTag(side, "now-side")),
       // "Full card" sits up here, not last: at 640 tall the last line went under the Close bar (R3-26).
       h("div", { class: "row spread bv-now-turn" }, h("div", { class: "label", "data-testid": "now-turn" }, tr("battle.now.thisBeat", { turn: shownTurn >= 1 ? tr("battle.turn", { n: shownTurn }) : tr("battle.battleStart") })), full),
       h("div", { class: "num", "data-testid": "now-stats" }, pwr, " · ", hp),
@@ -2258,7 +2264,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         : null,
       h("div", { class: "bv-trace-text mono", "data-testid": "trace-text" }, t.text),
       // R2-15: the whole chain, change first, back to the turn; a step's click shows its moment.
-      chain ? chainView(chain, { units, summoned, content: a.content, you, name, active: chainAt, onStep: seekEvent, rich: richCaption, tag: (sd) => sideTag(sd) }) : null,
+      chain ? chainView(chain, { units, summoned, content: a.content, you, name, sigil: (id) => sigilOfId(id, 20), active: chainAt, onStep: seekEvent, rich: richCaption, tag: (sd) => sideTag(sd) }) : null,
       chain ? h("div", { class: "dim bv-why-keys" }, isDesktop() ? tr("battle.trace.keysDesktop") : tr("battle.trace.keysPhone")) : null,
     ].filter((n): n is HTMLDivElement => n !== null);
   }
@@ -2368,8 +2374,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
           const row = h(
             "div",
             { class: `bv-dmg ${side === you ? "you" : "ghost"}${u ? " open" : ""}`, "data-testid": "damage-row", title: tr("battle.dmg.title", { name: d.name, n: d.damage }), ...(u ? { role: "button", tabindex: "0" } : {}) },
-            // A fused unit's two emojis, smaller, in a column that holds both (R2-17 batch F: "🥁⚡" counts as two code points, so the old test missed it).
-            h("span", { class: `emoji${u?.kind === "fused" ? " two" : ""}` }, emojiOf(d.unit)),
+            h("span", { class: "emoji" }, sigilOfId(d.unit, 26, side === you ? "you" : "them")),
             unitName(d.unit),
             h("span", { class: "bv-dmg-bar" }, h("i", { style: `width:${Math.round((d.damage / top) * 100)}%` })),
             h("span", { class: "mono" }, String(d.damage)),
@@ -2537,7 +2542,7 @@ function whenLookup(units: Map<string, BattleUnit>, content: MvpContent, summone
  * included; a word's meaning is a long press (or a hover) away (R2-17).
  * With `rich` (names tagged by id) and `tag`, change and event steps read
  * like the captions: side tags, side-coloured names, highlighted terms. */
-function chainView(c: Chain, o: { units: Map<string, BattleUnit>; summoned: Map<string, SummonContent | undefined>; content: MvpContent; you: Side; name: (id: string) => string; active?: number | null; onStep?: (eventId: number) => void; rich?: (text: string) => Node[]; tag?: (side: Side) => HTMLElement }): HTMLElement {
+function chainView(c: Chain, o: { units: Map<string, BattleUnit>; summoned: Map<string, SummonContent | undefined>; content: MvpContent; you: Side; name: (id: string) => string; sigil: (id: string) => Node; active?: number | null; onStep?: (eventId: number) => void; rich?: (text: string) => Node[]; tag?: (side: Side) => HTMLElement }): HTMLElement {
   const stepIcon = (n: ChainNode) => {
     const tone = n.kind === "firing" ? "tone-when" : n.kind === "root" ? "tone-gold" : "dim";
     let id = n.trigger ? termIcon(n.trigger as TermId, n.triggerStatus) : undefined;
@@ -2565,7 +2570,7 @@ function chainView(c: Chain, o: { units: Map<string, BattleUnit>; summoned: Map<
     const w = u && n.ref?.when !== undefined ? u.recipe.when[n.ref.when] : undefined;
     const fired = u && w ? formRich({ ...u.recipe, when: [w] }, o.content) : [];
     return [
-      h("span", { class: "bv-step-head" }, ...tagOf(n), h("span", { class: "emoji" }, u?.emoji ?? "✨"), " ", h("b", { class: who }, o.name(n.unit ?? "")), h("span", { class: "dim" }, `${tr("battle.trace.ability")}${label ? ` · ${label}` : ""}`)),
+      h("span", { class: "bv-step-head" }, ...tagOf(n), h("span", { class: "emoji" }, o.sigil(id)), " ", h("b", { class: who }, o.name(n.unit ?? "")), h("span", { class: "dim" }, `${tr("battle.trace.ability")}${label ? ` · ${label}` : ""}`)),
       fired.length ? h("span", { class: "bv-step-text" }, ...fired) : null,
     ].filter((x): x is HTMLElement => x !== null);
   };

@@ -19,6 +19,7 @@ import { isMine, reportLink } from "./report";
 import { icon } from "./icon";
 import { roman } from "./roman";
 import type { Spec } from "./sigil";
+import { portraitOf, setPortraits, sigilIcon, unitSigil } from "./glyph";
 import { faceOfUnit, lineToPiece, piece, pieceReach, statusEmoji, type PieceUnit } from "./piece";
 import { faceFallback, fusedFace, type Face } from "../../src/mvp/face";
 import { termDef } from "../../src/glossary";
@@ -30,7 +31,7 @@ import { fusionName, unitName } from "../unit-names";
 export { roman };
 
 /** What a card needs to draw; LineUnit, BattleUnit and offers all fit. */
-export type CardUnit = { emoji: string; name: string; stats: Stats } & Partial<Pick<LineUnit, "unitId" | "kind" | "form" | "copies" | "fusion" | "recipe">>;
+export type CardUnit = { emoji: string; name: string; stats: Stats; portrait?: Spec } & Partial<Pick<LineUnit, "unitId" | "kind" | "form" | "copies" | "fusion" | "recipe">>;
 
 export interface CardOptions {
   side: "you" | "ghost";
@@ -126,7 +127,7 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
     iconLine(u.recipe, !!o.tier),
     o.tier ? h("span", { class: `tier ${tierClass(o.tier)}`, "aria-label": o.tier === "S" ? t("card.summonedAria") : t("card.tierAria", { tier: o.tier }) }, o.tier === "S" ? "S" : roman(o.tier)) : null,
     credit?.isNew ? h("span", { class: "new-badge", "data-testid": "card-new" }, t("card.new")) : null,
-    h("div", { class: "emoji" }, u.emoji),
+    h("div", { class: "emoji" }, unitSigil({ ...(u.portrait ? { portrait: u.portrait } : {}), ...(u.unitId ? { unitId: u.unitId } : {}), ...(u.fusion ? { fusion: u.fusion } : {}) }, 64, { live: true, fluid: true, ...(o.side === "ghost" ? { team: "them" as const } : {}) })),
     // One line; ui/dom.ts fitText() shrinks a long name a little, then cuts it.
     // A version that isn't its archetype's first says so beside it (M3-8).
     h("div", { class: "name", title: u.name }, u.name, ...(version > 1 ? [h("span", { class: "ver", "data-testid": "card-version" }, ` v${version}`)] : [])),
@@ -169,7 +170,7 @@ function pieceCard(u: CardUnit, o: CardOptions): HTMLElement {
     emoji: ems[0] ?? u.emoji,
     stats: u.stats,
     face,
-    ...(first && portraits.get(first) ? { portrait: portraits.get(first)! } : {}),
+    ...(u.portrait ?? portraitOf(first) ? { portrait: (u.portrait ?? portraitOf(first))! } : {}),
     awoken: u.kind !== "fused" && u.form === "awoken",
     ...(u.kind === "fused" ? { fused: { emoji: ems.slice(1).join("") || "✨" } } : {}),
   };
@@ -232,11 +233,9 @@ export function setCardAbilities(a: AbilityRegistry): void {
 /** The units' faces (mission #1286), so a card draws its piece with the
  * designer's when tab and headline (set once the content loads: ../content.ts). */
 let faces = new Map<string, Face>();
-/** The units' sigil specs (arena#38), by unit id, for the same pieces. */
-let portraits = new Map<string, Spec>();
 export function setCardFaces(units: Pick<UnitContent, "id" | "face" | "forms" | "portrait">[]): void {
   faces = new Map(units.map((u) => [u.id, faceOfUnit(u)]));
-  portraits = new Map(units.flatMap((u) => (u.portrait ? [[u.id, u.portrait] as const] : [])));
+  setPortraits(units); // and their sigils (arena#38, #39), by unit id
 }
 /** Adds abilities the content lacks (a vote card's candidate, M2-8; a
  * designed fusion's own, #1065). Sheets read them too (#1120: a sealed
@@ -345,7 +344,7 @@ export function unitSheet(
       ...[
         [a, t("card.when")],
         [b, t("card.who")],
-      ].map(([p, role]) => (p ? h("div", { class: "sheet-form part" }, h("div", { class: "label" }, t("card.partGives", { unit: `${(p as UnitContent).emoji} ${(p as UnitContent).name}`, role: role as string })), ...formRich((p as UnitContent).forms.awoken, content)) : null)),
+      ].map(([p, role]) => (p ? h("div", { class: "sheet-form part" }, h("div", { class: "label" }, unitSigil({ portrait: (p as UnitContent).portrait, unitId: (p as UnitContent).id }, 22), " ", t("card.partGives", { unit: (p as UnitContent).name, role: role as string })), ...formRich((p as UnitContent).forms.awoken, content)) : null)),
     );
     parts.hidden = true;
     const label = t("card.madeFrom", { a: a?.name ?? u.fusion.first, b: b?.name ?? u.fusion.second });
@@ -430,7 +429,7 @@ export function unitSheet(
   const headRow = h(
     "div",
     { class: "row sheet-head" },
-    h("span", { class: `sheet-portrait${fused ? " fused" : ""}`, "aria-hidden": "true" }, u.emoji),
+    h("span", { class: `sheet-portrait${fused ? " fused" : ""}`, "aria-hidden": "true" }, unitSigil({ ...("forms" in u && u.portrait ? { portrait: u.portrait } : {}), unitId, ..."fusion" in u && u.fusion ? { fusion: u.fusion } : {} }, 72, { live: true, fluid: true, ...("forms" in u ? {} : { aw: u.form === "awoken" }) })),
     h(
       "div",
       { class: "sheet-title" },
@@ -523,7 +522,7 @@ export function summonersOf(content: MvpContent, id: string): { unit: UnitConten
 
 /** A summon drawn as a card: its emoji, name, numbers and icon line. */
 export function summonCard(s: SummonContent, o: CardOptions): HTMLElement {
-  return card({ emoji: s.emoji, name: s.name, stats: s.base, ...(s.form ? { recipe: s.form } : {}) }, o);
+  return card({ emoji: s.emoji, name: s.name, stats: s.base, ...(s.portrait ? { portrait: s.portrait } : {}), ...(s.form ? { recipe: s.form } : {}) }, o);
 }
 
 /** A summon's text, or the line that says it has none. */
@@ -546,7 +545,7 @@ function summonsBlock(form: UnitForm, content: MvpContent, compact = false): HTM
         { class: "summon-row", "data-testid": "sheet-summon", "data-summon": s.id },
         // The shop's panel has no room for the summoned unit's piece: its name leads its rule.
         compact ? null : summonCard(s, { side: "you", testid: "summon-card", onOpen: () => openSummon(s, content) }),
-        h("div", { class: "sheet-form" }, ...(compact ? [h("b", { class: "summon-name" }, `${s.emoji} ${s.name} `)] : []), ...summonText(s, content)),
+        h("div", { class: "sheet-form" }, ...(compact ? [h("b", { class: "summon-name" }, sigilIcon(s.portrait, 22), ` ${s.name} `)] : []), ...summonText(s, content)),
       ),
     ),
   );
@@ -564,7 +563,7 @@ export function summonSheet(s: SummonContent, content: MvpContent): HTMLElement 
   return h(
     "div",
     { class: "stack", "data-testid": "summon-sheet", "data-summon": s.id },
-    h("div", { class: "row sheet-head" }, h("span", { class: "sheet-portrait", "aria-hidden": "true" }, s.emoji), h("div", { class: "sheet-title" }, h("h2", {}, s.name), h("span", { class: "dim small", "data-testid": "sheet-state" }, t("card.summoned")))),
+    h("div", { class: "row sheet-head" }, h("span", { class: "sheet-portrait", "aria-hidden": "true" }, sigilIcon(s.portrait, 72, { live: true, fluid: true })), h("div", { class: "sheet-title" }, h("h2", {}, s.name), h("span", { class: "dim small", "data-testid": "sheet-state" }, t("card.summoned")))),
     sheetStats(s.base.pwr, s.base.hp),
     h("div", { class: "sheet-form", "data-testid": "sheet-form" }, ...summonText(s, content)),
     by.length ? h("div", { class: "label" }, t("card.summonedBy")) : null,
@@ -573,7 +572,7 @@ export function summonSheet(s: SummonContent, content: MvpContent): HTMLElement 
           "div",
           { class: "chips", "data-testid": "summoned-by" },
           ...by.map(({ unit, forms }) => {
-            const b = h("button", { class: "chip unit-chip", "data-testid": "summoned-by-unit", "data-unit": unit.id }, `${unit.emoji} ${unit.name}${forms.length === 1 && forms[0] === "awoken" ? t("card.awokenSuffix") : ""}`);
+            const b = h("button", { class: "chip unit-chip", "data-testid": "summoned-by-unit", "data-unit": unit.id }, sigilIcon(unit.portrait, 22), ` ${unit.name}${forms.length === 1 && forms[0] === "awoken" ? t("card.awokenSuffix") : ""}`);
             b.addEventListener("click", () => closable(unitSheet(unit, content)));
             return b;
           }),

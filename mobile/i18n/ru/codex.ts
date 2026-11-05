@@ -43,7 +43,7 @@ export const codex = {
   // the fusions tab
   "codex.pairsLabel": "Пары одного юнита",
   "codex.everyDiscovery": "Все открытия",
-  "codex.pairsOf": "{emoji} {name} + …",
+  "codex.pairsOf": "{name} + …",
   "codex.mine": "Мои · {n}",
   "codex.you": "ты",
   "codex.whenWho": "Когда от {a} · Кому от {b}",

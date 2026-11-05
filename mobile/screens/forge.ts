@@ -11,6 +11,7 @@
 // picks one, and it shows with their name on it.
 import type { Both, ClaimView, ForgeDesign, ForgePair, ForgeUnit, ForgeView, PairState } from "../../src/mvp/forge-view";
 import { currentLang, t } from "../i18n";
+import { portraitOf, sigilIcon } from "../ui/glyph";
 import { actionable, button, h, isDesktop, keepFocus, keyLabel, keyOf, onKeys, screen, show, withKey } from "../ui/dom";
 
 export type ForgeTab = "units" | "feed" | "words";
@@ -30,15 +31,22 @@ const kbd = (k: string) => h("kbd", {}, keyLabel(k));
 const tr = (s: Both): string => (currentLang() === "ru" ? s.ru : s.en);
 const day = (iso: string): string => new Date(iso.length <= 10 ? iso + "T12:00:00Z" : iso).toLocaleDateString(currentLang() === "ru" ? "ru-RU" : "en-GB", { day: "numeric", month: "short" });
 const unitOf = (v: { units: ForgeUnit[] }, id: string): ForgeUnit => v.units.find((u) => u.id === id)!;
-const label = (u: ForgeUnit): string => `${u.emoji} ${tr(u.name)}`;
-const pairLabel = (v: { units: ForgeUnit[] }, [a, b]: [string, string]): string => `${label(unitOf(v, a))} + ${label(unitOf(v, b))}`;
+/** A unit's sigil (arena#39): the view's own spec, else the pool unit's by id, else the generic one. */
+const sigOf = (u: ForgeUnit, px: number, live = false): HTMLCanvasElement => sigilIcon(u.portrait ?? portraitOf(u.id), px, { live, cls: "forge-sg" });
+/** A design's sigil: its own spec, else its first part's (the one it leans to, else the first). */
+const designSig = (d: ForgeDesign, a: ForgeUnit, b: ForgeUnit, px: number): HTMLCanvasElement => sigilIcon(d.portrait ?? (d.lean === "b" ? b : a).portrait ?? portraitOf((d.lean === "b" ? b : a).id), px, { live: true, cls: "forge-sg" });
+/** The sigil beside the name, as one element. */
+const label = (u: ForgeUnit): HTMLElement => h("span", { class: "sg-label" }, sigOf(u, 22), " ", tr(u.name));
+const pairLabel = (v: { units: ForgeUnit[] }, [a, b]: [string, string]): HTMLElement => h("span", { class: "sg-label" }, label(unitOf(v, a)), " + ", label(unitOf(v, b)));
+/** The same in words only, for a sentence. */
+const pairText = (v: { units: ForgeUnit[] }, [a, b]: [string, string]): string => `${tr(unitOf(v, a).name)} + ${tr(unitOf(v, b).name)}`;
 
 function head(title: string, onBack: () => void): HTMLElement {
   return h("div", { class: "row forge-head" }, withKey(button(t("codex.back"), onBack, "primary", "forge-back"), "Esc"), h("h1", {}, title));
 }
 
-/** A unit or a design as one wide card: emoji, name, the rule sentence. */
-function wide(emoji: string, name: string, rule: string, extra: (Node | null)[] = [], cls = ""): HTMLElement {
+/** A unit or a design as one wide card: its sigil, name, the rule sentence. */
+function wide(emoji: Node, name: string, rule: string, extra: (Node | null)[] = [], cls = ""): HTMLElement {
   return h("div", { class: `forge-card ${cls}` }, h("div", { class: "forge-card-top" }, h("span", { class: "forge-emoji" }, emoji), h("b", { class: "forge-name" }, name)), h("div", { class: "forge-rule" }, rule), ...extra);
 }
 
@@ -66,7 +74,8 @@ export function forgeScreen(a: ForgeArgs): void {
       "div",
       { class: "forge-picker", "data-testid": "forge-picker" },
       ...v.units.map((x) => {
-        const b = button(x.emoji, () => ((unit = x.id), keepFocus(draw)), x.id === unit ? "on" : "", "forge-pick");
+        const b = button("", () => ((unit = x.id), keepFocus(draw)), x.id === unit ? "on" : "", "forge-pick");
+        b.append(sigOf(x, 34));
         b.setAttribute("aria-label", tr(x.name));
         b.setAttribute("aria-pressed", String(x.id === unit));
         b.title = tr(x.name);
@@ -85,10 +94,10 @@ export function forgeScreen(a: ForgeArgs): void {
     };
     const discovered = (p: ForgePair): HTMLElement => {
       const d = p.design!;
-      return wide(d.emoji, tr(d.name), tr(d.rule), [h("div", { class: "dim small forge-with" }, "+ " + label(partner(p))), h("div", { class: "forge-credit small" }, t("forge.discoveredBy", { name: p.claimedBy!, date: day(p.claimedAt!) }))], "found");
+      return wide(p.a === unit ? designSig(d, u, partner(p), 44) : designSig(d, partner(p), u, 44), tr(d.name), tr(d.rule), [h("div", { class: "dim small forge-with" }, "+ ", label(partner(p))), h("div", { class: "forge-credit small" }, t("forge.discoveredBy", { name: p.claimedBy!, date: day(p.claimedAt!) }))], "found");
     };
     const ready = (p: ForgePair): HTMLElement =>
-      h("div", { class: "forge-pair ready", "data-testid": "forge-ready-row" }, h("span", { class: "forge-emoji" }, partner(p).emoji), h("div", { class: "grow" }, h("b", {}, tr(partner(p).name)), h("div", { class: "small" }, "🔒 " + t("forge.sealedRow"))));
+      h("div", { class: "forge-pair ready", "data-testid": "forge-ready-row" }, h("span", { class: "forge-emoji" }, sigOf(partner(p), 34)), h("div", { class: "grow" }, h("b", {}, tr(partner(p).name)), h("div", { class: "small" }, "🔒 " + t("forge.sealedRow"))));
     const unforged = (p: ForgePair): HTMLElement => {
       const n = p.wishes ?? 0;
       const side = p.waitingWord
@@ -104,14 +113,14 @@ export function forgeScreen(a: ForgeArgs): void {
       return h(
         "div",
         { class: "forge-pair unforged", "data-testid": "forge-unforged-row" },
-        h("span", { class: "forge-emoji" }, partner(p).emoji),
+        h("span", { class: "forge-emoji" }, sigOf(partner(p), 34)),
         h("div", { class: "grow" }, h("b", {}, tr(partner(p).name)), h("div", { class: "dim small" }, n ? t("forge.wishCount", { n }) : t("forge.notForged"))),
         side,
       );
     };
     return [
       picker,
-      wide(u.emoji, tr(u.name), tr(u.rule), [h("div", { class: "dim small" }, t("forge.stats", { hp: u.hp, pwr: u.pwr }))], "unit"),
+      wide(sigOf(u, 52, true), tr(u.name), tr(u.rule), [h("div", { class: "dim small" }, t("forge.stats", { hp: u.hp, pwr: u.pwr }))], "unit"),
       h("h2", { class: "forge-sub" }, t("forge.partners", { name: tr(u.name) })),
       ...group("discovered", "forge.groupDiscovered", discovered),
       ...group("ready", "forge.groupReady", ready),
@@ -152,7 +161,7 @@ export function forgeScreen(a: ForgeArgs): void {
         { class: "forge-card word", "data-testid": "forge-word" },
         h("div", { class: "forge-card-top" }, h("b", { class: "forge-word-name" }, tr(w.word)), h("span", { class: `forge-chip ${w.kind}` }, t(w.kind === "composed" ? "forge.composed" : "forge.forged"))),
         h("div", { class: "forge-rule" }, tr(w.means)),
-        h("div", { class: "forge-credit small" }, t("forge.foundIn", { fusion: `${tr(w.foundIn.name)} (${pairLabel(v, w.foundIn.pair)})`, name: w.foundBy, date: day(w.foundAt) })),
+        h("div", { class: "forge-credit small" }, t("forge.foundIn", { fusion: `${tr(w.foundIn.name)} (${pairText(v, w.foundIn.pair)})`, name: w.foundBy, date: day(w.foundAt) })),
         w.of ? h("div", { class: "dim small" }, t("forge.madeOf", { words: w.of.join(" · ") })) : null,
         h("div", { class: "dim small" }, t("forge.usedIn", { names: w.usedIn.map(tr).join(", ") })),
       ),
@@ -191,11 +200,12 @@ export interface ClaimArgs {
 /** The claim moment: three sealed cards turn over, one is picked, it carries your name. */
 export function claimScreen(a: ClaimArgs): void {
   const [ua, ub] = a.claim.pair.map((id) => a.units.find((u) => u.id === id)!) as [ForgeUnit, ForgeUnit];
-  const pair = `${ua.emoji} ${tr(ua.name)} + ${ub.emoji} ${tr(ub.name)}`;
+  const pair = `${tr(ua.name)} + ${tr(ub.name)}`; // in sentences: words only
+  const pairEl = (): HTMLElement => h("span", { class: "sg-label" }, label(ua), " + ", label(ub));
   let chosen: number | null = null;
   const lean = (d: ForgeDesign): string => (d.lean === "twist" ? t("forge.leanTwist") : t("forge.leanA", { name: tr((d.lean === "a" ? ua : ub).name) }));
   const cardOf = (d: ForgeDesign, i: number, extra: (Node | null)[] = []): HTMLElement =>
-    wide(d.emoji, tr(d.name), tr(d.rule), [h("div", { class: "forge-flavour small" }, tr(d.flavour)), h("div", { class: "forge-lean small" }, lean(d)), ...(d.newWords ?? []).map((w) => h("div", { class: "forge-chip forged small", "data-testid": "forge-new-word" }, "✦ " + t("forge.newWord", { word: tr(w) }))), ...extra], `claim lean-${d.lean}`);
+    wide(designSig(d, ua, ub, 44), tr(d.name), tr(d.rule), [h("div", { class: "forge-flavour small" }, tr(d.flavour)), h("div", { class: "forge-lean small" }, lean(d)), ...(d.newWords ?? []).map((w) => h("div", { class: "forge-chip forged small", "data-testid": "forge-new-word" }, "✦ " + t("forge.newWord", { word: tr(w) }))), ...extra], `claim lean-${d.lean}`);
 
   const choosing = (): void => {
     const confirm = button(t("forge.pickOne"), () => {
@@ -218,7 +228,7 @@ export function claimScreen(a: ClaimArgs): void {
       });
       return el;
     });
-    show(h("div", { class: "forge stack claim-moment", "data-testid": "forge-claim-moment" }, head(t("forge.claimTitle"), a.onDone), h("div", { class: "forge-sub" }, pair), h("div", { class: "dim small" }, t("forge.claimLead", { pair })), h("div", { class: "stack forge-candidates" }, ...cards.map((c, i) => (isDesktop() && c.append(h("kbd", { class: "forge-num" }, String(i + 1))), c))), withKey(confirm, "Enter")));
+    show(h("div", { class: "forge stack claim-moment", "data-testid": "forge-claim-moment" }, head(t("forge.claimTitle"), a.onDone), h("div", { class: "forge-sub" }, pairEl()), h("div", { class: "dim small" }, t("forge.claimLead", { pair })), h("div", { class: "stack forge-candidates" }, ...cards.map((c, i) => (isDesktop() && c.append(h("kbd", { class: "forge-num" }, String(i + 1))), c))), withKey(confirm, "Enter")));
     screen("forge");
     // Keys (#1064): 1–3 pick a sealed card, Enter claims it (the focused button), Esc leaves.
     onKeys((e) => {
@@ -239,7 +249,7 @@ export function claimScreen(a: ClaimArgs): void {
         "div",
         { class: "forge stack claim-moment", "data-testid": "forge-claimed" },
         head(t("forge.claimTitle"), a.onDone),
-        h("div", { class: "forge-sub" }, pair),
+        h("div", { class: "forge-sub" }, pairEl()),
         el,
         h("div", { class: "small" }, t("forge.claimedLead", { name: tr(d.name), pair })),
         h("div", { class: "forge-sealed-away" }, ...a.claim.candidates.filter((_, j) => j !== i).map(() => h("div", { class: "forge-card sealed-back" }, "🔒")), h("div", { class: "dim small" }, t("forge.sealedAway"))),
