@@ -440,7 +440,8 @@ export function overlay(...kids: Node[]): () => void {
 /** overlay() whose tap outside and Esc do `dismiss(close)` instead of a plain
  * close: the run menu resumes the battle under it. */
 export function dismissable(dismiss: ((close: () => void) => void) | null, ...kids: Node[]): () => void {
-  const sheet = h("div", { class: "sheet stack", role: "dialog" }, ...kids);
+  // A sheet taller than the window scrolls: it says so (data-scroll) and shows a shadow at its foot (table.css).
+  const sheet = h("div", { class: "sheet stack", role: "dialog", "data-scroll": "", style: "--scroll-cue:1" }, ...kids);
   const back = h("div", { class: "overlay", "data-testid": "overlay" }, sheet);
   const layer: Layer = { el: back, dismiss: () => (dismiss ? dismiss(close) : close()) };
   function close(): void {

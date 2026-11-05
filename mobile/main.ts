@@ -1193,6 +1193,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
    * five keeps the when tab's icon only, the bench is a size down. */
   /** A panel is open: it docks on the right and the field narrows, so the line's pieces are drawn smaller. */
   const docked = () => chosen !== null || pick.mode !== "none" || fuseView !== null;
+  /** With a panel open the columns are narrow: a When word stays wherever it fits its column (10 characters at the floor size). */
+  const whenFits = (u: LineUnit) => lineToPiece(u, content).face.when.label.length <= 10;
   const pieceSizes = () =>
     tall || !lay ? { line: 56, bench: 44, offer: 64, their: 48, lineWord: false, benchWord: false, benchBare: true } : { line: docked() ? lay.sDock : lay.s, bench: lay.sb, offer: 72, their: lay.sb, lineWord: !docked(), benchWord: false, benchBare: true };
   /** Tap-tap: the offer in hand (chosen) or the unit in hand (picked) lights
@@ -1271,7 +1273,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }
     const sz = pieceSizes();
     const c = actionable(
-      h("div", { class: ["cell", "you", onBench && sz.benchBare ? "bare" : "", u.kind === "fused" ? "fused" : u.form === "awoken" ? "awoken" : ""].filter(Boolean).join(" "), "data-copies": String(u.copies), "data-testid": id, style: onBench ? cellStyle(sz.bench, sz.benchBare) : cellStyle(sz.line) }, piece(lineToPiece(u, content), { size: "L", side: "you", px: onBench ? sz.bench : sz.line, word: onBench ? sz.benchWord : sz.lineWord, floor })),
+      h("div", { class: ["cell", "you", onBench && sz.benchBare ? "bare" : "", u.kind === "fused" ? "fused" : u.form === "awoken" ? "awoken" : ""].filter(Boolean).join(" "), "data-copies": String(u.copies), "data-testid": id, style: onBench ? cellStyle(sz.bench, sz.benchBare) : cellStyle(sz.line) }, piece(lineToPiece(u, content), { size: "L", side: "you", px: onBench ? sz.bench : sz.line, word: onBench ? sz.benchWord : sz.lineWord || whenFits(u), floor })),
       `${u.name}, ${onBench ? t("board.onBench", { n: slot - L + 1 }) : t("board.inLine", { n: slot + 1 })}`,
     );
     if (pick.mode === "picked" && pick.index === slot) c.classList.add("selected");
@@ -1526,7 +1528,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const layoutInspector = () => {
     inspector.querySelector(":scope > button.insp-x")?.remove();
     const rows = [...inspector.children].filter((c) => c.classList.contains("row"));
-    const body = h("div", { class: "insp-body" }, ...[...inspector.children].filter((c) => !rows.includes(c)).map((c) => c as HTMLElement));
+    const body = h("div", { class: "insp-body", "data-scroll": "", style: "--scroll-cue:1" }, ...[...inspector.children].filter((c) => !rows.includes(c)).map((c) => c as HTMLElement));
     inspector.replaceChildren(...(body.childElementCount ? [body] : []), ...rows);
     cueWatch.disconnect();
     if (body.childElementCount) cueWatch.observe(body, { childList: true, subtree: true, characterData: true });
@@ -1591,7 +1593,13 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       card_(own ? unitSheet(own, content, sheetOpts(t("panel.offer", { n: n + 1 }))) : pool ? unitSheet(pool, content, sheetOpts(t("panel.offer", { n: n + 1 }))) : h("h2", {}, o.unitId), buyBlock(o));
       void offerBody(o).then(
         ({ sheet, blocked }) => {
-          if (inspected === key) card_(sheet, blocked);
+          // What buying does arrives after the rule: swapped in once no term's tip is open on it (the swap would close the tip under the reader's finger).
+          const swap = () => {
+            if (inspected !== key) return;
+            if (document.querySelector('[data-testid="term-popover"]')) return void setTimeout(swap, 300);
+            card_(sheet, blocked);
+          };
+          swap();
         },
         (e: unknown) => {
           if (inspected === key) inspector.append(h("div", { class: "error" }, e instanceof Error ? e.message : String(e)));

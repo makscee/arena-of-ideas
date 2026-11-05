@@ -88,7 +88,9 @@ const readResult = (page) => page.evaluate(() => {
   // A row is whole when its box is inside the card and inside its scrolling parent's visible box.
   const clip = (e) => { let p = e.parentElement; const r = e.getBoundingClientRect(); while (p && p !== card.parentElement) { const s = getComputedStyle(p); if (/(auto|scroll|hidden)/.test(s.overflowY)) { const pr = p.getBoundingClientRect(); if (r.bottom > pr.bottom + 0.5 || r.top < pr.top - 0.5) return true; } p = p.parentElement; } return false; };
   const buttons = [...card.querySelectorAll('[data-testid="battle-done"], [data-testid="end-replay"], [data-testid="end-why"]')].map((b) => { const r = b.getBoundingClientRect(); return { id: b.dataset.testid, whole: inside(r) && !clip(b), h: r.height, w: r.width }; });
-  return { rows: rows.length, whole: rows.filter((r) => inside(r.getBoundingClientRect()) && !clip(r)).length, all: card.querySelector('[data-testid="damage-more"]')?.textContent ?? "", scrolls: body ? body.scrollHeight - body.clientHeight : 0, buttons, k, phone: innerWidth < 600 };
+  const rowH = rows.length ? Math.min(...rows.map((r) => r.getBoundingClientRect().height)) : 0;
+  if (window.__dump) console.log("DUMP", JSON.stringify([...card.children].map((e) => e.className.toString().slice(0, 24) + " " + [Math.round((e.getBoundingClientRect().top - cr.top) / k), Math.round(e.getBoundingClientRect().height / k)].join("+"))));
+  return { wide: innerWidth, clipped: card.scrollHeight - card.clientHeight, rowH, rows: rows.length, whole: rows.filter((r) => inside(r.getBoundingClientRect()) && !clip(r)).length, all: card.querySelector('[data-testid="damage-more"]')?.textContent ?? "", scrolls: body ? body.scrollHeight - body.clientHeight : 0, buttons, k, phone: innerWidth < 600 };
 });
 
 function resultProblems(r, what) {
@@ -96,6 +98,10 @@ function resultProblems(r, what) {
   const more = /\d/.test(r.all) && !/top|3/i.test(r.all);
   if (r.whole < r.rows) bad.push(`${what}: ${r.rows - r.whole} of ${r.rows} damage rows are cut off or need a scroll`);
   if (r.rows < 2) bad.push(`${what}: ${r.rows} damage rows shown, two at least`);
+  if (r.clipped > 3) bad.push(`${what}: the result hides ${r.clipped} px of its content`);
+  // A damage row is a target: 44 px on a phone, 32 px at 1024 and up, 24 px drawn at 800×450 (the lint's floors).
+  const floor = r.phone ? 43.5 : r.wide >= 1024 ? 31.5 : 23.5;
+  if (r.rowH < floor) bad.push(`${what}: a damage row is ${Math.round(r.rowH)} px tall, ${Math.round(floor)} at least`);
   if (r.rows < (more ? 2 : 1)) bad.push(`${what}: the damage list shows too few rows`);
   for (const b of r.buttons) {
     if (!b.whole) bad.push(`${what}: ${b.id} is not whole on screen`);
@@ -121,6 +127,8 @@ try {
       const page = await ctx.newPage();
       const what = `${label} ${n} unit${n > 1 ? "s" : ""}`;
       page.on("pageerror", (e) => note([`${what}: pageerror ${e.message}`]));
+      if (process.env.DUMP) page.on("console", (m) => m.text().startsWith("DUMP") && console.log(what, m.text()));
+      if (process.env.DUMP) await page.addInitScript(() => (window.__dump = true));
       const tid = (id) => page.getByTestId(id);
       await page.goto(url); await tid("start").waitFor(); await page.keyboard.press("Enter"); await tid("coach").waitFor();
       for (let i = 0; i < n; i++) {
@@ -187,6 +195,17 @@ try {
             const lo = { x: Math.min(wire.p0.x, wire.p1.x) - 60, y: Math.min(wire.p0.y, wire.p1.y) - 60 }, hi = { x: Math.max(wire.p0.x, wire.p1.x) + 60, y: Math.max(wire.p0.y, wire.p1.y) + 60 };
             if (wire.dot.x < lo.x || wire.dot.x > hi.x || wire.dot.y < lo.y || wire.dot.y > hi.y) bad.push(`its step number sits at ${Math.round(wire.dot.x)},${Math.round(wire.dot.y)}, away from the wire`);
           }
+          await page.waitForTimeout(350);
+          const small = await page.evaluate(() => {
+            const st = document.querySelector('[data-testid="stage"]');
+            const k = st.getBoundingClientRect().width / st.offsetWidth;
+            const chips = [...document.querySelectorAll('[data-testid="chain-chip"]')].map((c) => `chip ${(parseFloat(getComputedStyle(c).fontSize) * k).toFixed(1)}`).filter((t) => parseFloat(t.slice(5)) < 10.9);
+            const lines = [...document.querySelectorAll(".bv-pill.two .bv-l")].filter((l) => l.scrollHeight > l.clientHeight + 3).map(() => "a result chip's line is clipped");
+            const skip = document.querySelector('[data-testid="chain-skip"]');
+            const skipH = skip && innerWidth < 600 ? skip.getBoundingClientRect().height : 99;
+            return [...chips, ...lines, ...(skipH < 43.5 ? [`Skip chain is ${Math.round(skipH)} px tall on a phone`] : [])];
+          });
+          note(small.map((t) => `${what}: ${t}`));
           note(bad.map((b) => `${what}: chain of ${wire.n}: ${b}`));
           await page.screenshot({ path: `${out}/chain-${label}.png` });
         }
