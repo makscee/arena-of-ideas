@@ -45,9 +45,10 @@ export function cellHeight(s: number, bare = false, floor = 18): { top: number; 
  * pieces grow into the height a taller window gives (they never shrink under 84). Rows are
  * spaced to use the rest. All the columns are the same five. */
 export interface FieldLayout {
-  /** The line's piece, and the bench's. */
+  /** The line's piece, and the bench's; `sDock` is the line's piece while a panel narrows the field. */
   s: number;
   sb: number;
+  sDock: number;
   wellsTop: number;
   wellsH: number;
   lineTop: number;
@@ -75,5 +76,5 @@ export function fieldLayout(H: number): FieldLayout {
   const spare = Math.max(0, room - lineH - 4 - benchH);
   const lineTop = wellsTop + wellsH + 8 + Math.round(spare / 2);
   const benchTop = lineTop + lineH + 4 + Math.round(spare / 2);
-  return { s, sb, wellsTop, wellsH, lineTop, lineH, benchTop, benchH, trayTop };
+  return { s, sb, sDock: Math.min(s, 86), wellsTop, wellsH, lineTop, lineH, benchTop, benchH, trayTop };
 }

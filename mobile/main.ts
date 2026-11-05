@@ -1182,8 +1182,10 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   };
   /** The piece's side per layout (mission #1286 slice 2): the phone's line of
    * five keeps the when tab's icon only, the bench is a size down. */
+  /** A panel is open: it docks on the right and the field narrows, so the line's pieces are drawn smaller. */
+  const docked = () => chosen !== null || pick.mode !== "none" || fuseView !== null;
   const pieceSizes = () =>
-    tall || !lay ? { line: 56, bench: 44, offer: 64, their: 48, lineWord: false, benchWord: false, benchBare: true } : { line: lay.s, bench: lay.sb, offer: 72, their: lay.sb, lineWord: true, benchWord: false, benchBare: true };
+    tall || !lay ? { line: 56, bench: 44, offer: 64, their: 48, lineWord: false, benchWord: false, benchBare: true } : { line: docked() ? lay.sDock : lay.s, bench: lay.sb, offer: 72, their: lay.sb, lineWord: !docked(), benchWord: false, benchBare: true };
   /** Tap-tap: the offer in hand (chosen) or the unit in hand (picked) lights
    * every slot it can go to; the twin it merges into is gold. */
   /** The board slot an offer's copy merges into, or -1. */
