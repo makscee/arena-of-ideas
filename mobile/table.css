@@ -795,3 +795,27 @@ button.ws-back { min-height: 44px; min-width: 44px; padding: 0 12px; flex: none;
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > button.bv-caption { max-height: 112px; }
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bt-tray > .bv-recent { top: 130px; height: 150px; }
 :is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 .bt-tray > .bv-recent { top: 130px; height: 70px; }
+
+/* ===== Round 8 (arena#29): result chips keep off the side labels, a long owner name included ===== */
+/* Portrait: theirs run left of the middle of their piece, yours right of it; a chip's words sit at the bottom of its 44 px target,
+ * under the heading that stands over the chips' band; a heading is one line */
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line.theirs .bv-changes { left: 0; right: 50%; justify-content: flex-end; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line.mine .bv-changes { left: 50%; right: 0; justify-content: flex-start; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line button.bv-change { align-items: flex-end; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-side.you.bv-lab-you { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 366px; right: auto; font-size: 14px; line-height: 16px; height: 18px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-side.you.bv-lab-you > * { display: inline; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-side.you.bv-lab-you { max-width: 170px; }
+/* Portrait, round 8: the gap between the lines has three bands, their chips, the YOU heading, your chips: theirs pills hang under their
+ * row, yours stand on top of yours, both centred in their piece's column; no chip shares a place with a heading */
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-line.theirs { top: 108px; height: 122px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-line.mine { top: 326px; height: 122px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-side.you.bv-lab-you { top: 268px; max-width: 366px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line .bv-changes { left: 0; right: 0; justify-content: center; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line.theirs .bv-changes { justify-content: center; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line.mine .bv-changes { justify-content: center; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line.theirs button.bv-change { align-items: flex-start; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-line.mine button.bv-change { align-items: flex-end; }
+:is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 > .bv-line.theirs { top: 106px; height: 104px; }
+:is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 > .bv-line.mine { top: 304px; height: 104px; }
+:is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 .tb-side.you.bv-lab-you { top: 248px; }
+:is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 .tb-tray.bt-tray { top: 416px; }
