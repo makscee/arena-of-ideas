@@ -2417,25 +2417,7 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
 }
 
 /* ---- arena#31, mission #26 move 3: the first screen and the first run's coach ---- */
-.start { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 12px 8px; max-width: 760px; margin: 0 auto; }
-.start-brand { font-size: 18px; letter-spacing: 0.12em; color: var(--dim); margin: 0; }
-.start-title { font-size: clamp(30px, 7vw, 54px); line-height: 1.05; margin: 0; }
-.start-lead { margin: 0; max-width: 520px; font-size: 15px; }
-.start-demo { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 6px 0; }
-.start-chain { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 24px 0 50px; }
-.start-piece { opacity: 0.45; transform: scale(0.94); transition: opacity 0.25s, transform 0.25s; }
-.start-piece.lit { opacity: 1; transform: none; }
-.start-wire { position: relative; width: 44px; height: 6px; border-radius: 3px; background: var(--ink-dim); transition: background 0.25s; }
-.start-wire.lit { background: var(--action); }
-.start-wire-n { position: absolute; top: -22px; left: 50%; translate: -50% 0; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 800; background: var(--panel); border: 2px solid var(--outline); color: var(--dim); }
-.start-wire.lit .start-wire-n { background: var(--action); color: var(--outline); }
-.start-caption { min-height: 22px; font-size: 15px; font-weight: 700; color: var(--action); }
-button.play-start { min-height: 64px; min-width: 220px; font-size: 30px; border-width: 3px; border-radius: 34px; box-shadow: 0 6px 0 var(--outline); text-transform: uppercase; }
-button.play-start:active:not(:disabled) { translate: 0 4px; box-shadow: 0 2px 0 var(--outline); }
-.start-name { gap: 8px; margin-top: 4px; }
-.start-name input { width: 230px; min-height: 44px; }
 @media (prefers-reduced-motion: no-preference) {
-  button.play-start { animation: want-pulse 1.8s ease-in-out infinite; }
   .coach-target { animation: want-pulse 1.4s ease-in-out infinite; }
 }
 .coach-target { outline: 3px solid var(--action); outline-offset: 2px; border-radius: 12px; }
@@ -2453,11 +2435,6 @@ button.play-start:active:not(:disabled) { translate: 0 4px; box-shadow: 0 2px 0 
 .coach-text b { font-size: 16px; }
 .coach-by { color: var(--ink-dim); font-size: 12px; margin-top: 2px; }
 @media (max-height: 560px) and (orientation: landscape) {
-  .start { gap: 4px; padding: 4px; }
-  .start-title { font-size: 30px; }
-  .start-lead { display: none; }
-  .start-chain { padding: 22px 0 48px; }
-  button.play-start { min-height: 48px; font-size: 24px; }
   .coach { padding: 3px 10px; font-size: 12px; border-width: 2px; box-shadow: 0 2px 0 var(--outline); border-radius: 12px; }
   .coach-step, .coach-pair { display: none; }
   .coach-chain { display: inline; font-weight: 800; }
@@ -2471,13 +2448,5 @@ button.play-start:active:not(:disabled) { translate: 0 4px; box-shadow: 0 2px 0 
 .bv-beam.draw .bv-bn { animation: bv-beam-head calc(0.22s / var(--bv-sp, 1)) step-end calc(var(--bv-bt, 0s) / var(--bv-sp, 1)) both; }
 
 /* ---- arena#31, fix round: PLAY answers at once, a loader before the script ---- */
-.start-progress { display: none; width: 220px; height: 8px; border: 2px solid var(--outline); border-radius: 6px; background: var(--ink-dim); overflow: hidden; }
-.start-progress i { display: block; width: 40%; height: 100%; background: var(--action); }
-.start.starting .start-progress { display: block; }
-.start.starting button.play-start { translate: 0 4px; box-shadow: 0 2px 0 var(--outline); animation: none; pointer-events: none; }
-.start.starting .start-name { opacity: 0.5; }
 @media (prefers-reduced-motion: no-preference) {
-  .start.starting .start-progress i { animation: start-bar 1s ease-in-out infinite alternate; }
 }
-@keyframes start-bar { from { translate: 0 0; } to { translate: 150% 0; } }
-.start .error:not(:empty) { color: var(--them); font-size: 15px; font-weight: 700; min-height: 20px; max-width: 420px; }

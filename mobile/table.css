@@ -450,6 +450,110 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-coach > .coach .coach-how { font-size: 13px; margin-top: 0; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-coach > .coach .coach-why { display: none; }
 
+/* The first screen (arena#31, round 4): the table's stage, the duel's first screen on it. L is 1280×720 and P 390 × the window's
+ * height, scaled by ui/stage.ts, so these sizes are the design's own; landscape text is 18px and up (800×450 is 0.625 of it). */
+#app[data-screen="start"] {
+  position: fixed; inset: 0; max-width: none; min-height: 0; margin: 0; padding: 0; display: block; overflow: hidden; gap: 0;
+  background:
+    radial-gradient(ellipse 34% 30% at 50% 36%, rgba(240, 194, 75, 0.1), transparent 70%),
+    radial-gradient(ellipse 30% 40% at 0% 34%, rgba(63, 185, 160, 0.16), transparent 70%),
+    radial-gradient(ellipse 30% 40% at 100% 34%, rgba(224, 122, 134, 0.16), transparent 70%),
+    radial-gradient(ellipse 62% 30% at 50% 42%, #3b3058 0%, #2c2444 55%, transparent 75%),
+    linear-gradient(180deg, #16111f 0%, #211a30 30%, #2a2240 52%, #1b1529 70%, #100c18 100%);
+  user-select: none; -webkit-user-select: none;
+}
+#app[data-screen="start"] .stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+#app[data-screen="start"] .stage.L { width: 1280px; height: 720px; }
+#app[data-screen="start"] .stage.P { width: 390px; }
+#app[data-screen="start"] .start { position: absolute; inset: 0; text-align: center; }
+#app[data-screen="start"] .start.L > * { position: absolute; margin: 0; }
+#app[data-screen="start"] .st-brand { margin: 0; font: 400 52px/0.95 var(--font-head); letter-spacing: 1px; color: var(--action); text-align: left; text-shadow: 0 4px 0 var(--outline); text-transform: uppercase; }
+#app[data-screen="start"] .start.L > .st-brand { left: 36px; top: 26px; width: 290px; }
+#app[data-screen="start"] .st-lang { display: flex; border: 3px solid var(--outline); border-radius: 14px; overflow: hidden; box-shadow: 0 3px 0 var(--outline); }
+#app[data-screen="start"] .st-lang button { min-height: 44px; height: 44px; padding: 0 18px; border: 0; border-radius: 0; box-shadow: none; background: #3d3360; color: var(--dim); font: 700 20px/1 var(--font-body); text-transform: none; letter-spacing: 0; }
+#app[data-screen="start"] .st-lang button.lang-on { background: var(--paper); color: var(--outline); }
+#app[data-screen="start"] .start.L > .st-lang { right: 28px; top: 26px; z-index: 5; }
+#app[data-screen="start"] .st-demo { position: absolute; left: 0; top: 0; pointer-events: none; }
+#app[data-screen="start"] .st-piece { position: absolute; transition: transform 0.25s, filter 0.25s; }
+#app[data-screen="start"] .st-piece.act { transform: scale(1.1); }
+#app[data-screen="start"] .st-piece.buff { filter: brightness(1.18) drop-shadow(0 0 10px rgba(240, 194, 75, 0.6)); }
+#app[data-screen="start"] .st-piece.hurt { filter: brightness(1.1) drop-shadow(0 0 10px rgba(224, 122, 134, 0.7)); }
+#app[data-screen="start"] .st-wires { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+#app[data-screen="start"] .st-wire { fill: none; stroke: var(--action); stroke-width: 7; stroke-linecap: round; transition: opacity 0.2s; }
+#app[data-screen="start"] .st-wire.s1 { stroke: #ff8f9c; }
+#app[data-screen="start"] .st-n { position: absolute; z-index: 3; translate: -50% -50%; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--action); color: var(--outline); border: 4px solid var(--outline); font: 400 20px/1 var(--font-head); transition: opacity 0.2s; }
+#app[data-screen="start"] .st-n.s1 { background: #ff8f9c; }
+#app[data-screen="start"] .st-float { position: absolute; z-index: 3; font: 400 40px/1 var(--font-head); text-shadow: 0 3px 0 var(--outline); transition: opacity 0.2s; }
+#app[data-screen="start"] .st-float.hit { color: #ff8f9c; }
+#app[data-screen="start"] .st-float.buff { color: var(--action); }
+#app[data-screen="start"] [data-on="0"] { opacity: 0; }
+#app[data-screen="start"] .st-side { position: absolute; right: 28px; font: 400 26px/1 var(--font-head); letter-spacing: 0.5px; text-transform: uppercase; text-shadow: 0 3px 0 var(--outline); }
+#app[data-screen="start"] .st-side.them { color: #ff8f9c; }
+#app[data-screen="start"] .st-side.you { color: var(--you); }
+#app[data-screen="start"] .st-caption { min-height: 44px; display: inline-flex; align-items: center; padding: 0 24px; border: 4px solid var(--outline); border-radius: 16px; background: var(--action); color: var(--outline); box-shadow: 0 5px 0 var(--outline); font: 400 26px/1 var(--font-head); white-space: nowrap; }
+#app[data-screen="start"] .start.L > .st-caption { left: 50%; top: 426px; translate: -50% 0; }
+#app[data-screen="start"] .st-title { margin: 0; font: 400 50px/1.04 var(--font-head); color: var(--paper); text-shadow: 0 4px 0 var(--outline); }
+#app[data-screen="start"] .start.L > .st-title { left: 0; right: 0; top: 478px; }
+#app[data-screen="start"] .st-lead { margin: 0; font: 400 20px/1.3 var(--font-body); color: var(--dim); }
+#app[data-screen="start"] .start.L > .st-lead { left: 190px; width: 900px; top: 536px; }
+#app[data-screen="start"] .st-play { display: flex; align-items: center; justify-content: center; gap: 26px; }
+#app[data-screen="start"] .start.L > .st-play { left: 0; right: 0; top: 598px; }
+#app[data-screen="start"] .st-note { font: 500 18px/1.25 var(--font-body); color: var(--dim); text-align: left; max-width: 320px; }
+#app[data-screen="start"] .st-play .error { font: 700 18px/1.25 var(--font-body); color: #ff8f9c; text-align: left; max-width: 320px; min-height: 0; padding: 0; }
+#app[data-screen="start"] .st-play:has(.error:not(:empty)) .st-note { display: none; }
+#app[data-screen="start"] button.play-start { min-height: 64px; height: 64px; min-width: 300px; padding: 0 40px; font: 400 38px/1 var(--font-head); border-width: 4px; border-radius: 20px; box-shadow: 0 6px 0 var(--outline); text-transform: uppercase; }
+#app[data-screen="start"] button.play-start:active:not(:disabled) { translate: 0 4px; box-shadow: 0 2px 0 var(--outline); }
+#app[data-screen="start"] button.play-start kbd { font: 600 18px/1 var(--font-body); }
+#app[data-screen="start"] .start-progress { display: none; width: 300px; height: 8px; border: 2px solid var(--outline); border-radius: 6px; background: var(--ink-dim); overflow: hidden; }
+#app[data-screen="start"] .start-progress i { display: block; width: 40%; height: 100%; background: var(--action); }
+#app[data-screen="start"] .start.starting .start-progress { display: block; }
+#app[data-screen="start"] .start.L > .start-progress { left: 50%; top: 664px; translate: -50% 0; }
+#app[data-screen="start"] .start.starting button.play-start { translate: 0 4px; box-shadow: 0 2px 0 var(--outline); animation: none; pointer-events: none; }
+#app[data-screen="start"] .start.starting .st-name { opacity: 0.5; }
+#app[data-screen="start"] .st-name { display: flex; align-items: center; justify-content: center; gap: 8px; }
+#app[data-screen="start"] .start.L > .st-name { left: 0; right: 0; top: 674px; }
+#app[data-screen="start"] .st-name input { width: 280px; min-height: 36px; height: 36px; font-size: 18px; }
+#app[data-screen="start"] .st-name button { min-height: 36px; height: 36px; font-size: 18px; padding: 0 16px; }
+@media (prefers-reduced-motion: no-preference) {
+  #app[data-screen="start"] button.play-start { animation: want-pulse 1.8s ease-in-out infinite; }
+  #app[data-screen="start"] .start.starting .start-progress i { animation: start-bar 1s ease-in-out infinite alternate; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #app[data-screen="start"] .st-piece, #app[data-screen="start"] .st-wire, #app[data-screen="start"] .st-n, #app[data-screen="start"] .st-float { transition: none; }
+}
+@keyframes start-bar { from { translate: 0 0; } to { translate: 150% 0; } }
+
+/* Portrait (a phone): one column; the demo keeps the stage's width, the words and PLAY spread under it. */
+#app[data-screen="start"] .start.P { display: flex; flex-direction: column; align-items: center; padding: 12px 0 14px; gap: 6px; }
+#app[data-screen="start"] .start.P .st-top { width: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; flex: none; }
+#app[data-screen="start"] .start.P .st-brand { font-size: 26px; }
+#app[data-screen="start"] .start.P .st-lang button { min-height: 40px; height: 40px; padding: 0 12px; font-size: 15px; }
+#app[data-screen="start"] .start.P .st-demo { position: relative; flex: none; margin-top: 6px; }
+#app[data-screen="start"] .start.P .st-side { right: auto; left: 12px; font-size: 13px; letter-spacing: 1px; text-shadow: none; }
+#app[data-screen="start"] .start.P .st-n { width: 26px; height: 26px; font-size: 15px; border-width: 3px; }
+#app[data-screen="start"] .start.P .st-float { font-size: 26px; }
+#app[data-screen="start"] .start.P .st-wire { stroke-width: 5; }
+#app[data-screen="start"] .start.P .st-mid { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 0; width: 100%; padding: 0 16px; box-sizing: border-box; }
+#app[data-screen="start"] .start.P .st-caption { min-height: 36px; padding: 0 14px; border-width: 3px; border-radius: 12px; font-size: 16px; white-space: normal; text-align: center; box-shadow: 0 3px 0 var(--outline); }
+#app[data-screen="start"] .start.P .st-title { font-size: 36px; }
+#app[data-screen="start"] .start.P .st-lead { font-size: 15px; max-width: 340px; }
+#app[data-screen="start"] .start.P .st-foot { flex: none; display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; padding: 0 16px; box-sizing: border-box; }
+#app[data-screen="start"] .start.P .st-play { flex-direction: column; gap: 6px; }
+#app[data-screen="start"] .start.P button.play-start { min-height: 56px; height: 56px; min-width: 300px; font-size: 32px; }
+#app[data-screen="start"] .start.P .st-note { font-size: 13px; text-align: center; max-width: 330px; }
+#app[data-screen="start"] .start.P .st-play .error { font-size: 14px; text-align: center; }
+#app[data-screen="start"] .start.P .st-name input { width: 250px; min-height: 44px; height: 44px; }
+#app[data-screen="start"] .start.P .st-name button { min-height: 44px; height: 44px; }
+#app[data-screen="start"] .start.P.compact .st-lead, #app[data-screen="start"] .start.P.compact .st-note { display: none; }
+
+/* The pieces keep the table text floor (as the shop draws them) */
+#app[data-screen="start"] .stage.L .pc-tier { height: 28px; min-width: 30px; font-size: 18px; line-height: 23px; border-radius: 8px; }
+#app[data-screen="start"] .stage.L .pc-price { height: 28px; font-size: 18px; border-radius: 14px; padding: 0 9px 0 4px; }
+#app[data-screen="start"] .stage.L .pc-price .coin { width: 18px; height: 18px; }
+#app[data-screen="start"] .stage.L .pc-flag, #app[data-screen="start"] .stage.L .pc-lock { font-size: 18px; }
+#app[data-screen="start"] .stage.L .pc-pips u { width: 13px; height: 13px; }
+#app[data-screen="start"] .stage.L .pc-meta { gap: 6px; }
+
 /* Round 4 (arena#29): the side labels are headings at their row's left edge on the portrait stage, in the left gutter on the landscape one */
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-side.bv-lab-them, :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-side.bv-lab-you { justify-content: flex-start; text-align: left; right: auto; width: auto; max-width: 366px; }
 /* Round 4 result tray (arena#29): three buttons whole on the landscape stage; on the portrait one the All-N button's tap area (44) overlaps its row instead of making it tall */
@@ -466,3 +570,7 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 .bt-tray > .bv-end .bv-end-moments > .label > * { display: inline; }
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 .bt-tray > .bv-end .bv-end-moments > .label .bv-end-more { display: none; }
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .tb-side .bv-lab-who { overflow: hidden; text-overflow: ellipsis; }
+
+/* The coach's pair (arena#31) is a picture of who answers whom: no badge glyphs (they read under 11 px at 800×450) and a step number at the table's text floor. */
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach > .coach .coach-pair .pc-hb { display: none; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-coach > .coach .coach-wire-n { width: 32px; height: 32px; font-size: 18px; }

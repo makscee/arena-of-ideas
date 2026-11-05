@@ -506,7 +506,8 @@ function firstScreen(register: (name: string) => Promise<void>, extra: (HTMLElem
       }
     })();
   };
-  void getContent().then((c) => c, () => null).then((content) => (screen = startScreen({ content, onPlay: () => go(null), onName: (n) => go(n), extra, err })));
+  // The pool and today's champion (the demo's top row) come before the screen draws; either failing leaves a plainer demo.
+  void Promise.all([getContent().then((c) => c, () => null), api.day().then((d) => d.champion?.line ?? null, () => null)]).then(([content, champion]) => (screen = startScreen({ content, champion, onPlay: () => go(null), onName: (n) => go(n), extra, err })));
 }
 
 /** A generated name the server takes (a taken or crude one is rerolled). */
