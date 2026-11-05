@@ -184,7 +184,7 @@ try {
     await Promise.all([page.waitForEvent("load"), page.getByTestId(`lang-${to}`).click()]);
     await page.getByTestId("play").waitFor();
     const Lto = catalog(to);
-    if ((await playMain()) !== Lto("home.play") || (await page.evaluate(() => document.documentElement.lang)) !== to) errors.push(`lang switch: Home after ${to} reads "${await playMain()}"`);
+    if ((await playMain()) !== Lto("start.play") || (await page.evaluate(() => document.documentElement.lang)) !== to) errors.push(`lang switch: Home after ${to} reads "${await playMain()}"`);
     await page.getByTestId("settings").click();
     if ((await page.getByTestId(`lang-${to}`).getAttribute("aria-pressed")) !== "true") errors.push(`lang switch: ${to} isn't marked as chosen`);
     if (to !== lang) { await page.getByTestId("lang-row").scrollIntoViewIfNeeded(); await shot(`settings-switched-${to}`); await noHScroll(`settings-switched-${to}`); }
@@ -193,9 +193,9 @@ try {
   }
   // #915: a quiet ideas line; a new player has today's 3, so no refill time.
   if ((await page.getByTestId("ideas-label").textContent()) !== L("home.ideasHeld", { n: 3 }) || (await page.getByTestId("ideas-refill").count()) !== 0) errors.push(`home: ideas meter "${await page.getByTestId("ideas").textContent()}"`);
-  await tap44("dev summary", page.locator("details.dev summary"));
   await tap44("settings gear", page.getByTestId("settings"));
   await page.getByTestId("settings").click();
+  await tap44("dev summary", page.locator("details.dev summary"));
   // M5-6: Rules and Stats live in the Codex (How to play, Champions); no sheet of their own.
   await page.getByTestId("rules-open").click();
   await page.getByTestId("rules").waitFor();
@@ -423,7 +423,9 @@ try {
       await page.getByTestId("menu-title").click();
       await page.getByTestId("play").waitFor();
       const cont = await page.getByTestId("play").textContent();
-      if (!cont.includes(L("home.continue", { where: at.split("/")[0] }).trim())) errors.push(`title menu: "${cont}" doesn't continue ${at}`);
+      // arena#31: the Home button reads RESUME with the run's round (Round 5), or the Crown.
+      const round = /^R(\d+)/.exec(at.split("/")[0]);
+      if (!cont.includes(L("home.resume")) || !cont.includes(round ? L("home.resumeRound", { round: Number(round[1]) }) : L("home.continueCrown"))) errors.push(`title menu: "${cont}" doesn't resume ${at}`);
       if ((await page.getByTestId("new-run").count()) === 0) errors.push("title menu: no New run while a run waits");
       await shot("home-continue"); await noHScroll("home-continue"); await onScreen("home: Continue", page.getByTestId("play"));
       await page.getByTestId("play").click();
@@ -783,9 +785,11 @@ try {
   await page.getByTestId("play").waitFor();
   await shot("home-after");
   if (![L("home.ideasNone")].concat([1, 2, 3].map((n) => L("home.ideasHeld", { n }))).includes((await page.getByTestId("ideas-label").textContent()) ?? "")) errors.push(`home after a run: ideas meter "${await page.getByTestId("ideas").textContent()}"`);
-  // M5-3: the Throne shows the run just played, a pip per fight.
+  // M5-3: the run just played, a pip per fight (arena#31: in the ≡ menu, and its change joins the RATING plate).
+  await page.getByTestId("settings").click();
   await page.getByTestId("last-run").waitFor({ timeout: 5_000 }).catch(() => errors.push("home after a run: no Last run panel"));
   if ((await page.getByTestId("last-run").locator(".fpip").count()) < 1) errors.push("home after a run: Last run has no fights");
+  await page.getByTestId("sheet-close").click();
 
   // Champions (slice 11, R2-11; M5-6 the Codex's Champions tab): the champion
   // history and your records.
@@ -827,7 +831,7 @@ try {
   if ((await page.getByTestId("rating-change").count()) === 0) errors.push("abandon: no rating change on the run-over screen");
   await page.getByTestId("home").click();
   await page.getByTestId("play").waitFor();
-  if ((await page.getByTestId("play").locator(".play-main").textContent()) !== L("home.play")) errors.push("abandon: the title menu still offers Continue");
+  if ((await page.getByTestId("play").locator(".play-main").textContent()) !== L("start.play")) errors.push("abandon: the title menu still offers Continue");
   // New run on the title menu gives the waiting run up too, and shows its
   // end and rating change first; its New run starts the next run (R2-17).
   await page.getByTestId("play").click();
@@ -1159,6 +1163,7 @@ try {
   await page.reload();
   await page.getByTestId("play").waitFor();
   const endedSeq = (await call("GET", "/day")).seq;
+  await page.getByTestId("settings").click();
   await page.locator("details.dev summary").click();
   // M2-3: dev "+1 idea" brings an idea home at once.
   const heldText = (await page.getByTestId("ideas-label").textContent()) ?? "";
@@ -1168,8 +1173,8 @@ try {
   await page.waitForFunction((t) => document.querySelector('[data-testid="ideas-label"]')?.textContent === t, L("home.ideasHeld", { n: heldNow }), { timeout: 10_000 }).catch(() => errors.push(`dev +1 idea: ideas line "${heldNow}" never showed`));
   await shot("home-idea-granted"); await noHScroll("home-idea-granted");
   await onScreen("home after +1 idea: Play", page.getByTestId("play"));
-  await page.locator("details.dev summary").click().catch(() => {});
-  if (!(await page.getByTestId("end-day").isVisible())) await page.locator("details.dev summary").click();
+  await page.getByTestId("settings").click();
+  await page.locator("details.dev summary").click();
   await page.getByTestId("end-day").click();
   // Home re-renders with the day just ended ("Day N ended" / "Playoff · day
   // N"), not the panel of the day before, which is already on screen.
@@ -1183,6 +1188,7 @@ try {
   if (!new RegExp(`^${pattern(L("home.dayEnded"))}$`).test((await page.getByTestId("day-ended").textContent().catch(() => "")) ?? "")) errors.push("day end: no 'Day N ended' notice");
   await shot("home-day-ended"); await noHScroll("home-day-ended");
   await onScreen("home after day end: Play", page.getByTestId("play"));
+  await page.getByTestId("sheet-close").click(); // the ≡ menu opened by itself with how the day ended
 
   // The reigning champion's own Crown (#587): "Reigning" slays and is crowned
   // through the API (e2e/mvp-own-crown.ts, local server only), then the phone

@@ -7,16 +7,19 @@
 import type { MvpContent, UnitContent, VoteCard } from "../../src/mvp/contract";
 import { api } from "../api";
 import { addCardAbilities, card, formText } from "../ui/card";
+import { faceOfUnit, piece } from "../ui/piece";
 import { t } from "../i18n";
 import { actionable, button, h } from "../ui/dom";
+import { orient } from "../ui/stage";
 import { localUnit } from "../unit-names";
 
-/** A box that fills itself with the player's next vote card, if any. */
-export function votePanel(content: MvpContent): HTMLElement {
+/** A box that fills itself with the player's next vote card, if any. `compact`: Home's tray (arena#31): the
+ * question, Skip and the two candidates as pieces with their names, no rule text (a pick's title has it). */
+export function votePanel(content: MvpContent, compact = false): HTMLElement {
   const box = h("div", { class: "vote-box", "data-testid": "vote-box" });
   let sending = false;
   const render = (c: VoteCard | null, voted: boolean) => {
-    if (!c) return box.replaceChildren(...(voted ? [h("div", { class: "dim small", "data-testid": "vote-thanks" }, t("vote.thanks"))] : []));
+    if (!c) return box.replaceChildren(...(voted ? [h("div", { class: compact ? "hm-vote hm-thanks" : "dim small", "data-testid": "vote-thanks" }, t("vote.thanks"))] : []));
     addCardAbilities(c.pool.abilities);
     const known = new Set((content.summons ?? []).map((s) => s.id));
     const pool: MvpContent = {
@@ -55,6 +58,27 @@ export function votePanel(content: MvpContent): HTMLElement {
       el.addEventListener("click", () => void send(u.id));
       return actionable(el, u.name);
     };
+    if (compact) {
+      // The landscape stage is drawn at 0.625 on 800×450: its text starts at 18 (11 there), the phone's is plain.
+      const wide = orient() === "L";
+      const pick = (u: UnitContent) => {
+        const el = h(
+          "button",
+          { class: "hm-pick", "data-testid": "vote-pick", "data-unit": u.id, "aria-label": u.name, title: `${u.name}: ${formText(u.forms.sleeping, pool)}` },
+          piece({ name: u.name, emoji: u.emoji, stats: u.base, face: faceOfUnit(u), tier: u.tier, copies: 1 }, { size: "M", side: "shop", px: wide ? 60 : 44, word: false, floor: wide ? 18 : 0 }),
+        );
+        el.addEventListener("click", () => void send(u.id));
+        return el;
+      };
+      return box.replaceChildren(
+        h(
+          "div",
+          { class: "hm-vote", "data-testid": "vote-card" },
+          h("div", { class: "hm-vote-head" }, h("div", { class: "hm-vote-q" }, t("vote.questionShort")), button(t("vote.skip"), () => void send(null), "hm-skip keep", "vote-skip")),
+          h("div", { class: "hm-vote-pair" }, pick(localUnit(c.units[0])), pick(localUnit(c.units[1]))),
+        ),
+      );
+    }
     box.replaceChildren(
       h(
         "div",

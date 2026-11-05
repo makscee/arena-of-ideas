@@ -608,7 +608,7 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 #app[data-screen="start"] .st-lead { margin: 0; font: 400 20px/1.3 var(--font-body); color: var(--dim); }
 #app[data-screen="start"] .start.L > .st-lead { left: 190px; width: 900px; top: 536px; }
 #app[data-screen="start"] .st-play { display: flex; align-items: center; justify-content: center; gap: 26px; }
-#app[data-screen="start"] .start.L > .st-play { left: 0; right: 0; top: 598px; }
+#app[data-screen="start"] .start.L > .st-play { left: 0; right: 0; top: 588px; }
 #app[data-screen="start"] .st-note { font: 500 18px/1.25 var(--font-body); color: var(--dim); text-align: left; max-width: 320px; }
 #app[data-screen="start"] .st-play .error { font: 700 18px/1.25 var(--font-body); color: #ff8f9c; text-align: left; max-width: 320px; min-height: 0; padding: 0; }
 #app[data-screen="start"] .st-play:has(.error:not(:empty)) .st-note { display: none; }
@@ -618,13 +618,13 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 #app[data-screen="start"] .start-progress { display: none; width: 300px; height: 8px; border: 2px solid var(--outline); border-radius: 6px; background: var(--ink-dim); overflow: hidden; }
 #app[data-screen="start"] .start-progress i { display: block; width: 40%; height: 100%; background: var(--action); }
 #app[data-screen="start"] .start.starting .start-progress { display: block; }
-#app[data-screen="start"] .start.L > .start-progress { left: 50%; top: 664px; translate: -50% 0; }
+#app[data-screen="start"] .start.L > .start-progress { left: 50%; top: 656px; translate: -50% 0; }
 #app[data-screen="start"] .start.starting button.play-start { translate: 0 4px; box-shadow: 0 2px 0 var(--outline); animation: none; pointer-events: none; }
 #app[data-screen="start"] .start.starting .st-name { opacity: 0.5; }
 #app[data-screen="start"] .st-name { display: flex; align-items: center; justify-content: center; gap: 8px; }
-#app[data-screen="start"] .start.L > .st-name { left: 0; right: 0; top: 674px; }
-#app[data-screen="start"] .st-name input { width: 280px; min-height: 36px; height: 36px; font-size: 18px; }
-#app[data-screen="start"] .st-name button { min-height: 36px; height: 36px; font-size: 18px; padding: 0 16px; }
+#app[data-screen="start"] .start.L > .st-name { left: 0; right: 0; top: 666px; }
+#app[data-screen="start"] .st-name input { width: 280px; min-height: 52px; height: 52px; font-size: 20px; }
+#app[data-screen="start"] .st-name button { min-height: 52px; height: 52px; font-size: 20px; padding: 0 20px; }
 @media (prefers-reduced-motion: no-preference) {
   #app[data-screen="start"] button.play-start { animation: want-pulse 1.8s ease-in-out infinite; }
   #app[data-screen="start"] .start.starting .start-progress i { animation: start-bar 1s ease-in-out infinite alternate; }
@@ -638,7 +638,7 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 #app[data-screen="start"] .start.P { display: flex; flex-direction: column; align-items: center; padding: 12px 0 14px; gap: 6px; }
 #app[data-screen="start"] .start.P .st-top { width: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; flex: none; }
 #app[data-screen="start"] .start.P .st-brand { font-size: 26px; }
-#app[data-screen="start"] .start.P .st-lang button { min-height: 40px; height: 40px; padding: 0 12px; font-size: 15px; }
+#app[data-screen="start"] .start.P .st-lang button { min-height: 44px; height: 44px; padding: 0 12px; font-size: 15px; }
 #app[data-screen="start"] .start.P .st-demo { position: relative; flex: none; margin-top: 6px; }
 #app[data-screen="start"] .start.P .st-side { right: auto; left: 12px; font-size: 13px; letter-spacing: 1px; text-shadow: none; }
 #app[data-screen="start"] .start.P .st-n { width: 26px; height: 26px; font-size: 15px; border-width: 3px; }
