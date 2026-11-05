@@ -14,20 +14,29 @@ export const orient = (): Orient => orientOf(window.innerWidth, window.innerHeig
  * runs when the window crosses between landscape and portrait (the screen draws
  * itself again at the other stage). The returned stage drops its listener when
  * it leaves the page. */
-export function stage(kids: (Node | null)[], onFlip: () => void): HTMLElement {
+export function stage(kids: (Node | null)[], onFlip: () => void, flex = false): HTMLElement {
   const o = orient();
   const el = h("div", { class: `stage ${o}`, "data-testid": "stage", "data-orient": o }, ...kids);
   const place = () => {
     if (!el.isConnected) return removeEventListener("resize", place);
+    // Under a window (the Codex, the Workshop) the table only follows the window's size: drawing it again would close the window.
+    if (el.closest("#under")) return apply();
     if (orient() !== o) {
       removeEventListener("resize", place);
       return onFlip();
     }
-    const f = fit(o, window.innerWidth, window.innerHeight);
+    // A flexible stage that grew or shrank by a step draws its rows again (the pieces use the height).
+    if (flex && bucket(fit(o, window.innerWidth, window.innerHeight, true).h) !== was) {
+      removeEventListener("resize", place);
+      return onFlip();
+    }
     apply();
   };
+  const bucket = (h: number) => Math.round((h - 720) / 40);
+  const was = bucket(fit(o, window.innerWidth, window.innerHeight, flex).h);
   const apply = () => {
-    const f = fit(o, window.innerWidth, window.innerHeight);
+    const f = fit(o, window.innerWidth, window.innerHeight, flex);
+    el.style.setProperty("--sh", String(f.h));
     el.style.setProperty("--k", String(f.k));
     el.style.left = `${f.left}px`;
     el.style.top = `${f.top}px`;

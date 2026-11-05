@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fit, orientOf, STAGE } from "./stage-fit";
+import { fieldLayout, fit, orientOf, STAGE } from "./stage-fit";
 
 describe("the table's stage", () => {
   it("is landscape unless the window is narrower than 0.8 of its height", () => {
@@ -35,7 +35,31 @@ describe("the table's stage", () => {
     expect(t.left).toBeGreaterThan(0);
   });
 
+  it("lets a flexible landscape stage grow to the window's shape, up to 4:3", () => {
+    expect(fit("L", 1920, 1080, true).h).toBe(720);
+    expect(fit("L", 1440, 900, true)).toEqual({ k: 1.125, left: 0, top: 0, h: 800 });
+    expect(fit("L", 1024, 768, true).h).toBe(960);
+    expect(fit("L", 1000, 1000, true).h).toBe(960);
+    expect(fit("L", 1440, 900).h).toBe(720); // the battle's stage stays 16:9
+  });
+
   it("keeps landscape text at 18px stage px: 11px at 800×450", () => {
     expect(18 * fit("L", 800, 450).k).toBeGreaterThanOrEqual(11);
+  });
+});
+
+describe("the shop's field", () => {
+  it("fits above the tray at every flexible height, pieces never under 11% of the stage", () => {
+    for (const H of [720, 760, 800, 900, 960]) {
+      const f = fieldLayout(H);
+      expect(f.benchTop + f.benchH, `H=${H}`).toBeLessThanOrEqual(f.trayTop);
+      expect(f.lineTop).toBeGreaterThanOrEqual(f.wellsTop + f.wellsH);
+      expect(f.s / H, `H=${H}`).toBeGreaterThanOrEqual(0.11);
+    }
+  });
+
+  it("uses a taller stage for larger pieces", () => {
+    expect(fieldLayout(960).s).toBeGreaterThan(fieldLayout(720).s);
+    expect(fieldLayout(720).s).toBeGreaterThanOrEqual(84);
   });
 });

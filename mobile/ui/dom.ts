@@ -196,7 +196,7 @@ export const keyLabel = (k: string): string => (cgBuild && k === "Esc" ? "⌫" :
 /** Names the screen on #app (data-screen), which turns on its desktop layout
  * in style.css; a screen without a name (the name
  * screen) stays a phone column at every width. */
-export function screen(name: "home" | "shop" | "result" | "over" | "stats" | "codex" | "battle" | "ideas" | "forge"): void {
+export function screen(name: "start" | "home" | "shop" | "result" | "over" | "stats" | "codex" | "battle" | "ideas" | "forge"): void {
   app.dataset.screen = name;
 }
 
