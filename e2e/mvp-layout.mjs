@@ -10,7 +10,7 @@
 //   (d) no horizontal page scroll (and no vertical one in a window whose stage is fixed)
 //   (e) interactive elements (not a word in running text) ≥ 32 px at ≥ 1024 wide, ≥ 44 px on touch (390×844); at 800×450 (the
 //       CrazyGames frame, a mouse) ≥ 24 px
-//   (f) with ≥ 3 units shown, their bounding box covers ≥ 60% of the stage's width
+//   (f) in a line with ≥ 3 units, the slots they stand in span ≥ 60% of the stage's width (the slot's box, not the piece's)
 // Prints one line a failing scene and size, groups the failures by who owns the screen, writes
 // layout.json. Without --url it builds the client and starts a scenes server. The v2-unit-* battle
 // fixtures (all one layout) are sampled, 4 of them, unless --all.
@@ -151,15 +151,19 @@ function lint({ touchSize, minTouch, minDesk, minFrame }) {
   }
   for (const s of [...new Set(small)].slice(0, 6)) add("e", `${s} under ${min} px`);
   if (new Set(small).size > 6) add("e", `… and ${new Set(small).size - 6} more under ${min} px`);
-  // (f) the units fill the field
+  // (f) the units fill the field: in a line with ≥ 3 units, the slots they stand in (the slot's own box, not the piece's)
+  // span ≥ 60% of the stage's width. Tray offers and the bench are not the field.
   if (stageEl && !overTable) {
     const sr = stageEl.getBoundingClientRect();
-    const pcs = [...stageEl.querySelectorAll(".pc:not(.pc-XS)")].filter((e) => !e.closest(".tb-insp, .inspector, .coach, .sheet") && e.getClientRects().length);
-    if (pcs.length >= 3) {
+    const rows = stageEl.querySelectorAll('[data-testid="line"], [data-testid="battle-you"], [data-testid="battle-them"], [data-testid="crown-foe-line"]');
+    for (const row of rows) {
+      if (row.closest(".tb-insp, .inspector, .coach, .sheet")) continue;
+      const occupied = [...row.children].filter((c) => c.querySelector(".pc:not(.pc-XS)") && c.getClientRects().length);
+      if (occupied.length < 3) continue;
       let l = Infinity, r = -Infinity;
-      for (const p of pcs) { const q = p.getBoundingClientRect(); l = Math.min(l, q.left); r = Math.max(r, q.right); }
+      for (const c of occupied) { const q = c.getBoundingClientRect(); l = Math.min(l, q.left); r = Math.max(r, q.right); }
       const cover = (r - l) / sr.width;
-      if (cover < 0.6) add("f", `${pcs.length} units span ${Math.round(cover * 100)}% of the stage's width (≥ 60%)`);
+      if (cover < 0.6) add("f", `${row.dataset.testid}: ${occupied.length} units stand in slots that span ${Math.round(cover * 100)}% of the stage's width (≥ 60%)`);
     }
   }
   return bad;
