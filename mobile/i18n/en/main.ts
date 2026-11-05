@@ -187,6 +187,7 @@ export const main = {
 
   "menu.codex": "Codex",
   "menu.forge": "Forge",
+  "menu.workshop": "Workshop",
   "menu.dictionary": "Dictionary",
   "menu.runOver": "Run · over",
   "menu.runCrown": "Run · the Crown",

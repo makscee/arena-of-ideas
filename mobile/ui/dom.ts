@@ -122,7 +122,9 @@ export function keepScreen(): () => void {
   const kept = keys;
   const y = window.scrollY;
   // The table stays where it is, dimmed behind the Codex and the Workshop, which open as windows over it (arena#28).
-  const under = name === "shop" || name === "battle" ? h("div", { id: "under", "aria-hidden": "true" }, ...kids) : null;
+  // A screen with a stage is a table (the shop, a battle, Home): it stays, dimmed, behind the window.
+  const isTable = kids.some((n) => n instanceof HTMLElement && (n.matches('[data-testid="stage"]') || n.querySelector('[data-testid="stage"]')));
+  const under = name === "shop" || name === "battle" || isTable ? h("div", { id: "under", "aria-hidden": "true" }, ...kids) : null;
   if (under) {
     document.body.append(under);
     document.body.classList.add("over-table");

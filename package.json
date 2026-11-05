@@ -62,6 +62,8 @@
     "mvp:battle-field": "node e2e/battle-field.mjs",
     "mvp:table-fit": "node e2e/table-fit.mjs",
     "mvp:next": "node e2e/mvp-next.mjs",
+    "mvp:plan": "node e2e/mvp-plan.mjs",
+    "mvp:layout": "node e2e/mvp-layout.mjs",
     "mvp:panel": "node e2e/mvp-panel.mjs",
     "mvp:field": "node e2e/mvp-field.mjs",
     "mvp:cg-store-kit": "node e2e/cg-store-kit.mjs",

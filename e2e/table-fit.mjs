@@ -49,7 +49,7 @@ function measure() {
   };
   const small = [...document.querySelectorAll("#app *, body > *")].filter((e) => {
     if (!e.getClientRects().length || getComputedStyle(e).visibility === "hidden") return false;
-    if (!/^(SPAN|DIV|BUTTON|P|LABEL|H1|H2|H3|H4|A|LI|TD|TH|SMALL|B|I|EM|STRONG)$/.test(e.tagName)) return false;
+    if (!/^(SPAN|DIV|BUTTON|P|LABEL|H1|H2|H3|H4|A|LI|TD|TH|SMALL|B|I|EM|STRONG|KBD|U|SUMMARY)$/.test(e.tagName)) return false;
     if (e.closest("[aria-hidden='true']") && !e.closest("button")) return false;
     return [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
   }).map((e) => ({ t: e.textContent.trim().slice(0, 22), px: drawn(e), cls: ((e.className?.toString?.() ?? "") + " < " + (e.parentElement?.className?.toString?.() ?? "") + " < " + (e.parentElement?.parentElement?.className?.toString?.() ?? "")).slice(0, 90) })).filter((x) => x.px > 0 && x.px < 10.9);

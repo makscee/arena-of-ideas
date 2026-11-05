@@ -634,7 +634,7 @@ function homeMenu(home: HomeView, err: HTMLElement, lastRun: HTMLElement | null,
   const close = closable(
     h(
       "div",
-      { class: "stack settings", "data-testid": "settings-sheet" },
+      { class: "stack settings", "data-testid": "settings-sheet", "data-scroll": "" },
       h("h2", {}, t("home.settings")),
       h("div", { class: "row me" }, h("span", { class: "dim keep" }, t("home.playingAs")), who(api.player?.name ?? "")),
       home.email?.address ? h("div", { class: "row me", "data-testid": "settings-email" }, h("span", { class: "dim keep" }, t("email.label")), h("span", { class: "grow" }, home.email.address)) : null,
@@ -690,7 +690,7 @@ function devTools(home: HomeView, err: HTMLElement): HTMLElement {
 /** The Workshop card in Home's tray (it replaces the ideas meter): how the player's ideas stand in one line,
  * the meter (ideas left today, when they come back) under it, and a tap opens the Workshop (My ideas). */
 function workshopCard(ideas: IdeasView | null): HTMLElement {
-  const b = button("", () => void ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => (api.forget(), nameScreen()) }), "hm-workshop", "ideas");
+  const b = button("", () => void openWorkshop(), "hm-workshop", "ideas");
   const status = h("span", { class: "hm-ws-status", "data-testid": "workshop-status" }, ideas?.ready ? t("home.workshopReady", { n: ideas.ready }) : t("home.workshopNone"));
   b.append(h("span", { class: "hm-ws-head" }, h("b", { class: "hm-ws-title" }, t("home.workshop")), ideas?.ready ? h("i", { class: "hm-dot", "aria-hidden": "true" }) : null), status);
   if (ideas) {
@@ -830,6 +830,12 @@ let codexOn = false;
 let firstRun = false;
 void api.health().then((h) => (codexOn = !!h.codex), () => undefined);
 setReporter((r) => api.report(r), () => api.player?.id ?? savedPlayer()?.id ?? "");
+/** The Workshop (My ideas, its write and pick screens) opens over the current screen as the Codex does: from a table
+ * (the shop, a battle, Home) the table stays dimmed behind it, and Back or Esc returns to it untouched (arena#32). */
+async function openWorkshop(notice: string | null = null): Promise<void> {
+  const back = keepScreen();
+  await ideasScreen({ onBack: back, onUnknown: () => (api.forget(), nameScreen()) }, notice);
+}
 async function openForge(tab: ForgeTab = "units"): Promise<void> {
   const back = keepScreen();
   let view = await api.codex();
@@ -888,6 +894,7 @@ function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: F
   const crown = fought ? fought.kind === "crown" : round > rules.rounds;
   const codex = button(t("menu.codex"), () => (close(), void guarded(err, () => openCodex())), "", "menu-codex");
   const forge = codexOn ? button(t("menu.forge"), () => (close(), void guarded(err, () => openForge())), "", "menu-forge") : null;
+  const workshop = button(t("menu.workshop"), () => (close(), void guarded(err, () => openWorkshop())), "", "menu-ideas");
   const menu = h(
     "div",
     { class: "stack run-menu", "data-testid": "run-menu" },
@@ -896,6 +903,7 @@ function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: F
     withKey(button(t("menu.resume"), () => (close(), resume?.()), "primary", "menu-resume"), "Esc"),
     codex,
     forge,
+    workshop,
     soundRow(),
     langRow(),
     themeRow(),
@@ -1655,7 +1663,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
             button(t("fuse.swap"), () => keepFocus(() => ((at = 1 - at), render())), "", "preview-swap"),
             withKey(button(t("fuse.confirm"), () => (close(), void fuse(o, views[at]!)), "primary grow", "preview-confirm"), "Enter"),
           ),
-          unitSheet(fused, content, { preview: true }),
+          unitSheet(fused, content, { preview: true, floor: sheetFloor }),
         );
       };
       render();
@@ -1687,7 +1695,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         h("div", { class: "preview-card" }, card(fused, { side: "you", extra: [copiesBadge(fused)] })),
         h("div", { class: "dim small", "data-testid": "forge-credit" }, t("forge.by", { name: slot.claimedBy?.name ?? "?", date })),
         h("div", { class: "row sheet-actions" }, cancel(), withKey(button(t("fuse.confirm"), () => (close(), void fuse(o, fused)), "primary grow", "preview-confirm"), "Enter")),
-        unitSheet(fused, content, { preview: true }),
+        unitSheet(fused, content, { preview: true, floor: sheetFloor }),
       );
     } else if (slot.state === "ready") {
       const designs = await Promise.all((slot.candidates ?? []).map((_, pick) => api.preview(run.runId, { kind: "fuse", ...o, pick }).then(fusedOf)));
@@ -1713,7 +1721,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
             }),
           ),
           h("div", { class: "row sheet-actions" }, cancel(), withKey(button(t("forge.claim", { name: chosen.name }), () => (close(), void fuse({ ...o, pick: at }, chosen, slot)), "primary grow", "forge-claim"), "Enter")),
-          unitSheet(chosen, content, { preview: true }),
+          unitSheet(chosen, content, { preview: true, floor: sheetFloor }),
         );
       };
       render();
@@ -1777,7 +1785,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         h("div", { class: "label" }, t("fuse.new")),
         h("h2", { class: "reveal", "data-testid": "fusion-reveal" }, t(claimed ? "forge.claimed" : "fuse.discovered", { name: fused.name })),
         h("div", { class: "preview-card" }, card(fused, { side: "you", extra: [copiesBadge(fused)] })),
-        unitSheet(fused, content),
+        unitSheet(fused, content, { floor: sheetFloor }),
       );
     });
 

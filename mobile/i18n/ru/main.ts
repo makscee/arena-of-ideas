@@ -194,6 +194,7 @@ export const main = {
 
   "menu.codex": "Кодекс",
   "menu.forge": "Кузня",
+  "menu.workshop": "Мастерская",
   "menu.dictionary": "Словарь",
   "menu.runOver": "Забег · окончен",
   "menu.runCrown": "Забег · Корона",
