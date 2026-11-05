@@ -32,7 +32,7 @@ let child = null;
 if (!url) {
   execFileSync("npm", ["run", "-s", "mvp:build"], { stdio: "inherit" });
   const port = await new Promise((r) => { const s = createServer().listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => r(p)); }); });
-  child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1", MVP_DB: ":memory:", ARENA_CODEX: "1", MVP_POOL: "v2", ARENA_GUEST_JOINS_PER_IP: "500", ARENA_GUEST_JOINS_PER_HOUR: "500" }, stdio: ["ignore", "inherit", "inherit"] });
+  child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1", MVP_DB: ":memory:", ARENA_CODEX: "1", MVP_POOL: "v2", ARENA_GUEST_JOINS_PER_IP: "500", ARENA_GUEST_JOINS_PER_HOUR: "500", ARENA_SCENES: "1" }, stdio: ["ignore", "inherit", "inherit"] });
   url = `http://127.0.0.1:${port}/arena/`;
 }
 for (let i = 0; i < 300; i++) {
@@ -124,6 +124,35 @@ function panel() {
   const lastText = text.reduce((m, t) => Math.max(m, t.b), 0);
   const firstBtn = buttons.filter((b) => !b.n.includes("inspector-close")).reduce((m, b) => Math.min(m, b.y), 1e9);
   return { ir, scrolls, cue, cut: [...new Set(cut)].slice(0, 3), clash: [...new Set(clash)].slice(0, 4), outside: [...new Set(outside)].slice(0, 4), chips, heroEdge: heroPc ? heroPc.getBoundingClientRect().width / st.width : 0, lastText: Math.round(lastText), firstBtn: Math.round(firstBtn), covered, over, belowTray: tray ? ir.b - tray.top : 0, aboveHud: hud ? hud.bottom - ir.y : 0, textAboveButtons: lastText <= firstBtn + 1, stageH: st.height, vh: innerHeight, noButtons: buttons.length === 0 };
+}
+
+/** In the page: the shop's controls and its scroll areas (round 5, from the layout lint). */
+function controls() {
+  const touch = innerWidth < innerHeight * 0.8;
+  const want = touch ? 44 : 32;
+  const small = [...document.querySelectorAll("#app button")]
+    .filter((e) => e.getClientRects().length && !e.closest(".t, .sheet-form, .tb-bench-help") && e.offsetHeight < want)
+    .map((e) => `${e.dataset.testid || e.className || e.textContent.trim().slice(0, 10)} ${e.offsetWidth}×${e.offsetHeight}`);
+  // A scroll area that scrolls says so: marked, with its cue.
+  const areas = [...document.querySelectorAll(".insp-body, .sheet")].filter((e) => e.getClientRects().length && e.scrollHeight > e.clientHeight + 1);
+  const unmarked = areas.filter((e) => !e.hasAttribute("data-scroll")).map((e) => `${e.className} scrolls ${e.scrollHeight - e.clientHeight} px`);
+  const noCue = areas.filter((e) => e.matches(".insp-body") && !e.parentElement.querySelector('[data-testid="insp-more"]')).length;
+  // The close button never sits on text.
+  const x = document.querySelector('[data-testid="inspector-close"]');
+  const insp = document.querySelector('[data-testid="inspector"]');
+  let covers = [];
+  if (x && insp && !insp.hidden) {
+    const xr = x.getBoundingClientRect();
+    const walker = document.createTreeWalker(insp, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (!n.textContent.trim() || n.parentElement.closest("button, .pc")) continue;
+      const cs = getComputedStyle(n.parentElement);
+      if (cs.display === "none" || cs.visibility === "hidden") continue;
+      const rg = document.createRange(); rg.selectNodeContents(n);
+      for (const r of rg.getClientRects()) if (Math.min(r.right, xr.right) - Math.max(r.left, xr.left) > 2 && Math.min(r.bottom, xr.bottom) - Math.max(r.top, xr.top) > 2) covers.push(n.textContent.trim().slice(0, 14));
+    }
+  }
+  return { small: [...new Set(small)].slice(0, 4), unmarked: [...new Set(unmarked)].slice(0, 3), noCue, covers: [...new Set(covers)].slice(0, 2) };
 }
 
 const failures = [];
@@ -230,8 +259,30 @@ async function runSize([label, w, h]) {
   await ctx.close();
 }
 
+/** The shop's scenes: controls at least 32 px (44 on a phone), every scroll area marked with a cue, the close button off the text. */
+async function runScenes([label, w, h]) {
+  const portrait = w < h * 0.8;
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: portrait, isMobile: portrait });
+  for (const scene of ["shop-r1", "shop-r3", "shop-offer", "shop-unit", "gift", "fuse", "forge-unforged", "forge-ready", "forge-claim", "forge-discovered", "fusion-now"]) {
+    const page = await ctx.newPage();
+    await page.goto(`${url}#scene=${scene}&lang=en`);
+    await page.waitForSelector('[data-testid="fight"]', { timeout: 60_000 }).catch(() => {});
+    await page.waitForTimeout(1200);
+    const m = await page.evaluate(controls);
+    const why = [];
+    if (m.small.length) why.push(`controls under ${portrait ? 44 : 32} px: ${m.small.join(", ")}`);
+    if (m.unmarked.length) why.push(`unmarked scroll: ${m.unmarked.join(", ")}`);
+    if (m.noCue) why.push("a scrolling panel with no cue");
+    if (m.covers.length) why.push(`the ✕ covers text: ${m.covers.join(", ")}`);
+    if (why.length) fail(label, scene, why.join("; "));
+    await page.close();
+  }
+  await ctx.close();
+  console.log(`${label}: scenes checked`);
+}
+
 try {
-  await Promise.all(SIZES.map(runSize));
+  await Promise.all([...SIZES.map(runSize), ...SIZES.map(runScenes)]);
 } finally {
   await browser.close();
   child?.kill();

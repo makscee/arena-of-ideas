@@ -1518,7 +1518,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const layoutInspector = () => {
     inspector.querySelector(":scope > button.insp-x")?.remove();
     const rows = [...inspector.children].filter((c) => c.classList.contains("row"));
-    const body = h("div", { class: "insp-body" }, ...[...inspector.children].filter((c) => !rows.includes(c)).map((c) => c as HTMLElement));
+    const body = h("div", { class: "insp-body", "data-scroll": "", style: "--scroll-cue:1" }, ...[...inspector.children].filter((c) => !rows.includes(c)).map((c) => c as HTMLElement));
     inspector.replaceChildren(...(body.childElementCount ? [body] : []), ...rows);
     cueWatch.disconnect();
     if (body.childElementCount) cueWatch.observe(body, { childList: true, subtree: true, characterData: true });
