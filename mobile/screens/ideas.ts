@@ -14,7 +14,7 @@ import { getContent } from "../content";
 import { currentLang, t } from "../i18n";
 import type { Key } from "../i18n/en";
 import { unitSheet } from "../ui/card";
-import { button, closable, h, keyOf, onGone, onKeys, overlay, screen, show } from "../ui/dom";
+import { button, closable, h, keyOf, onGone, onKeys, overlay, screen, show, withKey } from "../ui/dom";
 import { richText } from "../ui/term";
 import { pickScreen } from "./pick";
 import { rulesLangOpt } from "../lang";
@@ -52,6 +52,8 @@ const READ_POLL_MS = 10_000;
 /** My ideas; `notice` is what just happened (an idea sent, a pick made), said on top. */
 export async function ideasScreen(nav: IdeasNav, notice: string | null = null): Promise<void> {
   const back = button(t("ideas.back"), nav.onBack, "primary grow", "ideas-back");
+  // The window's head (arena#32): a ‹ Esc plate at its top left, then the title.
+  const head = () => h("div", { class: "row ws-head" }, withKey(button("‹", nav.onBack, "ws-back", "workshop-back"), "Esc"), h("h1", {}, t("ideas.title")));
   const escBack = (e: KeyboardEvent) => (keyOf(e) === "Escape" ? (nav.onBack(), true) : false);
   let view: MyIdeasView;
   let you: CreditsView["you"] = null;
@@ -61,7 +63,7 @@ export async function ideasScreen(nav: IdeasNav, notice: string | null = null): 
     await nameTargets(view.sent);
   } catch (e) {
     if (e instanceof ApiError && e.status === 401) return nav.onUnknown();
-    show(h("h1", {}, t("ideas.title")), h("div", { class: "error", "data-testid": "error" }, errorText(e)), h("div", { class: "spacer" }), h("div", { class: "row footer" }, back));
+    show(head(), h("div", { class: "error", "data-testid": "error" }, errorText(e)), h("div", { class: "spacer" }), h("div", { class: "row footer" }, back));
     onKeys(escBack);
     return;
   }
@@ -74,7 +76,7 @@ export async function ideasScreen(nav: IdeasNav, notice: string | null = null): 
   if (held === 0) write.disabled = true;
   const newIdea = held > 0 ? write : h("div", { class: "off-row" }, write, h("span", { class: "dim small", "data-testid": "idea-new-why" }, ideaWhy(refillsAt)));
   show(
-    h("h1", {}, t("ideas.title")),
+    head(),
     notice ? h("div", { class: "notice", "data-testid": "idea-sent" }, notice) : null,
     h("div", { "data-testid": "ideas-held" }, holdLine),
     newIdea,

@@ -121,7 +121,17 @@ export function keepScreen(): () => void {
   const name = app.dataset.screen;
   const kept = keys;
   const y = window.scrollY;
+  // The table stays where it is, dimmed behind the Codex and the Workshop, which open as windows over it (arena#28).
+  // A screen with a stage is a table (the shop, a battle, Home): it stays, dimmed, behind the window.
+  const isTable = kids.some((n) => n instanceof HTMLElement && (n.matches('[data-testid="stage"]') || n.querySelector('[data-testid="stage"]')));
+  const under = name === "shop" || name === "battle" || isTable ? h("div", { id: "under", "aria-hidden": "true" }, ...kids) : null;
+  if (under) {
+    document.body.append(under);
+    document.body.classList.add("over-table");
+  }
   return () => {
+    under?.remove();
+    document.body.classList.remove("over-table");
     show(...kids);
     if (name) app.dataset.screen = name;
     keys = kept;
@@ -186,7 +196,7 @@ export const keyLabel = (k: string): string => (cgBuild && k === "Esc" ? "⌫" :
 /** Names the screen on #app (data-screen), which turns on its desktop layout
  * in style.css; a screen without a name (the name
  * screen) stays a phone column at every width. */
-export function screen(name: "home" | "shop" | "result" | "over" | "stats" | "codex" | "battle" | "ideas" | "forge"): void {
+export function screen(name: "start" | "home" | "shop" | "result" | "over" | "stats" | "codex" | "battle" | "ideas" | "forge"): void {
   app.dataset.screen = name;
 }
 
@@ -345,9 +355,10 @@ addEventListener("popstate", (e) => {
   at = s.at;
   trail[at] = s.group;
   const target = s.group;
-  // The Codex and the Forge sit over a kept screen: their Back puts it back as it was.
+  // The Codex, the Forge and the Workshop are windows over a kept table: their Back puts it back as it was.
+  // (Without this the screen the Back rebuilds is a second copy beside the kept one, and both take the keys.)
   const shown = groupOf(app.dataset.screen);
-  if (shown !== target && (shown === "codex" || shown === "forge")) keys?.(new KeyboardEvent("keydown", { key: "Escape" }));
+  if (shown !== target && (shown === "codex" || shown === "forge" || shown === "ideas")) keys?.(new KeyboardEvent("keydown", { key: "Escape" }));
   if (groupOf(app.dataset.screen) !== target && restore) {
     restoring = true;
     void restore(target).finally(() => ((restoring = false), syncBack()));
@@ -365,7 +376,8 @@ new MutationObserver(() => {
 const pressable = (t: EventTarget | null): t is HTMLElement => t instanceof HTMLElement && t.matches("button, a[href], [role='button'][tabindex]");
 const native = (el: HTMLElement) => el.matches("button, a[href]");
 const FOCUSABLE = "button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex='-1'])";
-const shown = (el: HTMLElement) => el.getClientRects().length > 0;
+// A control folded in a closed <details> keeps its boxes but is not focusable: checkVisibility() tells (the ≡ menu's Dev tools, arena#31).
+const shown = (el: HTMLElement) => el.getClientRects().length > 0 && (el.checkVisibility?.() ?? true);
 
 // Tab stays inside the top sheet (#1064): the screen under it is not reachable
 // while it is open, and Tab wraps from its last control to its first.
@@ -430,7 +442,8 @@ export function overlay(...kids: Node[]): () => void {
 /** overlay() whose tap outside and Esc do `dismiss(close)` instead of a plain
  * close: the run menu resumes the battle under it. */
 export function dismissable(dismiss: ((close: () => void) => void) | null, ...kids: Node[]): () => void {
-  const sheet = h("div", { class: "sheet stack", role: "dialog" }, ...kids);
+  // A sheet taller than the window scrolls: it says so (data-scroll) and shows a shadow at its foot (table.css).
+  const sheet = h("div", { class: "sheet stack", role: "dialog", "data-scroll": "", style: "--scroll-cue:1" }, ...kids);
   const back = h("div", { class: "overlay", "data-testid": "overlay" }, sheet);
   const layer: Layer = { el: back, dismiss: () => (dismiss ? dismiss(close) : close()) };
   function close(): void {
@@ -476,6 +489,14 @@ const MIN_PX = 8;
 const NAME_MIN_PX = 10;
 const CARD_NAME_MIN_PX = 9;
 
+/** A card name never draws under 11 px (CrazyGames' 800×450 frame, arena#32): in the landscape
+ * stage, drawn at a scale under 1, the size that is 11 px there; elsewhere 11. It ends in an ellipsis instead. */
+function drawnFloor(el: HTMLElement): number {
+  const st = el.closest<HTMLElement>('[data-testid="stage"]');
+  const k = Number(st?.style.getPropertyValue("--k"));
+  return st && k > 0 && k < 1 ? Math.ceil(11 / k) : 11;
+}
+
 /** Shrinks each card name (and battle chip) until it fits the card, measured,
  * not guessed from letter counts; one that still doesn't fit at the smallest
  * size ends in an ellipsis. */
@@ -499,7 +520,8 @@ export function fitText(root: ParentNode = app): void {
     el.style.fontSize = "";
     el.classList.remove("clip");
     let px = parseFloat(getComputedStyle(el).fontSize);
-    const min = !el.classList.contains("name") ? MIN_PX : el.closest(".bv-card") ? NAME_MIN_PX : CARD_NAME_MIN_PX;
+    const min = !el.classList.contains("name") ? MIN_PX : Math.max(el.closest(".bv-card") ? NAME_MIN_PX : CARD_NAME_MIN_PX, drawnFloor(el));
+    if (el.classList.contains("name") && px < min) (px = min, (el.style.fontSize = `${px}px`));
     while (el.scrollWidth > el.clientWidth + 0.5 && px > min) {
       px = Math.max(min, px - 0.5);
       el.style.fontSize = `${px}px`;

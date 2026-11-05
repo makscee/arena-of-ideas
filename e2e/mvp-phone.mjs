@@ -184,7 +184,7 @@ try {
     await Promise.all([page.waitForEvent("load"), page.getByTestId(`lang-${to}`).click()]);
     await page.getByTestId("play").waitFor();
     const Lto = catalog(to);
-    if ((await playMain()) !== Lto("home.play") || (await page.evaluate(() => document.documentElement.lang)) !== to) errors.push(`lang switch: Home after ${to} reads "${await playMain()}"`);
+    if ((await playMain()) !== Lto("start.play") || (await page.evaluate(() => document.documentElement.lang)) !== to) errors.push(`lang switch: Home after ${to} reads "${await playMain()}"`);
     await page.getByTestId("settings").click();
     if ((await page.getByTestId(`lang-${to}`).getAttribute("aria-pressed")) !== "true") errors.push(`lang switch: ${to} isn't marked as chosen`);
     if (to !== lang) { await page.getByTestId("lang-row").scrollIntoViewIfNeeded(); await shot(`settings-switched-${to}`); await noHScroll(`settings-switched-${to}`); }
@@ -193,9 +193,9 @@ try {
   }
   // #915: a quiet ideas line; a new player has today's 3, so no refill time.
   if ((await page.getByTestId("ideas-label").textContent()) !== L("home.ideasHeld", { n: 3 }) || (await page.getByTestId("ideas-refill").count()) !== 0) errors.push(`home: ideas meter "${await page.getByTestId("ideas").textContent()}"`);
-  await tap44("dev summary", page.locator("details.dev summary"));
   await tap44("settings gear", page.getByTestId("settings"));
   await page.getByTestId("settings").click();
+  await tap44("dev summary", page.locator("details.dev summary"));
   // M5-6: Rules and Stats live in the Codex (How to play, Champions); no sheet of their own.
   await page.getByTestId("rules-open").click();
   await page.getByTestId("rules").waitFor();
@@ -423,7 +423,9 @@ try {
       await page.getByTestId("menu-title").click();
       await page.getByTestId("play").waitFor();
       const cont = await page.getByTestId("play").textContent();
-      if (!cont.includes(L("home.continue", { where: at.split("/")[0] }).trim())) errors.push(`title menu: "${cont}" doesn't continue ${at}`);
+      // arena#31: the Home button reads RESUME with the run's round (Round 5), or the Crown.
+      const round = /^R(\d+)/.exec(at.split("/")[0]);
+      if (!cont.includes(L("home.resume")) || !cont.includes(round ? L("home.resumeRound", { round: Number(round[1]) }) : L("home.continueCrown"))) errors.push(`title menu: "${cont}" doesn't resume ${at}`);
       if ((await page.getByTestId("new-run").count()) === 0) errors.push("title menu: no New run while a run waits");
       await shot("home-continue"); await noHScroll("home-continue"); await onScreen("home: Continue", page.getByTestId("play"));
       await page.getByTestId("play").click();
@@ -436,7 +438,7 @@ try {
     const offerName = (slot) => page.getByTestId(`offer-${slot}`).locator(".name").textContent();
     const isLocked = async (slot) => (await page.getByTestId(`offer-${slot}`).getAttribute("class")).includes("locked") && (await page.getByTestId(`offer-${slot}`).locator(".lock-mark").count()) === 1;
     const lockFromSheet = async (slot, want) => {
-      await page.getByTestId(`offer-${slot}`).click(); await page.getByTestId(`offer-${slot}`).click();
+      await page.getByTestId(`offer-${slot}`).click();
       await page.getByTestId("lock").waitFor();
       if (!(await page.getByTestId("lock").textContent()).includes(L(want === "Lock" ? "board.lock" : "board.unlock"))) errors.push(`lock: offer ${slot}'s sheet says "${await page.getByTestId("lock").textContent()}", not ${want}`);
       if (want === "Lock" && round === 0) { await shot("offer-sheet-lock"); await tap44("Lock", page.getByTestId("lock")); }
@@ -456,6 +458,8 @@ try {
       const gold = await page.getByTestId("gold").textContent();
       await page.getByTestId("reroll").click();
       await page.waitForFunction((g) => document.querySelector('[data-testid="gold"]')?.textContent !== g, gold);
+      // The gold moves at once now (the press shows its result before the answer): wait for the answer too.
+      await page.waitForFunction(() => !document.getElementById("app").classList.contains("busy"));
       if ((await offerName(0)) !== name || !(await isLocked(0))) errors.push(`lock: after a reroll offer 0 is "${await offerName(0)}", not the locked "${name}"`);
       await lockFromSheet(0, "Unlock");
       if (await isLocked(0)) errors.push("lock: offer 0 still locked after Unlock");
@@ -468,12 +472,14 @@ try {
       const filled = await page.getByTestId("line").locator(".cell.you").count();
       if (filled >= 5) break;
       // An offer opens its sheet (both forms, what buying does); Buy buys.
-      await page.getByTestId("offer-0").click(); await page.getByTestId("offer-0").click();
+      await page.getByTestId("offer-0").click();
       await page.getByTestId("buy").waitFor();
       if (round === 0 && k === 0) { await shot("offer-sheet"); await noHScroll("offer-sheet"); }
-      if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("offer-close").click(); break; }
+      if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("inspector-close").click(); break; }
       await page.getByTestId("buy").click();
       await page.waitForFunction((g) => !document.querySelector('[data-testid="gold"]') || document.querySelector('[data-testid="gold"]').textContent !== g, L("shop.gold", { n: gold }));
+      // The gold moves at once now (the press shows its result before the answer): wait for the answer too.
+      await page.waitForFunction(() => !document.getElementById("app").classList.contains("busy"));
       // A 3rd copy awakens a unit and brings a gift (R3-15), whose chooser
       // covers the shop: skip it here (R4-19 flake); the gift's own checks come later.
       if (await page.getByTestId("gift-skip").isVisible().catch(() => false)) {
@@ -502,11 +508,12 @@ try {
     if (round === 2 && (await page.getByTestId("line").locator(".cell.you").count()) > 1) {
       await page.getByTestId("line-1").click();
       await shot("shop-selected");
-      await page.getByTestId("info").click();
+      // A tap on a unit reads it in the inspector over the table (rule in words, whose idea it was).
       await page.getByTestId("unit-sheet").waitFor();
       await shot("unit-sheet"); await noHScroll("unit-sheet");
       await sheetChecks("unit sheet");
-      await page.getByTestId("overlay").click({ position: { x: 180, y: 10 } });
+      await page.getByTestId("inspector-close").click();
+      await page.getByTestId("line-1").click();
       await page.getByTestId("champion-pin-open").click().catch(() => {});
       if (await page.getByTestId("overlay").isVisible().catch(() => false)) { await shot("champion-pin"); await page.getByTestId("overlay").click({ position: { x: 180, y: 10 } }); }
       await page.getByTestId("move-left").click();
@@ -778,9 +785,11 @@ try {
   await page.getByTestId("play").waitFor();
   await shot("home-after");
   if (![L("home.ideasNone")].concat([1, 2, 3].map((n) => L("home.ideasHeld", { n }))).includes((await page.getByTestId("ideas-label").textContent()) ?? "")) errors.push(`home after a run: ideas meter "${await page.getByTestId("ideas").textContent()}"`);
-  // M5-3: the Throne shows the run just played, a pip per fight.
+  // M5-3: the run just played, a pip per fight (arena#31: in the ≡ menu, and its change joins the RATING plate).
+  await page.getByTestId("settings").click();
   await page.getByTestId("last-run").waitFor({ timeout: 5_000 }).catch(() => errors.push("home after a run: no Last run panel"));
   if ((await page.getByTestId("last-run").locator(".fpip").count()) < 1) errors.push("home after a run: Last run has no fights");
+  await page.getByTestId("sheet-close").click();
 
   // Champions (slice 11, R2-11; M5-6 the Codex's Champions tab): the champion
   // history and your records.
@@ -822,7 +831,7 @@ try {
   if ((await page.getByTestId("rating-change").count()) === 0) errors.push("abandon: no rating change on the run-over screen");
   await page.getByTestId("home").click();
   await page.getByTestId("play").waitFor();
-  if ((await page.getByTestId("play").locator(".play-main").textContent()) !== L("home.play")) errors.push("abandon: the title menu still offers Continue");
+  if ((await page.getByTestId("play").locator(".play-main").textContent()) !== L("start.play")) errors.push("abandon: the title menu still offers Continue");
   // New run on the title menu gives the waiting run up too, and shows its
   // end and rating change first; its New run starts the next run (R2-17).
   await page.getByTestId("play").click();
@@ -939,8 +948,10 @@ try {
     await page.getByTestId("fight").waitFor();
     const almost = run.line.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === 2 && run.offers.some((o) => o.unitId === u.unitId));
     const slot = run.offers.find((o) => o.unitId === almost.unitId).slot;
+    // A gift this run still holds opens over the shop at once: skip it (the gift's own checks follow).
+    if (await page.getByTestId("gift-title").isVisible().catch(() => false)) await page.getByTestId("gift-skip").click();
     await shot("shop-almost"); await noHScroll("shop-almost");
-    await page.getByTestId(`offer-${slot}`).click(); await page.getByTestId(`offer-${slot}`).click();
+    await page.getByTestId(`offer-${slot}`).click();
     await page.getByTestId("buy-preview").waitFor();
     if (!(await page.getByTestId("buy-preview").textContent()).includes(L("buy.awakens"))) errors.push("awaken preview: no 'Awakens!'");
     await shot("awaken-preview"); await noHScroll("awaken-preview");
@@ -980,7 +991,7 @@ try {
     const orders = new Set(previews.map((p) => `${p.first}>${p.second}`));
     if (orders.size > 1) errors.push("fusion: the forge previewed both orders (a splice)");
     if ((await page.getByTestId("fusion-recipe").count()) > 0 || (await page.getByTestId("preview-swap").count()) > 0) errors.push("fusion: the forge shows a splice recipe or Swap");
-    if (/Fusion preview|Предпросмотр слияния/.test(await page.getByTestId("overlay").textContent())) errors.push("fusion: 'Fusion preview' copy in the forge");
+    if (/Fusion preview|Предпросмотр слияния/.test(await page.getByTestId("fuse-preview").textContent())) errors.push("fusion: 'Fusion preview' copy in the forge");
     await shot("fusion-forge"); await noHScroll("fusion-forge");
     await page.getByTestId("preview-confirm").click();
     await page.getByTestId("line").locator(".cell.fused").waitFor();
@@ -991,11 +1002,10 @@ try {
     const heights = await page.getByTestId("line").locator(".cell.you").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
     if (new Set(heights).size > 1) errors.push(`fused row: uneven card heights ${heights.join(",")}`);
     await page.locator(".cell.fused").click();
-    await page.getByTestId("info").click();
     await page.getByTestId("unit-sheet").waitFor();
     // The pair may be someone else's discovery already (live, or a reused DB).
     if (!new RegExp(`${pattern(L("fusion.discoveredByYou"))}|${pattern(L("fusion.discoveredBy"))}\\S`).test(await page.getByTestId("unit-sheet").textContent())) errors.push("fused sheet: no discovery credit");
-    if (!(await page.getByTestId("sheet-close").isVisible())) errors.push("unit sheet from Info: no Close button");
+    if (!(await page.getByTestId("inspector-close").isVisible())) errors.push("fused unit's inspector: no close button");
     await shot("fused-sheet"); await noHScroll("fused-sheet");
     await sheetChecks("fused sheet");
     if (await page.getByTestId("sheet-parts").isVisible()) errors.push("fused sheet: the parts show before the tap");
@@ -1026,7 +1036,7 @@ try {
       await page.getByTestId("fight").waitFor();
       if ((await page.getByTestId("bench").locator(".cell.empty").count()) !== 3) errors.push("bench: the empty bench doesn't show 3 dashed slots");
       const o = fresh(r);
-      await page.getByTestId(`offer-${o.slot}`).click(); await page.getByTestId(`offer-${o.slot}`).click();
+      await page.getByTestId(`offer-${o.slot}`).click();
       await page.getByTestId("buy-preview").waitFor();
       if (!(await page.getByTestId("buy-preview").textContent()).includes(L("buy.toBench"))) errors.push(`bench: the buy preview says "${await page.getByTestId("buy-preview").locator(".label").textContent()}", not "Goes to your bench"`);
       await shot("bench-buy-preview"); await noHScroll("bench-buy-preview");
@@ -1142,20 +1152,18 @@ try {
       if (offers < 6) errors.push(`compact: round ${r.round} shows ${offers} offers, not 6`);
       await shot("shop-round-8"); await noHScroll("shop-round-8"); await footInView("shop-round-8"); await noRates("shop-round-8");
       await onScreen("round 8: Fight", page.getByTestId("fight"));
-      const sizes = await page.locator('[data-testid="line"] .card, [data-testid="offers"] .card').evaluateAll((els) => els.map((e) => `${Math.round(e.getBoundingClientRect().width)}x${Math.round(e.getBoundingClientRect().height)}`));
-      if (sizes.some((x) => x !== "64x84")) errors.push(`compact: card sizes ${[...new Set(sizes)].join(", ")}, not 64x84`);
       await page.getByTestId("line-0").click();
-      await page.getByTestId("info").click();
       await page.getByTestId("unit-sheet").waitFor();
       await shot("unit-sheet-round-8");
       await sheetChecks("round 8 sheet");
-      await page.getByTestId("sheet-close").click();
+      await page.getByTestId("inspector-close").click();
     }
   }
   // Dev "End day now": Home says plainly how the day ended; a table only for a real playoff.
   await page.reload();
   await page.getByTestId("play").waitFor();
   const endedSeq = (await call("GET", "/day")).seq;
+  await page.getByTestId("settings").click();
   await page.locator("details.dev summary").click();
   // M2-3: dev "+1 idea" brings an idea home at once.
   const heldText = (await page.getByTestId("ideas-label").textContent()) ?? "";
@@ -1165,8 +1173,8 @@ try {
   await page.waitForFunction((t) => document.querySelector('[data-testid="ideas-label"]')?.textContent === t, L("home.ideasHeld", { n: heldNow }), { timeout: 10_000 }).catch(() => errors.push(`dev +1 idea: ideas line "${heldNow}" never showed`));
   await shot("home-idea-granted"); await noHScroll("home-idea-granted");
   await onScreen("home after +1 idea: Play", page.getByTestId("play"));
-  await page.locator("details.dev summary").click().catch(() => {});
-  if (!(await page.getByTestId("end-day").isVisible())) await page.locator("details.dev summary").click();
+  await page.getByTestId("settings").click();
+  await page.locator("details.dev summary").click();
   await page.getByTestId("end-day").click();
   // Home re-renders with the day just ended ("Day N ended" / "Playoff · day
   // N"), not the panel of the day before, which is already on screen.
@@ -1180,6 +1188,7 @@ try {
   if (!new RegExp(`^${pattern(L("home.dayEnded"))}$`).test((await page.getByTestId("day-ended").textContent().catch(() => "")) ?? "")) errors.push("day end: no 'Day N ended' notice");
   await shot("home-day-ended"); await noHScroll("home-day-ended");
   await onScreen("home after day end: Play", page.getByTestId("play"));
+  await page.getByTestId("sheet-close").click(); // the ≡ menu opened by itself with how the day ended
 
   // The reigning champion's own Crown (#587): "Reigning" slays and is crowned
   // through the API (e2e/mvp-own-crown.ts, local server only), then the phone

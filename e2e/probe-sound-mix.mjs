@@ -30,7 +30,7 @@ try {
   });
   await page.goto(url, { timeout: 20_000 });
   await page.getByTestId("name-input").waitFor({ timeout: 10_000 });
-  await page.keyboard.type(`SoundMix${Date.now() % 100000}`);
+  await page.getByTestId("name-input").fill(`SoundMix${Date.now() % 100000}`);
   await page.keyboard.press("Enter");
   await page.getByTestId("play").waitFor();
   await page.waitForTimeout(1500);

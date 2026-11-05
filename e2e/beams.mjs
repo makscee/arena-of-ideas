@@ -1,3 +1,5 @@
+import { replayBattle } from "./battle-ctl.mjs";
+import { chainProblems, readChain } from "./chain-checks.mjs";
 // R3-21: target beams. Shared by mvp-phone.mjs and mvp-desktop.mjs.
 //
 // From the battle's start it steps beat by beat (paused: beams stay, still)
@@ -147,20 +149,24 @@ export async function beamChecks(page, errors, { shot, phone, label }) {
   const where = label ?? (phone ? "phone" : "desktop");
   const paused = async () => (await page.getByTestId("battle-play").textContent()) === "▶";
   const toStart = async () => {
-    await page.getByTestId("battle-replay").click();
+    await replayBattle(page);
     if (!(await paused())) await page.getByTestId("battle-play").click();
     for (let i = 0; i < 400 && !(await page.getByTestId("battle-back").isDisabled()); i++) await page.getByTestId("battle-back").click();
   };
   const inside = (p, b, pad = 2) => p && b && p.x >= b.l - pad && p.x <= b.r + pad && p.y >= b.t - pad && p.y <= b.b + pad;
 
   await toStart();
-  const seen = { line: 0, ring: 0, clash: 0, fan: 0, crossing: 0, worstCut: 0, worstText: 0, cutShot: 0 };
+  const seen = { chain: 0, line: 0, ring: 0, clash: 0, fan: 0, crossing: 0, worstCut: 0, worstText: 0, cutShot: 0 };
   let shotTaken = false;
   for (let step = 0; step < 400; step++) {
     if (await page.getByTestId("battle-step").isDisabled()) break;
     await page.getByTestId("battle-step").click();
     const beams = await readBeams(page);
     const now = beams.filter((b) => b.now);
+    // The chain on the field (arena#30): one step's numbered wire, the tray's list in step with it.
+    const chain = await readChain(page);
+    if (chain.count) seen.chain++;
+    for (const bad of chainProblems(chain)) errors.push(`chain (${where}, step ${step + 1}): ${bad}`);
     for (const b of now) {
       const tag = `beams (${where}, step ${step + 1}): ${b.from} → ${b.to}`;
       if (b.ring) {
@@ -192,7 +198,7 @@ export async function beamChecks(page, errors, { shot, phone, label }) {
   }
   if (!seen.line) errors.push(`beams (${where}): no beam drawn in the whole fight`);
   if (!shotTaken) await shot("battle-beams");
-  console.log(`beams (${where}): ${seen.line} lines (${seen.clash} from the clash), ${seen.ring} rings, ${seen.fan} fans checked; ${seen.crossing} cross the caption, its text hides at most ${Math.round(seen.worstCut * 100)}% of one (its text boxes overlap up to ${Math.round(seen.worstText * 100)}%)`);
+  console.log(`beams (${where}): ${seen.line} lines (${seen.clash} from the clash), ${seen.ring} rings, ${seen.fan} fans checked, ${seen.chain} steps in a chain's tray list; ${seen.crossing} cross the caption, its text hides at most ${Math.round(seen.worstCut * 100)}% of one (its text boxes overlap up to ${Math.round(seen.worstText * 100)}%)`);
 
   // Playing, the newest beam draws, and every bright beam ends in its
   // target's settled box, a summon's too while it still slides in.

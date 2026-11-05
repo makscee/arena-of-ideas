@@ -3,10 +3,6 @@ import type { Msg } from "../index";
 import type { shop as en } from "../en/shop";
 
 export const shop = {
-  // The desktop inspector, empty.
-  "inspector.idleCrown": "Наведи на карту или дойди до неё Tab, чтобы прочитать её здесь.",
-  "inspector.idle": "Наведи на карту или дойди до неё Tab, чтобы прочитать её здесь.",
-
   // The shop's one hint.
   "hint.lineFullSwap": "Строй полон: ⇄ меняет с задним, или нажми на юнита.",
   "hint.ownCrown": "Корона: сегодняшний чемпион — твоя же команда. Победи её, чтобы снова стать цареубийцей; поражение стоит сердца. Строй окончательный.",
@@ -16,12 +12,12 @@ export const shop = {
   "hint.oneMore": "Ещё один {name} пробудит его. Он есть в лавке.",
   "hint.moveToLine": "Поставь юнита в строй: бьётся только строй.",
   "hint.noGold": "Нет золота на юнита. Иди в бой: пустой строй проигрывает и теряет сердце.",
-  "hint.buyDesk": "Дважды щёлкни карту или нажми её цифру, чтобы купить. Tab доходит до каждой карты.",
+  "hint.buyDesk": "Нажми на карту, затем на слот, чтобы купить туда. Клавиши: ← → выбирают карту, 1–5 слот.",
   "hint.buyPhone": "Нажми на карту, затем на подсвеченный слот, чтобы купить.",
   "hint.tapSlotBuy": "Нажми на подсвеченный слот, чтобы купить туда.",
   "hint.tapSlotMove": "Нажми на подсвеченный слот, чтобы переставить туда.",
   "hint.outOfGold": "Золото кончилось. В бой, когда готов.",
-  "hint.moveDesk": "Перетащи юнита, чтобы передвинуть, или выбери его (Tab, Enter): ← → двигают, S продаёт.",
+  "hint.moveDesk": "Перетащи юнита, чтобы передвинуть, или нажми на него: ← → двигают, S продаёт.",
   "hint.movePhone": "Нажми на юнита в строю: двигать, продать, прочитать.",
   "hint.oneMoreCost": "Ещё один {name} пробудит его. В лавке за {cost}з.{keep}",
   "hint.lockToKeep": " Мало золота: закрепи его до следующего раунда.",
@@ -74,6 +70,7 @@ export const shop = {
   "shop.reroll": "Обновить",
   "shop.allLocked": "Все карты закреплены",
   "shop.fightChampion": "Бой с чемпионом",
+  "fight.starting": "В бой!",
   "shop.fight": "В бой",
   "shop.fillFirst": { one: "{n} пустой слот", few: "{n} пустых слота", many: "{n} пустых слотов", other: "{n} пустых слота" },
 
@@ -109,9 +106,9 @@ export const shop = {
   "shop.menu": "Меню",
   "shop.menuEsc": "Меню (Esc)",
   "keys.title": "Клавиши",
-  "keys.lead": "Tab ходит · Enter выбирает · щелчок выбирает · перетаскивание переставляет · двойной щелчок",
+  "keys.lead": "Tab ходит · Enter или касание выбирает · перетаскивание переставляет · ← → выбирают карту, затем",
   "keys.or": " или ",
-  "keys.buys": " купить · ",
+  "keys.buys": " купит в этот слот · ",
   "keys.reroll": " обновить · ",
   "keys.lock": " закрепить · ",
   "keys.fight": " бой · ",
@@ -131,7 +128,6 @@ export const shop = {
   "shop.offersDesk": { one: "Лавка · {n} карта", few: "Лавка · {n} карты", many: "Лавка · {n} карт", other: "Лавка · {n} карты" },
   "shop.offersPhone": "Лавка",
   // The shop's one line of how (mission #1286 slice 2): drag, or tap-tap.
-  "shop.howWide": "перетащи в слот или коснись, затем слота",
   "shop.howPhone": "коснись, затем слота · или тяни",
   // A slot lit for the offer in hand: its twin merges it in.
   "slot.awakens": "пробудит ★",

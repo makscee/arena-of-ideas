@@ -4,26 +4,22 @@
 import type { Msg } from "../index";
 
 export const shop = {
-  // The desktop inspector, empty.
-  "inspector.idleCrown": "Hover a card, or Tab to it, to read it here.",
-  "inspector.idle": "Hover a card, or Tab to it, to read it here.",
-
   // The shop's one hint.
   "hint.lineFullSwap": "Line full: Swap trades with the back unit, or tap one.",
   "hint.ownCrown": "The Crown: today's champion is your own team. Beat it to be a slayer again; a loss costs a heart. Your line is final.",
   "hint.crown": "The Crown: your line, as it is, against today's champion. Win it to become a slayer; a loss costs a heart.",
-  "hint.fuseDesk": "Two Awoken units can fuse: select one, then F.",
+  "hint.fuseDesk": "Two Awoken units can fuse: tap one, then F.",
   "hint.fusePhone": "Two Awoken units can fuse: tap one, then Fuse.",
   "hint.oneMore": "One more {name} awakens it. It's in the shop.",
   "hint.moveToLine": "Move a unit to your line: only the line fights.",
   "hint.noGold": "No gold for a unit. Fight to move on: an empty line loses, and costs a heart.",
-  "hint.buyDesk": "Double-click an offer, or press its number, to buy it. Tab reaches every card.",
+  "hint.buyDesk": "Tap an offer, then a slot to buy it there. Keys: ← → pick an offer, 1–5 the slot.",
   "hint.buyPhone": "Tap an offer, then a lit slot to buy it there.",
   // Tap-tap's second step (#1293): what the next tap on a lit slot does.
   "hint.tapSlotBuy": "Tap a lit slot to buy it there.",
   "hint.tapSlotMove": "Tap a lit slot to move it there.",
   "hint.outOfGold": "Out of gold for units. Fight when ready.",
-  "hint.moveDesk": "Drag a unit to move it, or click it (Tab, Enter): ← → move it, S sells it.",
+  "hint.moveDesk": "Drag a unit to move it, or tap it: ← → move it, S sells it.",
   "hint.movePhone": "Tap a unit in your line to move, sell or read it.",
   "hint.oneMoreCost": "One more {name} awakens it. It's in the shop for {cost}g.{keep}",
   "hint.lockToKeep": " Not enough gold: lock it to keep it for next round.",
@@ -76,6 +72,7 @@ export const shop = {
   "shop.reroll": "Reroll",
   "shop.allLocked": "Every offer is locked",
   "shop.fightChampion": "Fight the champion",
+  "fight.starting": "Fight!",
   "shop.fight": "Fight",
   "shop.fillFirst": { one: "{n} empty slot", other: "{n} empty slots" },
 
@@ -111,9 +108,9 @@ export const shop = {
   "shop.menu": "Menu",
   "shop.menuEsc": "Menu (Esc)",
   "keys.title": "Keys",
-  "keys.lead": "Tab moves · Enter selects · click selects · drag reorders · double-click",
+  "keys.lead": "Tab moves · Enter or a tap selects · drag reorders · ← → pick an offer, then",
   "keys.or": " or ",
-  "keys.buys": " buys · ",
+  "keys.buys": " buys it there · ",
   "keys.reroll": " reroll · ",
   "keys.lock": " lock · ",
   "keys.fight": " fight · ",
@@ -133,7 +130,6 @@ export const shop = {
   "shop.offersDesk": { one: "Shop · {n} offer", other: "Shop · {n} offers" },
   "shop.offersPhone": "Shop",
   // The shop's one line of how (mission #1286 slice 2): drag, or tap-tap.
-  "shop.howWide": "drag to a slot, or tap it then tap a slot",
   "shop.howPhone": "tap, then tap a slot · or drag",
   // A slot lit for the offer in hand: its twin merges it in.
   "slot.awakens": "awakens ★",

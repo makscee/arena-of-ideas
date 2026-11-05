@@ -23,18 +23,26 @@ import { forgeDesignOf, forgeUnitOf } from "../src/mvp/forge-view";
 import { setCodexLink } from "./ui/term";
 import { ideasScreen, refillTime } from "./screens/ideas";
 import { votePanel } from "./screens/vote";
+import { homeTable } from "./screens/home";
 import { pickScreen } from "./screens/pick";
 import { card, formRich, roman, setCardCredits, unitSheet, type CardUnit } from "./ui/card";
 import { isMine, reportLink, setReporter } from "./ui/report";
 import { previewName } from "./ui/fusion";
 import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
-import { actionable, app, button, wideQuery, closable, desktopQuery, dismissable, h, hasKeys, isDesktop, keepFocus, keepScreen, keyboardLost, keyLabel, keyOf, onKeys, onRestore, overlay, screen, show, who, withKey } from "./ui/dom";
+import { actionable, app, button, closable, desktopQuery, dismissable, h, hasKeys, isDesktop, keepFocus, keepScreen, keyboardLost, keyLabel, keyOf, onKeys, onRestore, overlay, screen, show, who, withKey } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
+import { startScreen, type StartControl } from "./screens/start";
+import { guestName } from "./ui/guest-name";
+import { coachStep, coaching, type CoachStep } from "./ui/coach";
+import { coachState, coachView } from "./ui/coach-view";
 import { telegramSheet } from "./screens/telegram";
 import { emailAttach, emailSignIn, emailSignUp } from "./screens/email";
 import { galleryScreen } from "./screens/gallery";
-import { faceOfUnit, lineToPiece, piece } from "./ui/piece";
+import { faceOfUnit, lineToPiece, piece, pieceReach } from "./ui/piece";
+import { predictRun } from "./ui/predict";
+import { orient, stage } from "./ui/stage";
+import { fieldLayout, fit } from "./ui/stage-fit";
 import { initSound, music, onSoundChange, play, setSound, soundSettings } from "./ui/sound";
 import { shopSound } from "./ui/sound-map";
 import { t, withNodes } from "./i18n";
@@ -179,69 +187,6 @@ function team(line: LineUnit[], side: "you" | "ghost", content: MvpContent, test
   return h("div", { class: "slots", ...(testid ? { "data-testid": testid } : {}) }, ...line.map((u) => card(u, { side, extra: [copiesBadge(u)], onOpen: openSheet(u, content) })));
 }
 
-/** Where a piece reaches on screen: its box with the tab, badges, rim
- * numbers and name hanging outside it. */
-function reachOf(pc: Element): { left: number; right: number; top: number; bottom: number } {
-  const rs = [pc, ...pc.querySelectorAll("*")].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
-  return { left: Math.min(...rs.map((r) => r.left)), right: Math.max(...rs.map((r) => r.right)), top: Math.min(...rs.map((r) => r.top)), bottom: Math.max(...rs.map((r) => r.bottom)) };
-}
-
-/** Home's champion (void-board#1295): plain pieces (the ★ says awoken), sized
- * from the panel's width so each, with its when tab and its whole name, fits
- * beside the next with a gap. The largest piece wins among: five in a row with
- * the tabs' words; on a phone, 3 + 2 with the words; five with the tabs' icons
- * (the word stays in the tab's title and the unit's sheet). */
-function heroTeam(line: LineUnit[], content: MvpContent): HTMLElement {
-  const box = h("div", { class: "hero-team" });
-  const gap = 5;
-  const draw = (cols: number, px: number, word: boolean) => {
-    // A name wraps at a space within its share of the row.
-    const nmw = Math.floor((box.clientWidth + 20) / cols - gap);
-    const cards = line.map((u) => card(u, { side: "ghost", piece: { px, word }, onOpen: openSheet(u, content) }));
-    // 3 + 2: a break after the third.
-    if (cols < line.length) cards.splice(cols, 0, h("i", { class: "row-break" }));
-    box.replaceChildren(h("div", { class: "slots", style: `--nmw:${nmw}px` }, ...cards));
-    // Each card is as wide as its piece reaches (tab, badges, name) plus the gap; every stage as tall as the lowest name.
-    const stages = [...box.querySelectorAll<HTMLElement>(".pcard-stage")];
-    const need = Math.max(...stages.map((st) => {
-      const pc = st.querySelector<HTMLElement>(".pc")!;
-      const r = reachOf(pc), b = pc.getBoundingClientRect();
-      pc.style.marginLeft = `${Math.ceil(b.left - r.left)}px`;
-      st.parentElement!.style.width = `${Math.ceil(r.right - r.left) + gap}px`;
-      return Math.ceil(r.bottom - st.getBoundingClientRect().top);
-    }));
-    for (const st of stages) st.style.height = `${need}px`;
-  };
-  const fits = (cols: number): boolean => {
-    // One row (or 3 + 2): a card the row pushed onto a line of its own doesn't fit.
-    const rows = new Set([...box.querySelectorAll<HTMLElement>(".card")].map((c) => c.offsetTop)).size;
-    if (rows !== (cols < line.length ? 2 : 1)) return false;
-    const lim = box.getBoundingClientRect();
-    const rs = [...box.querySelectorAll(".pc")].map(reachOf);
-    return rs.every((a, i) => a.left >= lim.left - 10 && a.right <= lim.right + 10 && rs.every((b, j) => j <= i || a.right + gap <= b.left || b.right + gap <= a.left || a.bottom + gap <= b.top || b.bottom + gap <= a.top));
-  };
-  let width = 0;
-  const fit = () => {
-    const w = box.clientWidth;
-    if (!w || w === width) return;
-    width = w;
-    const tries: [number, number, boolean][] = [
-      ...[84, 78, 72, 66, 62, 58, 54].map((px): [number, number, boolean] => [5, px, true]),
-      ...(window.innerWidth < 600 ? [78, 72, 66, 62, 58, 54].map((px): [number, number, boolean] => [3, px, true]) : []),
-      ...[78, 72, 68, 64, 62, 60, 58, 56, 54, 50, 46, 42].map((px): [number, number, boolean] => [5, px, false]),
-    ];
-    for (const [cols, px, word] of tries) {
-      draw(cols, px, word);
-      if (fits(cols)) return;
-    }
-  };
-  draw(5, window.innerWidth < 600 ? 46 : 60, window.innerWidth >= 600);
-  // Refit after layout (outside the observer's callback, so no loop warning) and once the fonts are in.
-  if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => requestAnimationFrame(fit)).observe(box);
-  void document.fonts?.ready.then(() => { width = 0; fit(); });
-  return box;
-}
-
 /** The Sound row of the title menu and the run menu (round 3, note 16): a
  * toggle and a volume slider; M flips the same setting on desktop. Moving
  * the slider plays a click at the new level. */
@@ -335,10 +280,8 @@ const howTo = (): Node[] => [rulesPage(), legendPage(), ...(isDesktop() ? [keysP
 
 /** Desktop's keys, all in one place (Simplify: the keys sit on their buttons, How to play lists them). */
 function keysPage(): HTMLElement {
-  // The number keys in plain words: "1–6 buy the offer with that number".
-  const grow = rules.offersGrowAt ?? [];
-  const n = Math.min(7, grow.length ? offersAt(rules, Math.max(...grow)) : rules.offers);
-  const numberKeys = n === 0 ? [] : n === 1 ? [t("keys.or"), kbd("1")] : [t("keys.or"), kbd("1"), "–", kbd(String(n))];
+  // The number keys in plain words: "←/→ pick an offer, then 1–5 buys it into that slot".
+  const numberKeys = [" ", kbd("1"), "–", kbd(String(rules.lineSize))];
   const B = benchSizeOf(rules);
   return h(
     "div",
@@ -467,23 +410,72 @@ function telegramRow(linked: boolean, err: HTMLElement): HTMLElement {
 }
 
 function nameForm(tg: HTMLElement | null = null, mail = false): void {
-  const input = h("input", { placeholder: t("name.placeholder"), maxlength: "24", autocomplete: "nickname", "data-testid": "name-input" });
+  firstScreen(async (name) => void (await api.register(name)), [mail ? button(t("email.signIn"), () => emailSignIn({ back: nameScreen, onDone: signedIn }), "", "email-signin-open") : null, tg]);
+}
+
+/** The first screen (arena#31, mission #26 move 3): "One rule starts a chain."
+ * over a chain that plays itself. PLAY (Enter) skips the name form: a
+ * generated name, then round 1 with the coach. A name typed in the quiet field
+ * under it takes the name form's way: Home. `register` makes the player. */
+function firstScreen(register: (name: string) => Promise<void>, extra: (HTMLElement | null)[]): void {
   const err = errorLine();
-  const go = () => guarded(err, async () => {
-    await api.register(input.value.trim());
-    await homeScreen();
-  });
-  input.addEventListener("keydown", (e) => e.key === "Enter" && void go());
-  show(
-    h("h1", {}, t("name.title")),
-    h("p", { class: "dim" }, t("name.intro")),
-    input,
-    button(t("name.enter"), () => void go(), "primary", "name-submit"),
-    mail ? button(t("email.signIn"), () => emailSignIn({ back: nameScreen, onDone: signedIn }), "", "email-signin-open") : null,
-    tg,
-    err,
-  );
-  input.focus();
+  let going = false;
+  let screen: StartControl | null = null;
+  const go = (name: string | null) => {
+    if (going) return;
+    going = true;
+    // At once, before any request: a slow server must never look like a dead button.
+    err.textContent = "";
+    screen?.starting();
+    void (async () => {
+      try {
+        if (name !== null) {
+          await register(name);
+          return await homeScreen();
+        }
+        // A player made by an earlier press that failed later is reused, never made twice.
+        if (!api.player) await registerGenerated(register);
+        await playFirst();
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 401 && e.message.startsWith("unknown player")) api.forget();
+        err.textContent = e instanceof ApiError && e.message ? e.message : t("start.failed");
+        screen?.ready();
+      } finally {
+        going = false;
+      }
+    })();
+  };
+  // The pool and today's champion (the demo's top row) come before the screen draws; either failing leaves a plainer demo.
+  void Promise.all([getContent().then((c) => c, () => null), api.day().then((d) => d.champion?.line ?? null, () => null)]).then(([content, champion]) => (screen = startScreen({ content, champion, onPlay: () => go(null), onName: (n) => go(n), extra, err })));
+}
+
+/** A generated name the server takes (a taken or crude one is rerolled). */
+async function registerGenerated(register: (name: string) => Promise<void>): Promise<void> {
+  for (let tries = 0; ; tries++) {
+    try {
+      return await register(guestName(undefined, tries < 3 ? 3 : 5));
+    } catch (e) {
+      if (!(e instanceof ApiError) || ![400, 409].includes(e.status) || tries >= 5) throw e;
+    }
+  }
+}
+
+/** PLAY: the new player's first run, at once (Home is skipped). The run's start
+ * goes out beside Home and the health check: two round trips from PLAY to the
+ * table, not four (a refused start is told after Home's email check, which wins). */
+async function playFirst(): Promise<void> {
+  void loadUnitRates();
+  const started = api.startRun().then((r) => ({ r }), (e: unknown) => ({ e }));
+  const [home, content, health]: [HomeView, MvpContent, { codex?: boolean }] = await Promise.all([api.home(), getContent(), api.health().catch(() => ({}))]);
+  codexOn = !!health.codex;
+  // A server that wants an email first sends the player to add one (homeScreen does it).
+  if (!CG && home.email?.required && !home.email.address) return homeScreen();
+  rules = home.rules;
+  day = home.day;
+  firstRun = !home.rating || home.rating.runs === 0;
+  const run = await started;
+  if ("e" in run) throw run.e;
+  shopScreen(run.r, content);
 }
 
 // ---------- home ----------
@@ -506,34 +498,164 @@ async function homeScreen(ended: number | null = null): Promise<void> {
   if (!CG && home.email?.required && !home.email.address) return emailAttach({ playerName: api.player?.name ?? "", onDone: () => void homeScreen() });
   rules = home.rules;
   day = home.day;
-  // The run that waits, for Continue's round and hearts (null if it ended meanwhile).
+  firstRun = !home.rating || home.rating.runs === 0;
+  // The run that waits, for RESUME's round and hearts (null if it ended meanwhile).
   const waiting = home.activeRunId ? await api.run(home.activeRunId).catch(() => null) : null;
   const active = waiting && waiting.phase !== "over" ? waiting : null;
+  drawHome(home, content, active, ended, err, true);
+  music("home");
+}
+
+/** Home's table, built from what the server said. It draws again, from the same answers, when the window changes
+ * shape (`fresh` is false then: a menu the dev "End day now" opened stays shut). */
+function drawHome(home: HomeView, content: MvpContent, active: RunView | null, ended: number | null, err: HTMLElement, fresh: boolean): void {
   const champ = home.day.champion;
   const r = home.rating;
   const own = champ?.player.id === api.player?.id;
+  const draw = () => drawHome(home, content, active, ended, err, false);
+  // PLAY, or RESUME while a run waits: over the middle of your five slots.
   const play = active
     ? button("", () => void guarded(err, async () => shopScreen(await api.run(active.runId), content)), "primary", "play")
     : button("", () => void guarded(err, async () => shopScreen(await api.startRun(), content)), "primary", "play");
   play.classList.add("play-big");
   play.append(
     active
-      ? h("span", { class: "play-main" }, t("home.continue", { where: active.round > rules.rounds ? t("home.continueCrown") : t("home.continueRound", { round: active.round }) }), hearts(active.hearts))
-      : h("span", { class: "play-main" }, t("home.play")),
+      ? h("span", { class: "play-main" }, t("home.resume"), h("span", { class: "play-where" }, active.round > rules.rounds ? t("home.continueCrown") : t("home.resumeRound", { round: active.round }), " ", hearts(active.hearts)))
+      : h("span", { class: "play-main" }, t("start.play")),
   );
   if (isDesktop()) play.append(h("kbd", { class: "play-key" }, "Enter"));
-  if (!active) play.append(h("span", { class: "play-sub" }, t(!champ ? "home.playSubNone" : own ? "home.playSubOwn" : "home.playSub", { n: rules.rounds })));
+  const note = active ? null : h("div", { class: "hm-note", "data-testid": "home-note" }, t(!champ ? "home.playSubNone" : own ? "home.playSubOwn" : "home.note", { n: rules.rounds }));
   const newRun = active
     ? button(t("home.newRun"), () => abandonSheet(active, "new", () => void guarded(err, async () => {
         // The given-up run's end and rating change first, as ☰ Abandon shows
         // them; its "New run" starts the next one.
         runOverScreen(await api.abandon(active.runId), content, "", true);
-      })), "small link", "new-run")
+      })), "hm-newrun link", "new-run")
     : null;
-  const codex = withKey(button(t("menu.codex"), () => void guarded(err, () => openCodex()), "throne-link", "codex"), "C");
-  const stats = withKey(button(t("home.stats"), () => void guarded(err, () => openCodex({ tab: "champions" })), "throne-link", "stats"), "S");
-  const forge = codexOn ? withKey(button(t("menu.forge"), () => void guarded(err, () => openForge()), "throne-link", "forge-open"), "F") : null;
-  const words = codexOn ? withKey(button(t("menu.dictionary"), () => void guarded(err, () => openForge("words")), "throne-link", "dictionary-open"), "D") : null;
+
+  // The banner: the champion's name, how many slayers, and how long till the new day.
+  const hours = Math.max(1, Math.ceil((new Date(home.day.endsAt).getTime() - Date.now()) / 3_600_000));
+  const banner = h(
+    "div",
+    { class: "hm-banner", "data-testid": "home-banner" },
+    h("span", { class: "crown-badge", "aria-hidden": "true" }, CROWN_SVG()),
+    h("span", { class: "hm-banner-main" }, ...(champ ? withNodes(t("home.banner"), { who: whoMark(champ.player) }) : [t("home.bannerNone")])),
+    h(
+      "small",
+      { class: "hm-banner-sub", "data-testid": "slayers" },
+      champ ? (own ? t("home.ownTeam") : t("home.bannerSlayers", { n: home.day.slayers, h: hours })) : t("home.newChampionAt", { at: rules.dayEndsAt }),
+    ),
+  );
+  const last = home.day.lastPlayoff ?? null;
+  const justEnded = ended !== null && last?.seq === ended ? last : null;
+  const notice = ended !== null ? h("div", { class: "hm-notice", "data-testid": "day-ended" }, t("home.dayEnded", { ended, today: home.day.seq })) : null;
+
+  // The HUD plates: RATING n (the last run's change joins it), and the ≡ Esc menu.
+  const rating = h("span", { class: "num", "data-testid": "rating" }, `${r?.rating ?? rules.ratingStart}`);
+  const pill = h("div", { class: "plate hm-rate keep", "data-testid": "home-rating", title: t("home.ratingAria") }, h("span", { class: "hm-rate-l" }, t("home.rating")), " ", rating);
+  const lastRun = lastRunPanel(r?.rating ?? null, pill);
+  const playoff = playoffPanel(last, champ?.player ?? null, content, err);
+  const menu = button("", () => homeMenu(home, err, lastRun, playoff, justEnded !== null), "plate hm-menu", "settings");
+  menu.setAttribute("aria-label", t("home.menu"));
+  menu.append(h("span", { class: "hm-burger", "aria-hidden": "true" }, "≡"));
+  if (hasKeys()) (menu.title = `${t("home.menu")} (Esc)`, menu.append(h("kbd", {}, "Esc")));
+
+  // The tray: the Workshop card (the ideas meter lives in it), the vote, and the rows.
+  const row = (label: string, key: string, sub: string, open: () => void, testid: string) => {
+    const b = button("", open, "hm-rowbtn", testid);
+    b.append(h("b", { class: "hm-rowname" }, label), " ", ...(hasKeys() ? [h("kbd", {}, key.toUpperCase()), " "] : []), h("span", { class: "hm-rowsub" }, sub));
+    return b;
+  };
+  const forgeRow = codexOn ? row(t("menu.forge"), "F", "", () => void guarded(err, () => openForge()), "forge-open") : null;
+  if (forgeRow) void api.fusions().then((f) => (forgeRow.querySelector(".hm-rowsub")!.textContent = t("home.rowFusions", { n: f.length })), () => undefined);
+  const rows = [
+    row(t("menu.codex"), "C", t("home.rowUnits", { n: content.units.length }), () => void guarded(err, () => openCodex()), "codex"),
+    forgeRow,
+    row(t("home.stats"), "S", t("home.rowEvery"), () => void guarded(err, () => openCodex({ tab: "champions" })), "stats"),
+  ];
+  const vote = votePanel(content, true);
+
+  show(
+    homeTable({
+      content,
+      champion: champ?.line ?? null,
+      title: t("name.title"),
+      rating: pill,
+      menu,
+      banner,
+      notice,
+      toBeat: t("home.toBeat"),
+      yourLine: t("home.yourLine"),
+      play,
+      note,
+      newRun,
+      workshop: workshopCard(home.ideas),
+      vote,
+      rows,
+      err,
+      redraw: draw,
+    }),
+  );
+  screen("home");
+  // Keys (#1064): Enter plays, Esc opens the ≡ menu, and a letter on each row (it is on the button).
+  const press = (id: string) => document.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`);
+  const letters: Record<string, string> = { c: "codex", f: "forge-open", s: "stats", i: "ideas", g: "settings", Escape: "settings" };
+  onKeys((e) => {
+    const k = keyOf(e);
+    // The Dictionary sits in the ≡ menu; D still opens it from Home.
+    if (k === "d" && codexOn) return void guarded(err, () => openForge("words")), true;
+    const b = k === "Enter" ? press("play") : press(letters[k] ?? "");
+    if (!b || b.disabled) return false;
+    b.click();
+    return true;
+  });
+  // The dev "End day now" just ran: the ≡ menu opens at once, with how the day ended in it.
+  if (justEnded && fresh) homeMenu(home, err, lastRun, playoff, true);
+  if (isDesktop() && (document.activeElement === document.body || !app.contains(document.activeElement))) play.focus({ preventScroll: true });
+}
+
+const svg = (paths: string, attrs: Record<string, string>) => () => {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  for (const [k, v] of Object.entries({ viewBox: "0 0 24 24", "aria-hidden": "true", ...attrs })) el.setAttribute(k, v);
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", paths);
+  el.append(path);
+  return el;
+};
+const CROWN_SVG = svg("M3 18h18L19 7l-5 4-2-6-2 6-5-4z", { width: "30", height: "30", fill: "var(--paper)", stroke: "var(--outline)", "stroke-width": "2.2", "stroke-linejoin": "round" });
+
+/** The ≡ menu (Esc on Home): a window over the table with everything Home used to carry on its page: who you are,
+ * the last run and the last playoff, Sound and Music, the language, the palette, the Dictionary, Rules, this
+ * device's link, Telegram, and on a dev server "End day now" with the other dev tools. `lastRun`/`playoff` are
+ * made with Home (the last run's change joins the RATING plate), so they are only put in the window here. */
+function homeMenu(home: HomeView, err: HTMLElement, lastRun: HTMLElement | null, playoff: HTMLElement | null, ended: boolean): void {
+  if (app.querySelector('[data-testid="settings-sheet"]')) return;
+  const champ = home.day.champion;
+  const close = closable(
+    h(
+      "div",
+      { class: "stack settings", "data-testid": "settings-sheet", "data-scroll": "" },
+      h("h2", {}, t("home.settings")),
+      h("div", { class: "row me" }, h("span", { class: "dim keep" }, t("home.playingAs")), who(api.player?.name ?? "")),
+      home.email?.address ? h("div", { class: "row me", "data-testid": "settings-email" }, h("span", { class: "dim keep" }, t("email.label")), h("span", { class: "grow" }, home.email.address)) : null,
+      ended ? playoff : null,
+      lastRun,
+      ended ? null : playoff,
+      champ && !champ.player.bot && !isMine(champ.player.id) ? reportLink("name", champ.player.id, `@${champ.player.name}`) : null,
+      soundRow(),
+      langRow(),
+      themeRow(),
+      codexOn ? withKey(button(t("menu.dictionary"), () => (close(), void guarded(err, () => openForge("words"))), "", "dictionary-open"), "D") : null,
+      button(t("codex.tab.howto"), () => (close(), void guarded(err, () => openCodex({ tab: "howto" }))), "", "rules-open"),
+      api.ownInvite && !CG ? ownLinkRow(api.ownInvite) : null,
+      home.telegram?.enabled ? telegramRow(home.telegram.linked, err) : null,
+      home.dev ? devTools(home, err) : null,
+    ),
+  );
+}
+
+/** Dev servers only (HomeView.dev): "End day now" and the idea tools, folded in the ≡ menu. */
+function devTools(home: HomeView, err: HTMLElement): HTMLElement {
   const endDay = button(
     t("dev.endDay"),
     () =>
@@ -562,119 +684,28 @@ async function homeScreen(ended: number | null = null): Promise<void> {
   }), "small", "overnight-check");
   const fakeVotes = button(t("dev.fakeVotes"), () => void guarded(err, async () => { await api.fakeVotes(); closable(candidatesSheet(await api.candidates())); }), "small", "fake-votes");
   const candidates = button(t("dev.candidates"), () => void guarded(err, async () => void closable(candidatesSheet(await api.candidates()))), "small", "candidates");
-  const last = home.day.lastPlayoff ?? null;
-  const justEnded = ended !== null && last?.seq === ended ? last : null;
-  const playoff = playoffPanel(last, champ?.player ?? null, content, err);
-  const rating = h("span", { class: "num", "data-testid": "rating" }, `${r?.rating ?? rules.ratingStart}`);
-  const pill = h("div", { class: "rating-pill keep", title: t("home.ratingAria") }, rating);
-  const gear = button("", () => settingsSheet(home, err), "gear keep", "settings");
-  gear.setAttribute("aria-label", t("home.settings"));
-  if (isDesktop()) gear.title = `${t("home.settings")} (G)`;
-  gear.append(GEAR_SVG());
-  show(
-    h("header", { class: "row throne-top" }, h("h1", {}, t("home.title")), h("div", { class: "grow" }), pill, gear),
-    // The dev "End day now" just ran: say so first, with how the day ended
-    // (the playoff panel) right under it, before today's champion.
-    // Desktop: the champion and the day on the left, Play and the rest on the
-    // right (.home-main, .home-side; on the phone they are one column).
-    h(
-      "div",
-      { class: "home-main" },
-      ended !== null ? h("div", { class: "notice", "data-testid": "day-ended" }, t("home.dayEnded", { ended, today: home.day.seq })) : null,
-      justEnded ? playoff : null,
-      h(
-        "section",
-        { class: "stack champion throne-hero", "data-testid": "champion" },
-        h("div", { class: "crown-badge", "aria-hidden": "true" }, CROWN_SVG()),
-        h("div", { class: "hero-label" }, t("home.champion")),
-        champ ? h("h2", { class: "hero-name" }, whoMark(champ.player)) : h("div", {}, t("home.noChampion")),
-        champ && !champ.player.bot && !isMine(champ.player.id) ? reportLink("name", champ.player.id, `@${champ.player.name}`) : null,
-        own ? h("div", { class: "hero-day", "data-testid": "own-team" }, t("home.ownTeam")) : null,
-        h("div", { class: "hero-day", "data-testid": "slayers" }, champ ? slayersLine(home.day.slayers) : t("home.newChampionAt", { at: rules.dayEndsAt })),
-        champ ? heroTeam(champ.line, content) : null,
-      ),
-      justEnded ? null : playoff,
-    ),
-    h(
-      "div",
-      { class: "home-side" },
-      h(
-        "div",
-        { class: "stack title-menu", "data-testid": "home-actions" },
-        play,
-        newRun,
-        err,
-        home.ideas ? ideasMeter(home.ideas) : null,
-        lastRunPanel(r?.rating ?? null, pill),
-      ),
-      h("div", { class: "spacer" }),
-      h("nav", { class: "throne-nav" }, codex, forge, words, stats),
-      home.dev
-        ? h("details", { class: "dev" }, h("summary", {}, t("dev.title")), h("div", { class: "row wrap" }, endDay, grantIdea, creditUnit, seedCandidate, overnight, fakeVotes, candidates))
-        : null,
-      // M2-8's vote card, under the menu: quiet, and Play stays on the first screen.
-      votePanel(content),
-    ),
-  );
-  screen("home");
-  music("home");
-  if (justEnded) playoff?.classList.add("fresh");
-  // Keys (#1064): Enter plays, and a letter on each link (it is on the button).
-  const press = (id: string) => document.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`);
-  const letters: Record<string, string> = { c: "codex", f: "forge-open", d: "dictionary-open", s: "stats", i: "ideas", g: "settings" };
-  onKeys((e) => {
-    const k = keyOf(e);
-    const b = k === "Enter" ? press("play") : press(letters[k] ?? "");
-    if (!b || b.disabled) return false;
-    b.click();
-    return true;
-  });
-  if (isDesktop() && (document.activeElement === document.body || !app.contains(document.activeElement))) play.focus({ preventScroll: true });
+  return h("details", { class: "dev" }, h("summary", {}, t("dev.title")), h("div", { class: "row wrap" }, endDay, grantIdea, creditUnit, seedCandidate, overnight, fakeVotes, candidates));
 }
 
-const svg = (paths: string, attrs: Record<string, string>) => () => {
-  const el = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  for (const [k, v] of Object.entries({ viewBox: "0 0 24 24", "aria-hidden": "true", ...attrs })) el.setAttribute(k, v);
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.setAttribute("d", paths);
-  el.append(path);
-  return el;
-};
-const GEAR_SVG = svg("M9 12a3 3 0 1 0 6 0a3 3 0 1 0-6 0M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1", { width: "20", height: "20", fill: "none", stroke: "currentColor", "stroke-width": "2.4", "stroke-linecap": "round" });
-const CROWN_SVG = svg("M3 18h18L19 7l-5 4-2-6-2 6-5-4z", { width: "30", height: "30", fill: "var(--paper)", stroke: "var(--outline)", "stroke-width": "2.2", "stroke-linejoin": "round" });
-
-/** The gear's sheet (M5-3): everything that was the title menu's second rank.
- * Sound and Music, the language, the palette, Rules (until the Codex's How to
- * play), this device's link and Telegram. */
-function settingsSheet(home: HomeView, err: HTMLElement): void {
-  const close = closable(
-    h(
-      "div",
-      { class: "stack settings", "data-testid": "settings-sheet" },
-      h("h2", {}, t("home.settings")),
-      h("div", { class: "row me" }, h("span", { class: "dim keep" }, t("home.playingAs")), who(api.player?.name ?? "")),
-      home.email?.address ? h("div", { class: "row me", "data-testid": "settings-email" }, h("span", { class: "dim keep" }, t("email.label")), h("span", { class: "grow" }, home.email.address)) : null,
-      soundRow(),
-      langRow(),
-      themeRow(),
-      button(t("codex.tab.howto"), () => (close(), void guarded(err, () => openCodex({ tab: "howto" }))), "", "rules-open"),
-      api.ownInvite && !CG ? ownLinkRow(api.ownInvite) : null,
-      home.telegram?.enabled ? telegramRow(home.telegram.linked, err) : null,
-    ),
-  );
-}
-
-/** The Throne's idea meter (M2-3, M5-3; #915 ideas a day): the ideas left
- * today and how many come back at the day's end, or one waiting for its pick
- * first. Tapping it opens My ideas (M2-4, screens/ideas.ts). */
-function ideasMeter(ideas: IdeasView): HTMLElement {
-  // M2-6: an idea waiting for its pick comes first: "💡 Your idea is ready".
-  const label = ideas.ready ? t("home.ideasReady", { n: ideas.ready }) : ideas.held > 0 ? t("home.ideasHeld", { n: ideas.held }) : t("home.ideasNone");
-  const b = button("", () => void ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => (api.forget(), nameScreen()) }), "idea-meter", "ideas");
-  b.append(h("span", { class: "grow idea-label", "data-testid": "ideas-label" }, label));
-  if (!ideas.ready && ideas.held < ideas.perDay)
-    b.append(h("span", { class: "idea-runs", "data-testid": "ideas-refill" }, t("home.ideaRefill", { n: ideas.perDay - ideas.held, time: refillTime(ideas.refillsAt) })));
-  if (ideas.ready) b.dataset.ready = String(ideas.ready);
+/** The Workshop card in Home's tray (it replaces the ideas meter): how the player's ideas stand in one line,
+ * the meter (ideas left today, when they come back) under it, and a tap opens the Workshop (My ideas). */
+function workshopCard(ideas: IdeasView | null): HTMLElement {
+  const b = button("", () => void openWorkshop(), "hm-workshop", "ideas");
+  const status = h("span", { class: "hm-ws-status", "data-testid": "workshop-status" }, ideas?.ready ? t("home.workshopReady", { n: ideas.ready }) : t("home.workshopNone"));
+  b.append(h("span", { class: "hm-ws-head" }, h("b", { class: "hm-ws-title" }, t("home.workshop")), ideas?.ready ? h("i", { class: "hm-dot", "aria-hidden": "true" }) : null), status);
+  if (ideas) {
+    // The ideas meter's words: the ideas left today, and when the rest come back.
+    const label = ideas.ready ? t("home.ideasReady", { n: ideas.ready }) : ideas.held > 0 ? t("home.ideasHeld", { n: ideas.held }) : t("home.ideasNone");
+    const meter = h("span", { class: "hm-ws-meter" }, h("span", { "data-testid": "ideas-label" }, label));
+    if (!ideas.ready && ideas.held < ideas.perDay) meter.append(" ", h("span", { class: "idea-runs", "data-testid": "ideas-refill" }, t("home.ideaRefill", { n: ideas.perDay - ideas.held, time: refillTime(ideas.refillsAt) })));
+    b.append(meter);
+    if (ideas.ready) b.dataset.ready = String(ideas.ready);
+  }
+  // Ideas on their way (read, simulated, voted on) are the line when none waits for a pick.
+  if (!ideas?.ready) void api.myIdeas().then((v) => {
+    const moving = v.sent.filter((i) => ["written", "reading", "simulating", "voting"].includes(i.state)).length;
+    if (moving > 0) status.textContent = t("home.workshopMoving", { n: moving });
+  }, () => undefined);
   return withKey(b, "I");
 }
 
@@ -777,13 +808,8 @@ async function openCodex(state?: Partial<CodexState>): Promise<void> {
   if (app.dataset.screen !== "codex" || !codexBack) {
     // A battle under it pauses (keepScreen), and its fetches start fresh.
     const keep = keepScreen();
-    const desk = isDesktop();
     codexCache = newCodexCache();
-    // The shop's desktop layout is more than CSS: crossed 1024px meanwhile, Back redraws it.
-    codexBack = () => {
-      keep();
-      if (isDesktop() !== desk && app.dataset.screen === "shop") rerender?.();
-    };
+    codexBack = keep;
   }
   // A deep link (a term's "Open in Codex") is a fresh Codex: no tab keeps the
   // scroll it had, whatever was open before (R2-17); fetched data stays.
@@ -800,8 +826,16 @@ async function openCodex(state?: Partial<CodexState>): Promise<void> {
  * the Codex does; a wish redraws it from the server. `codexOn`: whether the
  * server runs the Codex (/health), so its links show only then. */
 let codexOn = false;
+/** The signed-in player has no finished run yet: round 1 of their run has the coach (arena#31). */
+let firstRun = false;
 void api.health().then((h) => (codexOn = !!h.codex), () => undefined);
 setReporter((r) => api.report(r), () => api.player?.id ?? savedPlayer()?.id ?? "");
+/** The Workshop (My ideas, its write and pick screens) opens over the current screen as the Codex does: from a table
+ * (the shop, a battle, Home) the table stays dimmed behind it, and Back or Esc returns to it untouched (arena#32). */
+async function openWorkshop(notice: string | null = null): Promise<void> {
+  const back = keepScreen();
+  await ideasScreen({ onBack: back, onUnknown: () => (api.forget(), nameScreen()) }, notice);
+}
 async function openForge(tab: ForgeTab = "units"): Promise<void> {
   const back = keepScreen();
   let view = await api.codex();
@@ -860,6 +894,7 @@ function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: F
   const crown = fought ? fought.kind === "crown" : round > rules.rounds;
   const codex = button(t("menu.codex"), () => (close(), void guarded(err, () => openCodex())), "", "menu-codex");
   const forge = codexOn ? button(t("menu.forge"), () => (close(), void guarded(err, () => openForge())), "", "menu-forge") : null;
+  const workshop = button(t("menu.workshop"), () => (close(), void guarded(err, () => openWorkshop())), "", "menu-ideas");
   const menu = h(
     "div",
     { class: "stack run-menu", "data-testid": "run-menu" },
@@ -868,6 +903,7 @@ function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: F
     withKey(button(t("menu.resume"), () => (close(), resume?.()), "primary", "menu-resume"), "Esc"),
     codex,
     forge,
+    workshop,
     soundRow(),
     langRow(),
     themeRow(),
@@ -949,11 +985,9 @@ let forgeScene: [number, number, string | undefined] | null = null;
 /** What the shop is in the middle of: nothing, a unit picked, or a fuse waiting for its second unit. */
 type Pick = { mode: "none" } | { mode: "picked"; index: number } | { mode: "fuse"; first: number };
 
-/** The shop. `selected`: the line slot to keep selected on desktop (a unit
- * just moved by key or drag stays in hand). At 1024px and wider (ui/dom.ts
- * isDesktop) the same shop is a top bar, a wide board and a right inspector
- * that reads the hovered or selected card instead of pop-up sheets, with
- * mouse and keys; below it the phone layout is as it was. */
+/** The shop, as the table (arena#28): one stage at every size (ui/stage.ts, table.css), tap-tap
+ * and keys, the inspector floating over it instead of pop-up sheets. `selected`: the line slot to
+ * keep selected (a unit just moved by key or drag stays in hand). */
 /** Where each offer stands in the shop row (arena#14): the server renumbers the
  * offers after a buy, so the row remembers positions: a bought offer leaves a
  * gap and the others stay where they were. `at[position]` is an index in run.offers, or -1.
@@ -980,9 +1014,37 @@ function offerPositions(run: RunView): number[] {
   offerRow = { runId: run.runId, round: run.round, at, ids: at.map((i) => (i >= 0 ? run.offers[i]!.unitId : "")) };
   return at;
 }
-function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -1, offer = -1): void {
+/** The offer or the Fight button the coach points at, lit (its card is the tray's coach card). */
+function mountCoach(step: CoachStep): void {
+  const target = step.step === "fight" ? document.querySelector<HTMLElement>('[data-testid="fight"]') : document.querySelector<HTMLElement>(`[data-testid="offer-${step.offer}"]`);
+  target?.classList.add("coach-target");
+}
+/** Fight was pressed: the button is down and the table starts its transition, before the answer (arena#28). */
+function pressFight(): void {
+  const st = document.querySelector<HTMLElement>(".stage");
+  if (!st || st.classList.contains("fighting")) return;
+  st.classList.add("fighting");
+  document.querySelector('[data-testid="fight"]')?.classList.add("pressed");
+  st.append(h("div", { class: "tb-fight-banner", "data-testid": "fight-banner", role: "status" }, t("fight.starting")));
+}
+/** Reroll was pressed: the gold is spent and the offers roll, before the new ones arrive. */
+function pressReroll(run: RunView): void {
+  document.querySelector('[data-testid="reroll"]')?.classList.add("pressed");
+  document.querySelector('[data-testid="offers"]')?.classList.add("rolling");
+  const gold = document.querySelector('[data-testid="gold"]');
+  if (gold) gold.textContent = t("shop.gold", { n: Math.max(0, run.gold - rules.rerollCost) });
+}
+/** `predicted`: `run` is the table drawn before the server answers (what a press will do, worked out here); the server
+ * does not have that board yet, so nothing is asked of it about this board (its forge, an offer's buy preview): the
+ * answer would describe the board before the press, and its slots would point at units that are not there. */
+function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -1, offer = -1, predicted = false): void {
   if (run.phase === "over") return runOverScreen(run, content, notice);
-  const desk = isDesktop();
+  // The table (arena#28): one stage and one set of controls at every size. `kb`
+  // is only a keyboard being there: it adds the key caps and the key hints.
+  const kb = hasKeys();
+  const tall = orient() === "P";
+  /** The landscape stage's rows (their wells, your line, the bench, the tray) for the height this window gives it. */
+  const lay = tall ? null : fieldLayout(fit("L", window.innerWidth, window.innerHeight, true).h);
   const crown = run.phase === "crown";
   // The reigning champion's Crown is their own team; a win is still a slay.
   const ownCrown = crown && run.nextOpponent?.player.id === run.player.id;
@@ -996,39 +1058,56 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const zoneStart = (slot: number) => (slot < L ? 0 : L);
   const zoneLen = (slot: number) => (slot < L ? run.line.length : run.bench.length);
   const board = [...run.line, ...run.bench];
+  // The first run's coach (arena#31): round 1, before the first fight, builds a pair from the shop that is there.
+  const coachNow: CoachStep | null = !crown && !run.gift && !notice && coaching({ round: run.round, fights: run.fights.length, firstRun }) ? coachStep(coachState(run, L, content)) : null;
   const owns = (unitId: string) => mergeTarget(board, unitId) >= 0;
-  let pick: Pick = desk && unitAt(selected) ? { mode: "picked", index: selected } : { mode: "none" };
+  let pick: Pick = unitAt(selected) ? { mode: "picked", index: selected } : { mode: "none" };
   const unitOf = (id: string) => unitIn(content, id); // a run on an older pool may hold a unit that left
   /** Buy previews still out: a decision waits for them, or the server may
    * apply a buy first and refuse the preview of its slot (a 409, R4-19). */
   const previewsOut = new Set<Promise<unknown>>();
-  const decide = (d: Parameters<typeof api.decide>[1], select = -1, offer = -1) =>
-    guarded(err, async () => {
+  /** The answer to a decision: the run as the server has it, or the table put back as it was with why. */
+  const answered = async (d: Parameters<typeof api.decide>[1], select: number, offer: number, shown: boolean) => {
+    try {
       await Promise.allSettled([...previewsOut]);
       const res = await api.decide(run.runId, d);
       if (res.fight) return fightScreens(res.run, res.fight, content, run);
       play(shopSound(d, run, res.run));
       shopScreen(res.run, content, "", select, offer);
+    } catch (e) {
+      // What was drawn before the answer is taken back, with the reason (a refused buy puts the offer back).
+      if (shown && !(e instanceof ApiError && e.status === 401)) {
+        play("wrong");
+        shopScreen(run, content, e instanceof ApiError && e.status === 409 ? plainRefusal(e.message) : e instanceof Error ? e.message : String(e));
+      }
+      throw e;
+    }
+  };
+  /** Presses show at once (arena#28): the result predicted by the shop's own rules is drawn before the
+   * request goes out; a reroll or a fight shows its pressed state and starts its motion. */
+  const decide = (d: Parameters<typeof api.decide>[1], select = -1, offer = -1) =>
+    guarded(err, async () => {
+      if (d.kind === "fight") pressFight();
+      else if (d.kind === "reroll") pressReroll(run);
+      const next = predictRun(run, d, content, rules);
+      if (next) shopScreen(next, content, "", select, offer, true);
+      await answered(d, select, offer, next !== null || d.kind === "fight" || d.kind === "reroll");
     });
-  /** Lock or unlock an offer (free); on desktop it stays chosen in the inspector. */
-  const lock = (o: Offer) => void decide({ kind: "lock", slot: o.slot }, -1, desk ? o.slot : -1);
+  /** Lock or unlock an offer (free); the offer is put down, so the inspector never covers the shop. */
+  const lock = (o: Offer) => void decide({ kind: "lock", slot: o.slot });
   const lockLabel = (o: Offer) => (o.locked ? t("board.unlock") : t("board.lock"));
   // The last shop round has no Lock: the Crown clears the offers. Unlock stays.
   const lastShop = run.round >= rules.rounds;
   const canLock = (o: Offer) => !run.gift && (o.locked === true || !lastShop);
 
-  const line = h("div", { class: "slots", "data-testid": "line" });
-  const bench = h("div", { class: "slots bench-row", "data-testid": "bench" });
-  const actions = h("div", { class: "row actions", "data-testid": "actions" });
-  const hintSlot = h("div", { class: "hint-slot" });
-  // The shop head's line (phone, 800×450): how to buy, or the hint of the moment.
-  const how = h("span", { class: "dim how" });
+  const line = h("div", { class: "tb-row tb-line", "data-testid": "line" });
+  const bench = h("div", { class: "tb-row tb-bench", "data-testid": "bench" });
+  const hintSlot = h("div", { class: "hint-slot tb-coach" });
   const awoken = board.filter((u) => u.kind === "unit" && u.form === "awoken").length;
   // Desktop: the inspector, the card under the mouse, an offer clicked, a fusion waiting for its Fuse.
-  const inspector = h("aside", { class: "inspector stack", "data-testid": "inspector" });
+  const inspector = h("aside", { class: "inspector tb-insp stack", "data-testid": "inspector", hidden: "" });
   type At = { kind: "line"; index: number } | { kind: "offer"; slot: number };
-  let hover: At | null = null;
-  let chosen: number | null = desk && run.offers[offer] ? offer : null;
+  let chosen: number | null = run.offers[offer] ? offer : null;
   let fuseView: HTMLElement | null = null;
   // Rules v2 (#1049 reopened): with the Codex on, two Awoken units fuse only
   // when their pair has a design (discovered or ready to claim). The run's
@@ -1091,12 +1170,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   };
   /** The piece's side per layout (mission #1286 slice 2): the phone's line of
    * five keeps the when tab's icon only, the bench is a size down. */
+  /** A panel is open: it docks on the right and the field narrows, so the line's pieces are drawn smaller. */
+  const docked = () => chosen !== null || pick.mode !== "none" || fuseView !== null;
+  /** With a panel open the columns are narrow: a When word stays wherever it fits its column (10 characters at the floor size). */
+  const whenFits = (u: LineUnit) => lineToPiece(u, content).face.when.label.length <= 10;
   const pieceSizes = () =>
-    desk
-      ? { line: 76, bench: 60, offer: 76, lineWord: true, benchWord: false, benchBare: false }
-      : wideQuery.matches
-        ? { line: 58, bench: 46, offer: 58, lineWord: true, benchWord: false, benchBare: false }
-        : { line: 46, bench: 46, offer: 62, lineWord: false, benchWord: false, benchBare: true };
+    tall || !lay ? { line: 56, bench: 44, offer: 64, their: 48, lineWord: false, benchWord: false, benchBare: true } : { line: docked() ? lay.sDock : lay.s, bench: lay.sb, offer: 72, their: lay.sb, lineWord: !docked(), benchWord: false, benchBare: true };
   /** Tap-tap: the offer in hand (chosen) or the unit in hand (picked) lights
    * every slot it can go to; the twin it merges into is gold. */
   /** The board slot an offer's copy merges into, or -1. */
@@ -1105,20 +1184,33 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     return i < 0 ? -1 : i < run.line.length ? i : L + i - run.line.length;
   };
   /** A cell's height for a piece of side `s`: the tab above, the rim numbers, the name and the foot below. */
-  const cellStyle = (s: number, bare = false) => `--s:${s}px;height:${Math.round(s + 0.3 * Math.max(22, s * 0.37) + Math.max(12, s * 0.2) + (bare ? 22 : 47))}px`;
+  const floor = tall ? 0 : 18;
+  /** The inspector's piece is drawn at 0.72 on the portrait stage: its text floor grows to read 11 px there. */
+  const sheetFloor = tall ? 16 : 18;
+  /** The panel's sheet: compact (the piece beside the head), its hero a piece of 96 stage px (a phone's 56). */
+  const sheetOpts = (where?: string) => ({ floor: sheetFloor, compact: true, heroPx: tall ? 60 : 88, heroWord: !tall, ...(where ? { where } : {}) });
+  const cellStyle = (s: number, bare = false) => {
+    const r = pieceReach(s, floor);
+    const top = Math.max(15, r.above + 2);
+    return `--s:${s}px;padding-top:${top}px;height:${Math.round(top + r.below + 7 + (bare ? 0 : floor ? 30 : 20))}px`;
+  };
   /** A buy goes to the line while it has room (the audit's "slot 5 went to the bench" was a tap on the lit bench beside it): the bench takes one only once the line is full, or to merge into a twin there. */
   const benchWhileLineHasRoom = (o: Offer, slot: number) => slot >= L && run.line.length < L && twinSlot(o.unitId) !== slot;
+  /** The coach's one slot for the offer it points at: the first free line slot, which is right behind the anchor (arena#31: players put Medic in front of Gambler). Null: no limit. */
+  const coachSlotFor = (o: Offer): number | null => (coachNow && coachNow.step !== "fight" && coachNow.offer === o.slot ? run.line.length : null);
   const lightTarget = (el: HTMLElement, slot: number) => {
     const o = chosen !== null ? run.offers[chosen] : undefined;
     const u = unitAt(slot);
     if (o) {
+      const only = coachSlotFor(o);
+      if (only !== null && slot !== only) return;
       if (benchWhileLineHasRoom(o, slot)) return;
       if (buyBlock(o) && !(u && twinSlot(o.unitId) === slot && run.gold >= o.cost && !run.gift)) return;
       if (u && twinSlot(o.unitId) === slot) {
         el.classList.add("lit", "lit-twin");
         el.append(h("span", { class: "lit-tag" }, u.kind === "unit" && u.form === "sleeping" && u.copies + 1 >= rules.copiesToAwaken ? t("slot.awakens") : t("slot.merges")));
       } else if (!u || !owns(o.unitId)) el.classList.add("lit");
-    } else if (pick.mode === "picked" && pick.index !== slot && destFor(run, pick.index, slot) !== null && (!desk || !u)) el.classList.add("lit");
+    } else if (pick.mode === "picked" && pick.index !== slot && destFor(run, pick.index, slot) !== null && !u) el.classList.add("lit");
   };
   /** The second tap of tap-tap, on a slot: buys the offer in hand there, or
    * moves the unit in hand there. False: not a second tap (the slot's own click goes on). */
@@ -1135,16 +1227,16 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       buyAt(o, slot);
       return true;
     }
-    if (pick.mode === "picked" && pick.index !== slot && (!desk || !unitAt(slot)) && destFor(run, pick.index, slot) !== null) {
+    if (pick.mode === "picked" && pick.index !== slot && !unitAt(slot) && destFor(run, pick.index, slot) !== null) {
       play("click");
       moveTo(pick.index, slot);
       return true;
     }
     return false;
   };
-  /** Fight with empty line slots and gold left warns (arena#15, #16): a first
+  /** While the coach speaks (it names the one slot to use), no other slot glows and Fight does not warn. Fight with empty line slots and gold left warns (arena#15, #16): a first
    * round lost with one or two units was the commonest unexplained loss. */
-  const wantsFill = () => !crown && !run.gift && run.line.length > 0 && run.line.length < L && run.offers.some((o) => o.cost <= run.gold);
+  const wantsFill = () => !coachNow && !crown && !run.gift && run.line.length > 0 && run.line.length < L && run.offers.some((o) => o.cost <= run.gold);
   const slotCard = (slot: number): HTMLElement => {
     const u = unitAt(slot);
     const onBench = slot >= L;
@@ -1160,7 +1252,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }
     const sz = pieceSizes();
     const c = actionable(
-      h("div", { class: ["cell", "you", onBench && sz.benchBare ? "bare" : "", u.kind === "fused" ? "fused" : u.form === "awoken" ? "awoken" : ""].filter(Boolean).join(" "), "data-copies": String(u.copies), "data-testid": id, style: onBench ? cellStyle(sz.bench, sz.benchBare) : cellStyle(sz.line) }, piece(lineToPiece(u, content), { size: "L", side: "you", px: onBench ? sz.bench : sz.line, word: onBench ? sz.benchWord : sz.lineWord })),
+      h("div", { class: ["cell", "you", onBench && sz.benchBare ? "bare" : "", u.kind === "fused" ? "fused" : u.form === "awoken" ? "awoken" : ""].filter(Boolean).join(" "), "data-copies": String(u.copies), "data-testid": id, style: onBench ? cellStyle(sz.bench, sz.benchBare) : cellStyle(sz.line) }, piece(lineToPiece(u, content), { size: "L", side: "you", px: onBench ? sz.bench : sz.line, word: onBench ? sz.benchWord : sz.lineWord || whenFits(u), floor })),
       `${u.name}, ${onBench ? t("board.onBench", { n: slot - L + 1 }) : t("board.inLine", { n: slot + 1 })}`,
     );
     if (pick.mode === "picked" && pick.index === slot) c.classList.add("selected");
@@ -1181,17 +1273,15 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         if (pick.first === slot) pick = { mode: "none" };
         else if (fusesWith(pick.first, slot)) return void fusePreview(pick.first, slot);
         else return;
-      } else if (!desk && !crown && pick.mode === "picked" && pick.index >= L && !onBench && run.line.length >= L) {
-        // Phone: a bench unit selected and the line full, a tap on a line unit swaps the two.
+      } else if (!crown && pick.mode === "picked" && pick.index >= L && !onBench && run.line.length >= L) {
+        // A bench unit in hand and the line full: a tap on a line unit swaps the two.
         return moveTo(pick.index, slot);
       } else
-        // A second tap on the phone puts it down (its buttons go); on desktop a
-        // click keeps it in hand, so the next B, S or F still has a unit (Esc lets go).
-        pick = !desk && pick.mode === "picked" && pick.index === slot ? { mode: "none" } : { mode: "picked", index: slot };
+        // A tap keeps the unit in hand (the inspector reads it), so the next B, S or F still has one (Esc lets go).
+        pick = { mode: "picked", index: slot };
       chosen = null;
       renderLine();
     });
-    if (desk) desktopCard(c, { kind: "line", index: slot });
     if (!crown) {
       dropTarget(c, slot);
       dragCard(c, { kind: "board", slot });
@@ -1211,32 +1301,16 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       ...Array.from({ length: B }, (_, i) => slotCard(L + i)),
     );
     for (const o of offers.children) o.classList.toggle("selected", chosen !== null && (o as HTMLElement).dataset.testid === `offer-${chosen}`);
-    if (desk) renderInspector(true);
-    else actions.replaceChildren(...actionButtons());
+    renderInspector(true);
+    // The coach card in the tray: a gift waiting, else the hint of the moment, else how a buy works. With
+    // something in hand and a slot lit it says what a tap on that slot does.
     const banner = giftBanner();
-    if (desk || crown) {
-      const said = banner ? null : shopHint();
-      return hintSlot.replaceChildren(...[banner ?? (said === null ? null : hint(said))].filter((x): x is HTMLElement => x !== null));
-    }
-    hintSlot.replaceChildren(...(banner ? [banner] : []));
-    // Phone and 800×450 (#1293 reopened): the hint is the shop head's one line, so
-    // nothing jumps when it changes, and with something in hand it says what a tap on a lit slot does.
     const lit = line.querySelector(".lit") || bench.querySelector(".lit");
     const step = !lit ? null : chosen !== null ? t("hint.tapSlotBuy") : pick.mode === "picked" ? t("hint.tapSlotMove") : null;
-    const said = (pick.mode === "picked" ? shopHint() : null) ?? step ?? (banner ? null : shopHint());
-    how.replaceChildren(said ?? (wideQuery.matches ? t("shop.howWide") : t("shop.howPhone")));
-    how.classList.toggle("on", said !== null);
-    if (said === null) (how.removeAttribute("data-testid"), how.removeAttribute("title"));
-    else (how.dataset.testid = "hint", (how.title = said));
-  };
-
-  /** Desktop: hovering a card reads it in the inspector; the keyboard reads a card too. */
-  const desktopCard = (c: HTMLElement, at: At) => {
-    c.addEventListener("mouseenter", () => ((hover = at), renderInspector()));
-    c.addEventListener("mouseleave", () => ((hover = null), renderInspector()));
-    // The keyboard reads a card as the mouse does (#1064): Tab to it and the inspector shows it.
-    c.addEventListener("focus", () => ((hover = at), renderInspector()));
-    c.addEventListener("blur", () => ((hover = null), renderInspector()));
+    const said = banner ? null : (pick.mode === "picked" ? shopHint() : null) ?? step ?? shopHint();
+    // The first run's coach (arena#31) is the tray's card: its step, the pair, why.
+    hintSlot.replaceChildren(banner ?? (coachNow ? coachView(coachNow, content, { slot: run.line.length + 1, keys: kb }) : hint(said ?? (kb ? t("hint.buyDesk") : t("shop.howPhone")))));
+    hintSlot.classList.toggle("quiet", !banner && !coachNow && said === null);
   };
 
   /** What a drag carries: a board unit (by slot) or a shop offer (by its slot). */
@@ -1332,9 +1406,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const buyAt = (o: Offer, to: number) => {
     const why = buyBlock(o);
     if (why) return void ((err.textContent = why), play("wrong"));
+    const only = coachSlotFor(o);
+    if (only !== null && to !== only && coachNow && coachNow.step !== "fight")
+      return void ((err.textContent = t(coachNow.step === "buy-first" ? "coach.slotFirst" : "coach.slotBehind", { anchor: coachNow.anchor, answer: coachNow.answer, n: only + 1 })), play("wrong"));
     const d = { kind: "buy", slot: o.slot } as const;
-    void guarded(err, async () => {
-      await Promise.allSettled([...previewsOut]);
+    /** The server's side of it: the buy, then the move to where it was dropped. */
+    const buyThenMove = async () => {
       let res = await api.decide(run.runId, d);
       if (res.fight) return fightScreens(res.run, res.fight, content, run);
       const had = new Set(board.map((u) => u.uid));
@@ -1351,33 +1428,55 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       }
       play(shopSound(d, run, res.run));
       shopScreen(res.run, content, "", sel, -1);
+    };
+    void guarded(err, async () => {
+      // The unit is drawn where it goes as bought, before the server answers (the move is predicted too).
+      const bought = predictRun(run, d, content, rules);
+      if (bought) {
+        const had = new Set(board.map((u) => u.uid));
+        const now = [...bought.line, ...bought.bench];
+        const j = now.findIndex((u) => !had.has(u.uid));
+        const from = j < 0 ? -1 : j < bought.line.length ? j : L + j - bought.line.length;
+        const dest = from < 0 ? null : destFor(bought, from, to);
+        const moved = dest === null ? bought : predictRun(bought, { kind: "reorder", from, to: dest }, content, rules) ?? bought;
+        shopScreen(moved, content, "", dest ?? -1, -1, true);
+      }
+      try {
+        await Promise.allSettled([...previewsOut]);
+        await buyThenMove();
+      } catch (e) {
+        if (bought && !(e instanceof ApiError && e.status === 401)) {
+          play("wrong");
+          shopScreen(run, content, e instanceof ApiError && e.status === 409 ? plainRefusal(e.message) : e instanceof Error ? e.message : String(e));
+        }
+        throw e;
+      }
     });
   };
 
   const actionButtons = (): HTMLElement[] => {
-    if (pick.mode === "fuse") return [h("span", { class: "dim grow" }, desk ? t("board.fuseSecondDesk") : t("board.fuseSecondPhone")), button(desk ? t("board.cancelDesk") : t("board.cancel"), () => ((pick = { mode: "none" }), renderLine()), "", "fuse-cancel")];
+    if (pick.mode === "fuse") return [h("span", { class: "dim grow" }, kb ? t("board.fuseSecondDesk") : t("board.fuseSecondPhone")), button(kb ? t("board.cancelDesk") : t("board.cancel"), () => ((pick = { mode: "none" }), renderLine()), "", "fuse-cancel")];
     if (pick.mode !== "picked") return [];
     const i = pick.index;
     const u = unitAt(i)!;
-    const info = button(t("board.info"), openSheet(u, content), "", "info");
-    if (crown) return desk ? [] : [info];
-    const left = button(desk ? "◀ ←" : "◀", () => void decide({ kind: "reorder", from: i, to: i - 1 }, i - 1), "", "move-left");
-    const right = button(desk ? "→ ▶" : "▶", () => void decide({ kind: "reorder", from: i, to: i + 1 }, i + 1), "", "move-right");
+    if (crown) return [];
+    const left = button(kb ? "◀ ←" : "◀", () => void decide({ kind: "reorder", from: i, to: i - 1 }, i - 1), "", "move-left");
+    const right = button(kb ? "→ ▶" : "▶", () => void decide({ kind: "reorder", from: i, to: i + 1 }, i + 1), "", "move-right");
     left.disabled = i === zoneStart(i);
     right.disabled = i >= zoneStart(i) + zoneLen(i) - 1;
-    // On desktop the inspector already is the sheet: no Info.
-    const out: HTMLElement[] = desk ? [left, right] : [left, right, info];
+    // The inspector already is the sheet: no Info.
+    const out: HTMLElement[] = [left, right];
     const other = otherZone(i);
     if (other !== null) {
       // Into the other zone's first empty slot, else a swap with its back unit: the button says which.
       const swaps = unitAt(other) !== undefined;
       // The phone's row of buttons stays one row: "Swap" there, the hint says with whom.
-      const word = i < L ? (swaps ? (desk ? t("board.swapBench", { n: B }) : t("board.swap")) : t("board.toBench")) : swaps ? (desk ? t("board.swapBack") : t("board.swap")) : t("board.toLine");
-      out.push(button(desk ? `${word} · B` : word, () => moveTo(i, other), "", i < L ? "to-bench" : "to-line"));
+      const word = i < L ? (swaps ? (kb ? t("board.swapBench", { n: B }) : t("board.swap")) : t("board.toBench")) : swaps ? (kb ? t("board.swapBack") : t("board.swap")) : t("board.toLine");
+      out.push(button(kb ? `${word} · B` : word, () => moveTo(i, other), "", i < L ? "to-bench" : "to-line"));
     }
-    if (canFuse(i)) out.push(button(desk ? t("board.fuseDesk") : t("board.fuse"), () => ((pick = { mode: "fuse", first: i }), renderLine()), "", "fuse"));
+    if (canFuse(i)) out.push(button(kb ? t("board.fuseDesk") : t("board.fuse"), () => ((pick = { mode: "fuse", first: i }), renderLine()), "", "fuse"));
     const value = sellValue(rules, u);
-    out.push(button(desk ? t("board.sellDesk", { n: value }) : t("board.sell", { n: value }), () => void decide({ kind: "sell", index: i }), "danger", "sell"));
+    out.push(button(kb ? t("board.sellDesk", { n: value }) : t("board.sell", { n: value }), () => void decide({ kind: "sell", index: i }), "danger", "sell"));
     return out;
   };
 
@@ -1385,15 +1484,60 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
    * README.md): the inspector's last line, at its foot, not mid-panel. */
   const ratesToFoot = () => {
     const r = inspector.querySelector('[data-testid="unit-rates"]');
-    if (r) inspector.append(r);
+    // The sheet's last line, in its body (the compact sheet lets it share a row with the small facts).
+    if (r) (inspector.querySelector(".sheet-compact > .sheet-body") ?? inspector).append(r);
   };
   /** Desktop: the hovered card, else the selected one (or a fusion waiting
    * for its Fuse), else how to use the board. `force` redraws even when the
    * same card is shown (the selection changed). */
   let inspected = "";
+  /** A cue that the text goes on (a phone's sheet scrolls only when the rule is taller than it): a fade and a chevron at the foot of the body. */
+  const cueScroll = () => {
+    const body = inspector.querySelector<HTMLElement>(".insp-body");
+    inspector.querySelector('[data-testid="insp-more"]')?.remove();
+    if (!body || body.scrollHeight <= body.clientHeight + 1) return;
+    const cue = h("div", { class: "insp-more", "data-testid": "insp-more", "aria-hidden": "true" }, "▾");
+    inspector.append(cue);
+    const sync = () => cue.classList.toggle("done", body.scrollTop + body.clientHeight >= body.scrollHeight - 2);
+    body.addEventListener("scroll", sync);
+    sync();
+  };
+  /** The body's text changes (See Awoken, the preview arriving): the cue is worked out again. */
+  const cueWatch = new MutationObserver(() => requestAnimationFrame(cueScroll));
+  const layoutInspector = () => {
+    inspector.querySelector(":scope > button.insp-x")?.remove();
+    const rows = [...inspector.children].filter((c) => c.classList.contains("row"));
+    const body = h("div", { class: "insp-body", "data-scroll": "", style: "--scroll-cue:1" }, ...[...inspector.children].filter((c) => !rows.includes(c)).map((c) => c as HTMLElement));
+    inspector.replaceChildren(...(body.childElementCount ? [body] : []), ...rows);
+    cueWatch.disconnect();
+    if (body.childElementCount) cueWatch.observe(body, { childList: true, subtree: true, characterData: true });
+    if (inspector.isConnected) cueScroll();
+  };
   const renderInspector = (force = false) => {
+    drawInspector(force);
+    inspector.hidden = inspector.childElementCount === 0;
+    // The field narrows to make room for a docked panel (landscape).
+    inspector.closest(".stage")?.classList.toggle("with-panel", !inspector.hidden);
+    // What reads scrolls; the buttons (Buy, Lock, move, sell) stay at the card's foot.
+    layoutInspector();
+    // A close on the card (the mockup's "Esc ✕"): the offers under it on a phone are out of reach otherwise.
+    if (!inspector.hidden) inspector.prepend(closeBtn());
+  };
+  const closeBtn = () =>
+    button(
+      "✕",
+      () => {
+        fuseView = null;
+        pick = { mode: "none" };
+        chosen = null;
+        renderLine();
+      },
+      "insp-x",
+      "inspector-close",
+    );
+  const drawInspector = (force: boolean) => {
     if (fuseView) return inspector.replaceChildren(fuseView);
-    const at: At | null = hover ?? (pick.mode === "picked" ? { kind: "line", index: pick.index } : chosen !== null ? { kind: "offer", slot: chosen } : null);
+    const at: At | null = (pick.mode === "picked" ? { kind: "line", index: pick.index } : chosen !== null ? { kind: "offer", slot: chosen } : null);
     const key = at ? `${at.kind}:${at.kind === "line" ? at.index : at.slot}` : "none";
     if (key === inspected && !force) return;
     inspected = key;
@@ -1402,7 +1546,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const mine = at.index === sel;
       inspector.replaceChildren(
         h("div", { class: "label" }, (mine ? t("board.selected") : "") + (at.index < L ? t("board.inLine", { n: at.index + 1 }) : t("board.onBench", { n: at.index - L + 1 }))),
-        unitSheet(unitAt(at.index)!, content),
+        unitSheet(unitAt(at.index)!, content, sheetOpts(at.index < L ? t("panel.slot", { n: at.index + 1 }) : t("panel.bench", { n: at.index - L + 1 }))),
         mine || pick.mode === "fuse" ? h("div", { class: "row actions", "data-testid": "actions" }, ...actionButtons()) : h("div", { class: "dim small" }, crown ? t("board.crownFinal") : t("board.clickSelect")),
       );
       return ratesToFoot();
@@ -1412,44 +1556,55 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const o = run.offers[n];
       if (!o) return;
       const head = h("div", { class: "label" }, t("board.offerHead", { n: n + 1 }));
-      inspector.replaceChildren(head, h("div", { class: "dim small" }, "…"));
+      /** The card: its sheet, then Lock and Buy at the foot. */
+      const card_ = (sheet: HTMLElement, blocked: string) => {
+        const buy = button(buttonRefusal(blocked) || t("board.buyDesk", { cost: o.cost, n: n + 1 }), () => void decide({ kind: "buy", slot: o.slot }), "primary grow", "buy");
+        buy.disabled = blocked !== "";
+        const lockBtn = canLock(o) ? [button(`${lockLabel(o)} · L`, () => lock(o), "", "lock")] : [];
+        inspector.replaceChildren(head, sheet, h("div", { class: "row" }, ...lockBtn, buy));
+        ratesToFoot();
+        layoutInspector();
+        inspector.prepend(closeBtn());
+      };
+      // At once: the unit's own rule and numbers (your copy, if you own one); what buying does follows with the preview.
+      const own = board.find((x) => x.kind === "unit" && x.unitId === o.unitId);
+      const pool = unitOf(o.unitId);
+      card_(own ? unitSheet(own, content, sheetOpts(t("panel.offer", { n: n + 1 }))) : pool ? unitSheet(pool, content, sheetOpts(t("panel.offer", { n: n + 1 }))) : h("h2", {}, o.unitId), buyBlock(o));
       void offerBody(o).then(
         ({ sheet, blocked }) => {
-          if (inspected !== key) return;
-          const buy = button(buttonRefusal(blocked) || t("board.buyDesk", { cost: o.cost, n: n + 1 }), () => void decide({ kind: "buy", slot: o.slot }), "primary grow", "buy");
-          buy.disabled = blocked !== "";
-          const lockBtn = canLock(o) ? [button(`${lockLabel(o)} · L`, () => lock(o), "", "lock")] : [];
-          inspector.replaceChildren(head, sheet, h("div", { class: "row" }, ...lockBtn, buy));
-          ratesToFoot();
+          // What buying does arrives after the rule: swapped in once no term's tip is open on it (the swap would close the tip under the reader's finger).
+          const swap = () => {
+            if (inspected !== key) return;
+            if (document.querySelector('[data-testid="term-popover"]')) return void setTimeout(swap, 300);
+            card_(sheet, blocked);
+          };
+          swap();
         },
         (e: unknown) => {
-          if (inspected === key) inspector.replaceChildren(head, h("div", { class: "error" }, e instanceof Error ? e.message : String(e)));
+          if (inspected === key) inspector.append(h("div", { class: "error" }, e instanceof Error ? e.message : String(e)));
         },
       );
       return;
     }
-    inspector.replaceChildren(
-      ...(pick.mode === "fuse" ? [h("div", { class: "row actions", "data-testid": "actions" }, ...actionButtons())] : []),
-      h("div", { class: "dim" }, crown ? t("inspector.idleCrown") : t("inspector.idle")),
-    );
+    inspector.replaceChildren(...(pick.mode === "fuse" ? [h("div", { class: "row actions", "data-testid": "actions" }, ...actionButtons())] : []));
   };
 
   /** The hint that matters most right now, or none. */
   const shopHint = (): string | null => {
-    if (!desk && !crown && pick.mode === "picked" && pick.index >= L && run.line.length >= L) return t("hint.lineFullSwap");
+    if (!crown && pick.mode === "picked" && pick.index >= L && run.line.length >= L) return t("hint.lineFullSwap");
     if (pick.mode !== "none") return null;
     // run.ts refuses every decision but the fight in the crown phase: the line is final.
     if (crown) return ownCrown ? t("hint.ownCrown") : t("hint.crown");
     // Only a unit whose next copy is on offer right now.
     const almost = board.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === rules.copiesToAwaken - 1 && run.offers.some((o) => o.unitId === u.unitId));
     const canBuy = run.offers.some((o) => o.cost <= run.gold);
-    if (anyFuse()) return desk ? t("hint.fuseDesk") : t("hint.fusePhone");
+    if (anyFuse()) return kb ? t("hint.fuseDesk") : t("hint.fusePhone");
     if (almost && run.offers.some((o) => o.unitId === almost.unitId && o.cost <= run.gold)) return t("hint.oneMore", { name: almost.name });
     if (run.line.length === 0 && run.bench.length > 0) return t("hint.moveToLine");
     if (run.line.length === 0 && !canBuy) return t("hint.noGold");
-    if (run.line.length === 0) return desk ? t("hint.buyDesk") : t("hint.buyPhone");
+    if (run.line.length === 0) return kb ? t("hint.buyDesk") : t("hint.buyPhone");
     if (run.round === 1 && run.line.length > 0 && run.gold < rules.unitCost) return t("hint.outOfGold");
-    if (run.line.length > 1 && run.round <= 2) return desk ? t("hint.moveDesk") : t("hint.movePhone");
+    if (run.line.length > 1 && run.round <= 2) return kb ? t("hint.moveDesk") : t("hint.movePhone");
     if (almost) {
       const o = run.offers.find((o) => o.unitId === almost.unitId)!;
       const keep = !o.locked && !lastShop && o.cost > run.gold ? t("hint.lockToKeep") : "";
@@ -1511,19 +1666,16 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
             button(t("fuse.swap"), () => keepFocus(() => ((at = 1 - at), render())), "", "preview-swap"),
             withKey(button(t("fuse.confirm"), () => (close(), void fuse(o, views[at]!)), "primary grow", "preview-confirm"), "Enter"),
           ),
-          unitSheet(fused, content, { preview: true }),
+          unitSheet(fused, content, { preview: true, floor: sheetFloor }),
         );
       };
       render();
       const head = h("div", { class: "label" }, t("fuse.preview"));
       pick = { mode: "none" };
-      let close: () => void;
-      if (desk) {
-        fuseView = h("div", { class: "stack", "data-testid": "fuse-preview" }, head, body);
-        close = () => ((fuseView = null), renderLine());
-      } else close = overlay(head, body);
+      fuseView = h("div", { class: "stack", "data-testid": "fuse-preview" }, head, body);
+      const close = () => ((fuseView = null), renderLine());
       renderLine();
-      if (desk) focusPreview();
+      focusPreview();
     });
 
   /** Rules v2's forge (#1049, server/src/mvp/codex.ts): the pair's Codex
@@ -1546,7 +1698,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         h("div", { class: "preview-card" }, card(fused, { side: "you", extra: [copiesBadge(fused)] })),
         h("div", { class: "dim small", "data-testid": "forge-credit" }, t("forge.by", { name: slot.claimedBy?.name ?? "?", date })),
         h("div", { class: "row sheet-actions" }, cancel(), withKey(button(t("fuse.confirm"), () => (close(), void fuse(o, fused)), "primary grow", "preview-confirm"), "Enter")),
-        unitSheet(fused, content, { preview: true }),
+        unitSheet(fused, content, { preview: true, floor: sheetFloor }),
       );
     } else if (slot.state === "ready") {
       const designs = await Promise.all((slot.candidates ?? []).map((_, pick) => api.preview(run.runId, { kind: "fuse", ...o, pick }).then(fusedOf)));
@@ -1572,7 +1724,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
             }),
           ),
           h("div", { class: "row sheet-actions" }, cancel(), withKey(button(t("forge.claim", { name: chosen.name }), () => (close(), void fuse({ ...o, pick: at }, chosen, slot)), "primary grow", "forge-claim"), "Enter")),
-          unitSheet(chosen, content, { preview: true }),
+          unitSheet(chosen, content, { preview: true, floor: sheetFloor }),
         );
       };
       render();
@@ -1599,12 +1751,10 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       if (b) (e.preventDefault(), e.stopPropagation(), b.click());
     });
     pick = { mode: "none" };
-    if (desk) {
-      fuseView = h("div", { class: "stack", "data-testid": "fuse-preview" }, head, body);
-      close = () => ((fuseView = null), renderLine());
-    } else close = overlay(head, body);
+    fuseView = h("div", { class: "stack", "data-testid": "fuse-preview" }, head, body);
+    close = () => ((fuseView = null), renderLine());
     renderLine();
-    if (desk) focusPreview();
+    focusPreview();
   };
 
   /** Confirm a fuse; a pair nobody had fused (or only bots had) then shows
@@ -1638,7 +1788,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         h("div", { class: "label" }, t("fuse.new")),
         h("h2", { class: "reveal", "data-testid": "fusion-reveal" }, t(claimed ? "forge.claimed" : "fuse.discovered", { name: fused.name })),
         h("div", { class: "preview-card" }, card(fused, { side: "you", extra: [copiesBadge(fused)] })),
-        unitSheet(fused, content),
+        unitSheet(fused, content, { floor: sheetFloor }),
       );
     });
 
@@ -1672,7 +1822,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const offerBody = async (o: Offer): Promise<OfferBody> => {
     const u = unitOf(o.unitId);
     let blocked = buyBlock(o);
-    const affordable = blocked === "";
+    // A predicted board has no buy preview to ask for (the server has not got it yet): the rule shows, the preview comes with the answer.
+    const affordable = blocked === "" && !predicted;
     let ask = previews.get(o.slot);
     if (affordable && !ask) {
       ask = buyPreview(o);
@@ -1696,7 +1847,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }
     // Without a preview (no gold, a full line), an owned unit still shows your copy as it is.
     const owned = mine ? null : board.find((x) => x.kind === "unit" && x.unitId === o.unitId) ?? null;
-    const sheet = mine ? unitSheet(mine.next, content, { from: mine.now.stats }) : owned ? unitSheet(owned, content) : u ? unitSheet(u, content) : h("h2", {}, o.unitId);
+    const where = t("panel.offer", { n: run.offers.findIndex((x) => x.slot === o.slot) + 1 });
+    const sheet = mine ? unitSheet(mine.next, content, { from: mine.now.stats, ...sheetOpts(where) }) : owned ? unitSheet(owned, content, sheetOpts(where)) : u ? unitSheet(u, content, sheetOpts(where)) : h("h2", {}, o.unitId);
     // What buying does goes inside the sheet, above its last line (the rates hint).
     // The XL sheet's text column holds the rates line (mission #1286).
     const body = sheet.querySelector(".sheet-body") ?? sheet;
@@ -1706,29 +1858,23 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     if (fusions.length) body.insertBefore(h("div", { class: "stack offer-fusions", "data-testid": "offer-fusions" }, ...fusions.map((f) => h("div", { class: `small${f.awakens ? "" : " dim"}` }, `⚗ ${offerLine(f)}`))), rates);
     return { sheet, blocked };
   };
-  /** The phone's offer sheet: the body in an overlay, with Close and Buy. */
-  const offerSheet = (o: Offer) =>
-    guarded(err, async () => {
-      const { sheet, blocked } = await offerBody(o);
-      const buy = button(buttonRefusal(blocked) || t("buy.button", { cost: o.cost }), () => (close(), void decide({ kind: "buy", slot: o.slot })), "primary grow", "buy");
-      buy.disabled = blocked !== "";
-      const lockBtn = canLock(o) ? [button(lockLabel(o), () => (close(), lock(o)), "", "lock")] : [];
-      const close = overlay(sheet, h("div", { class: "row sheet-actions" }, button(t("buy.close"), () => close(), "", "offer-close"), ...lockBtn, buy));
-    });
-
+  const offerSlots = offerPositions(run);
+  // The shop row has the tray's width: more offers than three shrink their pieces to fit.
+  const manyOffers = offerSlots.length > 3;
+  const offerPx = Math.min(pieceSizes().offer, Math.floor((tall ? 366 : manyOffers ? 626 : 462) / offerSlots.length) - 14);
   const offers = h(
     "div",
-    { class: "slots", "data-testid": "offers" },
+    { class: "tb-row tb-offers", style: `--n:${offerSlots.length}`, "data-testid": "offers" },
     // Every slot keeps its place: a bought offer leaves an empty slot, the rest never shift (CrazyGames audit, arena#14).
-    ...offerPositions(run).map((at, pos) => (at >= 0 ? run.offers[at]! : pos)).map((o: Offer | number) => {
-      if (typeof o === "number") return h("div", { class: "cell offer-gap", "data-testid": `offer-gap-${o}`, "aria-hidden": "true", style: cellStyle(pieceSizes().offer) });
+    ...offerSlots.map((at, pos) => (at >= 0 ? run.offers[at]! : pos)).map((o: Offer | number) => {
+      if (typeof o === "number") return h("div", { class: "cell offer-gap", "data-testid": `offer-gap-${o}`, "aria-hidden": "true", style: cellStyle(offerPx) });
       const u = unitOf(o.unitId);
       const owned = owns(o.unitId);
       const price = `${t("shop.gold", { n: o.cost })}${owned ? " ＋" : ""}`;
       // The piece (mission #1286): price and lock on its foot, the tier beside them.
       const pu = { name: u?.name ?? o.unitId, emoji: u?.emoji ?? "?", stats: u?.base ?? { pwr: 0, hp: 0 }, face: u ? faceOfUnit(u) : { when: { icon: "✨", label: "" }, headline: { icon: "✨" } }, tier: o.tier, copies: 1 };
       const c = actionable(
-        h("div", { class: "cell offer", "data-testid": `offer-${o.slot}`, "data-name": pu.name, style: cellStyle(pieceSizes().offer) }, piece(pu, { size: "L", side: "shop", px: pieceSizes().offer, word: pieceSizes().lineWord, price: o.cost, lock: o.locked === true })),
+        h("div", { class: "cell offer", "data-testid": `offer-${o.slot}`, "data-name": pu.name, style: cellStyle(offerPx) }, piece(pu, { size: "L", side: "shop", px: offerPx, floor, word: !tall && offerPx >= 68, price: o.cost, lock: o.locked === true })),
         `${pu.name}, ${price}`,
       );
       if (run.gold < o.cost) c.classList.add("poor");
@@ -1738,31 +1884,21 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       c.addEventListener("click", () => (c.classList.remove("tapped"), void c.offsetWidth, c.classList.add("tapped")));
       c.addEventListener("animationend", () => c.classList.remove("tapped"));
       if (!crown) dragCard(c, { kind: "offer", offer: o });
-      if (!desk)
-        // Tap-tap: the first tap takes it in hand and lights the slots it can go to,
-        // a tap on a lit slot buys it there; a second tap on it reads it (its sheet: Buy, Lock).
-        c.addEventListener("click", () => {
-          play("click");
-          if (chosen === o.slot) return (chosen = null), renderLine(), void offerSheet(o);
+      // Tap-tap: the first tap takes it in hand (the inspector reads it) and lights the slots it can
+      // go to; a tap on a lit slot buys it there; a second tap on it puts it down.
+      c.addEventListener("click", () => {
+        play("click");
+        if (chosen !== o.slot) {
           // Feedback on every tap: a card you can't buy says why, right away.
           const why = buyBlock(o);
           if (why) (err.textContent = why), play("wrong"), c.classList.add("nudge"), setTimeout(() => c.classList.remove("nudge"), 400);
-          chosen = o.slot;
-          pick = { mode: "none" };
-          renderLine();
-        });
-      else {
-        // Click selects it (the inspector holds it), double-click buys it.
-        c.addEventListener("click", () => {
-          play("click");
-          chosen = chosen === o.slot ? null : o.slot;
-          if (pick.mode === "picked") pick = { mode: "none" };
-          renderLine();
-        });
-        c.addEventListener("dblclick", () => buy(o));
-        c.addEventListener("contextmenu", (e) => (e.preventDefault(), canLock(o) && lock(o)));
-        desktopCard(c, { kind: "offer", slot: o.slot });
-      }
+        }
+        chosen = chosen === o.slot ? null : o.slot;
+        if (pick.mode === "picked") pick = { mode: "none" };
+        renderLine();
+      });
+      c.addEventListener("dblclick", () => buy(o));
+      c.addEventListener("contextmenu", (e) => (e.preventDefault(), canLock(o) && lock(o)));
       return c;
     }),
   );
@@ -1778,7 +1914,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       c.append(h("div", { class: "fuse-tag", "data-testid": `fuse-offer-${o.slot}`, title: offerLine(f) }, f.awakens ? (f.design ? `⚗ ${fusionName(f)}` : t("fuse.offerClaim")) : "⚗"));
     }
   };
-  if (codexOn && !crown)
+  if (codexOn && !crown && !predicted)
     void api.forge(run.runId).then(
       (f) => {
         forge = f;
@@ -1806,7 +1942,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   }
   // An empty line can fight (and lose a heart) once nothing is affordable, so a broke run moves on.
   fight.disabled = (run.line.length === 0 && run.offers.some((o) => o.cost <= run.gold)) || !!run.gift;
-  if (desk) {
+  if (kb) {
     reroll.append(" ", kbd("R"));
     fight.append(" ", kbd("Space"));
   }
@@ -1820,13 +1956,20 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
    * and the fight uses); the day gives its line only when its champion is
    * that player, so a day that turned over since never shows another team
    * (R2-17 batch F). */
+  /** One unit of the Crown's team, as a piece on their rim; a tap reads it in a sheet. */
+  const theirCell = (u: LineUnit) =>
+    actionable(
+      h("div", { class: "cell them bare", style: cellStyle(pieceSizes().their, true) }, piece(lineToPiece(u, content), { size: "L", side: "them", px: pieceSizes().their, word: false, floor })),
+      u.name,
+    );
   const fillFoe = (d: DayView | null, settled = d !== null) => {
     if (!foe || !opp) return;
     const ch = d?.champion;
     const line = ch && ch.player.id === opp.player.id ? ch.line : null;
     foe.replaceChildren(
-      h("div", { class: "label" }, ownCrown ? t("foe.ownCrown") : t("foe.crown"), who(opp.player.name, "ghost-name")),
-      line ? team(line, "ghost", content, "crown-foe-line") : h("div", { class: "dim small" }, settled ? t("foe.lineInFight") : "…"),
+      line
+        ? h("div", { class: "crown-foe-line tb-their-cells", "data-testid": "crown-foe-line", "aria-label": `${ownCrown ? t("foe.ownCrown") : t("foe.crown")} ${opp.player.name}` }, ...line.map((u) => theirCell(u)))
+        : h("div", { class: "dim small foe-wait" }, settled ? t("foe.lineInFight") : "…"),
     );
   };
   const fillPin = (d: DayView | null) => {
@@ -1897,7 +2040,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       readers.push(() => sheetOf());
       // Desktop (R4-5): hovering a card reads it in the pane beside the cards
       // (a click too); a phone taps it open as a sheet over the chooser.
-      if (desk) {
+      if (!tall) {
         c.addEventListener("mouseenter", () => readGift(i));
         c.addEventListener("click", () => readGift(i));
       } else c.addEventListener("click", () => (play("click"), void closable(sheetOf())));
@@ -1917,7 +2060,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       h("div", { class: "dim small", "data-testid": "gift-free" }, tier ? t(tier > shopTier ? "gift.freeTierAhead" : "gift.freeTier", { tier: roman(tier) }) : t("gift.free")),
       ...(stuck ? [h("div", { class: "hint", "data-testid": "gift-full" }, none ? t("gift.noneFits") : t("gift.onlyOwned"))] : []),
       h("div", { class: "gift-choices", "data-testid": "gift-choices" }, ...choices),
-      h("div", { class: "dim small" }, desk ? t("gift.readDesk") : t("gift.readPhone")),
+      h("div", { class: "dim small" }, tall ? t("gift.readPhone") : t("gift.readDesk")),
       h(
         "div",
         { class: "row sheet-actions" },
@@ -1925,8 +2068,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         button(t("gift.skip"), () => (close(), void decide({ kind: "gift", pick: null })), stuck ? "" : "grow", "gift-skip"),
       ),
     ];
-    const close = desk ? dismissable(aside, h("div", { class: "gift-split" }, h("div", { class: "stack gift-main" }, ...kids), read)) : dismissable(aside, ...kids);
-    if (desk) {
+    const close = !tall ? dismissable(aside, h("div", { class: "gift-split" }, h("div", { class: "stack gift-main" }, ...kids), read)) : dismissable(aside, ...kids);
+    if (!tall) {
       read.closest(".sheet")?.classList.add("gift-sheet");
       readGift(0);
     }
@@ -1945,110 +2088,59 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
 
   const menuBtn = button("☰", () => runMenu(run, content, err), "menu-btn", "menu-open");
   menuBtn.setAttribute("aria-label", t("shop.menu"));
-  if (desk) (menuBtn.title = t("shop.menuEsc"), withKey(menuBtn, "Esc"));
+  if (kb) (menuBtn.title = t("shop.menuEsc"), withKey(menuBtn, "Esc"));
 
   const nextOpp = h("span", { class: "dim next-opp", "data-testid": "next-opponent" }, ...(opp ? [`${crown ? t("opp.crownVs") : t("opp.next")} `, who(opp.player.name), `${opp.player.bot ? " 🤖" : ""}${ownCrown ? t("opp.yourChampionTeam") : ""}`] : [crown ? t("opp.crownVsChampion") : t("opp.nextSaved")]));
-  // Phone and the 800×450 frame (mission #1286 slice 2, r/arena-redesign/final/):
-  // the HUD's one row with who's next in full, the line and the bench as two
-  // panels, the shop with its one line of how, and a side column of the
-  // selected unit's buttons, Reroll and Fight. The phone stacks them.
-  if (!desk) {
-    const wide = wideQuery.matches;
-    show(
-      h(
-        "div",
-        { class: "topbar", "data-testid": "topbar" },
-        h(
-          "div",
-          { class: "hud", "data-testid": "hud" },
-          menuBtn,
-          h("span", { class: "round-pill", "data-testid": "round" }, roundLabel(run.round)),
-          heartIcons(run.hearts),
-          h("span", { class: "hud-gap" }),
-          wide ? nextOpp : null,
-          // The Crown has no shop: no gold to show.
-          crown ? null : h("span", { class: "gold", "data-testid": "gold" }, t("shop.gold", { n: run.gold })),
-        ),
-        wide ? null : h("div", { class: "row opp" }, nextOpp, crown ? null : pin),
-      ),
-      h(
-        "div",
-        { class: "board" },
-        h(
-          "section",
-          { class: "run-panel line-panel" },
-          h("div", { class: "row spread line-head" }, h("div", { class: "label" }, crown ? t("line.crown") : t("line.phone")), legendBtn),
-          line,
-        ),
-        B > 0 ? h("section", { class: "run-panel bench-panel" }, bench) : null,
-        hintSlot,
-        h("section", { class: "run-panel shop-panel" }, crown ? null : h("div", { class: "row shop-head" }, h("div", { class: "label" }, t("shop.offersPhone")), how), crown ? foe : offers),
-        h("div", { class: "shop-side" }, wide && !crown ? pin : null, actions, h("div", { class: "row shop-foot" }, crown ? null : reroll, fight)),
-      ),
-      err,
-    );
-  } else show(
-    h(
-      "div",
-      { class: "topbar", "data-testid": "topbar" },
-      h(
-        "div",
-        { class: "hud", "data-testid": "hud" },
-        menuBtn,
-        desk ? runTrack(run) : h("span", { class: "round-pill", "data-testid": "round" }, roundLabel(run.round)),
-        heartIcons(run.hearts),
-        // The Crown has no shop: no gold to show.
-        crown ? h("span", {}) : h("span", { class: "gold", "data-testid": "gold" }, t("shop.gold", { n: run.gold })),
-      ),
-      h(
-        "div",
-        { class: "row spread opp" },
-        desk ? null : nextOpp,
-        crown ? null : pin,
-      ),
-    ),
-    h(
-      "div",
-      { class: "board" },
-      // C-Shop: the line, the bench and the shop are three outlined panels on one board.
-      h(
-        "section",
-        { class: "run-panel line-panel" },
-        h(
-          "div",
-          { class: "row spread line-head" },
-          h("div", { class: "label" }, crown ? t("line.crown") : t("line.phone")),
-          // Desktop: who's next sits on the line's panel (C-Shop), the top bar keeps the track.
-          h("div", { class: "row" }, desk ? nextOpp : null, legendBtn),
-        ),
-        line,
-        // The phone keeps the bench in the line's panel: one frame less, so round 8 fits 640 px.
-        desk || B === 0 ? null : bench,
-      ),
-      // Desktop: the bench and the hint share a row (C-Shop's bench beside the fuse note).
-      desk ? h("div", { class: "bench-hint" }, B > 0 ? h("section", { class: "run-panel bench-panel" }, bench) : null, hintSlot) : null,
-      desk ? null : actions,
-      desk ? null : hintSlot,
-      h("section", { class: "run-panel shop-panel" }, crown ? null : h("div", { class: "label" }, desk ? t("shop.offersDesk", { n: run.offers.length }) : t("shop.offersPhone")), crown ? foe : offers),
-    ),
-    desk ? inspector : null,
-    h("div", { class: "spacer" }),
-    h("div", { class: "row shop-foot" }, crown ? null : reroll, fight),
-    err,
+  // The table (arena#28): one stage. The HUD's plates on top (menu, the round track, hearts at
+  // every size, gold), their line and your line (the bench beside it) in the middle, and the
+  // tray at the foot: the coach's hint, the shop, Reroll and Fight. The inspector floats over it.
+  const plate = (cls: string, ...kids: (Node | null)[]) => h("div", { class: `plate ${cls}` }, ...kids);
+  const hud = h(
+    "div",
+    { class: "tb-hud", "data-testid": "hud" },
+    plate("menu", menuBtn),
+    tall ? null : plate("help", legendBtn),
+    plate("round", tall ? h("span", { class: "round-pill", "data-testid": "round" }, roundLabel(run.round)) : runTrack(run)),
+    h("span", { class: "hud-gap" }),
+    plate("hearts", heartIcons(run.hearts)),
+    // The Crown has no shop: no gold to show.
+    crown ? null : plate("coins", h("span", { class: "coin", "aria-hidden": "true" }), h("span", { class: "gold", "data-testid": "gold" }, t("shop.gold", { n: run.gold }))),
   );
+  const theirs = h(
+    "div",
+    { class: "tb-their", "data-testid": "their-line" },
+    // Their line stays hidden until the fight (the Crown shows the champion's team); wells keep its place.
+    ...(crown ? [foe!] : Array.from({ length: L }, (_, i) => h("div", { class: "cell empty ghost", "data-testid": `their-${i}`, "aria-hidden": "true", style: lay ? `--s:${Math.round(lay.wellsH * 0.8)}px;padding-top:4px;height:${lay.wellsH}px` : cellStyle(pieceSizes().their) }, h("div", { class: "cell-well" }, "?")))),
+  );
+  const table = stage(
+    [
+      hud,
+      h("div", { class: "tb-side them" }, nextOpp, crown ? null : pin),
+      theirs,
+      h("div", { class: "tb-side you" }, h("div", { class: "label" }, crown ? t("line.crown") : t("line.phone"))),
+      tall ? plate("help tb-help", legendBtn) : null,
+      line,
+      B > 0 ? bench : null,
+      h(
+        "div",
+        { class: manyOffers ? "tb-tray many" : "tb-tray", "data-testid": "tray" },
+        hintSlot,
+        crown ? null : h("div", { class: "tb-shop" }, h("div", { class: "label" }, t("shop.offersDesk", { n: run.offers.length })), offers),
+        h("div", { class: "tb-go" }, crown ? null : reroll, fight),
+      ),
+      inspector,
+      err,
+    ],
+    () => shopScreen(run, content, err.textContent ?? "", pick.mode === "picked" ? pick.index : -1, chosen ?? -1, predicted),
+    !tall,
+  );
+  table.classList.add("t-shop");
+  table.classList.toggle("with-panel", !inspector.hidden);
+  cueScroll();
+  if (lay) for (const [k, v] of Object.entries({ "wells-top": lay.wellsTop, "wells-h": lay.wellsH, "line-top": lay.lineTop, "bench-top": lay.benchTop, "tray-top": lay.trayTop })) table.style.setProperty(`--${k}`, `${v}px`);
+  show(table);
   screen("shop");
-  // A tap on a panel's bare ground (not a card, slot or button) answers too: the hint says what a tap does and blinks (CrazyGames audit, arena#13).
-  for (const panel of document.querySelectorAll<HTMLElement>("#app .run-panel"))
-    panel.addEventListener("click", (e) => {
-      if (!(e.target instanceof Element) || e.target.closest(".cell, .card, button, a, input, [role=button]")) return;
-      const line = chosen !== null ? t("hint.tapSlotBuy") : pick.mode === "picked" ? t("hint.tapSlotMove") : wideQuery.matches ? t("shop.howWide") : t("shop.howPhone");
-      for (const el of [how, hintSlot.firstElementChild].filter((x): x is Element => x !== null && x !== undefined)) {
-        if (el === how) how.replaceChildren(line);
-        el.classList.remove("nudge");
-        void (el as HTMLElement).offsetWidth;
-        el.classList.add("nudge");
-      }
-    });
+  if (coachNow) mountCoach(coachNow);
   // The keyboard stays with the unit in hand (#1064): a move or a merge redraws the
   // shop, and the focus that was on a board card follows the selection.
   if (hasKeys() && pick.mode === "none" && keyboardLost()) document.querySelector<HTMLElement>('[data-testid="line-0"], [data-testid="bench-0"], [data-testid="offer-0"]')?.focus({ preventScroll: true });
@@ -2063,11 +2155,11 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   // The gift opens by itself, unless it was set aside (and, if set aside for
   // a full board, there is still no room).
   if (run.gift && !crown && (giftAside?.key !== giftKey || (giftAside.full && !cramped(run.gift)))) openGift();
-  rerender = () => shopScreen(run, content, err.textContent ?? "", pick.mode === "picked" ? pick.index : -1);
+  rerender = () => shopScreen(run, content, err.textContent ?? "", pick.mode === "picked" ? pick.index : -1, -1, predicted);
   // Keys: Esc steps back (the fusion, the selection), then opens the ☰ run
   // menu, at every width (a sheet over the shop closes first: ui/dom.ts).
-  // Desktop: 1–7 buy, R reroll, L lock the chosen or hovered offer, Space
-  // fight, ← → move the selected unit, F fuse, S sell.
+  // With a keyboard: ← → pick an offer (or move the unit in hand), 1–5 put the offer in hand
+  // into that slot (or pick the unit there), R reroll, L lock the chosen offer, Space fight, F fuse, S sell.
   onKeys((e) => {
     const k = keyOf(e);
     const sel = pick.mode === "picked" ? pick.index : -1;
@@ -2085,9 +2177,17 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       return true;
     }
     if (crown) return false;
-    if (/^[1-7]$/.test(k)) {
-      const o = run.offers[Number(k) - 1];
-      if (o) buy(o);
+    // 1–5 are the line, 6–8 the bench slots after it (the board's own numbering).
+    if (/^[1-9]$/.test(k) && Number(k) <= L + B) {
+      const slot = Number(k) - 1;
+      if (tapSlot(slot)) return true;
+      if (pick.mode === "none" && chosen === null && unitAt(slot)) pick = { mode: "picked", index: slot };
+      else {
+        err.textContent = chosen !== null ? t("hint.tapSlotBuy") : t("shop.selectFirst");
+        play("wrong");
+        return true;
+      }
+      renderLine();
       return true;
     }
     if (k === "r") {
@@ -2096,9 +2196,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       return true;
     }
     if (k === "l") {
-      // The chosen offer, else the one under the mouse.
-      const slot = chosen ?? (hover?.kind === "offer" ? hover.slot : null);
-      const o = slot === null ? undefined : run.offers[slot];
+      const o = chosen === null ? undefined : run.offers[chosen];
       if (!o || !canLock(o)) return false;
       lock(o);
       return true;
@@ -2110,6 +2208,16 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       if (busy) return (moveQueue += step), true;
       const to = sel + step;
       if (to >= zoneStart(sel) && to < zoneStart(sel) + zoneLen(sel)) void decide({ kind: "reorder", from: sel, to }, to);
+      return true;
+    }
+    // No unit in hand: ← → walk the shop's offers, taking each in hand.
+    if ((k === "ArrowLeft" || k === "ArrowRight") && run.offers.length > 0 && pick.mode === "none") {
+      const n = run.offers.length;
+      const at = chosen === null ? -1 : run.offers.findIndex((o) => o.slot === chosen);
+      const next = at < 0 ? (k === "ArrowRight" ? 0 : n - 1) : (at + (k === "ArrowRight" ? 1 : n - 1)) % n;
+      chosen = run.offers[next]!.slot;
+      play("click");
+      renderLine();
       return true;
     }
     // B, S or F with nothing in hand says so instead of doing nothing.
@@ -2176,7 +2284,7 @@ const kbd = (k: string) => h("kbd", {}, keyLabel(k));
 /** Redraws the shop when the width crosses 1024px: its desktop layout is
  * more than CSS (the inspector, the keys). Other screens only restyle. */
 let rerender: (() => void) | null = null;
-desktopQuery.addEventListener("change", () => (app.dataset.screen === "shop" ? rerender?.() : app.dataset.screen === "codex" ? codexRedraw?.() : undefined));
+desktopQuery.addEventListener("change", () => (app.dataset.screen === "codex" ? codexRedraw?.() : undefined));
 
 /** Per-device "seen it once" flags (localStorage may throw or be empty: then everything is new). */
 function seen(key: string): boolean {
@@ -2226,10 +2334,11 @@ async function fightScreens(run: RunView, fight: FightResult, content: MvpConten
  * track on desktop), hearts and gold; the Crown has no gold. The phone's pill
  * names the round fought (`fought`), as the end card does. */
 function runBar(run: RunView, fought: RunView = run): HTMLElement[] {
+  const plate = (cls: string, ...kids: HTMLElement[]) => h("div", { class: `plate ${cls}` }, ...kids);
   return [
-    isDesktop() ? runTrack(run) : h("span", { class: "round-pill", "data-testid": "round" }, roundLabel(fought.round)),
-    heartIcons(run.hearts),
-    ...(run.phase === "crown" || run.round > rules.rounds ? [] : [h("span", { class: "gold", "data-testid": "gold" }, t("shop.gold", { n: run.gold }))]),
+    plate("round", orient() === "P" ? h("span", { class: "round-pill", "data-testid": "round" }, roundLabel(fought.round)) : runTrack(run)),
+    plate("hearts", heartIcons(run.hearts)),
+    ...(run.phase === "crown" || run.round > rules.rounds ? [] : [plate("coins", h("span", { class: "coin", "aria-hidden": "true" }), h("span", { class: "gold", "data-testid": "gold" }, t("shop.gold", { n: run.gold })))]),
   ];
 }
 
@@ -2443,6 +2552,7 @@ function openScene(id: string): void {
         return;
       case "shop":
         if (entry.forge) forgeScene = [entry.forge[0], entry.forge[1], entry.click];
+        else if (entry.click) settle(() => document.querySelector<HTMLElement>(`[data-testid="${entry.click}"]`)?.click());
         return shopScreen(await api.run(entry.runId), content);
       case "run-over":
         return runOverScreen(await api.run(entry.runId), content);
@@ -2547,6 +2657,12 @@ function joinForm(code: string, tg: HTMLElement | null = null): void {
   );
 }
 function nameJoinForm(code: string, tg: HTMLElement | null): void {
+  // Open to all, no join link: the first screen (arena#31).
+  if (code === "")
+    return firstScreen(async (name) => {
+      const s = await api.join(code, name);
+      history.replaceState(null, "", ownLink(s.invite));
+    }, [tg]);
   const input = h("input", { placeholder: t("join.yourName"), maxlength: "24", autocomplete: "nickname", "data-testid": "join-name" });
   const err = errorLine();
   const go = () => guarded(err, async () => {

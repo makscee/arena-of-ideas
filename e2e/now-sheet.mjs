@@ -8,6 +8,8 @@
 // on the phone) closes it and playback stays paused. A summoned card, when the
 // fight has one, opens the sheet too, not a trace.
 
+import { replayBattle } from "./battle-ctl.mjs";
+
 /** The cards on screen, read from the page: id, HP and status stacks. */
 const readCards = (page) =>
   page.evaluate(() =>
@@ -22,12 +24,13 @@ const readCards = (page) =>
 export async function nowSheetChecks(page, errors, { shot, phone }) {
   const paused = async () => (await page.getByTestId("battle-play").textContent()) === "▶";
   const toStart = async () => {
-    await page.getByTestId("battle-replay").click();
+    await replayBattle(page);
     if (!(await paused())) await page.getByTestId("battle-play").click();
     for (let i = 0; i < 400 && !(await page.getByTestId("battle-back").isDisabled()); i++) await page.getByTestId("battle-back").click();
   };
   const close = async () => {
-    if (phone) await page.locator('[data-testid="now-sheet"] ~ .sheet-actions [data-testid="sheet-close"], .overlay:has([data-testid="now-sheet"]) [data-testid="sheet-close"]').first().click();
+    // The unit's inspector floats over the table (arena#29): its ✕ closes it, and so does Esc.
+    if (phone) await page.getByTestId("inspector-close").click();
     else await page.keyboard.press("Escape");
     await page.getByTestId("now-sheet").waitFor({ state: "detached", timeout: 2_000 }).catch(() => errors.push(`now sheet: ${phone ? "Close" : "Esc"} didn't close it`));
   };

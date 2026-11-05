@@ -107,7 +107,7 @@ async function playTo(rt: MvpRuntime, stop: (run: MvpRunState) => boolean, what:
 
 const shopAt = (round: number) => (run: MvpRunState) => run.phase === "shop" && run.round === round && !run.gift;
 const fightOf = (kind: "round" | "crown", outcome: "win" | "loss" | "draw") => (run: MvpRunState) => run.fights.find((f) => f.kind === kind && f.outcome === outcome);
-const shop = (run: MvpRunState): SceneBuilt => ({ player: run.player, entry: { screen: "shop", runId: run.runId } });
+const shop = (run: MvpRunState, click?: string): SceneBuilt => ({ player: run.player, entry: { screen: "shop", runId: run.runId, ...(click ? { click } : {}) } });
 const battleOf = (kind: "round" | "crown", outcome: "win" | "loss" | "draw", keys?: string[]) => async (rt: MvpRuntime): Promise<SceneBuilt> => {
   const run = await playTo(rt, (r) => r.phase === "over" && !!fightOf(kind, outcome)(r), `a ${kind} ${outcome}`, 80);
   return { player: run.player, entry: { screen: "battle", battleId: fightOf(kind, outcome)(run)!.battleId, runId: run.runId, ...(keys ? { keys } : {}) } };
@@ -278,6 +278,8 @@ export const SCENES: Scene[] = [
 
   { id: "shop-r1", group: "Shop", title: "Shop, round 1 (empty board)", look: "Empty line and bench, the first offers, gold", desktop: true, build: async (rt) => shop(await playTo(rt, shopAt(1), "round 1")) },
   { id: "shop-r3", group: "Shop", title: "Shop, round 3", look: "A few units on the line, offers, hearts, run track", desktop: true, build: async (rt) => shop(await playTo(rt, shopAt(3), "round 3")) },
+  { id: "shop-offer", group: "Shop", title: "Shop, an offer in hand", look: "The table: tap an offer and the inspector reads its rule, with Buy and Lock; the lit slots are where it goes", desktop: true, build: async (rt) => shop(await playTo(rt, shopAt(3), "round 3"), "offer-0") },
+  { id: "shop-unit", group: "Shop", title: "Shop, a unit tapped", look: "The table: tap a unit of yours and the inspector reads its rule and whose idea it was, with move, bench and sell", desktop: true, build: async (rt) => shop(await playTo(rt, shopAt(3), "round 3"), "line-0") },
   { id: "shop-r8", group: "Shop", title: "Shop, round 8", look: "A late line, tier offers, the run track near the Crown", desktop: true, build: async (rt) => shop(await playTo(rt, shopAt(8), "round 8")) },
   { id: "shop-bench-full", group: "Shop", title: "Shop, full bench", look: "Line of 5 plus a full bench: does it all fit?", desktop: true, build: async (rt) => shop(await playTo(rt, (r) => r.phase === "shop" && !r.gift && r.line.length >= rt.rules.lineSize && (r.bench ?? []).length >= benchSizeOf(rt.rules), "a full bench", 80)) },
   { id: "shop-merge-hint", group: "Shop", title: "Shop, a merge hint", look: "An offer that is a copy of a unit you own: its hint", desktop: true, build: async (rt) => shop(await playTo(rt, copyOffer(1), "a copy on offer")) },
@@ -300,7 +302,8 @@ export const SCENES: Scene[] = [
   { id: "battle-loss", keep: true, group: "Battle", title: "A battle you lose", look: "The loss end card, hearts lost", desktop: true, build: battleOf("round", "loss") },
   { id: "battle-draw", keep: true, group: "Battle", title: "A draw", look: "The draw end card", desktop: true, build: battleOf("round", "draw") },
   { id: "battle-six", keep: true, group: "Battle", title: "Six cards on a side", look: "A line grown past five (R4-11): every card keeps its name and PWR/HP on one line, at 800×450 too (#1271)", desktop: true, build: sixBattle },
-  { id: "battle-chain-once", keep: true, group: "Battle", title: "A unit acts once per chain", look: "A chain where a unit would have acted twice before #1030: step numbers, spent cards fade, big numbers", desktop: true, build: chainOnce },
+  { id: "battle-chain-once", keep: true, group: "Battle", title: "A unit acts once per chain", look: "A chain, one step at a time (press Space, then › to step): only the current step's wire is on the field, its number on it; the tray lists the steps so far with CHAIN ×N; a unit that would have acted twice fades", desktop: true, build: chainOnce },
+  { id: "battle-result", keep: true, group: "Battle", title: "The result in the tray", look: "E pressed: the run result takes the tray (word, why, key moments, damage, Replay / Why / Next), the lines stay clear above it", desktop: true, build: battleOf("round", "loss", ["e"]) },
   { id: "battle-ledger", keep: true, group: "Battle", title: "Paused mid-battle", look: "Stepped a few beats and paused: the turn bar, the board", desktop: true, build: battleOf("round", "win", ["Space", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight"]) },
 
   { id: "crown", group: "Crown & day", title: "The Crown fight is next", look: "After round 12: the champion's team, the Crown button", desktop: true, build: async (rt) => shop(await playTo(rt, (r) => r.phase === "crown", "the Crown", 80)) },

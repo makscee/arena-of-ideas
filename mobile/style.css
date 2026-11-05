@@ -298,12 +298,12 @@ input { width: 100%; background: var(--panel); color: var(--text); border: var(-
 .tier.t3 { color: var(--tier-3); }
 .tier.t4 { color: var(--tier-4); }
 .card .foot { min-height: 12px; display: flex; align-items: center; justify-content: center; max-width: 100%; }
-.discovered { font-size: 10px; color: var(--dim); font-family: var(--font-num); }
+.discovered { font-size: 11px; color: var(--dim); font-family: var(--font-num); }
 .card .stats { font-family: var(--font-num); font-size: 12px; font-weight: 600; line-height: 14px; }
 .card .stats .p { color: var(--action); }
 .card .stats .h { color: var(--them); }
-.card .copies { font-family: var(--font-num); font-size: 10px; line-height: 1; color: var(--you); letter-spacing: 0.04em; }
-.card .copies.tag { font-size: 8px; color: var(--action); }
+.card .copies { font-family: var(--font-num); font-size: 11px; line-height: 1; color: var(--you); letter-spacing: 0.04em; }
+.card .copies.tag { font-size: 11px; color: var(--action); }
 .card .cost { font-family: var(--font-num); font-size: 12px; color: var(--action); }
 .label { font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
 .outcome { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 44px; text-align: center; }
@@ -366,7 +366,7 @@ button.small { min-height: 44px; font-size: 14px; padding: 0 12px; }
 .hint { font-size: 15px; color: var(--you); border-left: 2px solid var(--you); padding: 2px 0 2px 8px; background: color-mix(in srgb, var(--you) 6%, transparent); }
 .records { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; text-align: center; }
 .records .num { font-size: 18px; }
-.records .label { font-size: 11px; letter-spacing: 0.04em; }
+.records .label { font-size: 12px; letter-spacing: 0.04em; }
 .champion { border-color: color-mix(in srgb, var(--them) 40%, var(--line)); }
 .games { display: flex; flex-wrap: wrap; gap: 6px; }
 button.game { text-transform: none; letter-spacing: 0; font-family: var(--font-body); }
@@ -1016,7 +1016,7 @@ button.bv-moment { display: grid; grid-template-columns: 38px 18px minmax(0, 1fr
  * wrappers the desktop grids place (.topbar, .board, .home-main, …) are
  * display: contents on the phone, so its layout is as it was. */
 .topbar, .board, .home-main, .home-side, .result-main, .result-teams, .over-line { display: contents; }
-kbd { display: inline-block; min-width: 1.6em; padding: 0 4px; margin: 0 1px; border: var(--bw) solid var(--outline); border-bottom-width: 2px; border-radius: 3px; font-family: var(--font-num); font-size: 0.8em; line-height: 1.4; text-align: center; color: var(--text); background: var(--panel); }
+kbd { display: inline-block; min-width: 1.6em; padding: 0 4px; margin: 0 1px; border: var(--bw) solid var(--outline); border-bottom-width: 2px; border-radius: 3px; font-family: var(--font-num); font-size: max(11px, 0.8em); line-height: 1.4; text-align: center; color: var(--text); background: var(--panel); }
 button kbd { color: inherit; background: transparent; border-color: currentColor; opacity: 0.7; text-transform: none; letter-spacing: 0; margin-left: 6px; }
 @media (min-width: 1024px) {
   #app[data-screen] { --cw: 120px; --gap: 8px; --insp: 340px; max-width: none; }
@@ -1988,7 +1988,7 @@ button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padd
 
 /* Report (#1271): a small dim link beside a player's name or a player-made unit's credit. It never
  * takes a row of its own on a short screen: 24 px tall, and the sheet's tap area is the whole link. */
-button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; border: 0; background: none; box-shadow: none; font-size: 11px; line-height: 14px; text-decoration: underline; opacity: 0.85; }
+button.link.report-link { min-height: 32px; min-width: 44px; align-self: center; padding: 0 8px; border: 0; background: none; box-shadow: none; font-size: 11px; line-height: 14px; text-decoration: underline; opacity: 0.85; }
 .throne-hero button.link.report-link { color: inherit; align-self: flex-start; margin-top: -8px; }
 .report-sheet .report-about { font-weight: 700; word-break: break-word; }
 .report-sheet input { min-height: 44px; }
@@ -2415,3 +2415,51 @@ button.link.report-link { min-height: 24px; align-self: center; padding: 0 4px; 
   #app[data-screen="home"] .play-big .play-main { font-size: 30px; }
   #app[data-screen="home"] .throne-nav button { font-size: 16px; padding-left: 4px; padding-right: 4px; min-width: 0; }
 }
+
+/* ---- arena#31, mission #26 move 3: the first screen and the first run's coach ---- */
+@media (prefers-reduced-motion: no-preference) {
+  .coach-target { animation: want-pulse 1.4s ease-in-out infinite; }
+}
+.coach-target { outline: 3px solid var(--action); outline-offset: 2px; border-radius: 12px; }
+.error:has(> .coach) { color: var(--outline); min-height: 0; }
+.coach { display: flex; flex-direction: column; gap: 4px; background: var(--paper); color: var(--outline); border: 3px solid var(--outline); border-radius: 16px; box-shadow: 0 4px 0 var(--outline); padding: 8px 12px; text-align: left; font-size: 14px; line-height: 1.3; }
+.coach-step { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--level); }
+.coach-body { display: flex; align-items: center; gap: 10px; }
+.coach-pair { display: flex; align-items: center; gap: 4px; flex: none; }
+.coach-arrow { font-size: 18px; font-weight: 800; }
+/* The chain's wire (arena#30), as the battle draws it: a line to the answering piece with its step's number on it */
+.coach-wire { position: relative; flex: none; width: 56px; height: 5px; margin: 0 6px; border-radius: 3px; background: var(--action); }
+.coach-wire::after { content: ""; position: absolute; right: -6px; top: 50%; translate: 0 -50%; border: 7px solid transparent; border-left: 11px solid var(--action); border-right: 0; }
+.coach-wire-n { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--action); border: 3px solid var(--outline); color: var(--outline); font: 400 16px/1 var(--font-head, inherit); }
+.coach-chain { display: none; }
+.coach-text b { font-size: 16px; }
+.coach-by { color: var(--ink-dim); font-size: 12px; margin-top: 2px; }
+@media (max-height: 560px) and (orientation: landscape) {
+  .coach { padding: 3px 10px; font-size: 12px; border-width: 2px; box-shadow: 0 2px 0 var(--outline); border-radius: 12px; }
+  .coach-step, .coach-pair { display: none; }
+  .coach-chain { display: inline; font-weight: 800; }
+  .coach-text b { font-size: 12px; }
+  .coach-by { display: inline; margin: 0 0 0 6px; font-size: 11px; }
+}
+
+/* The chain on the field (arena#30): the current step's wire wears its number, a disc on the wire. */
+.bv-beam .bv-bn circle { fill: var(--bv-bc); stroke: var(--outline); stroke-width: 3; }
+.bv-beam .bv-bn text { fill: var(--outline); font-family: var(--font-head, inherit); font-weight: 400; }
+.bv-beam.draw .bv-bn { animation: bv-beam-head calc(0.22s / var(--bv-sp, 1)) step-end calc(var(--bv-bt, 0s) / var(--bv-sp, 1)) both; }
+
+/* ---- arena#31, fix round: PLAY answers at once, a loader before the script ---- */
+@media (prefers-reduced-motion: no-preference) {
+}
+
+/* A control a finger or a mouse must hit is never under 32 px (44 on touch) (arena#32): Skip on the vote card */
+button.link.keep { min-height: 32px; min-width: 44px; }
+@media (pointer: coarse) { button.link.keep, button.link.report-link { min-height: 44px; } }
+@media (pointer: coarse) { .forge-wish, .forge-picker button { min-height: 44px; min-width: 44px; } }
+@media (max-width: 600px) { .forge-wish { min-height: 44px; min-width: 88px; } }
+
+/* A scroll area the layout lint accepts (arena#32): marked data-scroll, and it shows there is more below: a fade at its foot */
+[data-scroll] { --scroll-cue: fade; }
+[data-scroll]::after { content: ""; display: block; flex: none; position: sticky; bottom: 0; height: 24px; margin-top: -24px; background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--ground) 92%, transparent)); pointer-events: none; }
+
+/* The idea picks on a short window (800×450): the player's quote and the "read it again" button keep their height, the page scrolls instead of squeezing them to nothing (arena#32) */
+.idea-quote, button.pick-none { flex: none; }

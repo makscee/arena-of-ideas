@@ -76,14 +76,13 @@ export async function escPass(browser, url, { label, viewport, touch = false, er
     // run menu opens, and Esc on it resumes.
     await tid("play").click();
     await tid("gold").waitFor();
-    if (mobile) {
+    {
       const gold = await tid("gold").textContent();
-      // Tap-tap (#1293): the first tap takes the offer in hand, the second opens its sheet.
+      // Tap-tap (#1293): the tap takes the offer in hand and the inspector reads it; Esc puts it down, unbought.
       await tid("offer-0").click();
-      await tid("offer-0").click();
-      await tid("offer-close").waitFor();
+      await tid("inspector").waitFor({ state: "visible" });
       await esc();
-      await expectShown("Shop → offer → Esc", tid("offer-close"), false);
+      await expectShown("Shop → offer → Esc", tid("inspector"), false);
       if ((await tid("gold").textContent()) !== gold) fail(`Shop → offer → Esc bought it (${gold} → ${await tid("gold").textContent()})`);
     }
     await tid("legend-open").click();
@@ -97,11 +96,8 @@ export async function escPass(browser, url, { label, viewport, touch = false, er
     await expectShown("Shop → menu → Esc resumes", tid("run-menu"), false);
 
     // A fight: Esc opens the menu (the battle pauses), Esc resumes play.
-    if (mobile) {
-      await tid("offer-0").click();
-      await tid("offer-0").click();
-      await tid("buy").click();
-    } else await page.keyboard.press("1");
+    await tid("offer-0").click();
+    await tid("buy").click();
     await tid("line").locator(".card").first().waitFor().catch(() => {});
     await tid("fight").click();
     await tid("battle-play").waitFor();
@@ -133,6 +129,7 @@ export async function escPass(browser, url, { label, viewport, touch = false, er
     // (server/src/mvp/bots.ts), so wait up to 2 minutes for them.
     const slayers = async () => (await (await page.request.get(new URL("api/v1/day", url).href, { timeout: 10_000 })).json()).slayers ?? 0;
     for (let t = Date.now(); (await slayers()) < 2 && Date.now() - t < 130_000; ) await page.waitForTimeout(5000);
+    await tid("settings").click(); // the dev tools sit in the ≡ menu (arena#31); it opens again by itself with how the day ended
     await page.locator("details.dev summary").click();
     // Home redraws with the day just ended: wait for a new Play button.
     await tid("play").evaluate((el) => (el.dataset.stale = "1"));

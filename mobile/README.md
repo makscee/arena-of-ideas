@@ -30,13 +30,20 @@ Files and owners:
 | `npm run mvp:check` | typecheck, tests, the bot, the phone run and the desktop run |
 | `npm run mvp:redeploy [-- <branch>] [--fresh]` | redeploys the m1 test instance (default `mission-574-mvp`; usually `mvp-live`, the last checked build). It holds real players' data now: `--fresh` (an empty world) needs `ARENA_MVP_WIPE=1` and Maks's word |
 
-Desktop (round 2, R2-9): at 1024px and wider a screen that calls
-`screen(name)` (ui/dom.ts) gets its desktop layout from style.css; the shop
-also swaps its pop-up sheets for an inspector on the right and takes keys
-(`onKeys`). Below 1024px, and on screens without a name (the name screen),
-it is the phone column. The battle (R2-16) is CSS only: the lines face each
-other, a turn timeline scrubs, and a side panel holds Why and Log; the phone
-keeps its stacked rows.
+The table (arena#28, mission #26 move 1): the shop is one fixed stage at every
+size (`ui/stage.ts`): 1280×720 for a landscape window, 390×844 for a portrait
+one (narrower than 0.8 of its height), drawn at its own size and scaled to fit
+(`table.css` lays it out in stage pixels; landscape text is 18px and up, which
+is 11px at 800×450). Their line, your line (the bench beside it), the HUD's
+plates (menu, round track, hearts at every size, gold) and a tray that holds
+the coach's hint, the shop, Reroll and Fight. Tap an offer, then a lit slot
+(or ← → to pick an offer and 1–5 for the slot); a tap on a unit, yours or an
+offer, reads it in the inspector that floats over the table (its rule in
+words, whose idea it was, with Buy, Lock, move, bench, fuse, sell). Space
+fights, R rerolls, L locks, Esc steps back and then opens the menu. The Codex
+and the Workshop open as windows over the dimmed table (`keepScreen` keeps it
+under `#under`). The battle and the other screens keep their own layouts for
+now (slices C and E).
 
 Test instance: https://m1.twin-pogona.ts.net/arena/ (tailnet only). It is a
 launchd agent `ru.makscee.arena-mvp` in `~/arena-mvp` on m1, log in

@@ -49,6 +49,9 @@ export interface PieceOptions {
   /** Overrides the face box's side (the anatomy's hero, the detail sheet). */
   px?: number;
   testid?: string;
+  /** The smallest text, px, on a stage that is drawn scaled down (the table's landscape stage,
+   * where 18px is 11px at 800×450): every number, word and tab grows to it, and the piece's parts with them. */
+  floor?: number;
   /** Shows the when tab's word (default: L, M and a px override); off keeps its icon only (a narrow row). */
   word?: boolean;
 }
@@ -131,15 +134,7 @@ export function lineToPiece(u: LineUnit, content: Pick<MvpContent, "units">): Pi
   };
 }
 
-/** How far an M piece with its name reaches above its face box (the tab) and
- * below the box's top (rim numbers and the name), px, for a face of side `s`;
- * the same sums piece() makes (Home's champion sizes its card from them). */
-export function pieceReach(s: number): { above: number; below: number } {
-  const tabH = Math.round(Math.max(20, s * 0.27));
-  const d = Math.round(Math.max(22, s * 0.37));
-  const nf = Math.round(Math.max(12, s * 0.2));
-  return { above: Math.round(tabH * 0.62), below: s - Math.round(d * 0.7) + d + 3 + nf + 2 };
-}
+export { pieceReach } from "./reach";
 
 const px = (n: number) => `${Math.round(n)}px`;
 const css = (o: Record<string, string | number>) =>
@@ -157,12 +152,21 @@ function emoji(u: PieceUnit, s: number): HTMLElement {
   );
 }
 
-function chips(list: { status: string; stacks: number }[], cz: number): HTMLElement[] {
+function chips(list: { status: string; stacks: number }[], cz: number, floor = 0): HTMLElement[] {
   return list.map(({ status, stacks }) => {
     const [ic, tone] = statusEmoji(status);
-    const fs = Math.round(cz * 0.6);
+    const fs = Math.max(Math.round(cz * 0.6), floor);
     return h("div", { class: `pc-st ${tone}`, "data-status": status, style: css({ height: cz, "font-size": fs }) }, ic, h("i", { style: `font-size:${px(fs)}` }, String(stacks)));
   });
+}
+
+/** The text floor of the landscape stage where the window shows it scaled down (800×450 is 0.625 of it: 18 px there is 11 px),
+ * for a piece drawn without its own: a card in a window over the table, the Codex's grid, the forge. */
+function stageFloor(): number {
+  if (typeof document === "undefined") return 0;
+  const st = document.querySelector<HTMLElement>('[data-testid="stage"]');
+  const k = Number(st?.style.getPropertyValue("--k"));
+  return st?.classList.contains("L") && k > 0 && k < 1 ? Math.ceil(11 / k) : 0;
 }
 
 /** One piece. Its box is the face's square; the tab, rim numbers, shelf and
@@ -193,12 +197,13 @@ export function piece(u: PieceUnit, o: PieceOptions): HTMLElement {
   const showWord = o.word ?? (o.size === "L" || o.size === "M" || o.px !== undefined);
   const showName = o.size === "L" || o.size === "M";
   const showMeta = o.size === "L";
-  const tabH = Math.round(Math.max(20, s * 0.27));
-  const tf = Math.round(Math.max(12, s * 0.17));
-  const ti = Math.round(Math.max(13, s * 0.19));
-  const d = Math.round(Math.max(22, s * 0.37));
-  const sf = Math.round(Math.max(14, d * 0.6));
-  const hb = Math.round(Math.max(23, s * 0.42));
+  const fl = o.floor ?? stageFloor();
+  const tabH = Math.round(Math.max(20, s * 0.27, fl * 1.45));
+  const tf = Math.round(Math.max(12, s * 0.17, fl));
+  const ti = Math.round(Math.max(13, s * 0.19, fl));
+  const d = Math.round(Math.max(22, s * 0.37, fl * 1.5));
+  const sf = Math.round(Math.max(14, d * 0.6, fl));
+  const hb = Math.round(Math.max(23, s * 0.42, fl * 1.5));
   const big = s >= 120;
 
   // the face, on a rim in its side's colour (awoken lilac, fused gold and pink)
@@ -229,11 +234,11 @@ export function piece(u: PieceUnit, o: PieceOptions): HTMLElement {
     h(
       "div",
       { class: ring ? "pc-hb ring" : "pc-hb", "data-k": ring ? "ring" : "head", ...(ring ? { title: `${ring.status} ${o.counter ?? 0}/${ring.max}` } : {}), style: `${css({ left: hx, top: hy, width: tot, height: tot })};${ringStyle}` },
-      h("div", { class: "core", style: `background:${headTone(face.headline.icon)};font-size:${px(hb * 0.52)};box-shadow:inset 0 -${Math.max(2, Math.round(hb * 0.08))}px 0 #0003` }, face.headline.icon),
+      h("div", { class: "core", style: `background:${headTone(face.headline.icon)};font-size:${px(Math.max(hb * 0.52, fl))};box-shadow:inset 0 -${Math.max(2, Math.round(hb * 0.08))}px 0 #0003` }, face.headline.icon),
     ),
   );
   if (face.headline.amount) {
-    const af = Math.round(Math.max(12, hb * 0.42));
+    const af = Math.round(Math.max(12, hb * 0.42, fl));
     const ah = Math.round(af * 1.3);
     root.append(h("div", { class: "pc-num", "data-k": "num", style: css({ left: hx + tot - Math.round(ah * 0.7), top: hy + tot - Math.round(ah * 0.75), "font-size": af, height: ah, "min-width": ah }) }, face.headline.amount));
   }
@@ -247,7 +252,7 @@ export function piece(u: PieceUnit, o: PieceOptions): HTMLElement {
 
   // ★ awoken, ✦ fused: the left edge, above PWR
   if (u.awoken || u.fused) {
-    const mz = Math.round(Math.max(16, s * 0.25));
+    const mz = Math.round(Math.max(16, s * 0.25, fl));
     root.append(h("span", { class: u.fused ? "pc-mark fuse" : "pc-mark star", "data-k": "star", style: css({ left: -Math.round(mz * 0.42), top: Math.round(s * 0.2), "font-size": mz }) }, u.fused ? "✦" : "★"));
   }
 
@@ -255,16 +260,16 @@ export function piece(u: PieceUnit, o: PieceOptions): HTMLElement {
   let y = sy + d;
   const shelf = (o.statuses ?? []).filter((x) => x.stacks > 0 && x.status !== ring?.status);
   if (shelf.length || o.reserve) {
-    const cz = big ? 30 : 24;
+    const cz = Math.max(big ? 30 : 24, fl + 6);
     if (shelf.length) {
       const top = s - 8;
       const padB = 4;
-      root.append(h("div", { class: "pc-shelf", "data-k": "chips", style: css({ top, height: y + 3 - top + cz + padB, padding: `0 6px ${padB}px` }) }, ...chips(shelf, cz)));
+      root.append(h("div", { class: "pc-shelf", "data-k": "chips", style: css({ top, height: y + 3 - top + cz + padB, padding: `0 6px ${padB}px` }) }, ...chips(shelf, cz, fl)));
     }
     y += 3 + cz + 4;
   }
   if (showName) {
-    const nf = Math.round(Math.max(12, s * 0.2));
+    const nf = Math.round(Math.max(12, s * 0.2, fl));
     root.append(h("div", { class: "pc-nm name", "data-k": "name", style: css({ top: y + 3, "font-size": nf }) }, u.name));
     y += 3 + nf;
   }
