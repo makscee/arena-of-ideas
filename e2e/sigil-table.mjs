@@ -94,6 +94,35 @@ try {
     await page.screenshot({ path: `${out}/${id}-${view}.png` });
     await ctx.close();
   }
+  // The 3rd copy and a fusion (arena#40), on the piece gallery's states row: the awoken and the fused piece each draw
+  // a sigil; the fused one is built from two parents (its canvas is not its first parent's: a sleeping one beside it).
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 2 });
+    const page = await ctx.newPage();
+    const errs = [];
+    page.on("pageerror", (e) => errs.push(e.message));
+    await page.goto(`${url}#gallery`, { timeout: 60_000 });
+    await page.waitForSelector('[data-testid="gallery-state"] canvas.pc-sg', { timeout: 60_000 });
+    await page.waitForTimeout(1200);
+    const r = await page.evaluate(() => {
+      const rows = [...document.querySelectorAll('[data-testid="gallery-state"]')];
+      const row = (re) => rows.find((x) => re.test(x.querySelector(".g-name").textContent));
+      const L = (x) => x?.querySelector(".pc-L");
+      const ink = (pc) => { const c = pc?.querySelector("canvas.pc-sg"); if (!c) return false; const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; for (let i = 3; i < d.length; i += 4) if (d[i] > 0) return true; return false; };
+      const sleeping = L(row(/^sleeping/)), awoken = L(row(/^awoken/)), fused = L(row(/^fused/));
+      return {
+        awokenMarked: awoken?.classList.contains("aw") ?? false, fusedMarked: fused?.classList.contains("fu") ?? false,
+        ink: [sleeping, awoken, fused].map(ink), twoEmoji: document.querySelectorAll(".pc-em, .pc-em2").length,
+      };
+    });
+    check(r.awokenMarked && r.fusedMarked, "gallery: the awoken piece is marked aw, the fused one fu");
+    check(r.ink.every(Boolean), "gallery: sleeping, awoken and fused pieces all draw a sigil");
+    check(r.twoEmoji === 0, "gallery: no two-emoji fusion piece");
+    check(errs.length === 0, `gallery: no page error${errs.length ? " (" + errs[0] + ")" : ""}`);
+    await page.locator('[data-testid="gallery-state"]').nth(1).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `${out}/gallery-states.png` });
+    await ctx.close();
+  }
 } finally {
   await browser.close();
   child?.kill();

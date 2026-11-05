@@ -18,7 +18,7 @@ import { discoveredLine } from "./fusion";
 import { isMine, reportLink } from "./report";
 import { icon } from "./icon";
 import { roman } from "./roman";
-import type { Spec } from "./sigil";
+import { fuse, type Spec } from "./sigil";
 import { faceOfUnit, lineToPiece, piece, pieceReach, statusEmoji, type PieceUnit } from "./piece";
 import { faceFallback, fusedFace, type Face } from "../../src/mvp/face";
 import { termDef } from "../../src/glossary";
@@ -169,7 +169,7 @@ function pieceCard(u: CardUnit, o: CardOptions): HTMLElement {
     emoji: ems[0] ?? u.emoji,
     stats: u.stats,
     face,
-    ...(first && portraits.get(first) ? { portrait: portraits.get(first)! } : {}),
+    ...(u.kind === "fused" ? { portrait: fuse(first && portraits.get(first), u.fusion && portraits.get(u.fusion.second)) } : first && portraits.get(first) ? { portrait: portraits.get(first)! } : {}),
     awoken: u.kind !== "fused" && u.form === "awoken",
     ...(u.kind === "fused" ? { fused: { emoji: ems.slice(1).join("") || "✨" } } : {}),
   };

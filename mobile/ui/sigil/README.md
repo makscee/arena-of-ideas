@@ -27,3 +27,9 @@ New units get theirs from their LLM: the idea reader's archetypes (`server/src/m
 - **Pulses:** the battle viewer's `motion()` drives them from the wave's events through `sigilOf(piece).pulse(...)`: `hit` (a damage change), `fire` (the unit's rule acts) and `die` (a death change, after the killing blow's shake and freeze), each at the card's own timing and speed. `die` shatters it and the portrait comes back whole for the ghost the card greys.
 - **Copies:** a `cloneNode` copy is not mounted; `copySigils(from, to)` paints a still frame onto it (the drag ghost, a fading ghost card).
 - `npm run mvp:sigil-table` checks it in a browser: every piece has a canvas, no emoji, the loop draws what is on the page after redraws, a hit and a rule firing reach a sigil.
+
+## The 3rd copy and a fusion (slice F, arena#40)
+
+- **`aw`:** a piece passes `aw: 1` to its sigil when the unit is awoken (`PieceUnit.awoken`), so a spec's `aw` terms grow what its designer said (a halo, more arcs, a higher count) on every piece the game draws, with the frame's gold stand and crown. A fused unit is drawn with `aw: 1` too: both its parts were awoken to fuse.
+- **`fuse(a, b)`** (`fuse.ts`, the duel's `Sigil.fuse`): `{body: a.body, mark: b.mark}`. A part with no valid spec counts as the generic sigil; if the pair together draws more than the shape budget it keeps `a`'s whole portrait (none of the 60 × 60 live pairs does: `fuse.test.ts` checks them all). `lineToPiece`, the card's piece (`pieceCard`) and the gallery's fused state use it, replacing the two-emoji piece.
+- **Visual only:** a fusion's rule, name and stats come from the fusion; nothing here reads or changes them. The designer's own `FusionDesign.portrait` (slice C) is not drawn by the client.
