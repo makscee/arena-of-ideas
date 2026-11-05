@@ -65,6 +65,16 @@ try {
     const pieces = await page.evaluate(() => ({ pcs: document.querySelectorAll(".pc").length, withSigil: [...document.querySelectorAll(".pc")].filter((p) => p.querySelector("canvas.pc-sg")).length, emoji: document.querySelectorAll(".pc-em, .pc-em2").length }));
     check(pieces.pcs > 0 && pieces.pcs === pieces.withSigil, `${name}: every piece (${pieces.pcs}) draws a sigil`);
     check(pieces.emoji === 0, `${name}: no emoji on a piece`);
+    // arena#41: the chrome is words and drawn glyphs: no emoji in a tab, badge, chip or lock; each badge and chip holds a glyph canvas, each tab a word
+    const chrome = await page.evaluate(() => {
+      const els = [...document.querySelectorAll(".pc-tab, .pc-hb, .pc-st, .pc-lock")];
+      const emoji = els.filter((e) => /\p{Extended_Pictographic}/u.test(e.textContent ?? "")).map((e) => e.textContent);
+      const tabs = [...document.querySelectorAll(".pc-tab")], heads = [...document.querySelectorAll(".pc-hb .core")], chips = [...document.querySelectorAll(".pc-st")];
+      return { emoji, tabs: tabs.length, tabsWithWord: tabs.filter((t) => t.querySelector(".tw")?.textContent.trim()).length, tabIcons: document.querySelectorAll(".pc-tab .ti").length, heads: heads.length, headGlyphs: heads.filter((c) => c.querySelector("canvas.sg-gl")).length, chips: chips.length, chipGlyphs: chips.filter((c) => c.querySelector("canvas.sg-gl")).length };
+    });
+    check(chrome.emoji.length === 0, `${name}: no emoji in the tabs, badges and chips${chrome.emoji.length ? " (" + chrome.emoji[0] + ")" : ""}`);
+    check(chrome.tabs === chrome.tabsWithWord && chrome.tabIcons === 0, `${name}: each of ${chrome.tabs} tabs is a word, no icon`);
+    check(chrome.heads === chrome.headGlyphs && chrome.chips === chrome.chipGlyphs, `${name}: ${chrome.heads} badges and ${chrome.chips} chips are drawn glyphs`);
     const sizes = await page.evaluate(() => [...document.querySelectorAll("canvas.pc-sg")].map((c) => c.getBoundingClientRect().width));
     check(sizes.every((s) => s >= 30), `${name}: sigils are at least 30 px (smallest ${Math.min(...sizes).toFixed(0)})`);
     // alive: a canvas has ink

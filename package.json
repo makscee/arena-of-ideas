@@ -65,6 +65,7 @@
     "mvp:sigil-sheet": "node e2e/sigil-sheet.mjs",
     "mvp:sigil-timing": "node e2e/sigil-timing.mjs",
     "mvp:sigil-screens": "node e2e/sigil-screens.mjs",
+    "mvp:sigil-glyphs": "node e2e/sigil-glyphs.mjs",
     "mvp:keyboard": "node e2e/mvp-keyboard.mjs",
     "mvp:cg-layout": "node e2e/cg-layout.mjs",
     "mvp:battle-field": "node e2e/battle-field.mjs",

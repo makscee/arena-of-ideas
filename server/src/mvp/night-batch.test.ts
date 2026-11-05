@@ -45,10 +45,16 @@ const field: Field = { ghosts: [[Brute, Hourglass, Archer], [Nautilus, Archer, B
 describe("a candidate's face (#1291)", () => {
   const rule = { triggers: [{ kind: "trigger" as const, on: { on: "TurnEnd" as const } }] };
   it("keeps the designer's face when it fits, else takes its trigger's", () => {
-    const face = { when: { icon: "🔔", label: "When healed" }, headline: { icon: "🔁", amount: "=" } };
+    const face = { when: { icon: "broken-heart", label: "When healed" }, headline: { icon: "repeat", amount: "=" } };
     expect(draftFace({ face, rule })).toEqual(face);
-    expect(draftFace({ face: { ...face, when: { icon: "🔔", label: "Whenever it gets healed" } }, rule }).when).toEqual({ icon: "🌙", label: "Turn end" });
+    expect(draftFace({ face: { ...face, when: { icon: "broken-heart", label: "Whenever it gets healed" } }, rule }).when).toEqual({ icon: "moon", label: "Turn end" });
     expect(draftFace({ rule }).headline.icon).toBeTruthy();
+  });
+  it("takes a glyph from the closed set only: an emoji it knows maps to its name, one it doesn't falls back", () => {
+    const face = { when: { icon: "💔", label: "When healed" }, headline: { icon: "🔁", amount: "=" } };
+    expect(draftFace({ face, rule })).toEqual({ when: { icon: "broken-heart", label: "When healed" }, headline: { icon: "repeat", amount: "=" } });
+    expect(draftFace({ face: { ...face, when: { icon: "🔔", label: "When healed" } }, rule }).when).toEqual({ icon: "moon", label: "Turn end" });
+    expect(draftFace({ face: { ...face, headline: { icon: "unicorn" } }, rule }).headline.icon).toBe("spark");
   });
 });
 

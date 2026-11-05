@@ -11,6 +11,7 @@ import { DejaVu, FIXTURE_ABILITIES, FIXTURE_STATUSES, GraveTree } from "../../..
 import { MACROS } from "../../../src/words/macros.js";
 import { callClaude, fakePortrait } from "./idea-reader.js";
 import { PORTRAIT_SCHEMA, portraitRetryNote, sigilBrief } from "./portrait.js";
+import { GLYPH_NAMES } from "../../../src/mvp/glyph-names.js";
 import { V2_SAY } from "../../../src/mvp/units-v2-say.js";
 import { type DesignDraft, type Designer, LEANS, type Naming, type Parent, type Say } from "./night-batch.js";
 
@@ -24,7 +25,7 @@ export const DESIGNER_RULES = [
   "Output is the v2 schema only. No stats: the fusion has the parents' summed HP and power; numbers inside the rule are a first guess the quick tune rescales.",
   // the units rethink (#1063): one shared vocabulary, one strong reading (#1065)
   // the piece (#1291): free-form hints, never a trigger/target/effect grammar
-  "Give each candidate a `face` for its piece: `when` is any one emoji and a short word of at most 10 letters saying when it acts (\"Turn end\", \"When healed\", \"Every 3rd\"); `headline` is one emoji that sums up what it does, plus an optional `amount` of at most 2 characters (\"1\", \"×2\", \"T\"); `counter` only when it builds a counter such as Charge, with its max. The rule itself stays in words.",
+  "Give each candidate a `face` for its piece: `when` is a glyph name from the closed list below (never an emoji) and a short word of at most 10 letters saying when it acts (\"Turn end\", \"When healed\", \"Every 3rd\"); `headline` is one glyph name that sums up what it does, plus an optional `amount` of at most 2 characters (\"1\", \"×2\", \"T\"); `counter` only when it builds a counter such as Charge, with its max. The rule itself stays in words. Glyph names: " + GLYPH_NAMES.join(", ") + ".",
   "Speak the shared vocabulary only: the statuses Strength, Vitality, Curse, Poison, Shield, Freeze, Blessing and the Charge counter, plus the turn number. Coin no status, counter or resource of your own, no coins or gold, and no hidden concept a card can't show. The rule has one strong reading: one idea, said once.",
 ];
 
@@ -99,8 +100,8 @@ export const DESIGN_SCHEMA = {
           face: {
             type: "object",
             properties: {
-              when: { type: "object", properties: { icon: { type: "string" }, label: { type: "string" } }, required: ["icon", "label"] },
-              headline: { type: "object", properties: { icon: { type: "string" }, amount: { type: "string" } }, required: ["icon"] },
+              when: { type: "object", properties: { icon: { type: "string", enum: [...GLYPH_NAMES] }, label: { type: "string" } }, required: ["icon", "label"] },
+              headline: { type: "object", properties: { icon: { type: "string", enum: [...GLYPH_NAMES] }, amount: { type: "string" } }, required: ["icon"] },
               counter: { type: "object", properties: { status: { type: "string" }, max: { type: "integer" } }, required: ["status", "max"] },
             },
             required: ["when", "headline"],

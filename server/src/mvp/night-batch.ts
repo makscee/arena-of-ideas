@@ -23,7 +23,7 @@
 import { battle } from "../../../src/battle.js";
 import type { DescribeSegment, Lang } from "../../../src/describe.js";
 import { formSegments } from "../../../src/mvp/form-text.js";
-import { faceFallback, faceProblems, type Face } from "../../../src/mvp/face.js";
+import { faceFallback, faceProblems, normalizeFace, type Face } from "../../../src/mvp/face.js";
 import type { Spec } from "../../../mobile/ui/sigil/spec.js";
 import { resolvePortrait } from "./portrait.js";
 import { fusedStats } from "../../../src/mvp/forms.js";
@@ -289,8 +289,11 @@ export interface Candidate {
   portrait?: Spec;
 }
 
-/** A draft's face: the designer's when it fits the piece, else its trigger's. */
-export const draftFace = (d: Pick<DesignDraft, "face" | "rule">): Face => (d.face && !faceProblems(d.face).length ? d.face : faceFallback({ when: d.rule?.triggers ?? [] }));
+/** A draft's face: the designer's when it fits the piece (a known emoji maps to its glyph name), else its trigger's. */
+export const draftFace = (d: Pick<DesignDraft, "face" | "rule">): Face => {
+  const face = d.face && typeof d.face === "object" ? normalizeFace(d.face) : undefined;
+  return face && !faceProblems(face).length ? face : faceFallback({ when: d.rule?.triggers ?? [] });
+};
 
 /** A fusion's stats as the game's fuse gives them (fusedStats: the stronger parent plus half the other). */
 export function fusedBase(a: Parent, b: Parent): { hp: number; pwr: number } {
