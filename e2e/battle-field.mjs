@@ -48,6 +48,26 @@ const readField = (page) => page.evaluate(() => {
   return { orient: st.dataset.orient, stageW: st.offsetWidth, them: row("battle-them"), you: row("battle-you"), labels: { them: label("them"), you: label("you") }, labelKids: { them: kids("them"), you: kids("you") } };
 });
 
+/** Every clickable control on the battle's screen answers its own centre: nothing floats over it (a result chip, a label,
+ * a number). The point under the centre must be the control or a child of it (arena#29, round 7). */
+const readClickable = (page) => page.evaluate(() => {
+  const sels = ['[data-testid="change"]', '[data-testid="battle-back"]', '[data-testid="battle-play"]', '[data-testid="battle-step"]', '[data-testid="battle-speed"]', '[data-testid="battle-end"]', '[data-testid="battle-replay"]', '[data-testid="battle-next"]', '[data-testid="report-name"]', '[data-testid="chain-skip"]', '[data-testid="caption"]', '.bt-tray button', '.tb-hud button'];
+  const seen = new Set(), bad = [];
+  // The result covers the tray on purpose (arena#29): its own buttons are the way on then.
+  const result = document.querySelector('[data-testid="end-card"]');
+  const ended = !!result && getComputedStyle(result).display !== "none";
+  for (const el of document.querySelectorAll(sels.join(","))) {
+    if (seen.has(el) || el.disabled || !el.getClientRects().length) continue;
+    seen.add(el);
+    if (ended && el.closest(".bt-tray") && !result.contains(el)) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2 || r.bottom < 0 || r.right < 0 || r.left > innerWidth || r.top > innerHeight) continue;
+    const at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    if (at && at !== el && !el.contains(at)) bad.push(`${el.dataset.testid ?? el.className.toString().slice(0, 20)} is covered by <${at.tagName.toLowerCase()} class="${at.className.toString().slice(0, 40)}">${(at.textContent ?? "").trim().slice(0, 16)}`);
+  }
+  return bad;
+});
+
 const hit = (a, b, pad = 0) => a.l < b.r + pad && a.r > b.l - pad && a.t < b.b + pad && a.b > b.t - pad;
 
 /** The problems with a field reading, as sentences. */
@@ -187,6 +207,16 @@ try {
       });
       if (hdr) for (const [k, v] of Object.entries(hdr)) if (!v.box) note([`${what}: the ${k} name reaches the Report link or pushes it out of its plate`]);
       await page.screenshot({ path: `${out}/${scene}-${label}.png` });
+      // Step through the fight: at every beat nothing floats over a control.
+      {
+        const covered = new Set();
+        for (let i = 0; i < 60 && !(await page.getByTestId("battle-step").isDisabled()); i++) {
+          await page.keyboard.press("ArrowRight");
+          (await readClickable(page)).forEach((b) => covered.add(b));
+        }
+        note([...covered].slice(0, 4).map((b) => `${what}: ${b}`));
+        await toLineUp(page);
+      }
       if (scene === "battle-chain-once") {
         // Step to a chain of three links; its wire joins the real pieces, its number sits on the wire.
         let got = false;
