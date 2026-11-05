@@ -373,7 +373,8 @@ new MutationObserver(() => {
 const pressable = (t: EventTarget | null): t is HTMLElement => t instanceof HTMLElement && t.matches("button, a[href], [role='button'][tabindex]");
 const native = (el: HTMLElement) => el.matches("button, a[href]");
 const FOCUSABLE = "button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex='-1'])";
-const shown = (el: HTMLElement) => el.getClientRects().length > 0;
+// A control folded in a closed <details> keeps its boxes but is not focusable: checkVisibility() tells (the ≡ menu's Dev tools, arena#31).
+const shown = (el: HTMLElement) => el.getClientRects().length > 0 && (el.checkVisibility?.() ?? true);
 
 // Tab stays inside the top sheet (#1064): the screen under it is not reachable
 // while it is open, and Tab wraps from its last control to its first.

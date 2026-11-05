@@ -23,6 +23,7 @@ import { forgeDesignOf, forgeUnitOf } from "../src/mvp/forge-view";
 import { setCodexLink } from "./ui/term";
 import { ideasScreen, refillTime } from "./screens/ideas";
 import { votePanel } from "./screens/vote";
+import { homeTable } from "./screens/home";
 import { pickScreen } from "./screens/pick";
 import { card, formRich, roman, setCardCredits, unitSheet, type CardUnit } from "./ui/card";
 import { isMine, reportLink, setReporter } from "./ui/report";
@@ -184,69 +185,6 @@ const openSheet = (u: Parameters<typeof unitSheet>[0], content: MvpContent) => (
 /** A line of cards, each opening its unit sheet. */
 function team(line: LineUnit[], side: "you" | "ghost", content: MvpContent, testid = ""): HTMLElement {
   return h("div", { class: "slots", ...(testid ? { "data-testid": testid } : {}) }, ...line.map((u) => card(u, { side, extra: [copiesBadge(u)], onOpen: openSheet(u, content) })));
-}
-
-/** Where a piece reaches on screen: its box with the tab, badges, rim
- * numbers and name hanging outside it. */
-function reachOf(pc: Element): { left: number; right: number; top: number; bottom: number } {
-  const rs = [pc, ...pc.querySelectorAll("*")].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
-  return { left: Math.min(...rs.map((r) => r.left)), right: Math.max(...rs.map((r) => r.right)), top: Math.min(...rs.map((r) => r.top)), bottom: Math.max(...rs.map((r) => r.bottom)) };
-}
-
-/** Home's champion (void-board#1295): plain pieces (the ★ says awoken), sized
- * from the panel's width so each, with its when tab and its whole name, fits
- * beside the next with a gap. The largest piece wins among: five in a row with
- * the tabs' words; on a phone, 3 + 2 with the words; five with the tabs' icons
- * (the word stays in the tab's title and the unit's sheet). */
-function heroTeam(line: LineUnit[], content: MvpContent): HTMLElement {
-  const box = h("div", { class: "hero-team" });
-  const gap = 5;
-  const draw = (cols: number, px: number, word: boolean) => {
-    // A name wraps at a space within its share of the row.
-    const nmw = Math.floor((box.clientWidth + 20) / cols - gap);
-    const cards = line.map((u) => card(u, { side: "ghost", piece: { px, word }, onOpen: openSheet(u, content) }));
-    // 3 + 2: a break after the third.
-    if (cols < line.length) cards.splice(cols, 0, h("i", { class: "row-break" }));
-    box.replaceChildren(h("div", { class: "slots", style: `--nmw:${nmw}px` }, ...cards));
-    // Each card is as wide as its piece reaches (tab, badges, name) plus the gap; every stage as tall as the lowest name.
-    const stages = [...box.querySelectorAll<HTMLElement>(".pcard-stage")];
-    const need = Math.max(...stages.map((st) => {
-      const pc = st.querySelector<HTMLElement>(".pc")!;
-      const r = reachOf(pc), b = pc.getBoundingClientRect();
-      pc.style.marginLeft = `${Math.ceil(b.left - r.left)}px`;
-      st.parentElement!.style.width = `${Math.ceil(r.right - r.left) + gap}px`;
-      return Math.ceil(r.bottom - st.getBoundingClientRect().top);
-    }));
-    for (const st of stages) st.style.height = `${need}px`;
-  };
-  const fits = (cols: number): boolean => {
-    // One row (or 3 + 2): a card the row pushed onto a line of its own doesn't fit.
-    const rows = new Set([...box.querySelectorAll<HTMLElement>(".card")].map((c) => c.offsetTop)).size;
-    if (rows !== (cols < line.length ? 2 : 1)) return false;
-    const lim = box.getBoundingClientRect();
-    const rs = [...box.querySelectorAll(".pc")].map(reachOf);
-    return rs.every((a, i) => a.left >= lim.left - 10 && a.right <= lim.right + 10 && rs.every((b, j) => j <= i || a.right + gap <= b.left || b.right + gap <= a.left || a.bottom + gap <= b.top || b.bottom + gap <= a.top));
-  };
-  let width = 0;
-  const fit = () => {
-    const w = box.clientWidth;
-    if (!w || w === width) return;
-    width = w;
-    const tries: [number, number, boolean][] = [
-      ...[84, 78, 72, 66, 62, 58, 54].map((px): [number, number, boolean] => [5, px, true]),
-      ...(window.innerWidth < 600 ? [78, 72, 66, 62, 58, 54].map((px): [number, number, boolean] => [3, px, true]) : []),
-      ...[78, 72, 68, 64, 62, 60, 58, 56, 54, 50, 46, 42].map((px): [number, number, boolean] => [5, px, false]),
-    ];
-    for (const [cols, px, word] of tries) {
-      draw(cols, px, word);
-      if (fits(cols)) return;
-    }
-  };
-  draw(5, window.innerWidth < 600 ? 46 : 60, window.innerWidth >= 600);
-  // Refit after layout (outside the observer's callback, so no loop warning) and once the fonts are in.
-  if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => requestAnimationFrame(fit)).observe(box);
-  void document.fonts?.ready.then(() => { width = 0; fit(); });
-  return box;
 }
 
 /** The Sound row of the title menu and the run menu (round 3, note 16): a
@@ -561,34 +499,163 @@ async function homeScreen(ended: number | null = null): Promise<void> {
   rules = home.rules;
   day = home.day;
   firstRun = !home.rating || home.rating.runs === 0;
-  // The run that waits, for Continue's round and hearts (null if it ended meanwhile).
+  // The run that waits, for RESUME's round and hearts (null if it ended meanwhile).
   const waiting = home.activeRunId ? await api.run(home.activeRunId).catch(() => null) : null;
   const active = waiting && waiting.phase !== "over" ? waiting : null;
+  drawHome(home, content, active, ended, err, true);
+  music("home");
+}
+
+/** Home's table, built from what the server said. It draws again, from the same answers, when the window changes
+ * shape (`fresh` is false then: a menu the dev "End day now" opened stays shut). */
+function drawHome(home: HomeView, content: MvpContent, active: RunView | null, ended: number | null, err: HTMLElement, fresh: boolean): void {
   const champ = home.day.champion;
   const r = home.rating;
   const own = champ?.player.id === api.player?.id;
+  const draw = () => drawHome(home, content, active, ended, err, false);
+  // PLAY, or RESUME while a run waits: over the middle of your five slots.
   const play = active
     ? button("", () => void guarded(err, async () => shopScreen(await api.run(active.runId), content)), "primary", "play")
     : button("", () => void guarded(err, async () => shopScreen(await api.startRun(), content)), "primary", "play");
   play.classList.add("play-big");
   play.append(
     active
-      ? h("span", { class: "play-main" }, t("home.continue", { where: active.round > rules.rounds ? t("home.continueCrown") : t("home.continueRound", { round: active.round }) }), hearts(active.hearts))
-      : h("span", { class: "play-main" }, t("home.play")),
+      ? h("span", { class: "play-main" }, t("home.resume"), h("span", { class: "play-where" }, active.round > rules.rounds ? t("home.continueCrown") : t("home.resumeRound", { round: active.round }), " ", hearts(active.hearts)))
+      : h("span", { class: "play-main" }, t("start.play")),
   );
   if (isDesktop()) play.append(h("kbd", { class: "play-key" }, "Enter"));
-  if (!active) play.append(h("span", { class: "play-sub" }, t(!champ ? "home.playSubNone" : own ? "home.playSubOwn" : "home.playSub", { n: rules.rounds })));
+  const note = active ? null : h("div", { class: "hm-note", "data-testid": "home-note" }, t(!champ ? "home.playSubNone" : own ? "home.playSubOwn" : "home.note", { n: rules.rounds }));
   const newRun = active
     ? button(t("home.newRun"), () => abandonSheet(active, "new", () => void guarded(err, async () => {
         // The given-up run's end and rating change first, as ☰ Abandon shows
         // them; its "New run" starts the next one.
         runOverScreen(await api.abandon(active.runId), content, "", true);
-      })), "small link", "new-run")
+      })), "hm-newrun link", "new-run")
     : null;
-  const codex = withKey(button(t("menu.codex"), () => void guarded(err, () => openCodex()), "throne-link", "codex"), "C");
-  const stats = withKey(button(t("home.stats"), () => void guarded(err, () => openCodex({ tab: "champions" })), "throne-link", "stats"), "S");
-  const forge = codexOn ? withKey(button(t("menu.forge"), () => void guarded(err, () => openForge()), "throne-link", "forge-open"), "F") : null;
-  const words = codexOn ? withKey(button(t("menu.dictionary"), () => void guarded(err, () => openForge("words")), "throne-link", "dictionary-open"), "D") : null;
+
+  // The banner: the champion's name, how many slayers, and how long till the new day.
+  const hours = Math.max(1, Math.ceil((new Date(home.day.endsAt).getTime() - Date.now()) / 3_600_000));
+  const banner = h(
+    "div",
+    { class: "hm-banner", "data-testid": "home-banner" },
+    h("span", { class: "crown-badge", "aria-hidden": "true" }, CROWN_SVG()),
+    h("span", { class: "hm-banner-main" }, ...(champ ? withNodes(t("home.banner"), { who: whoMark(champ.player) }) : [t("home.bannerNone")])),
+    h(
+      "small",
+      { class: "hm-banner-sub", "data-testid": "slayers" },
+      champ ? (own ? t("home.ownTeam") : t("home.bannerSlayers", { n: home.day.slayers, h: hours })) : t("home.newChampionAt", { at: rules.dayEndsAt }),
+    ),
+  );
+  const last = home.day.lastPlayoff ?? null;
+  const justEnded = ended !== null && last?.seq === ended ? last : null;
+  const notice = ended !== null ? h("div", { class: "hm-notice", "data-testid": "day-ended" }, t("home.dayEnded", { ended, today: home.day.seq })) : null;
+
+  // The HUD plates: RATING n (the last run's change joins it), and the ≡ Esc menu.
+  const rating = h("span", { class: "num", "data-testid": "rating" }, `${r?.rating ?? rules.ratingStart}`);
+  const pill = h("div", { class: "plate hm-rate keep", "data-testid": "home-rating", title: t("home.ratingAria") }, h("span", { class: "hm-rate-l" }, t("home.rating")), " ", rating);
+  const lastRun = lastRunPanel(r?.rating ?? null, pill);
+  const playoff = playoffPanel(last, champ?.player ?? null, content, err);
+  const menu = button("", () => homeMenu(home, err, lastRun, playoff, justEnded !== null), "plate hm-menu", "settings");
+  menu.setAttribute("aria-label", t("home.menu"));
+  menu.append(h("span", { class: "hm-burger", "aria-hidden": "true" }, "≡"));
+  if (hasKeys()) (menu.title = `${t("home.menu")} (Esc)`, menu.append(h("kbd", {}, "Esc")));
+
+  // The tray: the Workshop card (the ideas meter lives in it), the vote, and the rows.
+  const row = (label: string, key: string, sub: string, open: () => void, testid: string) => {
+    const b = button("", open, "hm-rowbtn", testid);
+    b.append(h("b", { class: "hm-rowname" }, label), " ", ...(hasKeys() ? [h("kbd", {}, key.toUpperCase()), " "] : []), h("span", { class: "hm-rowsub" }, sub));
+    return b;
+  };
+  const forgeRow = codexOn ? row(t("menu.forge"), "F", "", () => void guarded(err, () => openForge()), "forge-open") : null;
+  if (forgeRow) void api.fusions().then((f) => (forgeRow.querySelector(".hm-rowsub")!.textContent = t("home.rowFusions", { n: f.length })), () => undefined);
+  const rows = [
+    row(t("menu.codex"), "C", t("home.rowUnits", { n: content.units.length }), () => void guarded(err, () => openCodex()), "codex"),
+    forgeRow,
+    row(t("home.stats"), "S", t("home.rowEvery"), () => void guarded(err, () => openCodex({ tab: "champions" })), "stats"),
+  ];
+  const vote = votePanel(content, true);
+
+  show(
+    homeTable({
+      content,
+      champion: champ?.line ?? null,
+      title: t("name.title"),
+      rating: pill,
+      menu,
+      banner,
+      notice,
+      toBeat: t("home.toBeat"),
+      yourLine: t("home.yourLine"),
+      play,
+      note,
+      newRun,
+      workshop: workshopCard(home.ideas),
+      vote,
+      rows,
+      err,
+      redraw: draw,
+    }),
+  );
+  screen("home");
+  // Keys (#1064): Enter plays, Esc opens the ≡ menu, and a letter on each row (it is on the button).
+  const press = (id: string) => document.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`);
+  const letters: Record<string, string> = { c: "codex", f: "forge-open", s: "stats", i: "ideas", g: "settings", Escape: "settings" };
+  onKeys((e) => {
+    const k = keyOf(e);
+    // The Dictionary sits in the ≡ menu; D still opens it from Home.
+    if (k === "d" && codexOn) return void guarded(err, () => openForge("words")), true;
+    const b = k === "Enter" ? press("play") : press(letters[k] ?? "");
+    if (!b || b.disabled) return false;
+    b.click();
+    return true;
+  });
+  // The dev "End day now" just ran: the ≡ menu opens at once, with how the day ended in it.
+  if (justEnded && fresh) homeMenu(home, err, lastRun, playoff, true);
+  if (isDesktop() && (document.activeElement === document.body || !app.contains(document.activeElement))) play.focus({ preventScroll: true });
+}
+
+const svg = (paths: string, attrs: Record<string, string>) => () => {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  for (const [k, v] of Object.entries({ viewBox: "0 0 24 24", "aria-hidden": "true", ...attrs })) el.setAttribute(k, v);
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", paths);
+  el.append(path);
+  return el;
+};
+const CROWN_SVG = svg("M3 18h18L19 7l-5 4-2-6-2 6-5-4z", { width: "30", height: "30", fill: "var(--paper)", stroke: "var(--outline)", "stroke-width": "2.2", "stroke-linejoin": "round" });
+
+/** The ≡ menu (Esc on Home): a window over the table with everything Home used to carry on its page: who you are,
+ * the last run and the last playoff, Sound and Music, the language, the palette, the Dictionary, Rules, this
+ * device's link, Telegram, and on a dev server "End day now" with the other dev tools. `lastRun`/`playoff` are
+ * made with Home (the last run's change joins the RATING plate), so they are only put in the window here. */
+function homeMenu(home: HomeView, err: HTMLElement, lastRun: HTMLElement | null, playoff: HTMLElement | null, ended: boolean): void {
+  if (app.querySelector('[data-testid="settings-sheet"]')) return;
+  const champ = home.day.champion;
+  const close = closable(
+    h(
+      "div",
+      { class: "stack settings", "data-testid": "settings-sheet" },
+      h("h2", {}, t("home.settings")),
+      h("div", { class: "row me" }, h("span", { class: "dim keep" }, t("home.playingAs")), who(api.player?.name ?? "")),
+      home.email?.address ? h("div", { class: "row me", "data-testid": "settings-email" }, h("span", { class: "dim keep" }, t("email.label")), h("span", { class: "grow" }, home.email.address)) : null,
+      ended ? playoff : null,
+      lastRun,
+      ended ? null : playoff,
+      champ && !champ.player.bot && !isMine(champ.player.id) ? reportLink("name", champ.player.id, `@${champ.player.name}`) : null,
+      soundRow(),
+      langRow(),
+      themeRow(),
+      codexOn ? withKey(button(t("menu.dictionary"), () => (close(), void guarded(err, () => openForge("words"))), "", "dictionary-open"), "D") : null,
+      button(t("codex.tab.howto"), () => (close(), void guarded(err, () => openCodex({ tab: "howto" }))), "", "rules-open"),
+      api.ownInvite && !CG ? ownLinkRow(api.ownInvite) : null,
+      home.telegram?.enabled ? telegramRow(home.telegram.linked, err) : null,
+      home.dev ? devTools(home, err) : null,
+    ),
+  );
+}
+
+/** Dev servers only (HomeView.dev): "End day now" and the idea tools, folded in the ≡ menu. */
+function devTools(home: HomeView, err: HTMLElement): HTMLElement {
   const endDay = button(
     t("dev.endDay"),
     () =>
@@ -617,119 +684,28 @@ async function homeScreen(ended: number | null = null): Promise<void> {
   }), "small", "overnight-check");
   const fakeVotes = button(t("dev.fakeVotes"), () => void guarded(err, async () => { await api.fakeVotes(); closable(candidatesSheet(await api.candidates())); }), "small", "fake-votes");
   const candidates = button(t("dev.candidates"), () => void guarded(err, async () => void closable(candidatesSheet(await api.candidates()))), "small", "candidates");
-  const last = home.day.lastPlayoff ?? null;
-  const justEnded = ended !== null && last?.seq === ended ? last : null;
-  const playoff = playoffPanel(last, champ?.player ?? null, content, err);
-  const rating = h("span", { class: "num", "data-testid": "rating" }, `${r?.rating ?? rules.ratingStart}`);
-  const pill = h("div", { class: "rating-pill keep", title: t("home.ratingAria") }, rating);
-  const gear = button("", () => settingsSheet(home, err), "gear keep", "settings");
-  gear.setAttribute("aria-label", t("home.settings"));
-  if (isDesktop()) gear.title = `${t("home.settings")} (G)`;
-  gear.append(GEAR_SVG());
-  show(
-    h("header", { class: "row throne-top" }, h("h1", {}, t("home.title")), h("div", { class: "grow" }), pill, gear),
-    // The dev "End day now" just ran: say so first, with how the day ended
-    // (the playoff panel) right under it, before today's champion.
-    // Desktop: the champion and the day on the left, Play and the rest on the
-    // right (.home-main, .home-side; on the phone they are one column).
-    h(
-      "div",
-      { class: "home-main" },
-      ended !== null ? h("div", { class: "notice", "data-testid": "day-ended" }, t("home.dayEnded", { ended, today: home.day.seq })) : null,
-      justEnded ? playoff : null,
-      h(
-        "section",
-        { class: "stack champion throne-hero", "data-testid": "champion" },
-        h("div", { class: "crown-badge", "aria-hidden": "true" }, CROWN_SVG()),
-        h("div", { class: "hero-label" }, t("home.champion")),
-        champ ? h("h2", { class: "hero-name" }, whoMark(champ.player)) : h("div", {}, t("home.noChampion")),
-        champ && !champ.player.bot && !isMine(champ.player.id) ? reportLink("name", champ.player.id, `@${champ.player.name}`) : null,
-        own ? h("div", { class: "hero-day", "data-testid": "own-team" }, t("home.ownTeam")) : null,
-        h("div", { class: "hero-day", "data-testid": "slayers" }, champ ? slayersLine(home.day.slayers) : t("home.newChampionAt", { at: rules.dayEndsAt })),
-        champ ? heroTeam(champ.line, content) : null,
-      ),
-      justEnded ? null : playoff,
-    ),
-    h(
-      "div",
-      { class: "home-side" },
-      h(
-        "div",
-        { class: "stack title-menu", "data-testid": "home-actions" },
-        play,
-        newRun,
-        err,
-        home.ideas ? ideasMeter(home.ideas) : null,
-        lastRunPanel(r?.rating ?? null, pill),
-      ),
-      h("div", { class: "spacer" }),
-      h("nav", { class: "throne-nav" }, codex, forge, words, stats),
-      home.dev
-        ? h("details", { class: "dev" }, h("summary", {}, t("dev.title")), h("div", { class: "row wrap" }, endDay, grantIdea, creditUnit, seedCandidate, overnight, fakeVotes, candidates))
-        : null,
-      // M2-8's vote card, under the menu: quiet, and Play stays on the first screen.
-      votePanel(content),
-    ),
-  );
-  screen("home");
-  music("home");
-  if (justEnded) playoff?.classList.add("fresh");
-  // Keys (#1064): Enter plays, and a letter on each link (it is on the button).
-  const press = (id: string) => document.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`);
-  const letters: Record<string, string> = { c: "codex", f: "forge-open", d: "dictionary-open", s: "stats", i: "ideas", g: "settings" };
-  onKeys((e) => {
-    const k = keyOf(e);
-    const b = k === "Enter" ? press("play") : press(letters[k] ?? "");
-    if (!b || b.disabled) return false;
-    b.click();
-    return true;
-  });
-  if (isDesktop() && (document.activeElement === document.body || !app.contains(document.activeElement))) play.focus({ preventScroll: true });
+  return h("details", { class: "dev" }, h("summary", {}, t("dev.title")), h("div", { class: "row wrap" }, endDay, grantIdea, creditUnit, seedCandidate, overnight, fakeVotes, candidates));
 }
 
-const svg = (paths: string, attrs: Record<string, string>) => () => {
-  const el = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  for (const [k, v] of Object.entries({ viewBox: "0 0 24 24", "aria-hidden": "true", ...attrs })) el.setAttribute(k, v);
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.setAttribute("d", paths);
-  el.append(path);
-  return el;
-};
-const GEAR_SVG = svg("M9 12a3 3 0 1 0 6 0a3 3 0 1 0-6 0M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1", { width: "20", height: "20", fill: "none", stroke: "currentColor", "stroke-width": "2.4", "stroke-linecap": "round" });
-const CROWN_SVG = svg("M3 18h18L19 7l-5 4-2-6-2 6-5-4z", { width: "30", height: "30", fill: "var(--paper)", stroke: "var(--outline)", "stroke-width": "2.2", "stroke-linejoin": "round" });
-
-/** The gear's sheet (M5-3): everything that was the title menu's second rank.
- * Sound and Music, the language, the palette, Rules (until the Codex's How to
- * play), this device's link and Telegram. */
-function settingsSheet(home: HomeView, err: HTMLElement): void {
-  const close = closable(
-    h(
-      "div",
-      { class: "stack settings", "data-testid": "settings-sheet" },
-      h("h2", {}, t("home.settings")),
-      h("div", { class: "row me" }, h("span", { class: "dim keep" }, t("home.playingAs")), who(api.player?.name ?? "")),
-      home.email?.address ? h("div", { class: "row me", "data-testid": "settings-email" }, h("span", { class: "dim keep" }, t("email.label")), h("span", { class: "grow" }, home.email.address)) : null,
-      soundRow(),
-      langRow(),
-      themeRow(),
-      button(t("codex.tab.howto"), () => (close(), void guarded(err, () => openCodex({ tab: "howto" }))), "", "rules-open"),
-      api.ownInvite && !CG ? ownLinkRow(api.ownInvite) : null,
-      home.telegram?.enabled ? telegramRow(home.telegram.linked, err) : null,
-    ),
-  );
-}
-
-/** The Throne's idea meter (M2-3, M5-3; #915 ideas a day): the ideas left
- * today and how many come back at the day's end, or one waiting for its pick
- * first. Tapping it opens My ideas (M2-4, screens/ideas.ts). */
-function ideasMeter(ideas: IdeasView): HTMLElement {
-  // M2-6: an idea waiting for its pick comes first: "💡 Your idea is ready".
-  const label = ideas.ready ? t("home.ideasReady", { n: ideas.ready }) : ideas.held > 0 ? t("home.ideasHeld", { n: ideas.held }) : t("home.ideasNone");
-  const b = button("", () => void ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => (api.forget(), nameScreen()) }), "idea-meter", "ideas");
-  b.append(h("span", { class: "grow idea-label", "data-testid": "ideas-label" }, label));
-  if (!ideas.ready && ideas.held < ideas.perDay)
-    b.append(h("span", { class: "idea-runs", "data-testid": "ideas-refill" }, t("home.ideaRefill", { n: ideas.perDay - ideas.held, time: refillTime(ideas.refillsAt) })));
-  if (ideas.ready) b.dataset.ready = String(ideas.ready);
+/** The Workshop card in Home's tray (it replaces the ideas meter): how the player's ideas stand in one line,
+ * the meter (ideas left today, when they come back) under it, and a tap opens the Workshop (My ideas). */
+function workshopCard(ideas: IdeasView | null): HTMLElement {
+  const b = button("", () => void ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => (api.forget(), nameScreen()) }), "hm-workshop", "ideas");
+  const status = h("span", { class: "hm-ws-status", "data-testid": "workshop-status" }, ideas?.ready ? t("home.workshopReady", { n: ideas.ready }) : t("home.workshopNone"));
+  b.append(h("span", { class: "hm-ws-head" }, h("b", { class: "hm-ws-title" }, t("home.workshop")), ideas?.ready ? h("i", { class: "hm-dot", "aria-hidden": "true" }) : null), status);
+  if (ideas) {
+    // The ideas meter's words: the ideas left today, and when the rest come back.
+    const label = ideas.ready ? t("home.ideasReady", { n: ideas.ready }) : ideas.held > 0 ? t("home.ideasHeld", { n: ideas.held }) : t("home.ideasNone");
+    const meter = h("span", { class: "hm-ws-meter" }, h("span", { "data-testid": "ideas-label" }, label));
+    if (!ideas.ready && ideas.held < ideas.perDay) meter.append(" ", h("span", { class: "idea-runs", "data-testid": "ideas-refill" }, t("home.ideaRefill", { n: ideas.perDay - ideas.held, time: refillTime(ideas.refillsAt) })));
+    b.append(meter);
+    if (ideas.ready) b.dataset.ready = String(ideas.ready);
+  }
+  // Ideas on their way (read, simulated, voted on) are the line when none waits for a pick.
+  if (!ideas?.ready) void api.myIdeas().then((v) => {
+    const moving = v.sent.filter((i) => ["written", "reading", "simulating", "voting"].includes(i.state)).length;
+    if (moving > 0) status.textContent = t("home.workshopMoving", { n: moving });
+  }, () => undefined);
   return withKey(b, "I");
 }
 

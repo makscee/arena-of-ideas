@@ -129,6 +129,7 @@ export async function escPass(browser, url, { label, viewport, touch = false, er
     // (server/src/mvp/bots.ts), so wait up to 2 minutes for them.
     const slayers = async () => (await (await page.request.get(new URL("api/v1/day", url).href, { timeout: 10_000 })).json()).slayers ?? 0;
     for (let t = Date.now(); (await slayers()) < 2 && Date.now() - t < 130_000; ) await page.waitForTimeout(5000);
+    await tid("settings").click(); // the dev tools sit in the ≡ menu (arena#31); it opens again by itself with how the day ended
     await page.locator("details.dev summary").click();
     // Home redraws with the day just ended: wait for a new Play button.
     await tid("play").evaluate((el) => (el.dataset.stale = "1"));
