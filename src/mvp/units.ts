@@ -18,8 +18,10 @@
 import { stressRegistry } from "../content/stress.js";
 import { summonId } from "../describe.js";
 import type { AbilityDef, AbilityRegistry, Effect, EventPattern, Family, Selector, StatusRegistry, UnitDef, When } from "../types.js";
+import type { Spec } from "../../mobile/ui/sigil/spec.js";
 import type { LineUnit, SummonContent, Tier, UnitContent, UnitForm } from "./contract.js";
 import { faceFallback, V2_FACE } from "./face.js";
+import { portraitOf } from "./portraits.js";
 import { isV2Row, V2_ABILITIES, V2_STATUSES, type V2Row } from "./units-v2.js";
 
 // ---------- When ----------
@@ -87,13 +89,19 @@ const SUMMONS: Record<string, UnitDef> = {
 const SUMMON_EMOJI: Record<string, string> = { Imp: "👺", Wolf: "🐺", Golem: "🗿", Wraith: "👻", Treant: "🌳", Warg: "🐕", Ghoul: "🧟", Puffball: "💨", Chick: "🐣", Head: "🐲", Spiderling: "🕸️" };
 
 
+/** The sigil spec a pool unit or summoned body has by its name (portraits.ts), as a field to spread; nothing for one without. */
+const portraitField = (name: string): { portrait?: Spec } => {
+  const spec = portraitOf(name);
+  return spec ? { portrait: structuredClone(spec) } : {};
+};
+
 /** A summoned body as content: its emoji, and its form unless it only strikes. */
 export function summonContentOf(def: UnitDef, emoji: string): SummonContent {
   const does = def.abilities ?? [];
   const form: UnitForm | null = does.every((x) => x === "Strike")
     ? null
     : { when: def.triggers ?? [], who: def.selectors ?? [], does, ...(def.condition ? { condition: def.condition } : {}) };
-  return { id: summonId(def.name), name: def.name, emoji, base: { ...def.base }, form };
+  return { id: summonId(def.name), name: def.name, emoji, base: { ...def.base }, form, ...portraitField(def.name) };
 }
 
 /** Ability names read as what they do: "Hit 3", "Poison 2", "Shield 2", …
@@ -399,6 +407,7 @@ function unitOf(row: AnyRow): UnitContent {
       ...(row.awoken && (row.awoken.pwr || row.awoken.hp) ? { awokenBonus: { ...row.awoken } } : {}),
       forms: structuredClone(row.forms),
       face: structuredClone(row.face ?? V2_FACE[row.name] ?? faceFallback(row.forms.sleeping)),
+      ...portraitField(row.name),
     };
   }
   const sleeping: UnitForm = { when: WHEN[row.when], who: [WHO[row.who]], does: [row.does] };
