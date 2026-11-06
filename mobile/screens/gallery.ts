@@ -9,6 +9,7 @@ import { fusedFace } from "../../src/mvp/face";
 import { closable, h, show } from "../ui/dom";
 import { unitSheet } from "../ui/card";
 import { faceOfUnit, piece, type PieceOptions, type PieceSize, type PieceUnit } from "../ui/piece";
+import { fuse } from "../ui/sigil";
 
 const SIZES: PieceSize[] = ["L", "M", "S", "XS"];
 
@@ -19,6 +20,7 @@ const asPiece = (u: UnitContent, extra: Partial<PieceUnit> = {}): PieceUnit => (
   face: faceOfUnit(u),
   tier: u.tier,
   copies: 1,
+  ...(u.portrait ? { portrait: u.portrait } : {}),
   ...extra,
 });
 
@@ -54,7 +56,7 @@ export function galleryScreen(content: MvpContent, only: PieceSize | null, detai
   const states: [string, PieceUnit, Partial<PieceOptions>][] = [
     ["sleeping, 2 of 3 copies", asPiece(a, { copies: 2 }), {}],
     ["awoken ★", asPiece(b, { awoken: true, stats: { pwr: b.base.pwr + 2, hp: b.base.hp + 3 } }), {}],
-    [`fused ✦ (${a.name} + ${b.name})`, asPiece(a, { name: `${a.name}${b.name.toLowerCase()}`, fused: { emoji: b.emoji }, face: fusedFace(faceOfUnit(a)), stats: { pwr: a.base.pwr + b.base.pwr, hp: a.base.hp + b.base.hp } }), {}],
+    [`fused ✦ (${a.name} + ${b.name})`, asPiece(a, { name: `${a.name}${b.name.toLowerCase()}`, fused: { emoji: b.emoji }, portrait: fuse(a.portrait, b.portrait), face: fusedFace(faceOfUnit(a)), stats: { pwr: a.base.pwr + b.base.pwr, hp: a.base.hp + b.base.hp } }), {}],
     ["with statuses", asPiece(a), { statuses: [{ status: "Shield", stacks: 1 }, { status: "Strength", stacks: 2 }, { status: "Poison", stacks: 3 }] }],
     [`counter ring 2/${ringed.face?.counter?.max ?? 3}`, asPiece(ringed), { counter: 2, statuses: [{ status: "Charge", stacks: 2 }, { status: "Shield", stacks: 1 }] }],
     ["their side", asPiece(b), { side: "them" }],

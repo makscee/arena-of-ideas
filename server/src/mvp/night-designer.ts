@@ -9,7 +9,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { DejaVu, FIXTURE_ABILITIES, FIXTURE_STATUSES, GraveTree } from "../../../src/words/fixtures.js";
 import { MACROS } from "../../../src/words/macros.js";
-import { callClaude } from "./idea-reader.js";
+import { callClaude, fakePortrait } from "./idea-reader.js";
+import { PORTRAIT_SCHEMA, portraitRetryNote, sigilBrief } from "./portrait.js";
+import { GLYPH_NAMES } from "../../../src/mvp/glyph-names.js";
 import { V2_SAY } from "../../../src/mvp/units-v2-say.js";
 import { type DesignDraft, type Designer, LEANS, type Naming, type Parent, type Say } from "./night-batch.js";
 
@@ -23,7 +25,7 @@ export const DESIGNER_RULES = [
   "Output is the v2 schema only. No stats: the fusion has the parents' summed HP and power; numbers inside the rule are a first guess the quick tune rescales.",
   // the units rethink (#1063): one shared vocabulary, one strong reading (#1065)
   // the piece (#1291): free-form hints, never a trigger/target/effect grammar
-  "Give each candidate a `face` for its piece: `when` is any one emoji and a short word of at most 10 letters saying when it acts (\"Turn end\", \"When healed\", \"Every 3rd\"); `headline` is one emoji that sums up what it does, plus an optional `amount` of at most 2 characters (\"1\", \"×2\", \"T\"); `counter` only when it builds a counter such as Charge, with its max. The rule itself stays in words.",
+  "Give each candidate a `face` for its piece: `when` is a glyph name from the closed list below (never an emoji) and a short word of at most 10 letters saying when it acts (\"Turn end\", \"When healed\", \"Every 3rd\"); `headline` is one glyph name that sums up what it does, plus an optional `amount` of at most 2 characters (\"1\", \"×2\", \"T\"); `counter` only when it builds a counter such as Charge, with its max. The rule itself stays in words. Glyph names: " + GLYPH_NAMES.join(", ") + ".",
   "Speak the shared vocabulary only: the statuses Strength, Vitality, Curse, Poison, Shield, Freeze, Blessing and the Charge counter, plus the turn number. Coin no status, counter or resource of your own, no coins or gold, and no hidden concept a card can't show. The rule has one strong reading: one idea, said once.",
 ];
 
@@ -63,8 +65,13 @@ export function designerSystemPrompt(examples?: DesignerExamples): string {
     `Déjà Vu (Hourglass + Mirror): ${JSON.stringify(DejaVu)}`,
     `Grave Tree (Raven + Seed): ${JSON.stringify(GraveTree)}`,
     "",
+    "Each candidate also has `portrait`: the fusion's sigil spec, its picture, in the format below. Draw the third creature, not either parent.",
+    "",
     "The language (TypeScript types):",
     language(),
+    "",
+    "THE SIGIL FORMAT",
+    sigilBrief(),
   ].join("\n");
 }
 
@@ -89,22 +96,34 @@ export const DESIGN_SCHEMA = {
           abilities: OBJ,
           statuses: OBJ,
           wordRequest: { type: "object", properties: { word: { type: "string" }, meaning: { type: "string" } }, required: ["word", "meaning"] },
+          portrait: PORTRAIT_SCHEMA,
           face: {
             type: "object",
             properties: {
-              when: { type: "object", properties: { icon: { type: "string" }, label: { type: "string" } }, required: ["icon", "label"] },
-              headline: { type: "object", properties: { icon: { type: "string" }, amount: { type: "string" } }, required: ["icon"] },
+              when: { type: "object", properties: { icon: { type: "string", enum: [...GLYPH_NAMES] }, label: { type: "string" } }, required: ["icon", "label"] },
+              headline: { type: "object", properties: { icon: { type: "string", enum: [...GLYPH_NAMES] }, amount: { type: "string" } }, required: ["icon"] },
               counter: { type: "object", properties: { status: { type: "string" }, max: { type: "integer" } }, required: ["status", "max"] },
             },
             required: ["when", "headline"],
           },
         },
-        required: ["lean", "intent", "rule", "abilities"],
+        required: ["lean", "intent", "rule", "abilities", "portrait"],
       },
     },
   },
   required: ["candidates"],
 };
+
+/** Slice C: the retry for a refused portrait; the sigil format alone, no engine language. */
+export const PORTRAIT_SYSTEM = [
+  "You draw the picture (the sigil) of a fused unit in Arena of Ideas, an auto-battler. You answer with the sigil spec only.",
+  "",
+  sigilBrief(),
+].join("\n");
+
+export function portraitPrompt(a: Parent, b: Parent, d: DesignDraft, naming: Naming, problems: string[]): string {
+  return `Parents: ${a.emoji ?? ""} ${a.id} and ${b.emoji ?? ""} ${b.id}.\nThe fusion ${naming.name.en}: ${d.intent}\nDraw the fusion as a third creature.\n${portraitRetryNote(problems)}`;
+}
 
 export const NAMER_SYSTEM =
   "You name fusions in Arena of Ideas, an auto-battler whose units are players' ideas. Give the new creature a short evocative name (one or two words, not the parents' names glued) and one line of flavour (under 90 characters), in English and in Russian. The Russian is written natively, not translated word for word.";
@@ -159,6 +178,9 @@ export function claudeDesigner(o: ClaudeDesignerOptions): Designer {
       if (!out?.name?.en || !out?.name?.ru) throw new Error("claude -p gave no name");
       return out;
     },
+    async portrait(a, b, d, naming, problems) {
+      return callClaude({ model: o.namerModel, bin: o.bin, timeoutMs: o.timeoutMs }, PORTRAIT_SYSTEM, portraitPrompt(a, b, d, naming, problems), PORTRAIT_SCHEMA);
+    },
     async say(a, b, d, rule, fix) {
       return (await callClaude({ model: o.namerModel, bin: o.bin, timeoutMs: o.timeoutMs }, saySystem(), sayPrompt(a, b, d, rule, fix), PAIR)) as Say;
     },
@@ -177,7 +199,11 @@ export function fakeDesigner(): Designer {
         intent: `${a.id} and ${b.id}, lean ${lean}: hits the front enemy.`,
         rule: { triggers: [{ kind: "trigger", on: on[lean] }], selectors: [{ kind: "frontEnemy" }], abilities: ["Hit"] },
         abilities: { Hit: { name: "Hit", family: "Strike", effects: [{ kind: "damage", amount: { kind: "const", value: 2 } }] } },
+        portrait: fakePortrait(`${a.id}+${b.id}:${lean}`),
       })) as DesignDraft[];
+    },
+    async portrait(a, b, d) {
+      return fakePortrait(`${a.id}+${b.id}:${d.lean}`);
     },
     async name(a, b, d) {
       return { name: { en: `${a.id}${b.id} ${d.lean}`, ru: `${a.id}${b.id} ${d.lean}` }, flavour: { en: "A test fusion.", ru: "Пробное слияние." } };

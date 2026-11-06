@@ -23,6 +23,10 @@
 // name and line in both (checked like the English: the filter, uniqueness),
 // and the picked unit keeps the Russian beside its row (StoredUnit.texts.ru);
 // a new version keeps its target's.
+// Mission arena#34 (slice C): each archetype also carries its unit's sigil spec
+// (`portrait`), checked by the sigil `validate`, asked once more with the
+// problem list, else the generic sigil (./portrait.ts); the picked unit keeps
+// it (StoredUnit.portrait), a new version keeps its target's.
 import { ideaKind, type Idea, type IdeaArchetype, type MyIdea } from "../../../src/mvp/contract.js";
 import { slug, type Row } from "../../../src/mvp/units.js";
 import { archetypeDraftProblems, checkReading, rowOf, ruleText, sameShape, takenShapes, type ArchetypeDraft } from "./idea-checks.js";
@@ -31,6 +35,7 @@ import { IdeaRefused, refundIdea } from "./ideas.js";
 import { rootOf } from "./lineage.js";
 import type { RunDeps } from "./runs.js";
 import type { MvpJob } from "./runtime.js";
+import { resolvePortrait } from "./portrait.js";
 import { nameKey, type MvpStore } from "./store.js";
 
 type ReadDeps = Pick<RunDeps, "store" | "rules" | "now" | "today">;
@@ -57,6 +62,12 @@ function ruNames(store: MvpStore): Set<string> {
 function archetypeOf(d: ArchetypeDraft): IdeaArchetype {
   const a: IdeaArchetype = { name: d.name.trim(), emoji: d.emoji.trim(), line: d.line.trim() };
   return d.ru ? { ...a, texts: { ru: { name: d.ru.name.trim(), line: d.ru.line.trim() } } } : a;
+}
+
+/** The archetype with its sigil spec: the draft's when it validates, else the reader's second try, else the generic one. */
+async function withPortrait(reader: IdeaReader, text: string, a: IdeaArchetype, draft: unknown): Promise<IdeaArchetype> {
+  const again = reader.portrait ? (problems: string[]) => reader.portrait!(text, a, problems) : undefined;
+  return { ...a, portrait: await resolvePortrait(draft, again, (l) => console.warn(`[ideas] ${a.name}: ${l}`)) };
 }
 
 /** Wait before try `tries + 1` after a reader error: 1, 2, 4 … 30 minutes. */
@@ -101,6 +112,7 @@ async function readArchetypes(deps: ReadDeps, reader: IdeaReader, idea: Idea): P
   const taken: Pick<Row, "name" | "archetype">[] = deps.store.units().map((u) => u.row);
   const takenRu = ruNames(deps.store);
   const ok: IdeaArchetype[] = [];
+  const written: unknown[] = []; // each accepted archetype's portrait as the model wrote it
   const check = (drafts: ArchetypeDraft[]) => {
     const problems: string[] = [];
     for (const d of drafts) {
@@ -109,6 +121,7 @@ async function readArchetypes(deps: ReadDeps, reader: IdeaReader, idea: Idea): P
       else if (ok.length < OPTIONS) {
         const a = archetypeOf(d);
         ok.push(a);
+        written.push(d.portrait);
         taken.push({ name: a.name, archetype: a.line });
         if (a.texts?.ru) takenRu.add(nameKey(a.texts.ru.name));
       }
@@ -131,7 +144,9 @@ async function readArchetypes(deps: ReadDeps, reader: IdeaReader, idea: Idea): P
   }
   const parts = logCantExpress(deps, idea, cant);
   if (!ok.length) return fail(deps, idea, parts);
-  deps.store.putIdea({ ...idea, state: "pick-archetype", data: settled({ ...idea.data, archetypes: ok }, parts) });
+  const archetypes: IdeaArchetype[] = [];
+  for (const [i, a] of ok.entries()) archetypes.push(await withPortrait(reader, idea.text, a, written[i]));
+  deps.store.putIdea({ ...idea, state: "pick-archetype", data: settled({ ...idea.data, archetypes }, parts) });
 }
 
 /** M3-4: a new version's readings, its archetype the target's name, emoji
@@ -139,7 +154,7 @@ async function readArchetypes(deps: ReadDeps, reader: IdeaReader, idea: Idea): P
 async function readVersion(deps: ReadDeps, reader: IdeaReader, idea: Idea): Promise<void> {
   const target = idea.data.target ? deps.store.unit(idea.data.target) : undefined;
   if (!target) return fail(deps, idea, [], TARGET_GONE);
-  const archetype: IdeaArchetype = { name: target.row.name, emoji: target.row.emoji, line: target.row.archetype, ...(target.texts?.ru ? { texts: { ru: { ...target.texts.ru } } } : {}) };
+  const archetype: IdeaArchetype = { name: target.row.name, emoji: target.row.emoji, line: target.row.archetype, ...(target.texts?.ru ? { texts: { ru: { ...target.texts.ru } } } : {}), ...(target.portrait ? { portrait: structuredClone(target.portrait) } : {}) };
   await readReadings(deps, reader, { ...idea, data: { ...idea.data, archetype } }, archetype, target.row);
 }
 
@@ -299,7 +314,7 @@ export function pickReading(deps: ReadDeps, playerId: string, ideaId: string, in
   const lineage = target ? { origin: "evolution" as const, parentId: target, rootId: rootOf(store, target) } : { origin: "idea" as const, parentId: null };
   // M4-5: the Russian name and line beside the row; a new version keeps its target's.
   const texts = target ? store.unit(target)?.texts : ru ? { ru: { ...ru } } : undefined;
-  store.putUnit({ unitId, status: "candidate", row: rowOf(archetype, reading), authorId: playerId, ...lineage, ...(texts ? { texts } : {}), createdAt: deps.now().toISOString() });
+  store.putUnit({ unitId, status: "candidate", row: rowOf(archetype, reading), authorId: playerId, ...lineage, ...(texts ? { texts } : {}), ...(archetype.portrait ? { portrait: structuredClone(archetype.portrait) } : {}), createdAt: deps.now().toISOString() });
   store.putIdea({ ...idea, state: "simulating", data: { ...idea.data, unitId } });
 }
 

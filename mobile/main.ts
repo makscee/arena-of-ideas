@@ -26,6 +26,7 @@ import { votePanel } from "./screens/vote";
 import { homeTable } from "./screens/home";
 import { pickScreen } from "./screens/pick";
 import { card, formRich, roman, setCardCredits, unitSheet, type CardUnit } from "./ui/card";
+import { unitSigil } from "./ui/glyph";
 import { isMine, reportLink, setReporter } from "./ui/report";
 import { previewName } from "./ui/fusion";
 import { fuseWarning } from "./ui/fuse-warn";
@@ -39,7 +40,7 @@ import { coachState, coachView } from "./ui/coach-view";
 import { telegramSheet } from "./screens/telegram";
 import { emailAttach, emailSignIn, emailSignUp } from "./screens/email";
 import { galleryScreen } from "./screens/gallery";
-import { faceOfUnit, lineToPiece, piece, pieceReach } from "./ui/piece";
+import { copySigils, faceOfUnit, lineToPiece, piece, pieceReach } from "./ui/piece";
 import { predictRun } from "./ui/predict";
 import { orient, stage } from "./ui/stage";
 import { fieldLayout, fit } from "./ui/stage-fit";
@@ -769,7 +770,7 @@ function candidatesSheet(list: CandidateScore[]): HTMLElement {
           h(
             "div",
             { class: "idea-row", "data-testid": "candidate-row", "data-qualified": String(c.qualified) },
-            h("div", { class: "grow" }, `${c.emoji} ${c.name}`, h("div", { class: "dim small num" }, t("dev.candidateScore", { won: c.won, votes: c.votes, share: pct(c.share), novelty: pct(c.novelty), score: pct(c.score) }))),
+            h("div", { class: "grow" }, unitSigil({ unitId: c.unitId }, 22), ` ${c.name}`, h("div", { class: "dim small num" }, t("dev.candidateScore", { won: c.won, votes: c.votes, share: pct(c.share), novelty: pct(c.novelty), score: pct(c.score) }))),
             h("div", { class: c.qualified ? "keep" : "dim keep" }, c.qualified ? t("dev.qualified") : t("dev.notYet")),
           ),
         )
@@ -1123,8 +1124,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const fusesWith = (first: number, slot: number) => awokenAt(slot) && (!codexOn || designedPairs(first).some((p) => p.first === slot || p.second === slot));
   const anyFuse = () => !run.gift && (codexOn ? (forge?.pairs ?? []).some((p) => p.state !== "unforged") : awoken >= 2);
   /** A designed pair's fusion as a mark says it: its name once discovered, else "ready to claim". */
-  const fusionName = (p: { state: string; design?: { name: string; emoji?: string; texts?: { ru?: { name?: string } } } }) =>
-    p.design ? `${p.design.emoji ?? ""} ${(uiLang() === "ru" ? p.design.texts?.ru?.name : undefined) ?? p.design.name}`.trim() : t("fuse.toClaim");
+  const fusionName = (p: { state: string; design?: { name: string; texts?: { ru?: { name?: string } } } }) =>
+    p.design ? ((uiLang() === "ru" ? p.design.texts?.ru?.name : undefined) ?? p.design.name) : t("fuse.toClaim");
   const nameOf = (id: string) => unitOf(id)?.name ?? id;
   /** The mark on a board unit of a fusion you can make now: ⚗, the fusions in its label. */
   const fuseMark = (pairs: ForgeSlot[], slot: number) => {
@@ -1135,7 +1136,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const offerFusions = (slot: number): ForgeOffer[] => (forge?.offers ?? []).filter((f) => f.slot === slot).sort((x, y) => Number(y.awakens) - Number(x.awakens));
   const offerLine = (f: ForgeOffer) => {
     const partner = unitAt(f.partner);
-    const pair = `${partner ? `${partner.emoji} ${partner.name}` : "?"} + ${nameOf(f.a === partner?.unitId ? f.b : f.a)}`;
+    const pair = `${partner ? partner.name : "?"} + ${nameOf(f.a === partner?.unitId ? f.b : f.a)}`;
     return t(f.awakens ? "fuse.offerNow" : "fuse.offerNear", { pair, fusion: fusionName(f) });
   };
 
@@ -1173,9 +1174,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   /** A panel is open: it docks on the right and the field narrows, so the line's pieces are drawn smaller. */
   const docked = () => chosen !== null || pick.mode !== "none" || fuseView !== null;
   /** With a panel open the columns are narrow: a When word stays wherever it fits its column (10 characters at the floor size). */
-  const whenFits = (u: LineUnit) => lineToPiece(u, content).face.when.label.length <= 10;
   const pieceSizes = () =>
-    tall || !lay ? { line: 56, bench: 44, offer: 64, their: 48, lineWord: false, benchWord: false, benchBare: true } : { line: docked() ? lay.sDock : lay.s, bench: lay.sb, offer: 72, their: lay.sb, lineWord: !docked(), benchWord: false, benchBare: true };
+    tall || !lay ? { line: 56, bench: 44, offer: 64, their: 48, benchBare: true } : { line: docked() ? lay.sDock : lay.s, bench: lay.sb, offer: 72, their: lay.sb, benchBare: true };
   /** Tap-tap: the offer in hand (chosen) or the unit in hand (picked) lights
    * every slot it can go to; the twin it merges into is gold. */
   /** The board slot an offer's copy merges into, or -1. */
@@ -1188,7 +1188,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   /** The inspector's piece is drawn at 0.72 on the portrait stage: its text floor grows to read 11 px there. */
   const sheetFloor = tall ? 16 : 18;
   /** The panel's sheet: compact (the piece beside the head), its hero a piece of 96 stage px (a phone's 56). */
-  const sheetOpts = (where?: string) => ({ floor: sheetFloor, compact: true, heroPx: tall ? 60 : 88, heroWord: !tall, ...(where ? { where } : {}) });
+  const sheetOpts = (where?: string) => ({ floor: sheetFloor, compact: true, heroPx: tall ? 60 : 88, ...(where ? { where } : {}) });
   const cellStyle = (s: number, bare = false) => {
     const r = pieceReach(s, floor);
     const top = Math.max(15, r.above + 2);
@@ -1252,7 +1252,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }
     const sz = pieceSizes();
     const c = actionable(
-      h("div", { class: ["cell", "you", onBench && sz.benchBare ? "bare" : "", u.kind === "fused" ? "fused" : u.form === "awoken" ? "awoken" : ""].filter(Boolean).join(" "), "data-copies": String(u.copies), "data-testid": id, style: onBench ? cellStyle(sz.bench, sz.benchBare) : cellStyle(sz.line) }, piece(lineToPiece(u, content), { size: "L", side: "you", px: onBench ? sz.bench : sz.line, word: onBench ? sz.benchWord : sz.lineWord || whenFits(u), floor })),
+      h("div", { class: ["cell", "you", onBench && sz.benchBare ? "bare" : "", u.kind === "fused" ? "fused" : u.form === "awoken" ? "awoken" : ""].filter(Boolean).join(" "), "data-copies": String(u.copies), "data-testid": id, style: onBench ? cellStyle(sz.bench, sz.benchBare) : cellStyle(sz.line) }, piece(lineToPiece(u, content), { size: "L", side: "you", px: onBench ? sz.bench : sz.line, floor })),
       `${u.name}, ${onBench ? t("board.onBench", { n: slot - L + 1 }) : t("board.inLine", { n: slot + 1 })}`,
     );
     if (pick.mode === "picked" && pick.index === slot) c.classList.add("selected");
@@ -1353,6 +1353,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
           if (Math.hypot(e.clientX - x0, e.clientY - y0) < 6) return;
           const r = c.getBoundingClientRect();
           ghost = c.cloneNode(true) as HTMLElement;
+          copySigils(c, ghost);
           ghost.removeAttribute("data-testid");
           ghost.className = `${c.className} drag-ghost`;
           ghost.style.width = `${r.width}px`;
@@ -1872,9 +1873,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const owned = owns(o.unitId);
       const price = `${t("shop.gold", { n: o.cost })}${owned ? " ＋" : ""}`;
       // The piece (mission #1286): price and lock on its foot, the tier beside them.
-      const pu = { name: u?.name ?? o.unitId, emoji: u?.emoji ?? "?", stats: u?.base ?? { pwr: 0, hp: 0 }, face: u ? faceOfUnit(u) : { when: { icon: "✨", label: "" }, headline: { icon: "✨" } }, tier: o.tier, copies: 1 };
+      const pu = { name: u?.name ?? o.unitId, emoji: u?.emoji ?? "?", stats: u?.base ?? { pwr: 0, hp: 0 }, face: u ? faceOfUnit(u) : { when: { icon: "✨", label: "" }, headline: { icon: "✨" } }, tier: o.tier, copies: 1, ...(u?.portrait ? { portrait: u.portrait } : {}) };
       const c = actionable(
-        h("div", { class: "cell offer", "data-testid": `offer-${o.slot}`, "data-name": pu.name, style: cellStyle(offerPx) }, piece(pu, { size: "L", side: "shop", px: offerPx, floor, word: !tall && offerPx >= 68, price: o.cost, lock: o.locked === true })),
+        h("div", { class: "cell offer", "data-testid": `offer-${o.slot}`, "data-name": pu.name, style: cellStyle(offerPx) }, piece(pu, { size: "L", side: "shop", px: offerPx, floor, price: o.cost, lock: o.locked === true })),
         `${pu.name}, ${price}`,
       );
       if (run.gold < o.cost) c.classList.add("poor");
@@ -1959,7 +1960,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   /** One unit of the Crown's team, as a piece on their rim; a tap reads it in a sheet. */
   const theirCell = (u: LineUnit) =>
     actionable(
-      h("div", { class: "cell them bare", style: cellStyle(pieceSizes().their, true) }, piece(lineToPiece(u, content), { size: "L", side: "them", px: pieceSizes().their, word: false, floor })),
+      h("div", { class: "cell them bare", style: cellStyle(pieceSizes().their, true) }, piece(lineToPiece(u, content), { size: "L", side: "them", px: pieceSizes().their, floor })),
       u.name,
     );
   const fillFoe = (d: DayView | null, settled = d !== null) => {
@@ -1975,7 +1976,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const fillPin = (d: DayView | null) => {
     const ch = d?.champion;
     if (!ch) return pin.replaceChildren(h("span", { class: "dim" }, t("pin.noChampion")));
-    const b = h("button", { class: "pin-btn", "data-testid": "champion-pin-open" }, h("span", {}, "👑"), who(ch.player.name, "ghost-name"), h("span", { class: "pin-emoji" }, ch.line.map((u) => u.emoji).join("")));
+    const b = h("button", { class: "pin-btn", "data-testid": "champion-pin-open" }, h("span", {}, "👑"), who(ch.player.name, "ghost-name"), h("span", { class: "pin-emoji" }, ...ch.line.map((u) => unitSigil(u, 30))));
     b.addEventListener("click", () => closable(h("div", { class: "label" }, t("pin.championOfDay", { seq: d!.seq }), who(ch.player.name)), team(ch.line, "ghost", content)));
     pin.replaceChildren(b);
   };
@@ -2033,7 +2034,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const u = unitOf(id);
       // Yours: a copy merges in, a fused unit's part included (owns()).
       const mine = board[mergeTarget(board, id)] ?? null;
-      const cu: CardUnit = { unitId: id, emoji: u?.emoji ?? "?", name: u?.name ?? id, stats: u?.base ?? { pwr: 0, hp: 0 }, ...(u ? { recipe: u.forms.sleeping } : {}) };
+      const cu: CardUnit = { unitId: id, emoji: u?.emoji ?? "?", name: u?.name ?? id, stats: u?.base ?? { pwr: 0, hp: 0 }, ...(u?.portrait ? { portrait: u.portrait } : {}), ...(u ? { recipe: u.forms.sleeping } : {}) };
       const c = actionable(card(cu, { side: "you", ...(u ? { tier: u.tier } : {}), extra: mine ? [h("div", { class: "cost" }, "＋")] : [], testid: `gift-card-${i}` }), cu.name);
       if (mine) c.classList.add("owned");
       const sheetOf = () => (mine ? unitSheet(mine, content) : u ? unitSheet(u, content) : h("h2", {}, id));
