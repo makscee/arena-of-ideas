@@ -636,6 +636,9 @@ button.bv-badge.past { z-index: 2; }
  * the middle. */
 .bv-slot.bv-enter { animation: bv-enter calc(0.45s / var(--bv-sp, 1)) ease-out calc(var(--bv-t, 0s) / var(--bv-sp, 1)) both; }
 .bv-slot.bv-enter { --enter: 0 14px; }
+/* The card a summon took the place of (arena#48) stays under the newcomer until its entry begins, then is gone. */
+.bv-slot.bv-displaced { animation: bv-gone 0.05s linear calc(var(--bv-t, 0s) / var(--bv-sp, 1)) both; pointer-events: none; }
+@keyframes bv-gone { to { opacity: 0; } }
 /* A summon or revive rises from below inside a gold ring (#1011). */
 .bv-slot.bv-enter::after { content: ""; position: absolute; inset: -3px; border: 2.5px solid var(--action); border-radius: calc(var(--radius, 8px) + 3px); pointer-events: none; animation: bv-ring-out calc(0.6s / var(--bv-sp, 1)) ease-out calc(var(--bv-t, 0s) / var(--bv-sp, 1)) both; }
 @keyframes bv-ring-out { 0% { opacity: 0; transform: scale(1.35); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1); } }
@@ -797,7 +800,6 @@ button.bv-run-row.heal { color: var(--you); }
 button.bv-run-row.buff { color: var(--action); }
 button.bv-run-row.zero { opacity: 0.45; }
 .bv-run-row svg { flex: none; }
-.bv-cleared { position: absolute; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .bv-run, button.bv-run-row { transition: none; } }
 @media (min-width: 1024px) { button.bv-run-row { height: 20px; line-height: 20px; font-size: 17px; padding: 0 4px; } }
 /* M5-6: a phone's box sits on the card's face between its icon row and its
@@ -2237,6 +2239,14 @@ button.link.report-link { min-height: 32px; min-width: 44px; align-self: center;
 #app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.dead { opacity: 0.42; filter: grayscale(1); transform: none; }
 #app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.dead.bv-dying { filter: none; opacity: 1; }
 #app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.silenced .pc-sg { filter: grayscale(1); }
+/* The fixed field (arena#48): a ghost says "× Tn", the battle turn it fell, over its greyed face (hidden while it pops); the front unit has a gold rule under it, the one thing that moves between columns. */
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc > .bv-ghost-t { position: absolute; z-index: 4; left: 0; right: 0; top: 30%; text-align: center; font: 600 13px/1 var(--font-body); color: var(--paper); text-shadow: 0 1px 2px var(--outline); pointer-events: none; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.bv-dying > .bv-ghost-t { visibility: hidden; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bv-card.bv-pc > .bv-ghost-t { font-size: 20px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-card.bv-pc > .bv-ghost-t { font-size: 13px; }
+/* One name line, so every name keeps its baseline whatever its length; one wider than its column is cut with an ellipsis (the card opens the unit). */
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc .pc-nm { white-space: nowrap; max-width: calc(var(--pitch, 100px) - 6px); overflow: hidden; text-overflow: ellipsis; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.bv-front::before { content: ""; position: absolute; left: 20%; right: 20%; bottom: -5px; height: 3px; border-radius: 2px; background: var(--action); pointer-events: none; }
 #app[data-screen="battle"] .bv-v3 .pc-b.h.hurt { color: var(--pc-num); background: var(--k-dmg); }
 /* The when tab lights up when its rule fires. */
 #app[data-screen="battle"] .bv-v3 .pc-tab.bv-fired { animation: bv-tab-fired calc(0.6s / var(--bv-sp, 1)) ease-out calc(var(--bv-ftt, 0s) / var(--bv-sp, 1)) both; }

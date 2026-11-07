@@ -27,9 +27,10 @@ import { summonId } from "../../src/describe";
 import { card, creditOf, creditText, formRich, summonById, summonSheet, summonText, unitSheet } from "../ui/card";
 import { orient, stage as tableStage } from "../ui/stage";
 import { linePitch, pieceCap } from "../ui/line-layout";
+import { fieldAt, type Field } from "../ui/field";
 import { isMine, reportLink } from "../ui/report";
 import { unitSigil, sigilIcon } from "../ui/glyph";
-import { copySigils, lineToPiece, piece, PIECE_PX, sigilOf, whenTone, type PieceSize, type PieceUnit } from "../ui/piece";
+import { lineToPiece, piece, PIECE_PX, sigilOf, whenTone, type PieceSize, type PieceUnit } from "../ui/piece";
 import { faceFallback, V2_FACE } from "../../src/mvp/face";
 import { actionable, app, button, closable, fitText, h, isDesktop, keyLabel, keyOf, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
 import { t as tr } from "../i18n";
@@ -71,8 +72,6 @@ const DIE_PULSE_MS = 600;
 const TRIG_FLASH_MS = 400;
 /** When a hit's shake ends, in animation ms after its wave lands (80 ms in, 400 ms long). */
 const SHAKE_END_MS = 480;
-/** How long the line takes to slide back a slot for a summon at its front, at 1×. */
-const PUSH_MS = 450;
 /** The running totals (R4-22), in animation ms (÷ speed): a row's count, its pop, its appearing, and the turn's rows fading out. */
 const RUN_COUNT_MS = 380;
 const RUN_POP_MS = 260;
@@ -285,14 +284,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** A dying card's skull burst, and a summoned card's slide-in delay, set by motion() for its slot. */
   const skullsOf = new WeakMap<HTMLElement, HTMLElement>();
   const enterOf = new WeakMap<HTMLElement, string>();
-  /** The line sliding back a slot as a summon enters at its front (note 2):
-   * each pushed unit's offset and when the push landed, kept for the beat so
-   * the next wave's render carries the slide on instead of cutting it. */
-  let pushed = new Map<string, { dx: number; at: number }>();
-  let pushedBeat = -2;
-  /** The turn the board was last drawn on: the next turn's first draw clears its dead (R4-22). */
-  let drawnTurn: number | null = null;
-
   /** Motion runs at the playback speed (CSS reads --bv-sp), so 2× never cuts it. */
   const setSpeedVar = () => { for (const row of [enemy, mine, clash, fx, fxNums]) row.style.setProperty("--bv-sp", String(speed)); };
   /** Puts the speed of the beat on screen in force: the chosen one, or twice it on a repeat turn. */
@@ -924,6 +915,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const el = piece(unit, {
       ...fit,
       floor: textFloor(),
+      // The shelf keeps its height without a status, so every name stands on one baseline (arena#48).
+      reserve: true,
       side: side === you ? "you" : "them",
       statuses: onShelf.slice(0, compact ? 2 : 3),
       // the sigil's numbers are the unit's own, whatever the shelf has room for
@@ -1227,26 +1220,21 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     inspected = null;
     return true;
   }
-  /** Whether a fallen unit still stands in its slot this beat (deadCard). */
-  function showsDead(id: string, v: View): boolean {
-    // A unit that fell this turn stands greyed until the turn ends (R4-22).
-    return !!v.dead?.has(id) || v.changes.some((c) => c.unit === id && c.kind === "death") || v.now?.actor === id;
-  }
-  function deadCard(id: string, v: View): HTMLElement | null {
-    // A unit that falls this beat stays in its slot, greyed, until the beat
-    // ends, so its ✝ can be tapped; so does a fallen unit that acts (a
-    // death-triggered ability), lit.
+  /** A fallen unit's ghost in its column (arena#48): greyed for the rest of the fight, "× Tn" with the battle turn it fell.
+   * The beat it falls in, its ✝ chip and its pop play on it; a fallen unit that acts (a death-triggered ability) is lit. */
+  function deadCard(id: string, v: View, fell: number | null): HTMLElement {
     const step = v.now;
     const death = v.changes.find((c) => c.unit === id && c.kind === "death");
-    if (!showsDead(id, v)) return null;
     const side = sides.get(id) ?? you;
     const el = h(
       "div",
       { class: `bv-card bv-pc dead ${side === you ? "you" : "ghost"}`, style: pieceBox(pieceFit(false)), "data-testid": "card" },
       pieceOf(id, null, side, false),
+      fell !== null ? h("span", { class: "bv-ghost-t", "data-testid": "ghost-turn", "aria-hidden": "true" }, `× T${fell}`) : null,
       death ? h("div", { class: "bv-changes" }, changeBadge(v.changes.filter((c) => c.unit === id), floatedOf(id, v))) : null,
     );
     el.dataset.unit = id;
+    el.setAttribute("data-fell", String(fell ?? ""));
     if (step?.actor === id) el.classList.add("acting");
     motion(el, id, sides.get(id) ?? you, v);
     el.addEventListener("click", () => openUnit(id));
@@ -1263,8 +1251,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     waves: { step: Step; age: number | null }[];
     /** The turn-end summary on screen (R4-12): each changed unit's totals for the turn. */
     totals?: Map<string, UnitTurnTotals>;
-    /** The units fallen this turn so far: they stand greyed until it ends (R4-22). */
-    dead?: Set<string>;
     /** Each unit's net PWR / HP stat change this turn so far: its digit stays gold or grey until the turn ends (#1011). */
     nets?: Map<string, { pwr: number; hp: number }>;
   }
@@ -1461,24 +1447,39 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     return new Set(v.changes.filter((c) => c.unit === id && ROWED.has(c.kind)).map((c) => c.eventId));
   }
 
-  /** A line in the beat: the living units, and each unit that fell in this
-   * beat back in the slot it held when the beat began. */
-  function lineOf(side: Side, board: ReturnType<typeof boardAt>, before: ReturnType<typeof boardAt>, v: View, stsWidth: number, compact: boolean): HTMLElement[] {
-    const living: HTMLElement[] = board.lines[side].map((u) => slot(unitCard(u, side, v, stsWidth, compact), u.id, v));
-    // Units summoned to the front in this beat stand ahead of every slot the
-    // line had when the beat began: a fallen card's slot moves back past them.
-    const was = new Set(before.lines[side].map((u) => u.id));
-    const front = board.lines[side].filter((u) => !was.has(u.id) && frontSummons.has(u.id)).length;
-    const fallen = board.graves[side]
-      .map((u) => {
-        const dead = deadCard(u.id, v);
-        const at = before.lines[side].findIndex((b) => b.id === u.id);
-        return { card: dead && slot(dead, u.id, v), slot: at < 0 ? at : at + front };
-      })
-      .filter((x): x is { card: HTMLElement; slot: number } => x.card !== null)
-      .sort((p, q) => (p.slot < 0 ? 99 : p.slot) - (q.slot < 0 ? 99 : q.slot));
-    for (const f of fallen) living.splice(f.slot < 0 ? living.length : Math.min(f.slot, living.length), 0, f.card);
-    return living;
+  /** A line on the fixed field (arena#48): a slot per column, placed by its number, so nothing moves between beats. A
+   * unit stands in its column, a fallen one is a ghost there; a summon that took a ghost's column shows the fallen
+   * card too, for the beat it fell in, so its pop plays before the newcomer enters. The front unit wears the marker. */
+  function lineOf(side: Side, board: ReturnType<typeof boardAt>, field: Field, v: View, stsWidth: number, compact: boolean): HTMLElement[] {
+    const standing = new Map(board.lines[side].map((u) => [u.id, u]));
+    const front = board.lines[side][0]?.id;
+    const out: HTMLElement[] = [];
+    field[side].forEach((cell, col) => {
+      const put = (el: HTMLElement, id: string) => {
+        const sl = slot(el, id, v);
+        sl.style.gridColumn = String(col + 1);
+        sl.style.gridRow = "1";
+        out.push(sl);
+      };
+      const u = cell.alive ? standing.get(cell.id) : undefined;
+      if (u) {
+        const el = unitCard(u, side, v, stsWidth, compact);
+        if (u.id === front) el.classList.add("bv-front");
+        // A summon entering by playback takes the place of a card that fell this beat: that card stays under it until
+        // the newcomer's entry begins (its pop plays first), then gives way. Paused or stepped, only the newcomer shows.
+        const gone = cell.displaced && enterOf.has(el) && v.changes.some((c) => c.unit === cell.displaced && c.kind === "death") ? cell.displaced : null;
+        if (gone) {
+          const fallen = slot(deadCard(gone, v, null), gone, v);
+          fallen.classList.add("bv-displaced");
+          fallen.style.setProperty("--bv-t", enterOf.get(el)!);
+          fallen.style.gridColumn = String(col + 1);
+          fallen.style.gridRow = "1";
+          out.push(fallen);
+        }
+        put(el, u.id);
+      } else if (!cell.alive) put(deadCard(cell.id, v, cell.fell), cell.id);
+    });
+    return out;
   }
 
   /** A layout size (offset*) in viewport pixels: the stage is drawn scaled, and rects are in viewport pixels (arena#29). */
@@ -1515,13 +1516,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const turnSum = sum ?? (beat ? turnOfBeat.get(at) : undefined);
     const onScreen = new Set(shown.flatMap((w) => w.eventIds));
     const soFar = sum ? turnSoFarIds(beatIds, sum, beats.length, () => true) : turnSoFarIds(beatIds, turnSum, at, (id) => onScreen.has(id) || (id <= upto && !pending.has(id)));
-    v.dead = new Set(soFar.flatMap((id) => { const e = log[id]; return e?.type === "Death" ? [e.unit] : []; }));
     v.nets = statNets(soFar, log);
     const board = boardAt(log, upto, pending);
     shownBoard = board;
-    // The fallen go back to the slots they held as the beat (or, on the totals, the turn) began.
-    const startBeat = turnSum ? beats[turnSum.beats[0]!] : beat;
-    const before = startBeat ? boardAt(log, Math.max(0, startBeat.start - 1)) : board;
+    // Every unit has its own column for the whole fight (arena#48): the fallen stay as ghosts, a summon takes a vacancy.
+    const field = fieldAt(log, upto, pending);
     const turn = step?.turn ?? 0;
     shownTurn = hudTurn ?? turn;
     const repeating = !finished && repeats.has(hudTurn ?? turn);
@@ -1537,20 +1536,12 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     );
     clash.replaceChildren(clashMark, ...[triggerBadge("clash", v)].filter((x): x is HTMLElement => x !== null));
     drawBanner(v);
-    if (pushedBeat !== at) { pushed = new Map(); pushedBeat = at; }
-    // The turn's dead clear together as the next turn starts (R4-22): each
-    // fades where it stood and the line closes up, smoothly.
     const turnKey = turnSum?.turn ?? -1;
-    const closing = turnKey !== drawnTurn && drawnTurn !== null && turnKey === drawnTurn + 1 && !!v.waves.at(-1) && v.waves.at(-1)!.age !== null && !reduced();
-    drawnTurn = turnKey;
-    const slides: [HTMLElement, { dx: number; at: number }][] = [];
     // Both lines read first, then both write, then one fit (#913): reading a
     // line after the other's write forced a layout per read, every wave.
     // The stage the pieces grow into (#1294): one line's box, before any write.
-    const countOf = (sd: Side) => board.lines[sd].length + board.graves[sd].filter((u) => showsDead(u.id, v)).length;
-    // A line keeps the columns it started with, so its units don't shift as others fall; one grown past it (a summon) adds columns.
-    const colsOf = (sd: Side) => Math.max(sd === "A" ? battle.teamA.length : battle.teamB.length, countOf(sd), 1);
-    const cols = Math.max(colsOf(them), colsOf(you));
+    // Both lines share the field's columns (the longer one's, ghosts and summons counted), so the fronts face each other.
+    const cols = Math.max(field.A.length, field.B.length, 1);
     lay = { pitch: linePitch(orient(), cols), cap: pieceCap(orient(), cols) };
     stage = { w: enemy.clientWidth, h: enemy.clientHeight, cols };
     const lines = ([[them, enemy], [you, mine]] as const).map(([side, row]) => {
@@ -1559,7 +1550,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       // before measuring, so the status row is measured at its compact width.
       const compact = cols > COMPACT_OVER;
       row.classList.toggle("bv-compact", compact);
-      row.style.setProperty("--n", String(colsOf(side)));
+      row.style.setProperty("--n", String(cols));
       row.style.setProperty("--pitch", `${lay.pitch}px`);
       return { side, row, compact };
     }).map(({ side, row, compact }) => ({
@@ -1568,34 +1559,13 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       compact,
       // The status row's width, from the cards on screen (read before they are replaced).
       stsWidth: row.querySelector<HTMLElement>(".bv-card:not(.dead) .bv-sts")?.getBoundingClientRect().width ?? 0,
-      was: new Map([...row.querySelectorAll<HTMLElement>(".bv-slot")].map((sl) => [sl.querySelector<HTMLElement>(".bv-card")?.dataset.unit ?? "", sl.getBoundingClientRect().left])),
     }));
-    const newest = v.waves.at(-1);
     for (const l of lines) {
       const { side, row } = l;
-      const cards = lineOf(side, board, before, v, l.stsWidth, l.compact);
-      if (closing) fadeCleared(row, cards);
+      const cards = lineOf(side, board, field, v, l.stsWidth, l.compact);
       row.replaceChildren(...cards);
-      // A falling card beside a full line widens the row instead of wrapping it.
-      row.style.setProperty("--n", String(Math.max(colsOf(side), cards.length)));
       row.classList.toggle("empty", !cards.length);
       if (!cards.length) row.append(h("div", { class: "dim" }, tr("battle.noOneStanding")));
-    }
-    for (const { side, row, was } of lines) {
-      // A summon entering at the front this wave, or a revive back in its place
-      // (#918), pushes the cards behind it back a slot: each slides from where it stood.
-      const push = !!newest && newest.age !== null && !reduced() && newest.step.changes.some((c) => c.kind === "summon" && sides.get(c.unit) === side);
-      for (const sl of row.querySelectorAll<HTMLElement>(".bv-slot:not(.bv-enter)")) {
-        const id = sl.querySelector<HTMLElement>(".bv-card")?.dataset.unit ?? "";
-        const x0 = was.get(id);
-        if ((push || closing) && x0 !== undefined && !pushed.has(id)) {
-          const dx = x0 - sl.getBoundingClientRect().left;
-          // A push waits, as the summon does, for a dying card of the line to pop (R3-26).
-          if (Math.abs(dx) > 1) pushed.set(id, push ? { dx, at: now - newest!.age! + summonWait(side, v, v.waves.length - 1) / speed } : { dx, at: now });
-        }
-        const p = pushed.get(id);
-        if (p && (now - p.at) * speed < PUSH_MS) slides.push([sl, p]);
-      }
     }
     // A chain (#913, #1030): each card that has acted wears its step's
     // number, and once its step is over it fades (spent) until the chain
@@ -1620,8 +1590,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     playEffects(v);
     const runRows = runningTotalsOf(log, soFar);
     drawRuns(runRows, turnKey, v.waves.some((w) => w.age !== null));
-    // After the beams: they aim at each card's slot, not where its slide starts.
-    for (const [sl, p] of slides) sl.animate([{ transform: `translateX(${p.dx}px)` }, { transform: "none" }], { duration: PUSH_MS / speed, delay: -(now - p.at), easing: "ease-out", fill: "backwards" });
     // The action strip (mission 1007): one line, actor → effect → target → number, a chain's links as dots.
     const chained = !sum && !!beat && isChain(beat);
     caption.replaceChildren(h("span", { class: "bv-strip-line bv-cap" }, ...railKids(step, sum)));
@@ -1834,21 +1802,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       b.el.style.top = `${Math.round(top)}px`;
       b.el.style.maxHeight = !isDesktop() && name?.height ? `${Math.max(0, Math.floor(name.top - 1 - top))}px` : "";
       b.el.style.maxWidth = `${Math.round(box.width)}px`;
-    }
-  }
-  /** The turn's dead leave as the next turn starts (R4-22): each fades where it stood. */
-  function fadeCleared(row: HTMLElement, next: HTMLElement[]): void {
-    const stays = new Set(next.map((sl) => sl.querySelector<HTMLElement>(".bv-card")?.dataset.unit));
-    for (const sl of row.querySelectorAll<HTMLElement>(".bv-slot")) {
-      const card = sl.querySelector<HTMLElement>(".bv-card.dead");
-      if (!card || stays.has(card.dataset.unit)) continue;
-      const r = sl.getBoundingClientRect();
-      const ghost = sl.cloneNode(true) as HTMLElement;
-      copySigils(sl, ghost);
-      ghost.classList.add("bv-cleared");
-      Object.assign(ghost.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
-      runs.append(ghost);
-      ghost.animate([{ opacity: 1, scale: 1 }, { opacity: 0, scale: 0.85 }], { duration: RUN_FADE_MS / speed, easing: "ease-in", fill: "forwards" }).finished.then(() => ghost.remove(), () => ghost.remove());
     }
   }
   function drawBeams(waves: View["waves"]): void {
