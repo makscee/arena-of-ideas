@@ -476,11 +476,11 @@ try {
       if (gold < 3 || (await page.getByTestId("offers").locator(".cell").count()) === 0) break;
       const filled = await page.getByTestId("line").locator(".cell.you").count();
       if (filled >= 5) break;
-      // An offer opens its sheet (both forms, what buying does); Buy buys.
+      // An offer in hand lights its gold destination ("Buy 3g"); a tap on it buys.
       await selectOffer(0);
-      await page.getByTestId("buy").waitFor();
+      await page.getByTestId("buy-say").waitFor();
       if (round === 0 && k === 0) { await shot("offer-sheet"); await noHScroll("offer-sheet"); }
-      if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("inspector-close").click(); break; }
+      if (!(await page.getByTestId("buy").count())) { await page.getByTestId("inspector-close").click(); break; }
       await page.getByTestId("buy").click();
       await page.waitForFunction((g) => !document.querySelector('[data-testid="gold"]') || document.querySelector('[data-testid="gold"]').textContent !== g, L("shop.gold", { n: gold }));
       // The gold moves at once now (the press shows its result before the answer): wait for the answer too.
@@ -521,7 +521,10 @@ try {
       await page.getByTestId("line-1").click();
       await page.getByTestId("champion-pin-open").click().catch(() => {});
       if (await page.getByTestId("overlay").isVisible().catch(() => false)) { await shot("champion-pin"); await page.getByTestId("overlay").click({ position: { x: 180, y: 10 } }); }
-      await page.getByTestId("move-left").click();
+      // Move arms the teal destinations; a tap on one reorders (arena#49: reading a unit arms nothing).
+      if ((await page.locator(".cell.lit").count()) !== 0) errors.push("move: a unit read in the tray armed destinations by itself");
+      await page.getByTestId("move").click();
+      await page.getByTestId("move-tag").first().click();
       await page.getByTestId("fight").waitFor();
     }
     await page.getByTestId("fight").click();
@@ -981,7 +984,7 @@ try {
     for (const i of [first, second]) if ((await page.getByTestId(`fuse-mark-${i}`).count()) !== 1) errors.push(`fusion: no ⚗ on line-${i} of a discovered pair`);
     await page.getByTestId(`line-${first}`).click();
     await shot("shop-fuse-actions"); await noHScroll("shop-fuse-actions");
-    await tap44("move buttons beside Fuse", page.locator('[data-testid="move-left"], [data-testid="move-right"]'), "width");
+    await tap44("Move beside Fuse", page.getByTestId("move"), "width");
     await page.getByTestId("fuse").click();
     await shot("fuse-pick"); await noHScroll("fuse-pick");
     // The Fuse opens the forge on the pair (#1049 reopened, case 5): no splice
@@ -1050,13 +1053,16 @@ try {
       const name = (id) => page.getByTestId(id).locator(".name").textContent();
       const benched = await name("bench-0");
       await shot("shop-bench"); await noHScroll("shop-bench"); await footInView("shop-bench");
-      // A bench unit selected, the line full: a tap on a line unit swaps the two.
+      // A bench unit selected, the line full: Move, then a tap on a line unit swaps the two.
       const last = await name("line-4");
       await page.getByTestId("bench-0").click();
       await page.getByTestId("to-line").waitFor();
       if ((await page.getByTestId("hint").filter({ hasText: L("hint.lineFullSwap") }).count()) === 0) errors.push("bench: no swap hint with a bench unit selected and the line full");
       await shot("bench-selected"); await noHScroll("bench-selected"); await footInView("bench-selected");
       await tap44("bench actions", page.getByTestId("actions").locator("button"));
+      // Reading arms nothing (arena#49): Move lights the line units as named "Swap" targets, and a tap on one swaps.
+      await page.getByTestId("move").click();
+      await page.locator('[data-testid="line-4"] [data-testid="move-tag"]').waitFor();
       await page.getByTestId("line-4").click();
       await page.waitForFunction((n) => document.querySelector('[data-testid="line-4"] .name')?.textContent === n, benched, { timeout: 5_000 }).catch(() => {});
       if ((await name("line-4")) !== benched || (await name("bench-0")) !== last) errors.push(`bench: the tap-to-swap left line-4 "${await name("line-4")}" and bench-0 "${await name("bench-0")}"`);

@@ -5,7 +5,7 @@ import type { Msg } from "../index";
 
 export const shop = {
   // The shop's one hint.
-  "hint.lineFullSwap": "Line full: Swap trades with the back unit, or tap one.",
+  "hint.lineFullSwap": "Line full: Swap trades with the back unit, or press Move and pick one.",
   "hint.ownCrown": "The Crown: today's champion is your own team. Beat it to be a slayer again; a loss costs a heart. Your line is final.",
   "hint.crown": "The Crown: your line, as it is, against today's champion. Win it to become a slayer; a loss costs a heart.",
   "hint.fuseDesk": "Two Awoken units can fuse: tap one, then F.",
@@ -13,11 +13,11 @@ export const shop = {
   "hint.oneMore": "One more {name} awakens it. It's in the shop.",
   "hint.moveToLine": "Move a unit to your line: only the line fights.",
   "hint.noGold": "No gold for a unit. Fight to move on: an empty line loses, and costs a heart.",
-  "hint.buyDesk": "Tap an offer, then a slot to buy it there. Keys: ← → pick an offer, 1–5 the slot.",
-  "hint.buyPhone": "Tap an offer, then a lit slot to buy it there.",
+  "hint.buyDesk": "Tap an offer, then its gold slot to buy. Keys: ← → pick an offer, its slot number buys.",
+  "hint.buyPhone": "Tap an offer, then its gold slot to buy.",
   // Tap-tap's second step (#1293): what the next tap on a lit slot does.
-  "hint.tapSlotBuy": "Tap a lit slot to buy it there.",
-  "hint.tapSlotMove": "Tap a lit slot to move it there.",
+  "hint.tapSlotBuy": "Tap the gold slot to buy",
+  "hint.tapSlotMove": "Tap a teal slot to move it there.",
   "hint.outOfGold": "Out of gold for units. Fight when ready.",
   "hint.moveDesk": "Drag a unit to move it, or tap it: ← → move it, S sells it.",
   "hint.movePhone": "Tap a unit in your line to move, sell or read it.",
@@ -110,7 +110,7 @@ export const shop = {
   "keys.title": "Keys",
   "keys.lead": "Tab moves · Enter or a tap selects · drag reorders · ← → pick an offer, then",
   "keys.or": " or ",
-  "keys.buys": " buys it there · ",
+  "keys.buys": " buys at the gold slot · ",
   "keys.reroll": " reroll · ",
   "keys.lock": " lock · ",
   "keys.fight": " fight · ",
@@ -132,8 +132,16 @@ export const shop = {
   // The shop's one line of how (mission #1286 slice 2): drag, or tap-tap.
   "shop.howPhone": "tap, then tap a slot · or drag",
   // A slot lit for the offer in hand: its twin merges it in.
-  "slot.awakens": "awakens ★",
-  "slot.merges": "+1 copy",
+  "slot.buy": "Buy {cost}g",
+  "slot.copy": "+1 copy",
+  "slot.awaken": "Awaken {cost}g",
+  "slot.awakenShort": "Awaken {cost}g",
+  "slot.here": "Move here",
+  "slot.swap": "Swap",
+  "receipt.line": "{name} joined slot {n} · −{cost}g",
+  "receipt.bench": "{name} joined the bench · −{cost}g",
+  "receipt.copy": "{name} +1 copy, {copies}/{of} · −{cost}g",
+  "receipt.awakens": "{name} awakens · −{cost}g",
   "slot.sell": "Sell +{n}",
   "slot.tapLit": "tap a lit slot",
   "shop.selectFirst": "Select a unit first: click it in your line or bench.",

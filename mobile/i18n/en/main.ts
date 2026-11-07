@@ -97,8 +97,6 @@ export const main = {
   "coach.chain": "{anchor} → {answer}",
   "start.starting": "Starting…",
   "start.failed": "Couldn't start. Check your connection and press PLAY again.",
-  "coach.slotFirst": "{anchor} goes first: slot {n}",
-  "coach.slotBehind": "{answer} goes behind {anchor}: slot {n}",
   "coach.howTap": "Tap {name}, then slot {n}",
   "coach.howKey": "or press {n}",
   "coach.howFight": "Press Fight",
@@ -239,5 +237,5 @@ export const main = {
   "board.crownFinal": "Your line is final for the Crown.",
   "board.clickSelect": "Click or press Enter to select it: move, bench, fuse or sell.",
   "board.offerHead": "Shop · offer {n} · key {n}",
-  "board.buyDesk": "Buy {cost}g · {n}",
+  "board.move": "Move",
 } satisfies Record<string, Msg>;
