@@ -569,7 +569,7 @@ try {
           noRow: cards.filter((c) => !c.querySelector('[data-testid="card-statuses"]') && !c.classList.contains("bv-pc")).length,
           // (a piece's chip draws its status as an emoji, not an svg: it is "wordy" only when letters stand there)
           wordy: [...document.querySelectorAll('[data-testid="card-status"]')].filter((s) => !s.querySelector("svg")).length + [...document.querySelectorAll(".bv-pc .pc-st")].filter((s) => /\p{L}/u.test(s.firstChild?.textContent ?? "")).length,
-          zero: [...document.querySelectorAll('[data-testid="change"], [data-testid="caption"], .bv-ledger, .bv-still, .bv-float, .bv-run-row')].filter((c) => /[−-]0(?!\d)/.test(c.textContent)).length,
+          zero: [...document.querySelectorAll('[data-testid="change"], [data-testid="caption"], .bv-ladder, .bv-still, .bv-float, .bv-run-row')].filter((c) => /[−-]0(?!\d)/.test(c.textContent)).length,
           hiddenStatus: [...document.querySelectorAll('[data-testid="card-statuses"]')].flatMap((row) => [...row.children].filter((c) => c.getBoundingClientRect().bottom > row.getBoundingClientRect().bottom + 0.5)).length,
           wrongSide: [...document.querySelectorAll(".bv-cn[data-unit]")].filter((n) => {
             const line = document.querySelector(`.bv-line [data-unit="${CSS.escape(n.dataset.unit)}"]`)?.closest(".bv-line");

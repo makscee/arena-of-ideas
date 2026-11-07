@@ -1,5 +1,5 @@
 // The chain on the field (arena#30, mission #26 move 2): one step's wire at a time, its number on it, and the
-// tray listing the steps so far with CHAIN ×N beside them. Shared by mvp-start, mvp-phone and mvp-desktop (via beams.mjs).
+// tray's ladder numbering the steps so far with CHAIN ×N above them (arena#52). Shared by mvp-start, mvp-phone and mvp-desktop (via beams.mjs).
 
 /** What the screen shows of the chain now: the wires, their numbers, the tray's count and rows. */
 export const readChain = (page) =>
@@ -9,8 +9,9 @@ export const readChain = (page) =>
     dots: [...document.querySelectorAll(".bv-fx .bv-beam .bv-bn")].map((d) => Number(d.dataset.n)),
     count: Number(document.querySelector('[data-testid="chain-count"]')?.dataset.n) || 0,
     text: document.querySelector('[data-testid="chain-count"]')?.textContent ?? "",
-    rows: [...document.querySelectorAll('[data-testid="chain-step"]')].map((r) => Number(r.dataset.n)),
-    now: Number(document.querySelector('[data-testid="chain-step"].now')?.dataset.n) || 0,
+    // The ladder's rows (arena#52): the steps of the chain on screen wear their number, the rest a dot; the foot row is the lit one.
+    rows: [...document.querySelectorAll(".bv-ladder .bv-lrow .bv-lno")].map((r) => Number(r.textContent)).filter((n) => n > 0),
+    now: Number(document.querySelector(".bv-ladder .bv-lrow.current .bv-lno")?.textContent) || 0,
   }));
 
 /** What is wrong with a reading, as sentences: earlier wires left on the field, a number outside a chain,

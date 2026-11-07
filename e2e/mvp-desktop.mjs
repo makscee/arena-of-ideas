@@ -652,6 +652,11 @@ try {
    * stand one above the other, fronts at the left; the result covers the tray (its Next round on screen); Space
    * pauses, ← → step, E ends, Esc closes the inspector. */
   async function desktopBattle() {
+    // A fight with no firing in it (whyOnDesktop stepped through it looking for one) ends before the keys are tried: replay it, or Space would go on to the shop.
+    if (await page.getByTestId("end-card").isVisible().catch(() => false)) {
+      await page.getByTestId("end-replay").click();
+      await page.waitForTimeout(600);
+    }
     if ((await page.getByTestId("battle-play").textContent()) === "❚❚") await page.getByTestId("battle-play").click();
     const facing = async (name, w, h) => {
       const [mine, theirs, tray] = [await page.getByTestId("battle-you").boundingBox(), await page.getByTestId("battle-them").boundingBox(), await page.getByTestId("tray").boundingBox()];
