@@ -251,7 +251,6 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .plate.turn { order: 4; font: 400 30px/1 var(--font-head); color: var(--action); min-width: 90px; justify-content: center; }
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .plate.hearts { order: 5; }
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .plate.coins { display: none; }
-:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .bv-repeat::after { content: " ⏩"; }
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 > .hud { min-height: 0; margin: 0; padding: 0; }
 
 /* The two lines and their side labels */
@@ -802,7 +801,6 @@ button.ws-back { min-height: 44px; min-width: 44px; padding: 0 12px; flex: none;
 /* The turn plate: in the gap between the lines while no step is on the field (the face-off, a turn's totals), never a chip. */
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-plate { position: absolute; z-index: 4; display: none; align-items: center; justify-content: center; padding: 0 12px; border: 3px solid var(--outline); border-radius: 12px; background: var(--panel); color: var(--action); font: 400 20px/1 var(--font-head); letter-spacing: 0.06em; text-transform: uppercase; pointer-events: none; white-space: nowrap; }
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-plate.on { display: flex; }
-:is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-plate .bv-repeat::after { content: " ⏩"; }
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 > .bv-plate { left: 640px; translate: -50% 0; top: 268px; height: 28px; }
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-plate { right: 12px; top: 262px; height: 28px; font-size: 14px; padding: 0 8px; }
 

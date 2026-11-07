@@ -218,7 +218,6 @@ input { width: 100%; background: var(--panel); color: var(--text); border: var(-
 .hud > * { flex: none; }
 .hud .gold { color: var(--action); }
 .hud .hearts { color: var(--them); }
-.hud .bv-repeat::after { content: "⏩"; margin-left: 3px; font-size: 12px; opacity: 0.75; }
 /* Compact cards (round 2, R2-7): 64×84 at 360px, five a row with 4px gaps. */
 .slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
 .card { position: relative; height: 84px; min-width: 0; background: var(--panel); border: var(--bw) solid var(--outline); padding: 5px 2px 4px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; border-radius: var(--radius); cursor: pointer; -webkit-user-select: none; user-select: none; }
@@ -610,8 +609,6 @@ button.bv-badge.past { z-index: 2; }
  * it). Change the offsets here. */
 /* --bv-sp is the playback speed: at 2× every motion runs twice as fast, so a
  * beat change never cuts it. The delays are already speed-scaled (battle.ts). */
-.bv-card.bv-lunge-up { animation: bv-lunge-up calc(0.42s / var(--bv-sp, 1)) ease-out calc(var(--bv-t, 0s) / var(--bv-sp, 1)); }
-.bv-card.bv-lunge-down { animation: bv-lunge-down calc(0.42s / var(--bv-sp, 1)) ease-out calc(var(--bv-t, 0s) / var(--bv-sp, 1)); }
 .bv-card.bv-pulse { animation: bv-pulse calc(0.36s / var(--bv-sp, 1)) ease-out calc(var(--bv-t, 0s) / var(--bv-sp, 1)); }
 .bv-card.bv-hit { animation: bv-shake calc(0.4s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-t, 0s)) / var(--bv-sp, 1)); }
 /* A big hit (4+ damage) shakes harder (round 3, note 14). */
@@ -662,8 +659,6 @@ button.bv-badge.past { z-index: 2; }
 .bv-float.on-pwr { left: 2px; translate: none; }
 .bv-float.on-hp { left: auto; right: 2px; translate: none; }
 .bv-float.buff { color: var(--action); }
-@keyframes bv-lunge-up { 40% { transform: translateY(-14px) scale(1.06); } }
-@keyframes bv-lunge-down { 40% { transform: translateY(14px) scale(1.06); } }
 @keyframes bv-pulse { 40% { transform: scale(1.08); } }
 /* A hit knocks the card back, away from the other line (--bv-kd: 1 down for yours, -1 up for theirs), then it settles. */
 @keyframes bv-shake { 20% { transform: translateY(calc(var(--bv-kd, 1) * 6px)); } 50% { transform: translateY(calc(var(--bv-kd, 1) * 4px)); } 80% { transform: translateY(calc(var(--bv-kd, 1) * -1px)); } }
@@ -718,7 +713,7 @@ button.bv-badge.past { z-index: 2; }
 .bv-stillbox { flex: 0 1 auto; min-height: 0; overflow-y: auto; }
 .bv-still { display: flex; flex-wrap: wrap; gap: 0 8px; font-size: 13px; font-family: var(--font-num); }
 @media (prefers-reduced-motion: reduce) {
-  .bv-card, .bv-card.bv-lunge-up, .bv-card.bv-lunge-down, .bv-card.bv-pulse, .bv-card.bv-hit, .bv-card.bv-dying { animation: none; transition: none; }
+  .bv-card, .bv-card.bv-lunge, .bv-card.bv-pulse, .bv-card.bv-hit, .bv-card.bv-dying { animation: none; transition: none; }
   .bv-card.bv-flash-hit::after, .bv-card.bv-heal::after { animation: none; background: none; opacity: 1; box-shadow: 0 0 0 2px var(--k-dmg) inset; }
   .bv-card.bv-heal::after { box-shadow: 0 0 0 2px var(--k-heal) inset; }
   .bv-card.dead.bv-dying { filter: grayscale(1); transform: translateY(8px); }
@@ -2412,3 +2407,60 @@ button.link.keep { min-height: 32px; min-width: 44px; }
 
 /* The idea picks on a short window (800×450): the player's quote and the "read it again" button keep their height, the page scrolls instead of squeezing them to nothing (arena#32) */
 .idea-quote, button.pick-none { flex: none; }
+
+/* ===== arena#50: one motion per event, one clock (MOVES 1 and 4) =====
+ * Every event is a beat: cue 0–220 ms (the actor lit), the numbered wire travels 220–460, at 460 ms the digit changes on
+ * its own pill and its receipt appears together, the receipt clears at 760 ms, the final digit holds. --bv-sp scales the whole
+ * clock (2×, 4×), so no phase is squeezed. A pause freezes every phase where it is (.bv-frozen). */
+.bv-frozen, .bv-frozen *, .bv-frozen *::before, .bv-frozen *::after { animation-play-state: paused !important; }
+/* While playing, only the actor and the unit it reaches stay at full colour; the rest sit at 65%. A pause restores them. */
+.bv-line.bv-playing .bv-card.bv-bystander:not(.dead) { opacity: 0.65; }
+.bv-line.bv-playing .bv-card.bv-bystander:not(.dead) .pc-tab:not(.bv-fired) { filter: grayscale(0.85); }
+.bv-card { transition: opacity 0.12s ease-out; }
+/* Strike: the portrait lunges along the real source–target vector (--bv-lx, --bv-ly, set from the placed board): out with the wire (220–460), back after contact (460–720). */
+.bv-card.bv-lunge { animation: bv-lunge calc(720ms / var(--bv-sp, 1)) linear calc(var(--bv-t, 0s) / var(--bv-sp, 1)); }
+@keyframes bv-lunge {
+  0%, 30.5% { transform: none; animation-timing-function: ease-out; }
+  63.9% { transform: translate(var(--bv-lx, 0px), var(--bv-ly, 0px)); animation-timing-function: ease-in-out; }
+  100% { transform: none; }
+}
+/* The cue: a firing card that is not striking pulses once while its wire draws. */
+.bv-card.bv-pulse { animation: bv-pulse calc(220ms / var(--bv-sp, 1)) ease-out calc(var(--bv-t, 0s) / var(--bv-sp, 1)); }
+/* Damage: the target recoils sideways at contact, 300 ms. */
+.bv-card.bv-hit { animation: bv-recoil calc(300ms / var(--bv-sp, 1)) ease-out calc((460ms + var(--bv-t, 0s)) / var(--bv-sp, 1)); }
+.bv-card.bv-hit.bv-big { animation-name: bv-recoil-big; }
+.bv-card.bv-hit.bv-dying { animation: bv-recoil calc(300ms / var(--bv-sp, 1)) ease-out calc((460ms + var(--bv-t, 0s)) / var(--bv-sp, 1)), bv-die calc(480ms / var(--bv-sp, 1)) ease-in calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) both; }
+.bv-card.bv-hit.bv-big.bv-dying { animation-name: bv-recoil-big, bv-die; }
+@keyframes bv-recoil { 0% { transform: none; } 20% { transform: translateX(4px); } 40% { transform: translateX(-3px); } 60% { transform: translateX(2px); } 80% { transform: translateX(-1px); } 100% { transform: none; } }
+@keyframes bv-recoil-big { 0% { transform: none; } 20% { transform: translateX(6px); } 40% { transform: translateX(-5px); } 60% { transform: translateX(3px); } 80% { transform: translateX(-1px); } 100% { transform: none; } }
+/* The hit flash and the heal glow wait for contact too. */
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.bv-flash-hit > .pc > .pc-face { animation-delay: calc((460ms + var(--bv-ft, 0s)) / var(--bv-sp, 1)); animation-duration: calc(300ms / var(--bv-sp, 1)); }
+.bv-card.bv-heal::after { animation-delay: calc((460ms + var(--bv-ft, 0s)) / var(--bv-sp, 1)); animation-duration: calc(300ms / var(--bv-sp, 1)); }
+/* Death: the portrait sinks 8 px and greys over 480 ms from contact; the ghost's number appears after. */
+.bv-card.bv-dying { animation-duration: calc(480ms / var(--bv-sp, 1)); }
+/* Summon: the portrait rises 12 px into the vacancy inside a receding ring, 400 ms from contact. */
+.bv-slot.bv-enter { --enter: 0 12px; animation-duration: calc(400ms / var(--bv-sp, 1)); }
+.bv-slot.bv-enter::after { animation-duration: calc(400ms / var(--bv-sp, 1)); }
+/* Buff / debuff: the power (or HP) pill grows or shrinks as its digit changes, 300 ms from contact. */
+.pc-b.bv-bpop-up { animation: bv-bpop-up calc(300ms / var(--bv-sp, 1)) ease-out calc((460ms + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
+.pc-b.bv-bpop-down { animation: bv-bpop-down calc(300ms / var(--bv-sp, 1)) ease-out calc((460ms + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
+@keyframes bv-bpop-up { 0% { transform: scale(1); } 40% { transform: scale(1.3); } 100% { transform: scale(1); } }
+@keyframes bv-bpop-down { 0% { transform: scale(1); } 40% { transform: scale(0.8); } 100% { transform: scale(1); } }
+/* The wire: numbered from the cue, a spark-like line travelling 220–460 ms; its head and number show when it starts. */
+.bv-beam.draw .bv-bl { animation: bv-beam calc(240ms / var(--bv-sp, 1)) ease-out calc((220ms + var(--bv-bt, 0s)) / var(--bv-sp, 1)) both; }
+.bv-beam.draw .bv-bh { animation: bv-beam-head calc(240ms / var(--bv-sp, 1)) step-end calc((220ms + var(--bv-bt, 0s)) / var(--bv-sp, 1)) both; }
+.bv-beam.draw .bv-bn { animation: bv-beam-head calc(1ms / var(--bv-sp, 1)) step-end calc((220ms + var(--bv-bt, 0s)) / var(--bv-sp, 1)) both; }
+.bv-beam.draw.ring rect { animation: bv-ring calc(220ms / var(--bv-sp, 1)) ease-out calc(var(--bv-bt, 0s) / var(--bv-sp, 1)) both; }
+/* The cross-fade: a unit that changes on this beat is drawn as it was until contact, then as it is — digit, badge and shield together. */
+/* Out of flow, an absolutely placed child of the card's flex row sits where the only piece would: exactly over the new one. */
+.bv-card.bv-xfade > .pc.bv-was { position: absolute; z-index: 6; pointer-events: none; animation: bv-was calc(460ms / var(--bv-sp, 1)) steps(1, end) calc(var(--bv-wt, 0s) / var(--bv-sp, 1)) both; }
+@keyframes bv-was { from { opacity: 1; } to { opacity: 0; } }
+/* The receipt: the result chip appears at contact (460 ms) and clears at 760 ms. */
+.bv-changes.bv-rcpt { animation: bv-rcpt calc(760ms / var(--bv-sp, 1)) linear calc(var(--bv-rt, 0s) / var(--bv-sp, 1)) both; }
+@keyframes bv-rcpt { 0%, 60.4% { opacity: 0; } 60.5%, 97% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .bv-card.bv-lunge, .bv-card.bv-hit, .pc-b.bv-bpop-up, .pc-b.bv-bpop-down, .bv-changes.bv-rcpt, .bv-card.bv-xfade > .pc.bv-was { animation: none; }
+  .bv-card.bv-xfade > .pc.bv-was { display: none; }
+}
+/* The receipt sits over a striker that lunged into its place. */
+.bv-slot:has(> .bv-card > .bv-changes.bv-rcpt) { position: relative; z-index: 7; }
