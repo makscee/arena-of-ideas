@@ -251,7 +251,6 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .plate.turn { order: 4; font: 400 30px/1 var(--font-head); color: var(--action); min-width: 90px; justify-content: center; }
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .plate.hearts { order: 5; }
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .plate.coins { display: none; }
-:is(#app[data-screen="battle"], #under) .stage.bv-v3 .tb-hud .bv-repeat::after { content: " ⏩"; }
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 > .hud { min-height: 0; margin: 0; padding: 0; }
 
 /* The two lines and their side labels */

@@ -20,7 +20,7 @@
 import { boardAt, type BoardState, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView, SummonContent } from "../../src/mvp/contract";
 import { chainCappedTip, STATUS_TERMS, suddenDeathTip, termDef, timeUpTip, termIcon, triggerLabel, type IconId, type TermId } from "../../src/glossary";
-import { isChain, chainSummaryOf, chainSideText, FATIGUE_BANNER_MS, NO_ROOM, NO_ROOM_RU, setTraceLang, BIG_HIT_MIN, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, foldTurnsOf, isLogFold, keyMomentsOf, logRowsOf, stepsOf, timelineOf, traceOf, weightsOf, waveWaitMs, repeatTurnsOf, playSpeed, playbackMs, whyILost as lossChains, sidesOf, turnSummaryOf, turnEndsOf, turnEndHoldMs, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, changeOf, type RunRow, type TurnSummary, type UnitTurnTotals, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type LogRow, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
+import { isChain, chainSummaryOf, chainSideText, FATIGUE_BANNER_MS, NO_ROOM, NO_ROOM_RU, setTraceLang, BIG_HIT_MIN, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, foldTurnsOf, isLogFold, keyMomentsOf, logRowsOf, stepsOf, timelineOf, traceOf, weightsOf, waveWaitMs, playbackMs, CONTACT_MS, RECEIPT_END_MS, CUE_MS, whyILost as lossChains, sidesOf, turnSummaryOf, turnEndsOf, turnEndHoldMs, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, changeOf, type RunRow, type TurnSummary, type UnitTurnTotals, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type LogRow, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { summonId } from "../../src/describe";
@@ -187,8 +187,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const beats = beatPlayOf(log, stepsOf(log, TAGGED, sides, a.you ? { you: a.you } : { sideName: owner }), TAGGED);
   // Each beat's big moments (a kill, a big hit, a summon, the first fatigue, the last beat) add time (round 3, note 14).
   const weights = weightsOf(log, beats);
-  // A turn that repeats the last plays at twice the speed, with no turn-end hold (mission 1007, slice 4).
-  const repeats = repeatTurnsOf(beats);
   // Each beat's sounds, one per wave (round 3, note 16): at most 5 a beat,
   // deaths and summons always, rising in pitch along a chain.
   const cues = beats.map((b) => beatCues(b, log));
@@ -251,7 +249,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   let holds = true;
   // Set before setSpeedVar() runs, so motion and beat timing start in step.
   let chosenSpeed = speedFor(battle.round, storedSpeed());
-  /** The speed on screen: the chosen one, doubled on a repeat turn (applyRate). */
+  /** The speed on screen: always the chosen one (no repeat-turn doubling, arena#50). */
   let speed = chosenSpeed;
   let playing = true;
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -286,11 +284,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const enterOf = new WeakMap<HTMLElement, string>();
   /** Motion runs at the playback speed (CSS reads --bv-sp), so 2× never cuts it. */
   const setSpeedVar = () => { for (const row of [enemy, mine, clash, fx, fxNums]) row.style.setProperty("--bv-sp", String(speed)); };
-  /** Puts the speed of the beat on screen in force: the chosen one, or twice it on a repeat turn. */
+  /** Puts the chosen speed in force. */
   const applyRate = () => {
-    const sp = playSpeed(chosenSpeed, at >= 0 && repeats.has(beats[at]?.turn ?? -1));
-    if (sp === speed) return;
-    speed = sp;
+    if (chosenSpeed === speed) return;
+    speed = chosenSpeed;
     setSpeedVar();
   };
 
@@ -417,7 +414,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   // How long playback should take at 1× (the line-up plus every beat), for
   // the e2e to compare with what the screen takes.
   // the turn-end summaries included (R4-12).
-  const setPlan = () => { controls.dataset.planMs = String(Math.round(playbackMs(beats, weights, turnEnds.keys(), repeats, lineupMs, chosenSpeed) * chosenSpeed)); };
+  const setPlan = () => { controls.dataset.planMs = String(Math.round(playbackMs(beats, weights, turnEnds.keys(), lineupMs, chosenSpeed) * chosenSpeed)); };
   setPlan();
 
   caption.addEventListener("click", () => {
@@ -477,7 +474,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   }
   /** Playback holds on beat i's turn totals: a turn's last beat, below 4×, unless a Replay or key moment started it. */
   function holdsAfter(i: number): boolean {
-    return holds && turnEnds.has(i) && !repeats.has(beats[i]!.turn) && turnEndHoldMs(speed) > 0;
+    return holds && turnEnds.has(i) && turnEndHoldMs(speed) > 0;
   }
   /** Sets the speed (and the motion's --bv-sp with it), remembered for the next battle. */
   function setSpeed(s: number): void {
@@ -1523,7 +1520,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const field = fieldAt(log, upto, pending);
     const turn = step?.turn ?? 0;
     shownTurn = hudTurn ?? turn;
-    const repeating = !finished && repeats.has(hudTurn ?? turn);
     hud.replaceChildren(
       ...(menuBtn ? [plate("menu", menuBtn)] : []),
       // The run bar's plates (the round's track, hearts, gold) come from the run; without a run the round names itself.
@@ -1532,7 +1528,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       plate("vs", h("span", { class: "dim who", "data-testid": "battle-vs", title: battle.opponent.name }, tr("battle.hud.vs", { name: battle.opponent.name })), ...(a.outro?.bar ? [] : reportFoe())),
       h("span", { class: "hud-gap" }),
       // A repeat turn's ⏩ is drawn by CSS, so the label's text stays "T7" and the row keeps its spacing.
-      plate("turn", h("span", { "data-testid": "battle-turn", ...(repeating ? { class: "bv-repeat", title: tr("battle.repeat"), "aria-label": `${turnLabel(hudTurn ?? turn)} · ${tr("battle.repeat")}` } : {}) }, turnLabel(hudTurn ?? turn))),
+      plate("turn", h("span", { "data-testid": "battle-turn" }, turnLabel(hudTurn ?? turn))),
     );
     clash.replaceChildren(clashMark, ...[triggerBadge("clash", v)].filter((x): x is HTMLElement => x !== null));
     drawBanner(v);
