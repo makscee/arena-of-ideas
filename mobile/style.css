@@ -218,7 +218,6 @@ input { width: 100%; background: var(--panel); color: var(--text); border: var(-
 .hud > * { flex: none; }
 .hud .gold { color: var(--action); }
 .hud .hearts { color: var(--them); }
-.hud .bv-repeat::after { content: "⏩"; margin-left: 3px; font-size: 12px; opacity: 0.75; }
 /* Compact cards (round 2, R2-7): 64×84 at 360px, five a row with 4px gaps. */
 .slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
 .card { position: relative; height: 84px; min-width: 0; background: var(--panel); border: var(--bw) solid var(--outline); padding: 5px 2px 4px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; border-radius: var(--radius); cursor: pointer; -webkit-user-select: none; user-select: none; }
@@ -610,8 +609,6 @@ button.bv-badge.past { z-index: 2; }
  * it). Change the offsets here. */
 /* --bv-sp is the playback speed: at 2× every motion runs twice as fast, so a
  * beat change never cuts it. The delays are already speed-scaled (battle.ts). */
-.bv-card.bv-lunge-up { animation: bv-lunge-up calc(0.42s / var(--bv-sp, 1)) ease-out calc(var(--bv-t, 0s) / var(--bv-sp, 1)); }
-.bv-card.bv-lunge-down { animation: bv-lunge-down calc(0.42s / var(--bv-sp, 1)) ease-out calc(var(--bv-t, 0s) / var(--bv-sp, 1)); }
 .bv-card.bv-pulse { animation: bv-pulse calc(0.36s / var(--bv-sp, 1)) ease-out calc(var(--bv-t, 0s) / var(--bv-sp, 1)); }
 .bv-card.bv-hit { animation: bv-shake calc(0.4s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-t, 0s)) / var(--bv-sp, 1)); }
 /* A big hit (4+ damage) shakes harder (round 3, note 14). */
@@ -636,6 +633,9 @@ button.bv-badge.past { z-index: 2; }
  * the middle. */
 .bv-slot.bv-enter { animation: bv-enter calc(0.45s / var(--bv-sp, 1)) ease-out calc(var(--bv-t, 0s) / var(--bv-sp, 1)) both; }
 .bv-slot.bv-enter { --enter: 0 14px; }
+/* The card a summon took the place of (arena#48) stays under the newcomer until its entry begins, then is gone. */
+.bv-slot.bv-displaced { animation: bv-gone 0.05s linear calc(var(--bv-t, 0s) / var(--bv-sp, 1)) both; pointer-events: none; }
+@keyframes bv-gone { to { opacity: 0; } }
 /* A summon or revive rises from below inside a gold ring (#1011). */
 .bv-slot.bv-enter::after { content: ""; position: absolute; inset: -3px; border: 2.5px solid var(--action); border-radius: calc(var(--radius, 8px) + 3px); pointer-events: none; animation: bv-ring-out calc(0.6s / var(--bv-sp, 1)) ease-out calc(var(--bv-t, 0s) / var(--bv-sp, 1)) both; }
 @keyframes bv-ring-out { 0% { opacity: 0; transform: scale(1.35); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1); } }
@@ -659,8 +659,6 @@ button.bv-badge.past { z-index: 2; }
 .bv-float.on-pwr { left: 2px; translate: none; }
 .bv-float.on-hp { left: auto; right: 2px; translate: none; }
 .bv-float.buff { color: var(--action); }
-@keyframes bv-lunge-up { 40% { transform: translateY(-14px) scale(1.06); } }
-@keyframes bv-lunge-down { 40% { transform: translateY(14px) scale(1.06); } }
 @keyframes bv-pulse { 40% { transform: scale(1.08); } }
 /* A hit knocks the card back, away from the other line (--bv-kd: 1 down for yours, -1 up for theirs), then it settles. */
 @keyframes bv-shake { 20% { transform: translateY(calc(var(--bv-kd, 1) * 6px)); } 50% { transform: translateY(calc(var(--bv-kd, 1) * 4px)); } 80% { transform: translateY(calc(var(--bv-kd, 1) * -1px)); } }
@@ -715,7 +713,7 @@ button.bv-badge.past { z-index: 2; }
 .bv-stillbox { flex: 0 1 auto; min-height: 0; overflow-y: auto; }
 .bv-still { display: flex; flex-wrap: wrap; gap: 0 8px; font-size: 13px; font-family: var(--font-num); }
 @media (prefers-reduced-motion: reduce) {
-  .bv-card, .bv-card.bv-lunge-up, .bv-card.bv-lunge-down, .bv-card.bv-pulse, .bv-card.bv-hit, .bv-card.bv-dying { animation: none; transition: none; }
+  .bv-card, .bv-card.bv-lunge, .bv-card.bv-pulse, .bv-card.bv-hit, .bv-card.bv-dying { animation: none; transition: none; }
   .bv-card.bv-flash-hit::after, .bv-card.bv-heal::after { animation: none; background: none; opacity: 1; box-shadow: 0 0 0 2px var(--k-dmg) inset; }
   .bv-card.bv-heal::after { box-shadow: 0 0 0 2px var(--k-heal) inset; }
   .bv-card.dead.bv-dying { filter: grayscale(1); transform: translateY(8px); }
@@ -773,14 +771,11 @@ button.bv-also-btn { min-height: 44px; padding: 0 10px; text-transform: none; le
 button.bv-also-btn.on { border-color: var(--action); }
 button.bv-also-btn.damage, button.bv-also-btn.debuff, button.bv-also-btn.death { color: var(--them); }
 button.bv-also-btn.heal, button.bv-also-btn.summon { color: var(--you); }
-button.bv-caption { height: 44px; min-height: 0; overflow: hidden; width: 100%; text-transform: none; letter-spacing: 0; font-family: var(--font-body); font-weight: 600; font-size: 17px; color: var(--text); border-color: var(--line); text-align: left; padding: 4px 12px; }
-button.bv-caption { display: flex; align-items: center; }
 /* Target beams (R3-21): one fixed layer over the cards, under the caption,
    the badges, the floats, the sheets and the end card. The caption band is
    clear, so a beam crossing it reads end to end; its text and icons carry a
    halo in the background's colour, so the beam passes behind the words
    without hiding them. */
-button.bv-caption { position: relative; z-index: 2; }
 .bv-cap { text-shadow: 0 0 1px var(--ground), 0 0 2px var(--ground); }
 .bv-cap svg { filter: drop-shadow(0 0 1px var(--ground)); }
 .bv-fx { position: fixed; inset: 0; width: 100vw; height: 100dvh; z-index: 1; pointer-events: none; overflow: visible; }
@@ -797,7 +792,6 @@ button.bv-run-row.heal { color: var(--you); }
 button.bv-run-row.buff { color: var(--action); }
 button.bv-run-row.zero { opacity: 0.45; }
 .bv-run-row svg { flex: none; }
-.bv-cleared { position: absolute; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .bv-run, button.bv-run-row { transition: none; } }
 @media (min-width: 1024px) { button.bv-run-row { height: 20px; line-height: 20px; font-size: 17px; padding: 0 4px; } }
 /* M5-6: a phone's box sits on the card's face between its icon row and its
@@ -828,24 +822,11 @@ button.bv-badge, button.bv-badge:active:not(:disabled) { box-shadow: none; }
 @keyframes bv-beam-head { from { opacity: 0; } to { opacity: 1; } }
 @keyframes bv-ring { from { opacity: 0; transform: scale(1.12); } to { opacity: 1; transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .bv-fx * { animation: none !important; } }
-button.bv-caption.tappable::after { content: "ⓘ"; flex: none; margin-left: 4px; color: var(--dim); }
 /* The action strip (mission 1007) is one line that never wraps: actor → effect
  * icon → target, then the number in its kind's colour, a chain's links as dots
  * at the right. A long name gives way with an ellipsis; the box never grows. */
-.bv-strip-line { display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0; overflow: hidden; white-space: nowrap; line-height: 22px; }
-.bv-strip-line > * { flex: none; }
-.bv-strip-line > .bv-cn, .bv-strip-line > .bv-strip-text { flex: 0 1 auto; min-width: 3em; overflow: hidden; text-overflow: ellipsis; }
 /* When the line is short the target gives way first, then the number, the actor last (never under 6 characters: battle.ts sets its floor). */
-.bv-strip-line > .bv-cn.bv-strip-target { flex-shrink: 6; min-width: 2.4em; }
-.bv-strip-line > .bv-cn.bv-strip-actor { flex-shrink: 1; }
-.bv-strip-line > .bv-num { flex: 0 2 auto; min-width: 4.5em; overflow: hidden; text-overflow: ellipsis; }
-.bv-strip-line .bv-eff { display: inline-flex; align-items: center; }
-.bv-strip-line .bv-arrow { font-size: 13px; }
 /* A line too full for the number's word shows its short form: "Curse ×1" → "×1", "no damage" → "0" (battle.ts fitStrip). */
-.bv-strip-line.tight > .bv-num[data-short] > .bv-w { display: none; }
-.bv-strip-line.tight > .bv-num.wordonly { display: none; }
-.bv-strip-line.tight > .bv-num.wordy { font-size: 0; }
-.bv-strip-line.tight > .bv-num.wordy::after { content: attr(data-short); font-size: 1.1rem; }
 .bv-num { font-family: var(--font-num); font-size: 1.1em; }
 /* The strip tells each kind in the colour its effect has on the board (ui/effects.ts LANGUAGE). */
 .bv-num.damage, .bv-eff.damage { color: var(--k-dmg); }
@@ -854,7 +835,6 @@ button.bv-caption.tappable::after { content: "ⓘ"; flex: none; margin-left: 4px
 .bv-num.heal, .bv-eff.heal { color: var(--k-heal); }
 .bv-num.summon, .bv-num.buff, .bv-num.silence, .bv-eff.buff, .bv-eff.summon, .bv-eff.silence { color: var(--action); }
 .bv-num.status, .bv-eff.status { color: var(--k-status); }
-.bv-strip-line > .bv-dots { flex: 0 3 auto; min-width: 28px; overflow: hidden; }
 .bv-dots { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; padding-left: 4px; font-family: var(--font-num); font-size: 14px; color: var(--dim); }
 .bv-dots i { flex: 0 1 8px; min-width: 3px; height: 8px; border-radius: 4px; border: 2px solid var(--action); box-sizing: border-box; }
 .bv-dots i.on { background: var(--action); }
@@ -895,7 +875,6 @@ button.bv-why.won { color: var(--you); border-color: color-mix(in srgb, var(--yo
  * the control bar stays pinned at the foot in both motion modes. */
 .bv-screen { display: flex; flex-direction: column; gap: 12px; height: calc(100dvh - 28px - env(safe-area-inset-bottom)); overflow: hidden; }
 .bv-screen > * { flex: none; }
-.bv-screen > .bv-below { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 4px; }
 .bv-controls { gap: 6px; }
 .bv-controls button { flex: 1; min-width: 44px; padding: 0 4px; font-size: 20px; }
 .bv-controls button[data-testid="battle-end"], .bv-controls button[data-testid="battle-speed"] { font-size: 16px; }
@@ -911,7 +890,6 @@ button.bv-why.won { color: var(--you); border-color: color-mix(in srgb, var(--yo
 .bv-end-sub { font-size: 14px; line-height: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* A run's fight: the round fought, hearts and record after it, what it cost or won (R2-17 batch E). */
 /* arena#16: why I lost, one plain line under the result. */
-.bv-lost-line { font-size: 15px; font-weight: 700; line-height: 19px; color: var(--loss); margin-top: -2px; }
 .bv-end-run { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: 13px; line-height: 17px; margin-top: -4px; }
 .bv-end-run .hearts { color: var(--them); letter-spacing: 1px; }
 .bv-end-run .error { font-size: inherit; min-height: 0; }
@@ -921,35 +899,11 @@ button.bv-why.won { color: var(--you); border-color: color-mix(in srgb, var(--yo
 .bv-error .error { flex: 1; min-width: 0; min-height: 0; }
 .bv-error:has(> .error:empty) { display: none; }
 .bv-trace-end { gap: 6px; }
-.bv-end-body { display: flex; flex-direction: column; gap: 12px; }
 /* The phone's card is tight (R2-17 batch F): with the run line and the ☰
  * HUD, three whole moments still fit under the caption at 360×640. */
 .bv-end { padding-top: 8px; gap: 4px; }
-.bv-end-moments { gap: 3px; }
-.bv-end-moments > .label { line-height: 14px; }
-.bv-end-more { text-transform: none; letter-spacing: 0; color: var(--dim); }
-.bv-dmg-list { gap: 2px; }
 /* The emoji column holds a fused unit's two emojis (.two) whole, clear of its name (R2-17 batch F). */
-.bv-dmg { display: grid; grid-template-columns: 24px minmax(0, 6.5em) 1fr 28px; gap: 6px; align-items: center; font-size: 14px; line-height: 20px; }
-.bv-dmg .emoji { font-size: 15px; text-align: center; white-space: nowrap; }
 /* A fused unit's two emojis share the column on one line, so every row's name and bar line up (R2-17 batch E). */
-.bv-dmg .emoji.two { font-size: 10px; letter-spacing: -1px; }
-.bv-dmg.open { cursor: pointer; }
-.bv-dmg.open:hover .bv-cn { text-decoration: underline; }
-.bv-dmg-list > .label { align-items: center; }
-button.bv-dmg-more { padding: 0 10px; font-size: 13px; }
-.bv-dmg .bv-cn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bv-dmg .mono { text-align: right; font-weight: 700; }
-.bv-dmg-bar { height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--line) 50%, transparent); overflow: hidden; }
-.bv-dmg-bar i { display: block; height: 100%; border-radius: 4px; }
-.bv-dmg.you .bv-dmg-bar i { background: var(--you); }
-.bv-dmg.ghost .bv-dmg-bar i { background: var(--them); }
-button.bv-moment { display: grid; grid-template-columns: 38px 18px minmax(0, 1fr) auto; gap: 6px; align-items: center; min-height: 44px; text-align: left; text-transform: none; letter-spacing: 0; font-family: var(--font-body); font-weight: 600; font-size: 15px; color: var(--text); border-color: var(--line); padding: 2px 10px; }
-.bv-moment-t { font-size: 12px; }
-.bv-moment-ic { display: flex; }
-.bv-moment-l { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 17px; }
-.bv-end-actions { gap: 6px; position: sticky; bottom: -12px; margin: 0 -12px -12px; padding: 4px 12px 6px; background: var(--panel); }
-.bv-end-actions button { flex: 1 1 auto; padding: 0 6px; font-size: 15px; letter-spacing: 0.02em; white-space: nowrap; }
 .bv-line.empty { min-height: 0; display: block; }
 .bv-word.neutral { color: var(--text); font-size: 24px; }
 /* Slice 11: a unit's rates, only a hint since round 2: the sheet's dim last line. */
@@ -1314,8 +1268,6 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-card .icons { left: 6px; right: 6px; height: 16px; flex-wrap: wrap; overflow: hidden; }
   #app[data-screen="battle"] .bv-card .icons .ic { width: 16px; height: 16px; }
   /* The caption hugs its event and sits under the acting card (battle.ts placeCaption, M5-5). */
-  #app[data-screen="battle"] button.bv-caption { grid-area: cap; justify-self: center; width: auto; min-width: min(100%, 320px); max-width: min(100%, 600px); font-size: 19px; transition: translate 0.18s ease-out; }
-  #app[data-screen="battle"] .bv-screen > .bv-below { flex: none; }
   #app[data-screen="battle"]   #app[data-screen="battle"] .bv-controls { justify-content: flex-start; }
   #app[data-screen="battle"] .bv-controls button { flex: 0 1 88px; min-height: 44px; }
 
@@ -1370,16 +1322,6 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-end .bv-word.neutral { font-size: 40px; }
   #app[data-screen="battle"] .bv-end-sub { font-size: 18px; line-height: 24px; white-space: normal; }
   #app[data-screen="battle"] .bv-end-run { font-size: 18px; line-height: 24px; gap: 4px 16px; margin-top: -12px; }
-  #app[data-screen="battle"] .bv-end-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: start; }
-  #app[data-screen="battle"] .bv-dmg-list { order: -1; gap: 4px; }
-  #app[data-screen="battle"] button.bv-dmg-more { min-height: 32px; }
-  #app[data-screen="battle"] .bv-dmg .emoji.two { font-size: 12px; }
-  #app[data-screen="battle"] .bv-dmg { font-size: 16px; line-height: 24px; grid-template-columns: 28px minmax(0, 7em) 1fr 32px; gap: 10px; }
-  #app[data-screen="battle"] .bv-end-moments { gap: 8px; }
-  #app[data-screen="battle"] button.bv-moment { font-size: 16px; }
-  #app[data-screen="battle"] .bv-end-actions { bottom: -24px; margin: 0 -28px -24px; padding: 8px 28px 24px; }
-  #app[data-screen="battle"] .bv-end-actions button { flex: 0 0 auto; min-width: 128px; padding: 0 20px; }
-  #app[data-screen="battle"] .bv-end-actions button[data-testid="battle-done"] { margin-left: auto; min-width: 220px; }
 }
 @media (min-width: 1280px) {
   #app[data-screen="battle"] { --insp: 380px; }
@@ -1426,15 +1368,11 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-float:not(.buff, .debuff) { font-size: 16px; line-height: 16px; }
   /* The end card is up: the caption keeps just its line ("They win"), and
    * the card starts under it (R2-17 batch F). */
-  #app[data-screen="battle"] button.bv-caption.ended { height: auto; }
 }
 
 /* A phone of 640 px (360×640): the ledger needs two whole rows (mission 1007, #1010), so the gaps between the screen's boxes, the caption and the ledger's head give theirs up. */
 @media (max-width: 1023.98px) and (min-height: 521px) and (max-height: 700px) {
   #app[data-screen="battle"] .bv-screen { gap: 4px; }
-  #app[data-screen="battle"] button.bv-caption { height: 38px; padding-top: 2px; padding-bottom: 2px; }
-  #app[data-screen="battle"] .bv-ledger-head { height: 26px; }
-  #app[data-screen="battle"] .bv-ledger button.bv-skip { min-height: 24px; padding: 0 10px; font-size: 13px; }
 }
 /* R2-17 batch E: a short phone screen (a phone on its side, 640×360). The
  * battle still fits whole, the control bar on screen: tighter gaps, no side
@@ -1446,7 +1384,6 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-screen { gap: 4px; height: calc(100dvh - 12px - env(safe-area-inset-bottom)); }
   #app[data-screen="battle"] .bv-lab-them, #app[data-screen="battle"] .bv-lab-you { display: none; }
   #app[data-screen="battle"] .bv-screen > .hud .menu-btn { min-height: 36px; min-width: 44px; }
-  #app[data-screen="battle"] button.bv-caption, #app[data-screen="battle"] button.bv-caption.ended { height: 34px; font-size: 15px; padding: 2px 10px; }
   #app[data-screen="battle"] .bv-line { flex: 0 1 auto; min-height: 0; }
   #app[data-screen="battle"] .bv-card { height: 104px; padding-top: 4px; }
   #app[data-screen="battle"] .bv-card .name { flex: none; }
@@ -1512,11 +1449,9 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
 .gift-choice button { padding: 0 6px; }
 .gift-banner { align-items: center; gap: 8px; font-size: 15px; color: var(--you); border-left: 2px solid var(--you); padding: 2px 0 2px 8px; background: color-mix(in srgb, var(--you) 6%, transparent); }
 /* R3-26: an end card taller than what it holds (it fills from the caption down) keeps its buttons at its foot. */
-.bv-end-actions { margin-top: auto; }
 .bv-now-turn { align-items: center; gap: 8px; }
 .bv-now-turn > button { flex: none; }
 /* A key moment's names carry a small side tag (R3-26). */
-.bv-moment-l .bv-who { font-size: 10px; line-height: 13px; padding: 0 3px; margin-right: 3px; vertical-align: 1px; letter-spacing: 0.04em; }
 .bv-tagged { white-space: nowrap; }
 /* A short desktop screen (1024×768): a tighter end card, so its key moments
  * fit above the caption it must not touch (R3-26). */
@@ -1524,9 +1459,6 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-end { padding: 16px 24px; gap: 12px; }
   #app[data-screen="battle"] .bv-end .bv-word { font-size: 44px; }
   #app[data-screen="battle"] .bv-end-run { margin-top: -6px; }
-  #app[data-screen="battle"] .bv-end-body { gap: 24px; }
-  #app[data-screen="battle"] .bv-end-moments { gap: 6px; }
-  #app[data-screen="battle"] .bv-end-actions { bottom: -16px; margin: 0 -24px -16px; padding: 8px 24px 16px; }
 }
 /* R4-5: on desktop the gift chooser reads the hovered card in a pane beside the three cards. */
 @media (min-width: 1024px) {
@@ -1817,28 +1749,8 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
  * screen sets and its content never does (on desktop the board centres above
  * it, and a box growing or shrinking moved every card). Its head holds the
  * turn and Skip chain; its body, a chain's summary at its last link. */
-.bv-ledger { flex: none; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 4px; padding: 0 12px 6px; border: var(--bw) solid var(--outline); border-radius: 10px; background: var(--panel); }
-.bv-ledger-head { flex: none; height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.bv-ledger-turn { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim); }
-.bv-ledger-body { flex: none; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 4px; }
-@media (max-width: 1023.98px) {
-  .bv-ledger-head { height: 34px; }
-  .bv-ledger button.bv-skip { min-height: 30px; padding: 0 12px; font-size: 14px; }
-}
-.bv-ledger-foot { flex: none; height: 22px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 14px; font-weight: 600; line-height: 22px; }
-.bv-ledger-foot .bv-chain-sum { flex-wrap: nowrap; overflow: hidden; line-height: 22px; animation: none; padding: 0; border: none; box-shadow: none; background: none; }
 /* The chain's summary, at its last link. */
-.bv-chain-sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 6px 10px; border: 2px solid var(--outline); border-radius: 10px; background: var(--panel); box-shadow: 3px 3px 0 var(--outline); font-size: 14px; font-weight: 600; line-height: 1.35; animation: bv-chip-in 220ms ease-out backwards; }
-.bv-chain-of { color: var(--action); font-weight: 700; }
-.bv-chain-side { display: inline-flex; flex-wrap: wrap; gap: 0 5px; align-items: baseline; }
-button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padding: 0 16px; font-size: 15px; }
 @media (prefers-reduced-motion: reduce) { .bv-card > .bv-chain-chip, .bv-chain-sum { animation: none; } }
-@media (min-width: 1024px) {
-  #app[data-screen="battle"] .bv-ledger { flex: none; height: 64px; }
-  #app[data-screen="battle"] .bv-ledger-head { height: 32px; }
-  .bv-ledger button.bv-skip { min-height: 28px; padding: 0 12px; }
-  #app[data-screen="battle"] .bv-chain-sum { font-size: 16px; max-width: 900px; }
-}
 
 /* The holding page while Arena is rebuilt (#1044). */
 .holding-list { margin: 0; padding-left: 20px; display: grid; gap: 10px; }
@@ -2026,7 +1938,6 @@ button.link.report-link { min-height: 32px; min-width: 44px; align-self: center;
 .card .emoji .sg-ic { display: block; height: 100%; width: auto; aspect-ratio: 1; margin: 0 auto; }
 .pin-emoji { display: inline-flex; align-items: center; }
 .forge-picker button .sg-ic { display: block; margin: auto; }
-.bv-dmg .emoji .sg-ic { display: block; }
 .vote-tag .sg-ic, .idea-row .sg-ic, .chip .sg-ic { margin: -3px 0; }
 .pc-em { line-height: 1; transform: translateY(4%); font-family: system-ui, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
 .pc-em2 { position: relative; width: 100%; height: 100%; }
@@ -2237,6 +2148,14 @@ button.link.report-link { min-height: 32px; min-width: 44px; align-self: center;
 #app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.dead { opacity: 0.42; filter: grayscale(1); transform: none; }
 #app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.dead.bv-dying { filter: none; opacity: 1; }
 #app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.silenced .pc-sg { filter: grayscale(1); }
+/* The fixed field (arena#48): a ghost says "× Tn", the battle turn it fell, over its greyed face (hidden while it pops); the front unit has a gold rule under it, the one thing that moves between columns. */
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc > .bv-ghost-t { position: absolute; z-index: 4; left: 0; right: 0; top: 30%; text-align: center; font: 600 13px/1 var(--font-body); color: var(--paper); text-shadow: 0 1px 2px var(--outline); pointer-events: none; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.bv-dying > .bv-ghost-t { visibility: hidden; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .bv-card.bv-pc > .bv-ghost-t { font-size: 20px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .bv-card.bv-pc > .bv-ghost-t { font-size: 13px; }
+/* One name line, so every name keeps its baseline whatever its length; one wider than its column is cut with an ellipsis (the card opens the unit). */
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc .pc-nm { white-space: nowrap; max-width: calc(var(--pitch, 100px) - 6px); overflow: hidden; text-overflow: ellipsis; }
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.bv-front::before { content: ""; position: absolute; left: 20%; right: 20%; bottom: -5px; height: 3px; border-radius: 2px; background: var(--action); pointer-events: none; }
 #app[data-screen="battle"] .bv-v3 .pc-b.h.hurt { color: var(--pc-num); background: var(--k-dmg); }
 /* The when tab lights up when its rule fires. */
 #app[data-screen="battle"] .bv-v3 .pc-tab.bv-fired { animation: bv-tab-fired calc(0.6s / var(--bv-sp, 1)) ease-out calc(var(--bv-ftt, 0s) / var(--bv-sp, 1)) both; }
@@ -2250,15 +2169,6 @@ button.link.report-link { min-height: 32px; min-width: 44px; align-self: center;
 #app[data-screen="battle"] .bv-v3 .bv-line.mine .bv-changes { top: auto; bottom: calc(100% + 2px); }
 #app[data-screen="battle"] .bv-v3 button.bv-badge { display: none; }
 /* The rail: the event on screen big, the last few small, the ledger, the controls. */
-#app[data-screen="battle"] .bv-v3 button.bv-caption { flex: none; width: 100%; height: 96px; min-height: 96px; max-height: 96px; translate: none; margin: 0; padding: 8px 10px; align-items: flex-start; border: 3px solid var(--action); border-radius: 12px; background: var(--pc-face-hi); color: var(--pc-ink); text-shadow: none; font-size: 15px; line-height: 1.25; white-space: normal; overflow: hidden; }
-#app[data-screen="battle"] .bv-v3 button.bv-caption * { text-shadow: none; }
-#app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line { flex-wrap: wrap; white-space: normal; row-gap: 2px; }
-#app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line > * { flex: none !important; width: auto !important; max-width: 100%; white-space: normal; overflow: visible; text-overflow: clip; }
-#app[data-screen="battle"] .bv-v3 .bv-recent { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 1.25; }
-#app[data-screen="battle"] .bv-v3 .bv-recent-row { opacity: 0.85; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-#app[data-screen="battle"] .bv-v3 .bv-recent-row:nth-child(n+3) { opacity: 0.6; }
-#app[data-screen="battle"] .bv-v3 .bv-rail > .bv-below { flex: none; max-height: 30%; overflow: hidden; font-size: 12px; }
-#app[data-screen="battle"] .bv-v3 .bv-rail > .bv-below .bv-ledger { min-height: 0; padding: 4px 6px; }
 #app[data-screen="battle"] .bv-v3 .bv-controls { flex: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 #app[data-screen="battle"] .bv-v3 .bv-controls button { min-height: 34px; min-width: 0; padding: 0 2px; }
 #app[data-screen="battle"] .bv-v3 .bv-controls .bv-keys { display: none; }
@@ -2266,8 +2176,6 @@ button.link.report-link { min-height: 32px; min-width: 44px; align-self: center;
 @media (min-width: 1024px) {
   #app[data-screen="battle"] .bv-screen.bv-v3 { --rail: 260px; height: 100dvh; padding: 0 16px 12px; }
   #app[data-screen="battle"] .bv-v3 > .hud { margin: 0 -16px; padding: 0 16px; min-height: 48px; }
-  #app[data-screen="battle"] .bv-v3 button.bv-caption { font-size: 18px; }
-  #app[data-screen="battle"] .bv-v3 .bv-recent { font-size: 14px; }
   #app[data-screen="battle"] .bv-v3 .bv-controls button { min-height: 44px; }
 }
 /* The phone, upright: two columns (theirs left, yours right), fronts on top, the rail at the foot. */
@@ -2280,19 +2188,12 @@ button.link.report-link { min-height: 32px; min-width: 44px; align-self: center;
   #app[data-screen="battle"] .bv-v3 .bv-line.theirs .bv-changes { top: 20px; bottom: auto; left: calc(100% - 8px); right: auto; width: max-content; justify-content: flex-start; }
   #app[data-screen="battle"] .bv-v3 .bv-line.mine .bv-changes { top: 20px; bottom: auto; right: calc(100% - 8px); left: auto; width: max-content; justify-content: flex-end; }
   #app[data-screen="battle"] .bv-v3 > .bv-rail { flex-direction: column; margin: 0; }
-  #app[data-screen="battle"] .bv-v3 .bv-recent, #app[data-screen="battle"] .bv-v3 .bv-rail > .bv-below { display: none; }
-  #app[data-screen="battle"] .bv-v3 button.bv-caption { height: 76px; min-height: 76px; max-height: 76px; }
   #app[data-screen="battle"] .bv-v3 .bv-controls { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   #app[data-screen="battle"] .bv-v3 .bv-controls button { min-height: 44px; }
 }
 /* The ledger in the rail shows only a chain's Skip and a turn's bottom line. */
-#app[data-screen="battle"] .bv-v3 .bv-ledger-head:not(:has(button)) { display: none; }
-#app[data-screen="battle"] .bv-v3 .bv-rail > .bv-below:not(:has(button)):has(.bv-ledger-foot:empty) { display: none; }
 @media (max-width: 599.98px) and (orientation: portrait) {
   #app[data-screen="battle"] .bv-v3 .bv-line.theirs .bv-changes, #app[data-screen="battle"] .bv-v3 .bv-line.mine .bv-changes { top: auto; bottom: 0; }
-}
-@media (max-width: 379.98px) and (orientation: portrait) {
-  #app[data-screen="battle"] .bv-v3 button.bv-caption { font-size: 13px; line-height: 1.2; padding: 6px 8px; }
 }
 /* An arrow lands on the middle of a piece: its result chip sits to the arrow's left, never over it. */
 @media not ((max-width: 599.98px) and (orientation: portrait)) {
@@ -2303,16 +2204,6 @@ button.link.report-link { min-height: 32px; min-width: 44px; align-self: center;
 #app[data-screen="battle"]:has(.bv-v3) .bv-runs, #app[data-screen="battle"]:has(.bv-v3) .bv-fxnums { display: none; }
 /* The event card is sized to its text: the acting unit's when tab, then one
  * plain sentence that wraps; nothing truncates. */
-#app[data-screen="battle"] .bv-v3 button.bv-caption { height: auto; min-height: 0; max-height: none; overflow: visible; }
-#app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-#app[data-screen="battle"] .bv-v3 .bv-cap-when { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px 1px 6px; border: 2px solid var(--outline); border-radius: 9px; color: var(--pc-ink); font-family: var(--font-head); font-size: 13px; line-height: 1.2; white-space: nowrap; }
-#app[data-screen="battle"] .bv-v3 .bv-rail-line { display: block; white-space: normal; overflow-wrap: anywhere; }
-#app[data-screen="battle"] .bv-v3 .bv-recent-row { display: block; -webkit-line-clamp: none; overflow: visible; flex: none; }
-#app[data-screen="battle"] .bv-v3 .bv-ledger-foot, #app[data-screen="battle"] .bv-v3 .bv-turn-line { white-space: normal; overflow: visible; text-overflow: clip; }
-@media (max-width: 599.98px) and (orientation: portrait) {
-  #app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line { flex-direction: row; flex-wrap: wrap; align-items: center; }
-  #app[data-screen="battle"] .bv-v3 button.bv-caption { min-height: 56px; }
-}
 /* The result tag: the event's change, at the arrow, shown while playing too. */
 #app[data-screen="battle"] .bv-v3 .bv-line .bv-pill { visibility: visible; height: 26px; line-height: 22px; padding: 0 8px; border: 2px solid var(--outline); border-radius: 10px; background: color-mix(in srgb, var(--action) 45%, var(--pc-face-hi)); color: var(--pc-ink); font-family: var(--font-head); font-size: 15px; box-shadow: 0 2px 0 var(--outline); overflow: visible; text-overflow: clip; }
 #app[data-screen="battle"] .bv-v3 .bv-line .bv-pill.two { height: auto; line-height: 1.15; padding: 2px 8px; }
@@ -2328,12 +2219,6 @@ button.link.report-link { min-height: 32px; min-width: 44px; align-self: center;
   #app[data-screen="battle"] .bv-v3 .bv-line.mine { align-items: start; }
 }
 /* The phone's event card holds still (its box never moves the board): the when tab left, the sentence beside it on up to three lines. */
-@media (max-width: 599.98px) and (orientation: portrait) {
-  #app[data-screen="battle"] .bv-v3 button.bv-caption { height: 76px; min-height: 76px; max-height: 76px; overflow: hidden; font-size: 14px; line-height: 1.2; align-items: center; }
-  #app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line { flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 8px; }
-  #app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line > .bv-rail-line { flex: 1 1 auto !important; min-width: 0; }
-  #app[data-screen="battle"] .bv-v3 button.bv-caption .bv-strip-line > b { flex: none !important; }
-}
 /* The phone: a result tag stands in the gap past the rim's discs, under the arrow, never on a face. */
 @media (max-width: 599.98px) and (orientation: portrait) {
   #app[data-screen="battle"] .bv-v3 .bv-line.theirs .bv-changes { left: calc(100% + 14px); right: auto; }
@@ -2412,13 +2297,7 @@ button.link.report-link { min-height: 32px; min-width: 44px; align-self: center;
 .cell.offer-gap { border: 2px dashed color-mix(in srgb, var(--outline) 35%, transparent); border-radius: 14px; background: color-mix(in srgb, var(--panel) 60%, transparent); pointer-events: none; }
 
 /* The result card: the next step is the one big button, Replay and Why are small and quiet (CrazyGames audit, arena#14). */
-.bv-end-actions { flex-wrap: wrap; align-items: stretch; }
-.bv-end-actions button[data-testid="battle-done"] { order: 1; flex: 1 1 100%; min-height: 60px; font-size: 24px; letter-spacing: 0.04em; text-transform: uppercase; box-shadow: 0 5px 0 var(--outline); }
-.bv-end-actions button:not([data-testid="battle-done"]) { order: 2; flex: 1 1 0; min-height: 44px; font-size: 13px; font-weight: 500; opacity: 0.85; box-shadow: none; background: transparent; }
 @media (orientation: landscape) and (max-height: 560px) {
-  .bv-end-actions button[data-testid="battle-done"] { order: 2; flex: 2 1 0; min-height: 52px; font-size: 22px; }
-  .bv-end-actions button:not([data-testid="battle-done"]) { order: 1; flex: 0 1 auto; }
-  #app[data-screen="battle"] .bv-end-actions button[data-testid="battle-done"] { margin-left: 0; min-width: 0; }
 }
 /* Phone landscape under 760 px wide (667×375): the same layout, a narrower side column (arena#14). */
 @media (orientation: landscape) and (min-width: 560px) and (max-width: 759.98px) and (max-height: 560px) {
@@ -2468,8 +2347,6 @@ button.link.report-link { min-height: 32px; min-width: 44px; align-self: center;
 .bv-beam.draw .bv-bn { animation: bv-beam-head calc(0.22s / var(--bv-sp, 1)) step-end calc(var(--bv-bt, 0s) / var(--bv-sp, 1)) both; }
 
 /* ---- arena#31, fix round: PLAY answers at once, a loader before the script ---- */
-@media (prefers-reduced-motion: no-preference) {
-}
 
 /* A control a finger or a mouse must hit is never under 32 px (44 on touch) (arena#32): Skip on the vote card */
 button.link.keep { min-height: 32px; min-width: 44px; }
@@ -2483,3 +2360,60 @@ button.link.keep { min-height: 32px; min-width: 44px; }
 
 /* The idea picks on a short window (800×450): the player's quote and the "read it again" button keep their height, the page scrolls instead of squeezing them to nothing (arena#32) */
 .idea-quote, button.pick-none { flex: none; }
+
+/* ===== arena#50: one motion per event, one clock (MOVES 1 and 4) =====
+ * Every event is a beat: cue 0–220 ms (the actor lit), the numbered wire travels 220–460, at 460 ms the digit changes on
+ * its own pill and its receipt appears together, the receipt clears at 760 ms, the final digit holds. --bv-sp scales the whole
+ * clock (2×, 4×), so no phase is squeezed. A pause freezes every phase where it is (.bv-frozen). */
+.bv-frozen, .bv-frozen *, .bv-frozen *::before, .bv-frozen *::after { animation-play-state: paused !important; }
+/* While playing, only the actor and the unit it reaches stay at full colour; the rest sit at 65%. A pause restores them. */
+.bv-line.bv-playing .bv-card.bv-bystander:not(.dead) { opacity: 0.65; }
+.bv-line.bv-playing .bv-card.bv-bystander:not(.dead) .pc-tab:not(.bv-fired) { filter: grayscale(0.85); }
+.bv-card { transition: opacity 0.12s ease-out; }
+/* Strike: the portrait lunges along the real source–target vector (--bv-lx, --bv-ly, set from the placed board): out with the wire (220–460), back after contact (460–720). */
+.bv-card.bv-lunge { animation: bv-lunge calc(720ms / var(--bv-sp, 1)) linear calc(var(--bv-t, 0s) / var(--bv-sp, 1)); }
+@keyframes bv-lunge {
+  0%, 30.5% { transform: none; animation-timing-function: ease-out; }
+  63.9% { transform: translate(var(--bv-lx, 0px), var(--bv-ly, 0px)); animation-timing-function: ease-in-out; }
+  100% { transform: none; }
+}
+/* The cue: a firing card that is not striking pulses once while its wire draws. */
+.bv-card.bv-pulse { animation: bv-pulse calc(220ms / var(--bv-sp, 1)) ease-out calc(var(--bv-t, 0s) / var(--bv-sp, 1)); }
+/* Damage: the target recoils sideways at contact, 300 ms. */
+.bv-card.bv-hit { animation: bv-recoil calc(300ms / var(--bv-sp, 1)) ease-out calc((460ms + var(--bv-t, 0s)) / var(--bv-sp, 1)); }
+.bv-card.bv-hit.bv-big { animation-name: bv-recoil-big; }
+.bv-card.bv-hit.bv-dying { animation: bv-recoil calc(300ms / var(--bv-sp, 1)) ease-out calc((460ms + var(--bv-t, 0s)) / var(--bv-sp, 1)), bv-die calc(480ms / var(--bv-sp, 1)) ease-in calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) both; }
+.bv-card.bv-hit.bv-big.bv-dying { animation-name: bv-recoil-big, bv-die; }
+@keyframes bv-recoil { 0% { transform: none; } 20% { transform: translateX(4px); } 40% { transform: translateX(-3px); } 60% { transform: translateX(2px); } 80% { transform: translateX(-1px); } 100% { transform: none; } }
+@keyframes bv-recoil-big { 0% { transform: none; } 20% { transform: translateX(6px); } 40% { transform: translateX(-5px); } 60% { transform: translateX(3px); } 80% { transform: translateX(-1px); } 100% { transform: none; } }
+/* The hit flash and the heal glow wait for contact too. */
+#app[data-screen="battle"] .bv-v3 .bv-card.bv-pc.bv-flash-hit > .pc > .pc-face { animation-delay: calc((460ms + var(--bv-ft, 0s)) / var(--bv-sp, 1)); animation-duration: calc(300ms / var(--bv-sp, 1)); }
+.bv-card.bv-heal::after { animation-delay: calc((460ms + var(--bv-ft, 0s)) / var(--bv-sp, 1)); animation-duration: calc(300ms / var(--bv-sp, 1)); }
+/* Death: the portrait sinks 8 px and greys over 480 ms from contact; the ghost's number appears after. */
+.bv-card.bv-dying { animation-duration: calc(480ms / var(--bv-sp, 1)); }
+/* Summon: the portrait rises 12 px into the vacancy inside a receding ring, 400 ms from contact. */
+.bv-slot.bv-enter { --enter: 0 12px; animation-duration: calc(400ms / var(--bv-sp, 1)); }
+.bv-slot.bv-enter::after { animation-duration: calc(400ms / var(--bv-sp, 1)); }
+/* Buff / debuff: the power (or HP) pill grows or shrinks as its digit changes, 300 ms from contact. */
+.pc-b.bv-bpop-up { animation: bv-bpop-up calc(300ms / var(--bv-sp, 1)) ease-out calc((460ms + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
+.pc-b.bv-bpop-down { animation: bv-bpop-down calc(300ms / var(--bv-sp, 1)) ease-out calc((460ms + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
+@keyframes bv-bpop-up { 0% { transform: scale(1); } 40% { transform: scale(1.3); } 100% { transform: scale(1); } }
+@keyframes bv-bpop-down { 0% { transform: scale(1); } 40% { transform: scale(0.8); } 100% { transform: scale(1); } }
+/* The wire: numbered from the cue, a spark-like line travelling 220–460 ms; its head and number show when it starts. */
+.bv-beam.draw .bv-bl { animation: bv-beam calc(240ms / var(--bv-sp, 1)) ease-out calc((220ms + var(--bv-bt, 0s)) / var(--bv-sp, 1)) both; }
+.bv-beam.draw .bv-bh { animation: bv-beam-head calc(240ms / var(--bv-sp, 1)) step-end calc((220ms + var(--bv-bt, 0s)) / var(--bv-sp, 1)) both; }
+.bv-beam.draw .bv-bn { animation: bv-beam-head calc(1ms / var(--bv-sp, 1)) step-end calc((220ms + var(--bv-bt, 0s)) / var(--bv-sp, 1)) both; }
+.bv-beam.draw.ring rect { animation: bv-ring calc(220ms / var(--bv-sp, 1)) ease-out calc(var(--bv-bt, 0s) / var(--bv-sp, 1)) both; }
+/* The cross-fade: a unit that changes on this beat is drawn as it was until contact, then as it is — digit, badge and shield together. */
+/* Out of flow, an absolutely placed child of the card's flex row sits where the only piece would: exactly over the new one. */
+.bv-card.bv-xfade > .pc.bv-was { position: absolute; z-index: 6; pointer-events: none; animation: bv-was calc(460ms / var(--bv-sp, 1)) steps(1, end) calc(var(--bv-wt, 0s) / var(--bv-sp, 1)) both; }
+@keyframes bv-was { from { opacity: 1; } to { opacity: 0; } }
+/* The receipt: the result chip appears at contact (460 ms) and clears at 760 ms. */
+.bv-changes.bv-rcpt { animation: bv-rcpt calc(760ms / var(--bv-sp, 1)) linear calc(var(--bv-rt, 0s) / var(--bv-sp, 1)) both; }
+@keyframes bv-rcpt { 0%, 60.4% { opacity: 0; } 60.5%, 97% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .bv-card.bv-lunge, .bv-card.bv-hit, .pc-b.bv-bpop-up, .pc-b.bv-bpop-down, .bv-changes.bv-rcpt, .bv-card.bv-xfade > .pc.bv-was { animation: none; }
+  .bv-card.bv-xfade > .pc.bv-was { display: none; }
+}
+/* The receipt sits over a striker that lunged into its place. */
+.bv-slot:has(> .bv-card > .bv-changes.bv-rcpt) { position: relative; z-index: 7; }

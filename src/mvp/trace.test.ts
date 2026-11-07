@@ -10,7 +10,7 @@ import { MVP_RULES, type MvpContent, type PlayerRef } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { lineUnitOf } from "./forms.js";
 import { mvpPool } from "./units.js";
-import { setTraceLang, CHAIN_LINK_MS, CHAIN_END_MS, CHAIN_FLOOR_MS, STRIKE_MS, EFFECT_MS, HIT_BEFORE_DEATH_MS, DEATH_MS, LINE_FLOOR_MS, LINEUP_MS, lineFloorMs, chainLinkMs, waveWaitMs, repeatTurnsOf, playSpeed, playbackMs, chainSummaryOf, chainSideText, type PlayBeat, EMPHASIS_MS, END_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, beamsOf, stepsOf, sidesOf, timelineOf, timingOf, traceOf, turnLabel, turnSummaryOf, whyILost, TURN_END_MS, turnEndHoldMs, turnEndsOf, totalsPartsOf, totalsText, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, type UnitTurnTotals } from "./trace.js";
+import { setTraceLang, BEAT_MS, DEATH_BEAT_MS, TURN_BEAT_MS, CUE_MS, CONTACT_MS, RECEIPT_END_MS, phaseOf, waveMs, LINEUP_MS, waveWaitMs, playbackMs, chainSummaryOf, chainSideText, type PlayBeat, END_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, carryOf, endCaption, keyMomentsOf, firingOf, causeOf, beamsOf, stepsOf, sidesOf, timelineOf, timingOf, traceOf, turnLabel, turnSummaryOf, whyILost, TURN_END_MS, turnEndHoldMs, turnEndsOf, totalsPartsOf, totalsText, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, type UnitTurnTotals } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -238,42 +238,38 @@ describe("one beat at a time (R2-12)", () => {
   const heal = { changes: [{ kind: "heal" }] } as never;
   const death = { changes: [{ kind: "death" }] } as never;
 
-  test("a strike stays STRIKE_MS, a heal / buff / status wave EFFECT_MS, each line on its own clock (mission 1007)", () => {
-    expect([STRIKE_MS, EFFECT_MS]).toEqual([1200, 1100]);
-    expect(beatTiming([hit])).toEqual({ at: [0], ms: STRIKE_MS });
-    expect(beatTiming([heal])).toEqual({ at: [0], ms: EFFECT_MS });
-    expect(beatTiming([hit, heal, heal])).toEqual({ at: [0, STRIKE_MS, STRIKE_MS + EFFECT_MS], ms: STRIKE_MS + 2 * EFFECT_MS });
+  test("one clock (arena#50): every event is a 1,150 ms beat, a death 1,350, a turn change 900", () => {
+    expect([BEAT_MS, DEATH_BEAT_MS, TURN_BEAT_MS]).toEqual([1150, 1350, 900]);
+    expect(beatTiming([hit])).toEqual({ at: [0], ms: BEAT_MS });
+    expect(beatTiming([heal])).toEqual({ at: [0], ms: BEAT_MS });
+    expect(beatTiming([death])).toEqual({ at: [0], ms: DEATH_BEAT_MS });
+    expect(beatTiming([hit, heal, death])).toEqual({ at: [0, BEAT_MS, 2 * BEAT_MS], ms: 2 * BEAT_MS + DEATH_BEAT_MS });
+    expect(waveMs(hit)).toBe(BEAT_MS);
+    expect(waveMs(death)).toBe(DEATH_BEAT_MS);
   });
 
-  test("a hit that kills is read for 1000 ms, then the death wave runs; every line is at least the floor", () => {
-    expect(beatTiming([hit, death])).toEqual({ at: [0, HIT_BEFORE_DEATH_MS], ms: HIT_BEFORE_DEATH_MS + DEATH_MS });
-    expect(HIT_BEFORE_DEATH_MS).toBeGreaterThanOrEqual(LINE_FLOOR_MS);
-    expect(DEATH_MS).toBeGreaterThanOrEqual(LINE_FLOOR_MS);
-    expect(STRIKE_MS).toBeGreaterThanOrEqual(LINE_FLOOR_MS);
-    expect(EFFECT_MS).toBeGreaterThanOrEqual(LINE_FLOOR_MS);
+  test("the phases of a beat: cue 0–220, wire 220–460, contact and receipt together at 460, receipt gone at 760", () => {
+    expect([CUE_MS, CONTACT_MS, RECEIPT_END_MS]).toEqual([220, 460, 760]);
+    expect(phaseOf(0)).toEqual({ cue: true, travel: 0, landed: false, receipt: false });
+    expect(phaseOf(220)).toEqual({ cue: true, travel: 0, landed: false, receipt: false });
+    expect(phaseOf(340).travel).toBeCloseTo(0.5);
+    expect(phaseOf(459)).toMatchObject({ landed: false, receipt: false });
+    expect(phaseOf(460)).toEqual({ cue: true, travel: 1, landed: true, receipt: true });
+    expect(phaseOf(759).receipt).toBe(true);
+    expect(phaseOf(760)).toMatchObject({ landed: true, receipt: false });
+    expect(phaseOf(BEAT_MS)).toMatchObject({ landed: true, receipt: false });
   });
 
-  test("the floor: 900 / 450 / 225 ms at 1× / 2× / 4×, for lines but not a chain's links", () => {
-    expect([1, 2, 4].map(lineFloorMs)).toEqual([900, 450, 225]);
+  test("speed scales the whole clock: 2× and 4× divide every wait, with no floor and no chain speed-up", () => {
     const log = run([dummy("Squire", 20, 1)], [dummy("Dummy", 20, 1)]);
     const beat = beatPlayOf(log, stepsOf(log)).find((b) => b.waves.length === 1 && b.waves[0]!.changes.length)!;
-    expect(waveWaitMs(beat, {}, 0, 1)).toBe(STRIKE_MS);
-    expect(waveWaitMs(beat, {}, 0, 2)).toBe(STRIKE_MS / 2);
-    expect(waveWaitMs(beat, {}, 0, 4)).toBe(STRIKE_MS / 4);
+    expect(waveWaitMs(beat, {}, 0, 1)).toBe(BEAT_MS);
+    expect(waveWaitMs(beat, {}, 0, 2)).toBe(BEAT_MS / 2);
+    expect(waveWaitMs(beat, {}, 0, 4)).toBe(BEAT_MS / 4);
     const chain = { ...beat, waves: Array.from({ length: 8 }, () => beat.waves[0]!) } as PlayBeat;
-    expect(waveWaitMs(chain, {}, 6, 4)).toBe(chainLinkMs(6) / 4);
-  });
-
-  test("a chain of 4+ links holds every link 1.1 s, no speed-up; the end holds 0.9 s (#1030)", () => {
-    expect([CHAIN_LINK_MS, CHAIN_END_MS]).toEqual([1100, 900]);
-    expect(Array.from({ length: 10 }, (_, i) => chainLinkMs(i))).toEqual(Array.from({ length: 10 }, () => 1100));
-    const short = beatTiming(Array.from({ length: 4 }, () => hit));
-    expect(short.at).toEqual([0, 1100, 2200, 3300]);
-    expect(short.ms).toBe(3300 + chainLinkMs(3) + CHAIN_END_MS);
-    const long = beatTiming(Array.from({ length: 30 }, () => hit));
-    expect(long.at.at(-1)! - long.at.at(-2)!).toBe(CHAIN_FLOOR_MS);
-    expect(long.ms).toBe(long.at.at(-1)! + CHAIN_FLOOR_MS + CHAIN_END_MS);
-    expect(beatTiming(Array.from({ length: 12 }, () => hit)).ms).toBe(12 * CHAIN_LINK_MS + CHAIN_END_MS);
+    for (const sp of [1, 2, 4]) for (let w = 0; w < 8; w++) expect(waveWaitMs(chain, {}, w, sp)).toBe(BEAT_MS / sp);
+    // A chain's last link holds like any other beat: nothing extra after it.
+    expect(beatTiming(Array.from({ length: 12 }, () => hit)).ms).toBe(12 * BEAT_MS);
   });
 
   test("a chain's summary sums what it did to each side (#913)", () => {
@@ -292,21 +288,14 @@ describe("one beat at a time (R2-12)", () => {
     expect(chainSideText(sum.B!)).toBe("−4 dmg · 1 summoned · 1 fell");
   });
 
-  test("timingOf adds each big moment's time after the last wave: big hit 200, summon 250, first fatigue 500, last 600", () => {
+  test("a big hit, a summon, the first fatigue and the last blow add no time: every beat is the same length", () => {
     const log = run([dummy("Squire", 20, 1)], [dummy("Dummy", 3, 1)]);
     const beat = beatPlayOf(log, stepsOf(log))[0]!;
     const base = timingOf(beat).ms;
-    expect(EMPHASIS_MS).toEqual({ big: 200, summon: 250, fatigue: 500, last: 600 });
-    expect(timingOf(beat, { big: true }).ms).toBe(base + 200);
-    expect(timingOf(beat, { summon: true }).ms).toBe(base + 250);
-    expect(timingOf(beat, { fatigue: true }).ms).toBe(base + 500);
-    expect(timingOf(beat, { last: true }).ms).toBe(base + 600);
-    expect(timingOf(beat, { big: true, last: true }).ms).toBe(base + 800);
-    // The wave times don't move: the emphasis is held after the last wave.
-    expect(timingOf(beat, { big: true, last: true }).at).toEqual(timingOf(beat).at);
+    for (const w of [{ big: true }, { summon: true }, { fatigue: true }, { last: true }, { big: true, last: true }] as const) expect(timingOf(beat, w).ms).toBe(base);
   });
 
-  test("a kill's beat is its hit, read, then its death wave", () => {
+  test("a kill's beat is its hit on the clock, then its death wave 1,350 ms", () => {
     const log = run([dummy("Squire", 20, 1)], [dummy("Dummy", 3, 1)]);
     const beats = beatPlayOf(log, stepsOf(log));
     const weights = weightsOf(log, beats);
@@ -314,48 +303,34 @@ describe("one beat at a time (R2-12)", () => {
     expect(weights[kill.index]!.kill).toBe(true);
     const t = timingOf(kill, {});
     const i = kill.waves.findIndex((w) => w.changes.some((c) => c.kind === "death"));
-    expect(i).toBeGreaterThan(0);
-    expect(t.at[i]! - t.at[i - 1]!).toBe(HIT_BEFORE_DEATH_MS);
-    expect(t.ms - t.at[i]!).toBe(DEATH_MS);
+    expect(t.ms - t.at[i]!).toBe(DEATH_BEAT_MS);
   });
 
-  test("a turn that repeats the last, line for line, is a repeat turn: it plays at twice the speed and holds no turn end", () => {
+  test("a repeated turn plays like any other: the same clock, the same turn-end hold (no silent doubling)", () => {
     // Medic heals Squire each time Dummy's 1-PWR strike lands: the same lines every turn.
     const log = run([dummy("Squire", 30, 0), Medic], [dummy("Dummy", 30, 1)]);
     const beats = beatPlayOf(log, stepsOf(log));
-    const repeats = repeatTurnsOf(beats);
-    expect(repeats.size).toBeGreaterThan(1);
-    // The first turns of the pattern play whole.
-    expect(repeats.has(0)).toBe(false);
-    expect(repeats.has(1)).toBe(false);
-    const turn = [...repeats][0]!;
-    for (const b of beats.filter((x) => x.turn === turn)) expect(beats.some((o) => o.turn === turn - 1 && o.waves.map((w) => w.caption).join() === b.waves.map((w) => w.caption).join())).toBe(true);
-    expect([1, 2, 4].map((sp) => playSpeed(sp, true))).toEqual([2, 4, 4]);
-    expect([1, 2, 4].map((sp) => playSpeed(sp, false))).toEqual([1, 2, 4]);
-    // A repeat turn's lines still honour the floor at their own speed.
-    const b = beats.find((x) => x.turn === turn && x.waves.some((w) => w.changes.length))!;
-    for (let w = 0; w < b.waves.length; w++) expect(waveWaitMs(b, {}, w, 2)).toBeGreaterThanOrEqual(lineFloorMs(2));
-    // The plan: repeat turns cost half, and no turn-end hold.
     const weights = weightsOf(log, beats);
     const ends = turnEndsOf(turnSummaryOf(log, beats), beats.length);
-    const none = playbackMs(beats, weights, ends.keys(), new Set(), LINEUP_MS, 1);
-    const withRepeats = playbackMs(beats, weights, ends.keys(), repeats, LINEUP_MS, 1);
-    expect(withRepeats).toBeLessThan(none - repeats.size * 500);
+    for (const sp of [1, 2, 4]) {
+      const body = beats.reduce((t, b, i) => t + timingOf(b, weights[i]).ms, 0);
+      expect(playbackMs(beats, weights, ends.keys(), LINEUP_MS, sp)).toBeCloseTo((LINEUP_MS + body + ends.size * TURN_BEAT_MS) / sp, 0);
+    }
   });
 
-  test("playbackMs: the line-up, every beat at its speed and each turn end; 4× has no turn end and the floor on lines", () => {
+  test("playbackMs: the line-up, every beat and each turn end, all divided by the speed", () => {
     const log = run([dummy("Squire", 20, 1)], [dummy("Dummy", 8, 1)]);
     const beats = beatPlayOf(log, stepsOf(log));
     const weights = weightsOf(log, beats);
     const ends = turnEndsOf(turnSummaryOf(log, beats), beats.length);
     const body = beats.reduce((t, b, i) => t + timingOf(b, weights[i]).ms, 0);
-    const at1 = playbackMs(beats, weights, ends.keys(), new Set(), LINEUP_MS, 1);
+    const at1 = playbackMs(beats, weights, ends.keys(), LINEUP_MS, 1);
     expect(at1).toBe(LINEUP_MS + body + ends.size * turnEndHoldMs(1));
-    const at2 = playbackMs(beats, weights, ends.keys(), new Set(), LINEUP_MS, 2);
-    expect(at2).toBeLessThan(at1 * 0.55);
-    const at4 = playbackMs(beats, weights, ends.keys(), new Set(), LINEUP_MS, 4);
-    // 4× is never faster than 4×: lines are held to 225 ms (#1030: every wave is at least that at 4× now).
-    expect(at4).toBeGreaterThanOrEqual((LINEUP_MS + body) / 4);
+    const at2 = playbackMs(beats, weights, ends.keys(), LINEUP_MS, 2);
+    expect(at2).toBeCloseTo(at1 / 2, 0);
+    const at4 = playbackMs(beats, weights, ends.keys(), LINEUP_MS, 4);
+    // 4× is exactly a quarter: the turn-end hold scales with the clock too.
+    expect(at4).toBeCloseTo(at1 / 4, 0);
   });
 
   test("weightsOf: big hits at 4+, the last beat, and fatigue only on its first beat", () => {
@@ -957,11 +932,11 @@ describe("R4-6: per-turn totals", () => {
 describe("R4-12: turn-end summary", () => {
   const tot = (o: Partial<UnitTurnTotals>): UnitTurnTotals => ({ unit: "u", side: "A", damage: 0, healed: 0, pwr: 0, hp: 0, blocked: 0, statuses: [], died: false, eventIds: [], ...o });
 
-  test("the hold: 0.9 s at 1×, divided by speed, none at 4×", () => {
+  test("the hold: a turn change is 900 ms at 1×, divided by the speed at every speed (4× too)", () => {
     expect(TURN_END_MS).toBe(900);
     expect(turnEndHoldMs(1)).toBe(900);
     expect(turnEndHoldMs(2)).toBe(450);
-    expect(turnEndHoldMs(4)).toBe(0);
+    expect(turnEndHoldMs(4)).toBe(225);
   });
 
   test("it holds after each turn's last beat that changed a unit, never after the battle's last beat", () => {
@@ -1171,4 +1146,35 @@ describe("rules v2 event captions", () => {
         setTraceLang("en");
       }
     });
+});
+
+describe("carryOf: what carried a side, from the events alone (arena#53)", () => {
+  test("damage goes to the unit nearest the hit, heal and shield to who gave them, in a fixed order", () => {
+    const log = run([Shieldbearer, Smith, Archer, Medic], [dummy("Dummy", 20, 3)]);
+    const rows = carryOf(log, "A");
+    expect(rows.map((r) => r.kind)).toEqual(["damage", "heal", "buff", "block"].filter((k) => rows.some((r) => r.kind === k)));
+    const dmg = damageByUnit(log).find((d) => d.side === "A" && d.damage > 0)!;
+    const top = rows.find((r) => r.kind === "damage")!;
+    expect(top.unit).toBe(dmg.unit);
+    expect(top.amount).toBe(dmg.damage);
+    // Every row opens a real event of its own kind.
+    for (const r of rows) {
+      const e = log[r.eventId]!;
+      expect(e.type).toBe(r.kind === "damage" ? "Hurt" : r.kind === "heal" ? "Heal" : r.kind === "buff" ? "StatChanged" : "Hurt");
+    }
+    const block = rows.find((r) => r.kind === "block");
+    expect(block?.unit).toBe("A1:Shieldbearer");
+    const absorbed = log.filter((e) => e.type === "Hurt" && e.unit.startsWith("A") && (e.absorbed ?? 0) > 0).reduce((n, e) => n + (e.type === "Hurt" ? (e.absorbed ?? 0) : 0), 0);
+    expect(block!.amount).toBeLessThanOrEqual(absorbed);
+    expect(block!.amount).toBeGreaterThan(0);
+  });
+
+  test("the other side's carry is read the same way, and a side that did nothing has no rows", () => {
+    const log = run([Shieldbearer, Smith, Archer], [dummy("Dummy", 20, 3)]);
+    const theirs = carryOf(log, "B");
+    expect(theirs.map((r) => r.kind)).toEqual(["damage"]);
+    expect(theirs[0]!.unit).toBe("B1:Dummy");
+    const log2 = run([dummy("Wall", 9, 0)], [dummy("Wall", 9, 0)]);
+    expect(carryOf(log2, "A")).toEqual([]);
+  });
 });

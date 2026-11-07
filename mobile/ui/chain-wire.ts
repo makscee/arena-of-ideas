@@ -1,23 +1,9 @@
 // The chain on the field (arena#30, mission #26 move 2): one step at a time. The field draws only the current
-// step's wire, with its number on it; the tray lists the steps so far in words with CHAIN ×N beside them.
+// step's wire, with its number on it; the tray's ladder numbers the steps in words with CHAIN ×N above them (arena#52).
 // Pure: no DOM. battle.ts and the shop's coach draw it.
-
-/** A step the tray lists: its number from 1 and its caption (battle.ts turns the caption into words). */
-export interface ChainRow<S> {
-  n: number;
-  step: S;
-  /** The step on screen: its wire is the one drawn. */
-  now: boolean;
-}
 
 /** Whether a beat's steps read as a chain: two or more links, one setting off the next. */
 export const chainShown = (steps: number): boolean => steps >= 2;
-
-/** The tray's list for a beat of `waves` with `wave` (from 0) on screen: the steps so far, never one still to come. */
-export function chainRows<S>(waves: readonly S[], wave: number): ChainRow<S>[] {
-  if (!chainShown(waves.length) || wave < 0) return [];
-  return waves.slice(0, wave + 1).map((step, i) => ({ n: i + 1, step, now: i === wave }));
-}
 
 /** CHAIN ×N: the links landed so far. */
 export const chainCount = (wave: number): number => wave + 1;

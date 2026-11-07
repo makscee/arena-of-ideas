@@ -569,7 +569,7 @@ try {
           noRow: cards.filter((c) => !c.querySelector('[data-testid="card-statuses"]') && !c.classList.contains("bv-pc")).length,
           // (a piece's chip draws its status as an emoji, not an svg: it is "wordy" only when letters stand there)
           wordy: [...document.querySelectorAll('[data-testid="card-status"]')].filter((s) => !s.querySelector("svg")).length + [...document.querySelectorAll(".bv-pc .pc-st")].filter((s) => /\p{L}/u.test(s.firstChild?.textContent ?? "")).length,
-          zero: [...document.querySelectorAll('[data-testid="change"], [data-testid="caption"], .bv-ledger, .bv-still, .bv-float, .bv-run-row')].filter((c) => /[−-]0(?!\d)/.test(c.textContent)).length,
+          zero: [...document.querySelectorAll('[data-testid="change"], [data-testid="caption"], .bv-ladder, .bv-still, .bv-float, .bv-run-row')].filter((c) => /[−-]0(?!\d)/.test(c.textContent)).length,
           hiddenStatus: [...document.querySelectorAll('[data-testid="card-statuses"]')].flatMap((row) => [...row.children].filter((c) => c.getBoundingClientRect().bottom > row.getBoundingClientRect().bottom + 0.5)).length,
           wrongSide: [...document.querySelectorAll(".bv-cn[data-unit]")].filter((n) => {
             const line = document.querySelector(`.bv-line [data-unit="${CSS.escape(n.dataset.unit)}"]`)?.closest(".bv-line");
@@ -683,9 +683,10 @@ try {
       if (!(await page.getByTestId("end-card").isVisible())) errors.push("end card: ▶ on the last beat didn't show it");
       const word = await page.getByTestId("battle-word").textContent();
       if (![L("battle.end.victory"), L("battle.end.defeat"), L("battle.end.draw")].includes(word)) errors.push(`end card: word "${word}"`);
-      if ((await page.getByTestId("damage-row").count()) < 2) errors.push("end card: no damage by unit");
-      const moments = await page.getByTestId("key-moment").count();
-      if (moments < 1 || moments > 3) errors.push(`end card: ${moments} key moments`);
+      // arena#53: the result says why in its own words (the carry sentence), its rows open their moments.
+      const carryRows = await page.getByTestId("carry-row").count();
+      if (carryRows > 4) errors.push(`end card: ${carryRows} causal rows`);
+      if (!((await page.getByTestId("carry-sentence").textContent()) ?? "").trim()) errors.push("end card: no carry sentence");
       await onScreen("end card: Continue", page.getByTestId("battle-done"));
       // R2-17: the result stays on screen. The redesigned end card covers the caption band and says
       // it itself (VICTORY, mission #1286), so the check is that its word is shown, whole, on screen.
@@ -693,32 +694,31 @@ try {
       if (!wordBox || wordBox.y < 0 || wordBox.y + wordBox.height > height + 0.5) errors.push(`end card: the result word is off screen (${JSON.stringify(wordBox)})`);
       await tap44("end card buttons", page.locator('[data-testid="end-card"] button'));
       await shot("battle-end-card"); await noHScroll("battle-end-card");
-      if (await page.getByTestId("end-why").count()) {
-        // Why I lost, or Why I won (R2-17).
+      if (await page.getByTestId("end-why").isEnabled()) {
+        // Why: the chain that decided it, paused (arena#53).
         const label = await page.getByTestId("end-why").textContent();
-        const why = await page.getByTestId("end-why").getAttribute("data-why");
         await page.getByTestId("end-why").click();
-        const panel = page.getByTestId(`why-${why}`);
-        await panel.waitFor();
+        await page.getByTestId("trace-text").waitFor();
+        if ((await page.getByTestId("battle-play").textContent()) !== "▶") errors.push("why: not paused");
         await shot("battle-end-why");
-        if (await panel.locator("button.bv-why").count()) {
-          await panel.locator("button.bv-why").first().click();
-          await page.getByTestId("trace-text").waitFor();
-          // R2-17 batch E: over the finished battle, the way on stays in sight.
-          await onScreen(`${label}'s trace: the way on`, page.getByTestId("trace-done"));
-          await page.getByTestId("trace-close").click();
-          if (!(await page.getByTestId("end-card").isVisible())) errors.push(`end card: not back after ${label}'s trace`);
-        } else await page.getByTestId("sheet-close").click();
+        // R2-17 batch E: over the finished battle, the way on stays in sight.
+        await onScreen(`${label}'s trace: the way on`, page.getByTestId("trace-done"));
+        await page.getByTestId("trace-result").click();
+        if (!(await page.getByTestId("end-card").isVisible())) errors.push(`end card: not back after ${label}'s trace`);
       }
-      // A key moment replays from its beat.
-      if (moments) {
-        const beat = Number(await page.getByTestId("key-moment").first().getAttribute("data-beat"));
-        await page.getByTestId("key-moment").first().click();
-        if (await page.getByTestId("end-card").isVisible()) errors.push("key moment: the end card stayed up");
-        if ((await page.getByTestId("battle-play").textContent()) !== "❚❚") errors.push("key moment: not playing");
+      // A causal row opens its moment: the chain, paused on that event.
+      if (carryRows) {
+        await page.getByTestId("carry-row").first().click();
+        await page.getByTestId("trace-text").waitFor();
+        if ((await page.getByTestId("battle-play").textContent()) !== "▶") errors.push("causal row: not paused");
+        await page.getByTestId("trace-result").click();
+        if (!(await page.getByTestId("end-card").isVisible())) errors.push("causal row: Result didn't bring the end card back");
+      }
+      // ▶ on the result plays the chain that decided it, from its first step.
+      if (await page.getByTestId("end-why").isEnabled()) {
         await page.getByTestId("battle-play").click();
-        const turn = await page.getByTestId("battle-turn").textContent();
-        console.log(`mvp phone: key moment at beat ${beat} plays from ${turn}`);
+        if (await page.getByTestId("end-card").isVisible()) errors.push("play on the result: the end card stayed up");
+        if ((await page.getByTestId("battle-play").textContent()) !== "❚❚") errors.push("play on the result: not playing");
         await page.getByTestId("battle-end").click();
       }
       // Replay plays from the start: the line-up first.
@@ -738,17 +738,12 @@ try {
       whyShot = true;
       await shot("result-after-loss"); await noHScroll("result-after-loss");
       await page.getByTestId("end-why").click();
-      await page.getByTestId("why-lost").waitFor();
-      const why = page.getByTestId("why-lost").locator("button.bv-why").first();
-      if (await why.count()) {
-        await why.click();
-        await page.getByTestId("trace-text").waitFor();
-        await shot("why-trace"); await noHScroll("why-trace");
-        // The trace sits where the end card was; Result brings the card back.
-        await onScreen("why I lost's trace: the way on", page.getByTestId("trace-done"));
-        await page.getByTestId("trace-result").click();
-        if (!(await page.getByTestId("end-card").isVisible())) errors.push("why I lost: Result didn't bring the end card back");
-      } else await page.getByTestId("sheet-close").click();
+      await page.getByTestId("trace-text").waitFor();
+      await shot("why-trace"); await noHScroll("why-trace");
+      // The trace opens over the table; Result brings the card back.
+      await onScreen("why I lost's trace: the way on", page.getByTestId("trace-done"));
+      await page.getByTestId("trace-result").click();
+      if (!(await page.getByTestId("end-card").isVisible())) errors.push("why I lost: Result didn't bring the end card back");
     }
     if (round === 1) { await shot("result"); await noHScroll("result"); await noRates("result"); }
     // The end card's run line and the battle's ☰ name the round just fought,
@@ -768,7 +763,7 @@ try {
       } else if (![L("menu.runOver"), L("menu.runCrown")].includes(menu)) errors.push(`end card ☰: "${menu}" after round ${round}`);
     }
     if (!(await page.getByTestId("run-bar").isVisible().catch(() => false))) errors.push(`run board: round ${round}'s result has no run bar`);
-    const done = ((await page.getByTestId("battle-done").textContent()) ?? "").trim();
+    const done = ((await page.getByTestId("battle-done").getAttribute("aria-label")) ?? "").trim();
     if (![L("fight.nextRound"), L("fight.toCrown"), L("fight.seeRun")].includes(done)) errors.push(`end card: last button "${done}"`);
     await page.getByTestId("battle-done").click();
     await page.waitForFunction(() => document.querySelector('[data-testid="fight"]') || document.querySelector('[data-testid="run-over"]'));

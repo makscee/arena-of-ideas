@@ -1,9 +1,9 @@
-// The battle's field and its result tray (arena#29 round 4, mission #26): at 1920×1080, 1440×900, 1280×720,
+// The battle's field and its result (arena#29 round 4, mission #26; arena#53): at 1920×1080, 1440×900, 1280×720,
 // 1024×768, 800×450 and 390×844 a line of 1, 2 or 3 units (real round-1 fights) and the scene's longer lines
 // stand centred across the field, their line above yours, spaced like the shop's slots, their pieces between
 // 0.9× and 1.4× the shop's; the labels (THEM @name, Report, YOU) never touch a piece; a chain's wire runs
-// between the real pieces; the result tray shows its damage rows whole (or two of them with "All N") and
-// its buttons whole, 44 px on a phone. Without --url it builds the client and starts a scenes server.
+// between the real pieces; the result's verdict card is whole on screen and its
+// buttons whole in the tray, 44 px on a phone. Without --url it builds the client and starts a scenes server.
 //   npm run mvp:battle-field -- [--url http://127.0.0.1:PORT/arena/] [--out e2e/.shots/battle-field] [--size 1280x720] [--units 1,2,3]
 import { spawn, execFileSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
@@ -36,7 +36,7 @@ const readField = (page) => page.evaluate(() => {
   const sr = st.getBoundingClientRect();
   const k = sr.width / st.offsetWidth;
   const toStage = (r) => ({ l: (r.left - sr.left) / k, t: (r.top - sr.top) / k, r: (r.right - sr.left) / k, b: (r.bottom - sr.top) / k });
-  const cards = (id) => [...document.querySelectorAll(`[data-testid="${id}"] .bv-card:not(.dead)`)].map((c) => ({ card: toStage(c.getBoundingClientRect()), face: toStage((c.querySelector(".pc") ?? c).getBoundingClientRect()), w: (c.querySelector(".pc") ?? c).offsetWidth }));
+  const cards = (id) => [...document.querySelectorAll(`[data-testid="${id}"] .bv-card`)].map((c) => ({ card: toStage(c.getBoundingClientRect()), face: toStage((c.querySelector(".pc") ?? c).getBoundingClientRect()), w: (c.querySelector(".pc") ?? c).offsetWidth }));
   const row = (id) => {
     const cs = cards(id);
     if (!cs.length) return null;
@@ -53,13 +53,9 @@ const readField = (page) => page.evaluate(() => {
 const readClickable = (page) => page.evaluate(() => {
   const sels = ['[data-testid="change"]', '[data-testid="battle-back"]', '[data-testid="battle-play"]', '[data-testid="battle-step"]', '[data-testid="battle-speed"]', '[data-testid="battle-end"]', '[data-testid="battle-replay"]', '[data-testid="battle-next"]', '[data-testid="report-name"]', '[data-testid="chain-skip"]', '[data-testid="caption"]', '.bt-tray button', '.tb-hud button'];
   const seen = new Set(), bad = [];
-  // The result covers the tray on purpose (arena#29): its own buttons are the way on then.
-  const result = document.querySelector('[data-testid="end-card"]');
-  const ended = !!result && getComputedStyle(result).display !== "none";
   for (const el of document.querySelectorAll(sels.join(","))) {
     if (seen.has(el) || el.disabled || !el.getClientRects().length) continue;
     seen.add(el);
-    if (ended && el.closest(".bt-tray") && !result.contains(el)) continue;
     const r = el.getBoundingClientRect();
     if (r.width < 2 || r.height < 2 || r.bottom < 0 || r.right < 0 || r.left > innerWidth || r.top > innerHeight) continue;
     const at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
@@ -75,8 +71,11 @@ function fieldProblems(f, what) {
   const bad = [];
   if (!f.them || !f.you) return [`${what}: a line is empty at the line-up (${JSON.stringify({ them: !!f.them, you: !!f.you })})`];
   const mid = f.stageW / 2;
+  // The lines share one set of columns (arena#48): the fronts face each other, the longer line is centred, a shorter one stands under its front columns.
+  const span = (Math.min(f.them.l, f.you.l) + Math.max(f.them.r, f.you.r)) / 2;
+  if (Math.abs(span - mid) > f.stageW * 0.02) bad.push(`${what}: the field is centred at ${Math.round(span)}, the stage's middle is ${Math.round(mid)}`);
+  if (Math.abs(f.them.l - f.you.l) > 2 && Math.abs(f.them.r - f.you.r) > 2) bad.push(`${what}: the fronts do not face each other (${Math.round(f.them.l)} against ${Math.round(f.you.l)})`);
   for (const [who, r] of [["their", f.them], ["your", f.you]]) {
-    if (Math.abs(r.mid - mid) > f.stageW * 0.02) bad.push(`${what}: ${who} line is centred at ${Math.round(r.mid)}, the stage's middle is ${Math.round(mid)}`);
     const shop = SHOP_PX[f.orient];
     if (r.px < shop * 0.9 - 0.5) bad.push(`${what}: ${who} pieces are ${r.px} px, under the shop's ${shop} × 0.9`);
     if (r.px > shop * 1.4 + 0.5) bad.push(`${what}: ${who} pieces are ${r.px} px, over the shop's ${shop} × 1.4`);
@@ -96,38 +95,27 @@ function fieldProblems(f, what) {
   return bad;
 }
 
-/** The result tray: every damage row whole, or two with "All N"; the buttons whole and 44 px on a phone. */
+/** The result (arena#53): the verdict card whole on screen, and Why, Replay and Next whole in the tray's cells, 44 px on a phone (e2e/battle-end.mjs checks the rest). */
 const readResult = (page) => page.evaluate(() => {
   const st = document.querySelector('[data-testid="stage"]');
   const k = st.getBoundingClientRect().width / st.offsetWidth;
   const card = document.querySelector('[data-testid="end-card"]');
   const cr = card.getBoundingClientRect();
-  const inside = (r) => r.top >= cr.top - 0.5 && r.bottom <= cr.bottom + 0.5 && r.left >= cr.left - 0.5 && r.right <= cr.right + 0.5;
-  const body = card.querySelector(".bv-end-body");
-  const rows = [...card.querySelectorAll('[data-testid="damage-row"]')];
-  // A row is whole when its box is inside the card and inside its scrolling parent's visible box.
-  const clip = (e) => { let p = e.parentElement; const r = e.getBoundingClientRect(); while (p && p !== card.parentElement) { const s = getComputedStyle(p); if (/(auto|scroll|hidden)/.test(s.overflowY)) { const pr = p.getBoundingClientRect(); if (r.bottom > pr.bottom + 0.5 || r.top < pr.top - 0.5) return true; } p = p.parentElement; } return false; };
-  const buttons = [...card.querySelectorAll('[data-testid="battle-done"], [data-testid="end-replay"], [data-testid="end-why"]')].map((b) => { const r = b.getBoundingClientRect(); return { id: b.dataset.testid, whole: inside(r) && !clip(b), h: r.height, w: r.width }; });
-  const rowH = rows.length ? Math.min(...rows.map((r) => r.getBoundingClientRect().height)) : 0;
-  if (window.__dump) console.log("DUMP", JSON.stringify([...card.children].map((e) => e.className.toString().slice(0, 24) + " " + [Math.round((e.getBoundingClientRect().top - cr.top) / k), Math.round(e.getBoundingClientRect().height / k)].join("+"))));
-  return { wide: innerWidth, clipped: card.scrollHeight - card.clientHeight, rowH, rows: rows.length, whole: rows.filter((r) => inside(r.getBoundingClientRect()) && !clip(r)).length, all: card.querySelector('[data-testid="damage-more"]')?.textContent ?? "", scrolls: body ? body.scrollHeight - body.clientHeight : 0, buttons, k, phone: innerWidth < 600 };
+  const tray = document.querySelector('[data-testid="tray"]').getBoundingClientRect();
+  const inside = (r, o) => r.top >= o.top - 0.5 && r.bottom <= o.bottom + 0.5 && r.left >= o.left - 0.5 && r.right <= o.right + 0.5;
+  const buttons = [...document.querySelectorAll('[data-testid="battle-done"], [data-testid="end-replay"], [data-testid="end-why"]')].map((b) => { const r = b.getBoundingClientRect(); return { id: b.dataset.testid, whole: inside(r, tray), h: r.height }; });
+  return { phone: innerWidth < 500, k, clipped: card.scrollHeight - card.clientHeight, whole: inside(cr, new DOMRect(0, 0, innerWidth, innerHeight)), buttons };
 });
 
 function resultProblems(r, what) {
   const bad = [];
-  const more = /\d/.test(r.all) && !/top|3/i.test(r.all);
-  if (r.whole < r.rows) bad.push(`${what}: ${r.rows - r.whole} of ${r.rows} damage rows are cut off or need a scroll`);
-  if (r.rows < 2) bad.push(`${what}: ${r.rows} damage rows shown, two at least`);
-  if (r.clipped > 3) bad.push(`${what}: the result hides ${r.clipped} px of its content`);
-  // A damage row is a target: 44 px on a phone, 32 px at 1024 and up, 24 px drawn at 800×450 (the lint's floors).
-  const floor = r.phone ? 43.5 : r.wide >= 1024 ? 31.5 : 23.5;
-  if (r.rowH < floor) bad.push(`${what}: a damage row is ${Math.round(r.rowH)} px tall, ${Math.round(floor)} at least`);
-  if (r.rows < (more ? 2 : 1)) bad.push(`${what}: the damage list shows too few rows`);
+  if (!r.whole) bad.push(`${what}: the verdict card leaves the screen`);
+  if (r.clipped > 3) bad.push(`${what}: the verdict hides ${r.clipped} px of its content`);
   for (const b of r.buttons) {
-    if (!b.whole) bad.push(`${what}: ${b.id} is not whole on screen`);
-    if (r.phone && b.h * r.k < 43.5) bad.push(`${what}: ${b.id} is ${Math.round(b.h * r.k)} px tall on a phone`);
+    if (!b.whole) bad.push(`${what}: ${b.id} is not whole in the tray`);
+    if (r.phone && b.h < 43.5) bad.push(`${what}: ${b.id} is ${Math.round(b.h)} px tall on a phone`);
   }
-  if (!r.buttons.some((b) => b.id === "battle-done")) bad.push(`${what}: no NEXT ROUND button`);
+  if (!r.buttons.some((b) => b.id === "battle-done")) bad.push(`${what}: no Next button`);
   return bad;
 }
 
