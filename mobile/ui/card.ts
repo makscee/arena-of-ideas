@@ -302,11 +302,13 @@ export function formRich(form: UnitForm, content: MvpContent): Node[] {
  * changes underlined), a fused unit's parts open behind a tap, and the unit's
  * win and pick rates are one dim line at the bottom. opts.preview: a fusion
  * preview's credit line (./fusion.ts). opts.credit: a Library unit's credit
- * line. Open it with overlay(unitSheet(...)) from ./dom. */
+ * line. opts.archetype: the Codex's sheet keeps the archetype line; the table's
+ * sheets (the inspector, a battle's) read the rule once and leave it out.
+ * Open it with overlay(unitSheet(...)) from ./dom. */
 export function unitSheet(
   u: LineUnit | BattleUnit | UnitContent,
   content: MvpContent,
-  opts: { floor?: number; compact?: boolean; where?: string; heroWord?: boolean; heroPx?: number; rates?: UnitRates; from?: Stats; preview?: boolean; candidate?: boolean; credit?: Parameters<typeof creditText>[0]; now?: { pwr: number; hp: number; statuses: { status: string; stacks: number }[] } } = {},
+  opts: { floor?: number; archetype?: boolean; compact?: boolean; where?: string; heroWord?: boolean; heroPx?: number; rates?: UnitRates; from?: Stats; preview?: boolean; candidate?: boolean; credit?: Parameters<typeof creditText>[0]; now?: { pwr: number; hp: number; statuses: { status: string; stacks: number }[] } } = {},
 ): HTMLElement {
   const unitId = "forms" in u ? u.id : u.unitId;
   // A unit that left the pool (a champion's, a replay's) is in content.left (M2-2).
@@ -430,15 +432,14 @@ export function unitSheet(
       "div",
       { class: "sheet-title" },
       h("div", { class: "row sheet-name" }, h("h2", {}, fused ? fusionName("fusion" in u ? u.fusion : undefined, u.name) : unitName(unitId, u.name)), tier ? h("span", { class: `pc-tier pc-t${tier}` }, roman(tier)) : null, pips),
-      state,
-      // Where it stands (the shop's panel): the offer, the line slot, the bench slot.
-      opts.where ? h("span", { class: "dim small sheet-where", "data-testid": "sheet-where" }, ` · ${opts.where}`) : null,
+      // One dim facts line: form and copies (or tier), then where it stands (the shop's panel: the offer, the line slot, the bench slot).
+      h("div", { class: "facts" }, state, opts.where ? h("span", { class: "dim small sheet-where", "data-testid": "sheet-where" }, ` · ${opts.where}`) : null),
     ),
   );
   // What the unit is about, in one sentence (R4-8); a fused unit has none.
   const top: (Node | null)[] = [
     headRow,
-    c?.archetype ? h("div", { class: "archetype", "data-testid": "sheet-archetype" }, c.archetype) : null,
+    opts.archetype && c?.archetype ? h("div", { class: "archetype", "data-testid": "sheet-archetype" }, c.archetype) : null,
     opts.candidate ? h("div", { class: "dim small", "data-testid": "sheet-unset" }, SET_BY_SIM()) : "stats" in u ? statsLine(u.stats) : sheetStats(u.base.pwr, u.base.hp),
     opts.from ? h("div", { class: "dim small" }, t("card.yourCopyNow")) : null,
   ];

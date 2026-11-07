@@ -138,7 +138,7 @@ export async function codexScreen(a: {
     (sheet.querySelector(".sheet-body") ?? sheet).append(h("div", { class: "stack history", "data-testid": "sheet-history" }, h("div", { class: "label" }, t("codex.versions", { n: c.versions.length })), ...rows));
     return sheet;
   };
-  const liveSheet = (u: UnitContent): HTMLElement => history(creditOf(u.id), unitSheet(u, a.content));
+  const liveSheet = (u: UnitContent): HTMLElement => history(creditOf(u.id), unitSheet(u, a.content, { archetype: true }));
   /** M3-5: the ideas held, fetched before a Library sheet opens (heldIdeas). */
   let heldIdeas: IdeasView | null = null;
   const loadIdeas = async (): Promise<void> => {
@@ -472,7 +472,7 @@ function fusionsTab(
     actionable(el);
     el.addEventListener("click", (e) => {
       if ((e.target as HTMLElement).closest("button.t")) return; // a term opens its own rule
-      open(unitSheet(fused, content), el);
+      open(unitSheet(fused, content, { archetype: true }), el);
     });
     return el;
   };
@@ -547,7 +547,7 @@ function librarySheet(content: MvpContent, lib: LibraryView, l: LibraryUnit, pro
   const me = api.player?.id;
   // Its own row first: a live version may share its id (M3-8). Its credit is
   // its own, its archetype's days live in the meta line below.
-  const s = unitSheet(l.unit, { ...all, units: [l.unit, ...all.units] }, { credit: { ...l, liveDays: null } });
+  const s = unitSheet(l.unit, { ...all, units: [l.unit, ...all.units] }, { archetype: true, credit: { ...l, liveDays: null } });
   const fusions = l.fusions.map((f) => {
     const [a, b] = [byId.get(f.first), byId.get(f.second)];
     const by = f.discoveredBy ? (f.discoveredBy.id === me ? t("codex.you") : who(f.discoveredBy.name)) : null;
@@ -636,7 +636,7 @@ function keywordsTab(content: MvpContent, open: (node: HTMLElement, from?: HTMLE
   const ids: TermId[] = [...statusIds, ...(Object.keys(GLOSSARY) as FixedTermId[])];
   const chipsOf = (used: UnitContent[]): HTMLElement => {
     const chip = (u: UnitContent) => {
-      const b = button(`${u.emoji} ${u.name}`, () => open(unitSheet(u, content), b), "chip unit-chip", "codex-term-unit");
+      const b = button(`${u.emoji} ${u.name}`, () => open(unitSheet(u, content, { archetype: true }), b), "chip unit-chip", "codex-term-unit");
       return b;
     };
     const chips = h("div", { class: "chips" }, ...used.slice(0, CHIPS).map(chip));

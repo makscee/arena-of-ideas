@@ -65,17 +65,17 @@
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-tray { z-index: 5; border: 4px solid var(--outline); border-radius: 24px; background: linear-gradient(180deg, #3d3360 0, #2f2747 18px, #2a2240 100%); box-shadow: 0 -2px 0 #5b4d85 inset, 0 6px 0 var(--outline), 0 -18px 40px rgba(0, 0, 0, 0.35); }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-tray::before { content: ""; position: absolute; left: 24px; right: 24px; top: -4px; height: 6px; border-radius: 0 0 6px 6px; background: var(--power); opacity: 0.85; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-tray > * { position: absolute; margin: 0; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach { background: var(--paper); color: var(--outline); border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 6px 0 var(--outline); padding: 12px 16px; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach.quiet { background: color-mix(in srgb, var(--paper) 88%, var(--panel)); }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach .hint { margin: 0; padding: 0; border: 0; background: none; color: var(--outline); font: 500 20px/1.3 var(--font-body); }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach .gift-banner { color: var(--outline); font: 500 20px/1.3 var(--font-body); background: none; border: 0; padding: 0; gap: 10px; flex-wrap: wrap; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach { background: var(--well); color: var(--paper); border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 6px 0 var(--outline); padding: 12px 16px; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach.quiet { background: var(--well); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach .hint { margin: 0; padding: 0; border: 0; background: none; color: var(--paper); font: 500 20px/1.3 var(--font-body); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach .gift-banner { color: var(--paper); font: 500 20px/1.3 var(--font-body); background: none; border: 0; padding: 0; gap: 10px; flex-wrap: wrap; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach .gift-banner button { font-size: 20px; min-height: 44px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-shop { z-index: 2; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-shop > .label { font: 600 18px/1 var(--font-body); letter-spacing: 1.5px; color: var(--dim); text-transform: uppercase; padding-bottom: 4px; text-align: center; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-offers { align-items: start; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go { display: flex; flex-direction: column; gap: 12px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go button { min-height: 0; flex: none; border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 6px 0 var(--outline), inset 0 -5px 0 rgba(0, 0, 0, 0.12), inset 0 3px 0 rgba(255, 255, 255, 0.35); font: 400 26px/1 var(--font-head); display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go button.reroll-btn { height: 58px; background: var(--paper); color: var(--outline); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go button.reroll-btn { height: 58px; background: var(--surface); color: var(--paper); }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go button.reroll-btn .cost-chip { font-size: 20px; padding: 2px 9px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go button.primary { flex: 1; background: var(--action); color: var(--outline); font-size: 40px; position: relative; flex-wrap: wrap; align-content: center; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go button.primary:disabled, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go button.reroll-btn:disabled { background: #4a4068; color: #8a7fae; }
@@ -83,12 +83,12 @@
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go kbd { font: 600 18px/1 var(--font-body); border: 2px solid currentColor; border-radius: 6px; padding: 2px 6px 3px; opacity: 0.6; }
 
 /* The inspector floats over the table: tap any unit and it reads its rule and whose idea it was */
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp { z-index: 20; background: var(--paper); color: var(--outline); border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 8px 0 var(--outline), 0 20px 60px rgba(0, 0, 0, 0.6); padding: 12px 16px 14px; overflow-y: auto; overscroll-behavior: contain; font-size: 18px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp { z-index: 20; background: var(--surface); color: var(--paper); border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 8px 0 var(--outline), 0 20px 60px rgba(0, 0, 0, 0.6); padding: 12px 16px 14px; overflow-y: auto; overscroll-behavior: contain; font-size: 18px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp[hidden] { display: none; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .dim, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .small, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .label { color: #5e5280; font-size: 18px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .dim, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .small, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .label { color: var(--dim); font-size: 18px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .actions { flex-wrap: wrap; gap: 8px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp button { font-size: 18px; min-height: 44px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage > .error { z-index: 30; left: 50%; transform: translateX(-50%); top: 74px; max-width: 70%; padding: 6px 14px; background: var(--paper); color: #8e1f33; border: 3px solid var(--outline); border-radius: 12px; box-shadow: 0 4px 0 var(--outline); font: 600 18px/1.25 var(--font-body); pointer-events: none; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage > .error { z-index: 30; left: 50%; transform: translateX(-50%); top: 74px; max-width: 70%; padding: 6px 14px; background: var(--surface); color: var(--them); border: 3px solid var(--outline); border-radius: 12px; box-shadow: 0 4px 0 var(--outline); font: 600 18px/1.25 var(--font-body); pointer-events: none; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage > .error:empty { display: none; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .cell.selected { background: color-mix(in srgb, var(--action) 14%, transparent); box-shadow: inset 0 0 0 3px var(--action); }
 
@@ -191,7 +191,7 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 @media (max-width: 600px) { body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="forge"], body.over-table #app[data-screen="ideas"] { inset: 6px; border-width: 3px; border-radius: 20px; } }
 
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp { position: absolute; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp button.insp-x { position: absolute; top: 2px; right: 4px; z-index: 2; min-width: 44px; width: 44px; height: 40px; min-height: 40px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; color: #5e5280; font: 600 20px/1 var(--font-body); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp button.insp-x { position: absolute; top: 2px; right: 4px; z-index: 2; min-width: 44px; width: 44px; height: 40px; min-height: 40px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; color: var(--dim); font: 600 20px/1 var(--font-body); }
 
 /* Portrait, 48px taps: the stage may be scaled to 0.92 on a 360-wide phone, and a tap stays 44px */
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate { height: 52px; }
@@ -271,7 +271,7 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 
 /* The tray: the event on screen, the last few, the ledger, the controls */
 :is(#app[data-screen="battle"], #under) .bt-tray > * { margin: 0; }
-:is(#app[data-screen="battle"], #under) .bt-tray button.bv-caption { height: auto; min-height: 0; max-height: none; width: auto; translate: none; overflow: hidden; padding: 10px 14px; border: 4px solid var(--outline); border-radius: 18px; background: var(--paper); color: var(--outline); box-shadow: 0 5px 0 var(--outline); font: 500 20px/1.3 var(--font-body); text-align: left; align-items: flex-start; }
+:is(#app[data-screen="battle"], #under) .bt-tray button.bv-caption { height: auto; min-height: 0; max-height: none; width: auto; translate: none; overflow: hidden; padding: 10px 14px; border: 4px solid var(--outline); border-radius: 18px; background: var(--well); color: var(--paper); box-shadow: 0 5px 0 var(--outline); font: 500 20px/1.3 var(--font-body); text-align: left; align-items: flex-start; }
 :is(#app[data-screen="battle"], #under) .bt-tray button.bv-caption .bv-cap-when { font-size: 18px; }
 :is(#app[data-screen="battle"], #under) .bt-tray .bv-recent { overflow: hidden; display: flex; flex-direction: column; gap: 4px; font: 500 18px/1.25 var(--font-body); color: var(--paper); }
 :is(#app[data-screen="battle"], #under) .bt-tray .bv-recent-row { opacity: 0.85; }
@@ -293,7 +293,7 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="battle"], #under) .bt-tray .bv-ledger-turn, :is(#app[data-screen="battle"], #under) .bt-tray .bv-ledger-foot { font-size: 18px; height: auto; line-height: 1.25; white-space: normal; }
 :is(#app[data-screen="battle"], #under) .bt-tray .bv-ledger button.bv-skip { min-height: 44px; font-size: 18px; padding: 0 14px; }
 :is(#app[data-screen="battle"], #under) .bt-tray .bv-controls { display: grid; gap: 10px; }
-:is(#app[data-screen="battle"], #under) .bt-tray .bv-controls button { min-width: 0; min-height: 0; margin: 0; padding: 0 4px; border: 4px solid var(--outline); border-radius: 18px; background: var(--paper); color: var(--outline); box-shadow: 0 6px 0 var(--outline), inset 0 3px 0 rgba(255, 255, 255, 0.35); font: 400 26px/1 var(--font-head); clip-path: none; }
+:is(#app[data-screen="battle"], #under) .bt-tray .bv-controls button { min-width: 0; min-height: 0; margin: 0; padding: 0 4px; border: 4px solid var(--outline); border-radius: 18px; background: var(--surface); color: var(--paper); box-shadow: 0 6px 0 var(--outline), inset 0 3px 0 rgba(255, 255, 255, 0.12); font: 400 26px/1 var(--font-head); clip-path: none; }
 :is(#app[data-screen="battle"], #under) .bt-tray .bv-controls button[data-testid="battle-play"], :is(#app[data-screen="battle"], #under) .bt-tray .bv-controls button.primary { background: var(--action); }
 :is(#app[data-screen="battle"], #under) .bt-tray .bv-controls button:disabled { background: #4a4068; color: #8a7fae; }
 :is(#app[data-screen="battle"], #under) .bt-tray .bv-controls .bv-keys { display: block; grid-column: 1 / -1; margin: 0; color: var(--paper); opacity: 0.8; font: 500 18px/1.3 var(--font-body); white-space: normal; }
@@ -310,7 +310,7 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-end-run { font-size: 18px; line-height: 1.25; margin: 0; }
 :is(#app[data-screen="battle"], #under) .bt-tray > .bv-end button { font-size: 18px; min-height: 44px; }
 :is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-end-actions { position: static; margin: 0; padding: 0; background: none; gap: 10px; }
-:is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-end-actions button { font-size: 20px; border: 4px solid var(--outline); border-radius: 16px; box-shadow: 0 5px 0 var(--outline); background: var(--paper); color: var(--outline); }
+:is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-end-actions button { font-size: 20px; border: 4px solid var(--outline); border-radius: 16px; box-shadow: 0 5px 0 var(--outline); background: var(--surface); color: var(--paper); }
 :is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-end-actions button.primary { background: var(--action); }
 :is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-moment { font-size: 18px; min-height: 44px; }
 :is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-moment-t, :is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-dmg, :is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .bv-dmg .emoji, :is(#app[data-screen="battle"], #under) .bt-tray > .bv-end .label { font-size: 18px; }
@@ -538,7 +538,6 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 
 /* Where the unit stands rides on its state line; the label row above it goes (the panel keeps the height for the rule) */
 :is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .insp-body > .label { display: none; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-title > .sheet-where, :is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-title > [data-testid="sheet-state"] { display: inline; }
 :is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-hero { padding-top: 18px; }
 :is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .summon-row > :first-child { zoom: 0.5; }
 :is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .summon-row .pc-nm, :is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .summon-row .name { display: none; }
@@ -556,7 +555,7 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact .archetype { font-size: 14px; }
 :is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact .sheet-hero { padding: 12px 6px 14px 8px; }
 :is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact .sheet-hero:has(.pc-shelf) { padding-bottom: 36px; }
-:is(#app[data-screen="shop"], #under) .tb-insp > .insp-more { position: absolute; left: 0; right: 0; z-index: 3; bottom: 56px; height: 26px; display: grid; place-items: end center; font: 600 18px/1 var(--font-body); color: #5e5280; pointer-events: none; background: linear-gradient(to bottom, transparent, var(--paper) 85%); }
+:is(#app[data-screen="shop"], #under) .tb-insp > .insp-more { position: absolute; left: 0; right: 0; z-index: 3; bottom: 56px; height: 26px; display: grid; place-items: end center; font: 600 18px/1 var(--font-body); color: var(--dim); pointer-events: none; background: linear-gradient(to bottom, transparent, var(--surface) 85%); }
 :is(#app[data-screen="shop"], #under) .tb-insp > .insp-more.done { display: none; }
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp > .insp-more { bottom: 62px; }
 :is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact .sheet-hero { padding-right: 24px; }
