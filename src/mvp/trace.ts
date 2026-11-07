@@ -451,86 +451,66 @@ export interface PlayBeat {
   start: number;
 }
 
-/** Pacing at 1× (mission 1007, slice 4; the report's timing table). Every
- * wave is one line in the strip and stays on screen at least LINE_FLOOR_MS at
- * 1× (lineFloorMs at other speeds), except a chain's links, which are dots in
- * the strip and rows in the ledger. A strike (any wave that hurts) lasts
- * STRIKE_MS, a heal / buff / status / summon wave EFFECT_MS; a hit that kills
- * is read for HIT_BEFORE_DEATH_MS, then the death wave runs DEATH_MS (the
- * freeze 150 ms and the fall 350 ms, read to the floor). */
-export const LINE_FLOOR_MS = 900;
-export const STRIKE_MS = 1200;
-export const EFFECT_MS = 1100;
-export const HIT_BEFORE_DEATH_MS = 1000;
-export const DEATH_MS = 900;
-/** The shortest a line stays on screen at `speed` (real ms): 900 / 450 / 225 at 1× / 2× / 4×. */
-export function lineFloorMs(speed: number): number {
-  return Math.max(200, Math.round(LINE_FLOOR_MS / speed));
-}
+/** The one clock (arena#50, MOVES 1 and 4). Every event is a beat on it: the cue (the actor lit, its firing chip) runs
+ * 0 to CUE_MS, the wire travels CUE_MS to CONTACT_MS, at CONTACT_MS the effect lands (the digit changes on its own
+ * pill and its receipt appears together), the receipt clears at RECEIPT_END_MS and the final digit holds to the
+ * beat's end. All at 1×; every other speed divides the whole clock, so 2× and 4× keep the order and the proportions. */
+export const BEAT_MS = 1150;
+export const DEATH_BEAT_MS = 1350;
+export const TURN_BEAT_MS = 900;
+export const CUE_MS = 220;
+export const CONTACT_MS = 460;
+export const RECEIPT_END_MS = 760;
 /** How long the line-up shows before the first beat, at 1×. */
 export const LINEUP_MS = 700;
 /** The empty beat after the deciding blow (the battle's end, no change on
  * the board): short, so the end card follows the blow's own hold. */
 export const END_BEAT_MS = 150;
-/** The time a beat's big moments add at 1× after its last wave: a hit of
- * BIG_HIT_MIN or more, a summon or revive, the first fatigue beat, and the
- * battle's last beat (the deciding blow, before the end card). A kill's time
- * is in its death wave. */
-export const EMPHASIS_MS = { big: 200, summon: 250, fatigue: 500, last: 600 } as const;
-/** The Fatigue banner's time on screen at 1× (the first fatigue beat's emphasis plus a second-and-a-bit). */
-export const FATIGUE_BANNER_MS = EMPHASIS_MS.fatigue + 1300;
+/** The Fatigue banner's time on screen at 1×. */
+export const FATIGUE_BANNER_MS = 1800;
 /** How long a card stands still after its killing blow lands, before it pops. */
 export const KILL_FREEZE_MS = 120;
 /** A hit counts as big at this much damage (the timeline's marks also scale it to the battle). */
 export const BIG_HIT_MIN = 4;
 
-/** What a beat holds that earns it more time. */
-export type BeatWeight = Partial<Record<keyof typeof EMPHASIS_MS | "kill" | "end", boolean>>;
-/** A beat's lines, to tell a repeat turn: its waves' captions. */
-const linesOf = (b: PlayBeat) => b.waves.map((w) => w.caption).join("\n");
-
-/** A beat of CHAIN_MIN waves or more plays as a chain (#913): each link
- * stays CHAIN_LINK_MS, so a first-time viewer sees every step before the next
- * (#1030: a unit acts once per chain, so a chain is a short walk across the
- * board), and a CHAIN_END_MS stays after the last link. Before #1030 links
- * sped up from 450 ms to 220 ms: too fast to follow. */
-export const CHAIN_MIN = 4;
-export const CHAIN_LINK_MS = 1100;
-export const CHAIN_END_MS = 900;
-/** Every link holds as long as the first (#1030): no speed-up along a chain. */
-export const CHAIN_FLOOR_MS = CHAIN_LINK_MS;
-export const isChain = (beat: Pick<PlayBeat, "waves">): boolean => beat.waves.length >= CHAIN_MIN;
-
-/** The time link `i` (from 0) of a chain stays, at 1×: CHAIN_LINK_MS each. */
-export function chainLinkMs(_i: number): number {
-  return CHAIN_LINK_MS;
+/** Where a beat is on the clock `ms` after it began (1× milliseconds): the cue lit, how far the wire has travelled
+ * (0 to 1), whether the effect has landed (the digit shows its new value) and whether the receipt is on screen. */
+export interface Phase {
+  cue: boolean;
+  travel: number;
+  landed: boolean;
+  receipt: boolean;
 }
+export function phaseOf(ms: number): Phase {
+  return {
+    cue: ms >= 0,
+    travel: Math.max(0, Math.min(1, (ms - CUE_MS) / (CONTACT_MS - CUE_MS))),
+    landed: ms >= CONTACT_MS,
+    receipt: ms >= CONTACT_MS && ms < RECEIPT_END_MS,
+  };
+}
+
+/** What a beat holds that marks it: a kill, a big hit, a summon, the first fatigue, the deciding blow, the empty end beat. */
+export type BeatWeight = Partial<Record<"big" | "summon" | "fatigue" | "last" | "kill" | "end", boolean>>;
 
 const dies = (w: Pick<Step, "changes">) => w.changes.some((c) => c.kind === "death");
 
-/** When each wave lands (ms from the beat's start, at 1×) and how long the
- * beat lasts, before its big moments' time: each wave stays for its own
- * time, a chain's links for theirs. */
+/** A beat of CHAIN_MIN waves or more is a chain (#913): the tray counts its steps (CHAIN ×N). Every step is a beat on
+ * the clock like any other event. */
+export const CHAIN_MIN = 4;
+export const isChain = (beat: Pick<PlayBeat, "waves">): boolean => beat.waves.length >= CHAIN_MIN;
+
+/** How long wave `w` stays on the clock at 1×: BEAT_MS, a death DEATH_BEAT_MS. */
+export const waveMs = (w: Pick<Step, "changes">): number => (dies(w) ? DEATH_BEAT_MS : BEAT_MS);
+
+/** When each wave lands (ms from the beat's start, at 1×) and how long the beat lasts: each wave stays for its own time. */
 export function beatTiming(waves: readonly Pick<Step, "changes">[]): { at: number[]; ms: number } {
-  const n = waves.length;
-  if (n >= CHAIN_MIN) {
-    const at: number[] = [];
-    let t = 0;
-    for (let i = 0; i < n; i++) {
-      at.push(t);
-      t += chainLinkMs(i);
-    }
-    return { at, ms: at[n - 1]! + chainLinkMs(n - 1) + CHAIN_END_MS };
-  }
   const at: number[] = [];
   let t = 0;
-  waves.forEach((w, i) => {
+  for (const w of waves) {
     at.push(t);
-    const next = waves[i + 1];
-    if (dies(w)) t += w.changes.some((c) => c.kind === "damage") ? HIT_BEFORE_DEATH_MS + DEATH_MS : DEATH_MS;
-    else if (next && dies(next)) t += HIT_BEFORE_DEATH_MS;
-    else t += w.changes.some((c) => c.kind === "damage") ? STRIKE_MS : EFFECT_MS;
-  });
+    t += waveMs(w);
+  }
   return { at, ms: t };
 }
 
@@ -557,60 +537,27 @@ export function weightsOf(log: BattleEvent[], beats: PlayBeat[]): BeatWeight[] {
   });
 }
 
-/** A beat's timing at 1×, by its weight: its waves' times (beatTiming), then
- * each big moment adds its EMPHASIS_MS after the last wave (past a chain's
- * end too: a long cascade that kills still gets its beat of stillness). An
- * empty beat after the deciding blow lasts END_BEAT_MS. */
+/** A beat's timing at 1×: its waves' times (beatTiming); an empty beat after the deciding blow lasts END_BEAT_MS. */
 export function timingOf(beat: PlayBeat, weight: BeatWeight = {}): { at: number[]; ms: number } {
   if (weight.end) return { at: beat.waves.map(() => 0), ms: END_BEAT_MS };
-  const t = beatTiming(beat.waves);
-  const extra = (Object.keys(EMPHASIS_MS) as (keyof typeof EMPHASIS_MS)[]).reduce((n, k) => n + (weight[k] ? EMPHASIS_MS[k] : 0), 0);
-  return { at: t.at, ms: t.ms + extra };
+  return beatTiming(beat.waves);
 }
 
-/** How long wave `wave` of a beat stays on screen at `speed`, in real ms: its
- * time at 1× divided by the speed, never under the line floor (a chain's
- * links and the empty end beat have no line to read). */
+/** How long wave `wave` of a beat stays on screen at `speed`, in real ms: its time at 1× divided by the speed. The
+ * whole clock scales, so 2× and 4× never reorder or squeeze one phase. */
 export function waveWaitMs(beat: PlayBeat, weight: BeatWeight, wave: number, speed: number): number {
   const t = timingOf(beat, weight);
   const ms = wave < beat.waves.length - 1 ? t.at[wave + 1]! - t.at[wave]! : t.ms - t.at[wave]!;
-  const real = ms / speed;
-  return weight.end || isChain(beat) ? real : Math.max(real, lineFloorMs(speed));
+  return ms / speed;
 }
 
-/** The fastest playback goes (the speeds are 1×, 2× and 4×). */
-export const MAX_SPEED = 4;
-/** A turn that repeats the last plays at this many times the speed. */
-export const REPEAT_RATE = 2;
-
-/** The turns whose lines are the turn before's, line for line (Medic heals
- * itself +1 each turn against a 1-PWR striker): they play at REPEAT_RATE
- * and hold no turn-end summary. The first of a pattern plays whole. */
-export function repeatTurnsOf(beats: readonly PlayBeat[]): Set<number> {
-  const lines = new Map<number, string>();
-  for (const b of beats) {
-    if (b.waves.every((w) => !w.changes.length)) continue;
-    lines.set(b.turn, `${lines.get(b.turn) ?? ""}${linesOf(b)}\n--\n`);
-  }
-  const out = new Set<number>();
-  for (const [turn, text] of lines) if (turn >= 1 && lines.get(turn - 1) === text) out.add(turn);
-  return out;
-}
-
-/** The speed a beat plays at: the viewer's, doubled (to MAX_SPEED) on a repeat turn. */
-export function playSpeed(speed: number, repeat: boolean): number {
-  return repeat ? Math.min(MAX_SPEED, speed * REPEAT_RATE) : speed;
-}
-
-/** What a whole playback takes at `speed`, in real ms: the line-up, every
- * beat at its own speed, and the turn-end holds of the turns that aren't repeats. */
-export function playbackMs(beats: readonly PlayBeat[], weights: readonly BeatWeight[], ends: Iterable<number>, repeats: ReadonlySet<number>, lineupMs: number, speed: number): number {
+/** What a whole playback takes at `speed`, in real ms: the line-up, every beat and the turn-end holds. */
+export function playbackMs(beats: readonly PlayBeat[], weights: readonly BeatWeight[], ends: Iterable<number>, lineupMs: number, speed: number): number {
   let ms = lineupMs / speed;
   beats.forEach((b, i) => {
-    const sp = playSpeed(speed, repeats.has(b.turn));
-    for (let w = 0; w < b.waves.length; w++) ms += waveWaitMs(b, weights[i] ?? {}, w, sp);
+    for (let w = 0; w < b.waves.length; w++) ms += waveWaitMs(b, weights[i] ?? {}, w, speed);
   });
-  for (const i of ends) if (!repeats.has(beats[i]!.turn)) ms += turnEndHoldMs(speed);
+  for (const _ of ends) ms += turnEndHoldMs(speed);
   return ms;
 }
 
@@ -1709,6 +1656,90 @@ export function damageByUnit(log: BattleEvent[], name: NameOf = displayNames(log
   return out.sort((p, q) => (p.side === q.side ? q.damage - p.damage : p.side < q.side ? -1 : 1));
 }
 
+/** One cause of the result (arena#53, MOVES 5): what one unit did most of, over the battle. */
+export interface CarryRow {
+  kind: "damage" | "heal" | "buff" | "block";
+  unit: string;
+  name: string;
+  /** HP of damage dealt (overkill not counted), HP healed, PWR added or damage a Shield it gave took. */
+  amount: number;
+  /** The unit's single biggest event of this kind: the moment the row opens. */
+  eventId: number;
+}
+
+/** What carried `side` through the battle, computed from the events alone: its unit that dealt the most damage
+ * to the other side, the one that healed the most, the one that added the most PWR and the one whose Shield
+ * took the most. Credit goes to the nearest unit of that side in the event's chain (as damageByUnit does; a
+ * Shield to the unit that put it on). A kind nobody did is left out; the order is fixed: damage, heal, buff, block. */
+export function carryOf(log: BattleEvent[], side: Side, name: NameOf = displayNames(log), sides = sidesOf(log)): CarryRow[] {
+  const hp = new Map<string, number>();
+  for (const e of log) if (e.type === "BattleStart") for (const s of ["A", "B"] as const) for (const r of e.teams[s]) hp.set(r.id, r.hp);
+  type Acc = { total: number; best: number; eventId: number };
+  const acc: Record<CarryRow["kind"], Map<string, Acc>> = { damage: new Map(), heal: new Map(), buff: new Map(), block: new Map() };
+  const add = (kind: CarryRow["kind"], unit: string, amount: number, eventId: number) => {
+    if (amount <= 0) return;
+    const m = acc[kind];
+    const a = m.get(unit) ?? { total: 0, best: 0, eventId };
+    a.total += amount;
+    if (amount > a.best) { a.best = amount; a.eventId = eventId; }
+    m.set(unit, a);
+  };
+  /** The nearest unit of `side` behind an event. */
+  const by = (id: number): string | null => {
+    const l = traceOf(log, id, name, sides).links[0];
+    return l && l.side === side ? l.unit : null;
+  };
+  // Shield stacks as they were put on, oldest first, with who put them there.
+  const shields = new Map<string, { by: string | null; stacks: number }[]>();
+  for (const e of log) {
+    if (e.type === "Hurt") {
+      const before = hp.get(e.unit) ?? e.amount;
+      hp.set(e.unit, e.hpAfter ?? before - e.amount);
+      const victim = sides.get(e.unit);
+      if (victim && victim !== side) {
+        const u = by(e.id);
+        if (u) add("damage", u, Math.min(e.amount, before), e.id);
+      }
+      if (victim === side && (e.absorbed ?? 0) > 0) {
+        let left = e.absorbed ?? 0;
+        const q = shields.get(e.unit) ?? [];
+        while (left > 0 && q.length) {
+          const head = q[0]!;
+          const take = Math.min(left, head.stacks);
+          if (head.by) add("block", head.by, take, e.id);
+          head.stacks -= take;
+          left -= take;
+          if (head.stacks <= 0) q.shift();
+        }
+      }
+    } else if (e.type === "Heal") {
+      hp.set(e.unit, e.hpAfter ?? (hp.get(e.unit) ?? 0) + e.amount);
+      if (sides.get(e.unit) === side) {
+        const u = by(e.id);
+        if (u) add("heal", u, e.amount, e.id);
+      }
+    } else if (e.type === "StatChanged") {
+      if (e.hpAfter !== undefined) hp.set(e.unit, e.hpAfter);
+      if (e.stat === "pwr" && e.delta > 0 && sides.get(e.unit) === side) {
+        const u = by(e.id);
+        if (u) add("buff", u, e.delta, e.id);
+      }
+    } else if (e.type === "Summon") hp.set(e.unit, e.atHp ?? e.hp);
+    else if (e.type === "StatusApplied" && e.status === "Shield" && sides.get(e.unit) === side) {
+      const q = shields.get(e.unit) ?? [];
+      q.push({ by: by(e.id), stacks: e.stacks });
+      shields.set(e.unit, q);
+    }
+  }
+  const out: CarryRow[] = [];
+  for (const kind of ["damage", "heal", "buff", "block"] as const) {
+    let top: [string, Acc] | null = null;
+    for (const [unit, a] of acc[kind]) if (!top || a.total > top[1].total) top = [unit, a];
+    if (top) out.push({ kind, unit: top[0], name: name(top[0]), amount: top[1].total, eventId: top[1].eventId });
+  }
+  return out;
+}
+
 export interface KeyMoment {
   /** "summon": a turning point that is a unit joining ("Imp joins"), no kill (R2-17 batch F). */
   kind: "kill" | "summon" | "combo" | "fatigue" | "hit";
@@ -2109,15 +2140,13 @@ export function chainSideText(t: ChainSide, status: (s: string) => string = (s) 
 
 // ---------- the turn-end summary (round 4, R4-12) ----------
 
-/** How long playback holds on a turn's totals at 1×, after the turn's last
- * beat (R4-12, viewer.md (6)): divided by the speed, and none from
- * TURN_END_SKIP_SPEED up. */
-export const TURN_END_MS = 900;
-export const TURN_END_SKIP_SPEED = 4;
+/** A turn change is a beat on the clock like any other: playback holds on the turn's totals TURN_BEAT_MS at 1×, divided
+ * by the speed at every speed (4× included). */
+export const TURN_END_MS = TURN_BEAT_MS;
 
 /** The hold at `speed`, in real ms. */
 export function turnEndHoldMs(speed: number): number {
-  return speed >= TURN_END_SKIP_SPEED ? 0 : Math.round(TURN_END_MS / speed);
+  return Math.round(TURN_END_MS / speed);
 }
 
 /** The beats playback holds after, by beat index, each with its turn's

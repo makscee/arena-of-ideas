@@ -57,7 +57,7 @@ const sampleFloats = () => {
   };
   requestAnimationFrame(tick);
 };
-/** In the page: how long each line of the action strip stays (mission 1007, slice 4). A chain's links (dots in the strip) and the empty end are not lines to read; a repeat turn (the ⏩ in the HUD) plays at twice the speed. */
+/** In the page: how long each line of the action strip stays (mission 1007, slice 4). A chain's links (dots in the strip) and the empty end are not lines to read. */
 const sampleLines = () => {
   const el = document.querySelector('[data-testid="caption"]');
   const lines = (window.__lines = []);
@@ -66,14 +66,14 @@ const sampleLines = () => {
     const t = performance.now();
     const key = el.textContent;
     if (cur && cur.key === key) return;
-    if (cur) lines.push({ ms: cur.ms === undefined ? t - cur.at : cur.ms, chain: cur.chain, rep: cur.rep, key: cur.key });
-    cur = { key, at: t, chain: !!el.querySelector('[data-testid="caption-chain"]'), rep: !!document.querySelector('.bv-repeat') };
+    if (cur) lines.push({ ms: cur.ms === undefined ? t - cur.at : cur.ms, chain: cur.chain, key: cur.key });
+    cur = { key, at: t, chain: !!el.querySelector('[data-testid="caption-chain"]') };
   };
   new MutationObserver(note).observe(el, { subtree: true, childList: true, characterData: true });
   note();
 };
-/** The line floor at a speed, as src/mvp/trace.ts lineFloorMs has it. */
-const lineFloor = (speed) => Math.max(200, Math.round(600 / speed));
+/** The shortest a line stays on the one clock (arena#50): a turn change, 900 ms at 1×, divided by the speed. */
+const lineFloor = (speed) => Math.round(900 / speed);
 /** Every plain line seen, as ms on screen with the floor of its speed: the ones short of 90% of it. */
 const lineRuns = [];
 for (const motion of ["no-preference", "reduce"]) {
@@ -109,7 +109,7 @@ for (const motion of ["no-preference", "reduce"]) {
       speeds.push(speed);
     }
     if (motion !== "reduce") {
-      for (const l of await page.evaluate(() => window.__lines)) if (!l.chain) lineRuns.push({ ms: l.ms, floor: lineFloor(Math.min(4, speed * (l.rep ? 2 : 1))), key: l.key });
+      for (const l of await page.evaluate(() => window.__lines)) if (!l.chain) lineRuns.push({ ms: l.ms, floor: lineFloor(speed), key: l.key });
     }
     if (motion !== "reduce") for (const r of await page.waitForFunction(() => window.__floatRuns).then((h) => h.jsonValue())) (r.merged && r.ms * speed < FLOAT_MIN_MS ? mergedMs : floatMs).push(r.ms * speed);
     await page.screenshot({ path: `${out}/${motion === "reduce" ? "still" : "move"}-r${round}-end.png` });
@@ -125,7 +125,7 @@ const sorted = [...floatMs].sort((p, q) => p - q);
 // Float times are scaled to 1× (ms × speed), so the bar holds at any speed.
 const cut = sorted.filter((ms) => ms < FLOAT_MIN_MS).length;
 console.log(`damage floats: ${sorted.length} seen, median ${Math.round(sorted[Math.floor(sorted.length / 2)] ?? 0)} ms visible at 1×, ${cut} under ${FLOAT_MIN_MS / 1000} s at 1× (${sorted.filter((ms) => ms < FLOAT_MIN_MS).map((ms) => Math.round(ms)).join(", ")}); ${mergedMs.length} grew into the next wave's float`);
-// Lines (the strip's text, a chain's links apart) shorter than their speed's floor (600 / 300 / 200 ms at 1× / 2× / 4×; a repeat turn has its doubled speed's), 10% slack for the timer.
+// Lines (the strip's text, a chain's links apart) shorter than their speed's floor (900 / 450 / 225 ms at 1× / 2× / 4×: the turn change, the shortest beat of the clock), 10% slack for the timer.
 const shortLines = lineRuns.filter((l) => l.ms < l.floor * 0.9);
 const lineSorted = lineRuns.map((l) => l.ms).sort((p, q) => p - q);
 console.log(`strip lines: ${lineRuns.length} seen, median ${Math.round(lineSorted[Math.floor(lineSorted.length / 2)] ?? 0)} ms, shortest ${Math.round(lineSorted[0] ?? 0)} ms, ${shortLines.length} under their floor${shortLines.length ? ` (${shortLines.slice(0, 6).map((l) => `${Math.round(l.ms)} ms "${l.key.slice(0, 30)}"`).join("; ")})` : ""}`);

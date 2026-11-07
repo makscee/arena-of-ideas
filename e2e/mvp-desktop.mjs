@@ -407,7 +407,7 @@ try {
     await runBoardResult(round, crown);
     const runLine = (await page.getByTestId("end-run").textContent().catch(() => "")) ?? "";
     if (!(crown ? /CROWN/ : new RegExp(`R${round}/12`)).test(runLine) || !/[♥♡]/.test(runLine) || !/\d+W/.test(runLine)) errors.push(`end card: run line "${runLine}" after round ${round}`);
-    const done = (await page.getByTestId("battle-done").textContent()) ?? "";
+    const done = (await page.getByTestId("battle-done").getAttribute("aria-label")) ?? "";
     if (!/^(Next round|To the Crown|See the run)$/i.test(done.trim())) errors.push(`end card: last button "${done}"`);
     if (await page.getByTestId("outcome").count()) errors.push("a result screen still follows the end card");
     if (!resultShot) {
@@ -665,6 +665,11 @@ try {
    * stand one above the other, fronts at the left; the result covers the tray (its Next round on screen); Space
    * pauses, ← → step, E ends, Esc closes the inspector. */
   async function desktopBattle() {
+    // A fight with no firing in it (whyOnDesktop stepped through it looking for one) ends before the keys are tried: replay it, or Space would go on to the shop.
+    if (await page.getByTestId("end-card").isVisible().catch(() => false)) {
+      await page.getByTestId("end-replay").click();
+      await page.waitForTimeout(600);
+    }
     if ((await page.getByTestId("battle-play").textContent()) === "❚❚") await page.getByTestId("battle-play").click();
     const facing = async (name, w, h) => {
       const [mine, theirs, tray] = [await page.getByTestId("battle-you").boundingBox(), await page.getByTestId("battle-them").boundingBox(), await page.getByTestId("tray").boundingBox()];
@@ -697,12 +702,15 @@ try {
     console.log(`keys: stepped to ${stepped}, Space plays and pauses`);
     await page.keyboard.press("e");
     await page.getByTestId("end-card").waitFor({ timeout: 5_000 }).catch(() => errors.push("keys: E didn't end the battle"));
-    // The result covers the tray, its way on on screen, and leaves both lines clear.
+    // The verdict sits on the loser's row (arena#53); the tray keeps its controls, Next among them, and the winner's line stays clear.
     const endBox = await page.getByTestId("end-card").boundingBox();
     const next = await page.getByTestId("battle-done").boundingBox();
-    if (!endBox || !next || next.y + next.height > H + 0.5 || next.x < endBox.x - 0.5 || next.x + next.width > endBox.x + endBox.width + 0.5) errors.push(`end card: its way on isn't inside the card on screen (${JSON.stringify({ endBox, next })})`);
-    const mineBox = await page.getByTestId("battle-you").boundingBox();
-    if (endBox && mineBox && endBox.y < mineBox.y + mineBox.height - 0.5) errors.push("end card: it covers your line");
+    const trayBox = await page.getByTestId("tray").boundingBox();
+    if (!endBox || !next || !trayBox || next.y + next.height > H + 0.5 || next.x < trayBox.x - 0.5 || next.x + next.width > trayBox.x + trayBox.width + 0.5 || next.y < trayBox.y - 0.5) errors.push(`end card: Next isn't inside the tray on screen (${JSON.stringify({ trayBox, next })})`);
+    if (endBox && trayBox && endBox.y + endBox.height > trayBox.y + 0.5) errors.push("end card: it covers the tray");
+    const loserRow = await page.getByTestId("end-card").getAttribute("data-row");
+    const winnerBox = await page.getByTestId(loserRow === "theirs" ? "battle-you" : "battle-them").boundingBox();
+    if (endBox && winnerBox && endBox.y < winnerBox.y + winnerBox.height - 0.5 && endBox.y + endBox.height > winnerBox.y + 0.5) errors.push("end card: it covers the winner's line");
     await shot("battle-end-card");
     // The card's ✕ puts it away: the control bar is back, and its way on takes End's place.
     await page.getByTestId("end-close").click();
