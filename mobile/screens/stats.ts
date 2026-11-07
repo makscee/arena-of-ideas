@@ -3,6 +3,7 @@
 // write) and the champion history; a champion opens its team. Round 2
 // (R2-11): units with their rates and the discovered fusions moved to the
 // Codex (./codex.ts), where a unit's rates are the dim line on its sheet.
+import { unitSigil } from "../ui/glyph";
 import type { Champion, HomeView, MvpContent, StatsView } from "../../src/mvp/contract";
 import { card, unitSheet } from "../ui/card";
 import { t } from "../i18n";
@@ -40,7 +41,7 @@ function championsPanel(champions: Champion[], content: MvpContent): HTMLElement
       "div",
       { class: "stat-row", "data-testid": "stats-champion" },
       h("span", { class: "emoji" }, "👑"),
-      h("span", { class: "grow" }, h("div", {}, t("stats.dayPrefix", { seq: c.seq }), who(c.player.name), c.player.bot ? " 🤖" : ""), h("div", { class: "dim small" }, `${c.day} · ${c.line.map((u) => u.emoji).join(" ")}`)),
+      h("span", { class: "grow" }, h("div", {}, t("stats.dayPrefix", { seq: c.seq }), who(c.player.name), c.player.bot ? " 🤖" : ""), h("div", { class: "dim small champ-line" }, `${c.day} · `, ...c.line.map((u) => unitSigil(u, 24)))),
     );
     row.addEventListener("click", () => overlay(championSheet(c, content)));
     actionable(row);

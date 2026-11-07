@@ -18,7 +18,9 @@ import { discoveredLine } from "./fusion";
 import { isMine, reportLink } from "./report";
 import { icon } from "./icon";
 import { roman } from "./roman";
-import { faceOfUnit, lineToPiece, piece, pieceReach, statusEmoji, type PieceUnit } from "./piece";
+import { fuse, type Spec } from "./sigil";
+import { glyphIcon, portraitOf, setPortraits, sigilIcon, unitSigil } from "./glyph";
+import { faceOfUnit, lineToPiece, piece, pieceReach, statusGlyph, type PieceUnit } from "./piece";
 import { faceFallback, fusedFace, type Face } from "../../src/mvp/face";
 import { termDef } from "../../src/glossary";
 import { markChangedPieces, richText } from "./term";
@@ -29,7 +31,7 @@ import { fusionName, unitName } from "../unit-names";
 export { roman };
 
 /** What a card needs to draw; LineUnit, BattleUnit and offers all fit. */
-export type CardUnit = { emoji: string; name: string; stats: Stats } & Partial<Pick<LineUnit, "unitId" | "kind" | "form" | "copies" | "fusion" | "recipe">>;
+export type CardUnit = { emoji: string; name: string; stats: Stats; portrait?: Spec } & Partial<Pick<LineUnit, "unitId" | "kind" | "form" | "copies" | "fusion" | "recipe">>;
 
 export interface CardOptions {
   side: "you" | "ghost";
@@ -49,9 +51,9 @@ export interface CardOptions {
   /** M3-8: a unit the live credits don't know (the Library's): its archetype
    * version, and no live credit (NEW, 💡). */
   version?: number;
-  /** The piece's face side and whether its tab shows the word, in place of the
+  /** The piece's face side, in place of the
    * screen's default (Home's champion sizes them from its panel). */
-  piece?: { px: number; word: boolean };
+  piece?: { px: number };
 }
 
 /** A tier's colour class (R4-4): .t1–.t4 on the --tier-1..4 tokens, .ts for a summoned unit. */
@@ -125,7 +127,7 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
     iconLine(u.recipe, !!o.tier),
     o.tier ? h("span", { class: `tier ${tierClass(o.tier)}`, "aria-label": o.tier === "S" ? t("card.summonedAria") : t("card.tierAria", { tier: o.tier }) }, o.tier === "S" ? "S" : roman(o.tier)) : null,
     credit?.isNew ? h("span", { class: "new-badge", "data-testid": "card-new" }, t("card.new")) : null,
-    h("div", { class: "emoji" }, u.emoji),
+    h("div", { class: "emoji" }, unitSigil({ ...(u.portrait ? { portrait: u.portrait } : {}), ...(u.unitId ? { unitId: u.unitId } : {}), ...(u.fusion ? { fusion: u.fusion } : {}) }, 64, { live: true, fluid: true, ...(o.side === "ghost" ? { team: "them" as const } : {}) })),
     // One line; ui/dom.ts fitText() shrinks a long name a little, then cuts it.
     // A version that isn't its archetype's first says so beside it (M3-8).
     h("div", { class: "name", title: u.name }, u.name, ...(version > 1 ? [h("span", { class: "ver", "data-testid": "card-version" }, ` v${version}`)] : [])),
@@ -168,10 +170,11 @@ function pieceCard(u: CardUnit, o: CardOptions): HTMLElement {
     emoji: ems[0] ?? u.emoji,
     stats: u.stats,
     face,
+    ...(u.kind === "fused" ? { portrait: fuse(portraitOf(first), portraitOf(u.fusion?.second)) } : u.portrait ?? portraitOf(first) ? { portrait: (u.portrait ?? portraitOf(first))! } : {}),
     awoken: u.kind !== "fused" && u.form === "awoken",
     ...(u.kind === "fused" ? { fused: { emoji: ems.slice(1).join("") || "✨" } } : {}),
   };
-  const pc = piece(pu, { size: "M", px: o.piece?.px ?? (window.innerWidth < 600 ? 46 : 60), side: o.side === "ghost" ? "them" : "you", word: o.piece?.word ?? window.innerWidth >= 600 });
+  const pc = piece(pu, { size: "M", px: o.piece?.px ?? (window.innerWidth < 600 ? 46 : 60), side: o.side === "ghost" ? "them" : "you" });
   const reach = o.piece ? pieceReach(o.piece.px) : undefined;
   const credit = u.kind === "fused" || o.version !== undefined ? undefined : creditOf(u.unitId);
   const version = o.version ?? credit?.version ?? 1;
@@ -230,8 +233,9 @@ export function setCardAbilities(a: AbilityRegistry): void {
 /** The units' faces (mission #1286), so a card draws its piece with the
  * designer's when tab and headline (set once the content loads: ../content.ts). */
 let faces = new Map<string, Face>();
-export function setCardFaces(units: Pick<UnitContent, "id" | "face" | "forms">[]): void {
+export function setCardFaces(units: Pick<UnitContent, "id" | "face" | "forms" | "portrait">[]): void {
   faces = new Map(units.map((u) => [u.id, faceOfUnit(u)]));
+  setPortraits(units); // and their sigils (arena#38, #39), by unit id
 }
 /** Adds abilities the content lacks (a vote card's candidate, M2-8; a
  * designed fusion's own, #1065). Sheets read them too (#1120: a sealed
@@ -308,7 +312,7 @@ export function formRich(form: UnitForm, content: MvpContent): Node[] {
 export function unitSheet(
   u: LineUnit | BattleUnit | UnitContent,
   content: MvpContent,
-  opts: { floor?: number; archetype?: boolean; compact?: boolean; where?: string; heroWord?: boolean; heroPx?: number; rates?: UnitRates; from?: Stats; preview?: boolean; candidate?: boolean; credit?: Parameters<typeof creditText>[0]; now?: { pwr: number; hp: number; statuses: { status: string; stacks: number }[] } } = {},
+  opts: { floor?: number; archetype?: boolean; compact?: boolean; where?: string; heroPx?: number; rates?: UnitRates; from?: Stats; preview?: boolean; candidate?: boolean; credit?: Parameters<typeof creditText>[0]; now?: { pwr: number; hp: number; statuses: { status: string; stacks: number }[] } } = {},
 ): HTMLElement {
   const unitId = "forms" in u ? u.id : u.unitId;
   // A unit that left the pool (a champion's, a replay's) is in content.left (M2-2).
@@ -342,7 +346,7 @@ export function unitSheet(
       ...[
         [a, t("card.when")],
         [b, t("card.who")],
-      ].map(([p, role]) => (p ? h("div", { class: "sheet-form part" }, h("div", { class: "label" }, t("card.partGives", { unit: `${(p as UnitContent).emoji} ${(p as UnitContent).name}`, role: role as string })), ...formRich((p as UnitContent).forms.awoken, content)) : null)),
+      ].map(([p, role]) => (p ? h("div", { class: "sheet-form part" }, h("div", { class: "label" }, unitSigil({ portrait: (p as UnitContent).portrait, unitId: (p as UnitContent).id }, 22), " ", t("card.partGives", { unit: (p as UnitContent).name, role: role as string })), ...formRich((p as UnitContent).forms.awoken, content)) : null)),
     );
     parts.hidden = true;
     const label = t("card.madeFrom", { a: a?.name ?? u.fusion.first, b: b?.name ?? u.fusion.second });
@@ -387,7 +391,7 @@ export function unitSheet(
   // its statuses on the shelf; the name, the rule in words, sleeping vs
   // awoken and what is on it now, explained, on the right.
   const pu: PieceUnit =
-    "forms" in u ? { name: u.name, emoji: u.emoji, stats: u.base, face: faceOfUnit(u), tier: u.tier } : lineToPiece(u, content);
+    "forms" in u ? { name: u.name, emoji: u.emoji, stats: u.base, face: faceOfUnit(u), tier: u.tier, ...(u.portrait ? { portrait: u.portrait } : {}) } : lineToPiece(u, content);
   if ("stats" in u) pu.stats = u.stats;
   const now$ = opts.now?.statuses ?? ("recipe" in u ? u.recipe.statuses : undefined) ?? [];
   const onIt = now$.filter((x) => x.stacks > 0);
@@ -397,7 +401,7 @@ export function unitSheet(
   const hero = h(
     "div",
     { class: "sheet-hero", "data-testid": "sheet-piece" },
-    piece(pu, { size: "M", px: opts.heroPx ?? heroPx(), side: "stats" in u ? "you" : "shop", statuses: onIt, counter: ring ? (onIt.find((x) => x.status === ring.status)?.stacks ?? 0) : 0, word: opts.heroWord ?? true, ...(opts.floor != null ? { floor: opts.floor } : {}) }),
+    piece(pu, { size: "M", px: opts.heroPx ?? heroPx(), side: "stats" in u ? "you" : "shop", statuses: onIt, counter: ring ? (onIt.find((x) => x.status === ring.status)?.stacks ?? 0) : 0, ...(opts.floor != null ? { floor: opts.floor } : {}) }),
   );
   const tier = "forms" in u ? u.tier : pu.tier;
   const pips = !fused && copies > 0 && !("form" in u && u.form === "awoken")
@@ -414,7 +418,7 @@ export function unitSheet(
           return h(
             "div",
             { class: "sheet-now-row", "data-status": status },
-            h("span", { class: `sheet-now-chip ${statusEmoji(status)[1]}` }, statusEmoji(status)[0], h("b", {}, max ? `${stacks}/${max}` : String(stacks))),
+            h("span", { class: `sheet-now-chip ${statusGlyph(status)[1]}` }, glyphIcon(statusGlyph(status)[0], 18), h("b", {}, max ? `${stacks}/${max}` : String(stacks))),
             // A counter's own tip says nothing ("No effect"): its ring's fill says what it is.
             h("span", {}, h("b", {}, `${def?.label ?? status} ${stacks}`), max ? ` · ${t("card.counterTip", { n: stacks, max })}` : def?.tip ? ` · ${def.tip}` : ""),
           );
@@ -427,7 +431,7 @@ export function unitSheet(
   const headRow = h(
     "div",
     { class: "row sheet-head" },
-    h("span", { class: `sheet-portrait${fused ? " fused" : ""}`, "aria-hidden": "true" }, u.emoji),
+    h("span", { class: `sheet-portrait${fused ? " fused" : ""}`, "aria-hidden": "true" }, unitSigil({ ...("forms" in u && u.portrait ? { portrait: u.portrait } : {}), unitId, ..."fusion" in u && u.fusion ? { fusion: u.fusion } : {} }, 72, { live: true, fluid: true, ...("forms" in u ? {} : { aw: u.form === "awoken" }) })),
     h(
       "div",
       { class: "sheet-title" },
@@ -519,7 +523,7 @@ export function summonersOf(content: MvpContent, id: string): { unit: UnitConten
 
 /** A summon drawn as a card: its emoji, name, numbers and icon line. */
 export function summonCard(s: SummonContent, o: CardOptions): HTMLElement {
-  return card({ emoji: s.emoji, name: s.name, stats: s.base, ...(s.form ? { recipe: s.form } : {}) }, o);
+  return card({ emoji: s.emoji, name: s.name, stats: s.base, ...(s.portrait ? { portrait: s.portrait } : {}), ...(s.form ? { recipe: s.form } : {}) }, o);
 }
 
 /** A summon's text, or the line that says it has none. */
@@ -542,7 +546,7 @@ function summonsBlock(form: UnitForm, content: MvpContent, compact = false): HTM
         { class: "summon-row", "data-testid": "sheet-summon", "data-summon": s.id },
         // The shop's panel has no room for the summoned unit's piece: its name leads its rule.
         compact ? null : summonCard(s, { side: "you", testid: "summon-card", onOpen: () => openSummon(s, content) }),
-        h("div", { class: "sheet-form" }, ...(compact ? [h("b", { class: "summon-name" }, `${s.emoji} ${s.name} `)] : []), ...summonText(s, content)),
+        h("div", { class: "sheet-form" }, ...(compact ? [h("b", { class: "summon-name" }, sigilIcon(s.portrait, 22), ` ${s.name} `)] : []), ...summonText(s, content)),
       ),
     ),
   );
@@ -560,7 +564,7 @@ export function summonSheet(s: SummonContent, content: MvpContent): HTMLElement 
   return h(
     "div",
     { class: "stack", "data-testid": "summon-sheet", "data-summon": s.id },
-    h("div", { class: "row sheet-head" }, h("span", { class: "sheet-portrait", "aria-hidden": "true" }, s.emoji), h("div", { class: "sheet-title" }, h("h2", {}, s.name), h("span", { class: "dim small", "data-testid": "sheet-state" }, t("card.summoned")))),
+    h("div", { class: "row sheet-head" }, h("span", { class: "sheet-portrait", "aria-hidden": "true" }, sigilIcon(s.portrait, 72, { live: true, fluid: true })), h("div", { class: "sheet-title" }, h("h2", {}, s.name), h("span", { class: "dim small", "data-testid": "sheet-state" }, t("card.summoned")))),
     sheetStats(s.base.pwr, s.base.hp),
     h("div", { class: "sheet-form", "data-testid": "sheet-form" }, ...summonText(s, content)),
     by.length ? h("div", { class: "label" }, t("card.summonedBy")) : null,
@@ -569,7 +573,7 @@ export function summonSheet(s: SummonContent, content: MvpContent): HTMLElement 
           "div",
           { class: "chips", "data-testid": "summoned-by" },
           ...by.map(({ unit, forms }) => {
-            const b = h("button", { class: "chip unit-chip", "data-testid": "summoned-by-unit", "data-unit": unit.id }, `${unit.emoji} ${unit.name}${forms.length === 1 && forms[0] === "awoken" ? t("card.awokenSuffix") : ""}`);
+            const b = h("button", { class: "chip unit-chip", "data-testid": "summoned-by-unit", "data-unit": unit.id }, sigilIcon(unit.portrait, 22), ` ${unit.name}${forms.length === 1 && forms[0] === "awoken" ? t("card.awokenSuffix") : ""}`);
             b.addEventListener("click", () => closable(unitSheet(unit, content)));
             return b;
           }),

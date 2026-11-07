@@ -18,6 +18,7 @@ import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghos
 import type { CodexClaim, CodexPair } from "../../../src/mvp/codex.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
 import type { Row } from "../../../src/mvp/units.js";
+import type { Spec } from "../../../mobile/ui/sigil/spec.js";
 
 export interface MvpStore {
   addPlayer(p: PlayerRef): void;
@@ -296,6 +297,10 @@ export interface StoredUnit {
   /** M4-4: the name and line in other languages (`npm run mvp:translate`),
    * kept beside the row and never in it, so the content version stays. */
   texts?: UnitTexts;
+  /** Mission arena#34 (slice C): the sigil spec its LLM wrote when the unit was
+   * made, kept beside the row. Absent on units made before it (they draw the
+   * generic sigil until slice B gives them a spec). */
+  portrait?: Spec;
 }
 
 /** A unit's name and line (its archetype sentence) by language; English is the row's. */

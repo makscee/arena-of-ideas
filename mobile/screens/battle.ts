@@ -28,7 +28,8 @@ import { card, creditOf, creditText, formRich, summonById, summonSheet, summonTe
 import { orient, stage as tableStage } from "../ui/stage";
 import { linePitch, pieceCap } from "../ui/line-layout";
 import { isMine, reportLink } from "../ui/report";
-import { lineToPiece, piece, PIECE_PX, whenTone, type PieceSize, type PieceUnit } from "../ui/piece";
+import { unitSigil, sigilIcon } from "../ui/glyph";
+import { copySigils, lineToPiece, piece, PIECE_PX, sigilOf, whenTone, type PieceSize, type PieceUnit } from "../ui/piece";
 import { faceFallback, V2_FACE } from "../../src/mvp/face";
 import { actionable, app, button, closable, fitText, h, isDesktop, keyLabel, keyOf, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
 import { t as tr } from "../i18n";
@@ -62,6 +63,10 @@ const ARROWED = new Set<Change["kind"]>(["damage", "heal", "buff", "debuff", "st
 const CROWN_LINEUP_MS = 1200;
 /** How long a landed wave's motion runs, in animation time (real time × speed): the longest animation (a killing blow's shake, its 120 ms freeze, then its 0.5 s pop, ends at 1.1 s; a float, 0.9 s, after up to 220 ms). A beat holds its last wave at least 0.8 s (1.15 s after a kill), so a beat change cuts motion off at most in its fade. */
 const MOTION_MS = 1300;
+/** The sigil's pulses, animation ms (arena#38): a hit's flash and shake, a rule's ring, a death's shatter. */
+const HIT_PULSE_MS = 450;
+const FIRE_PULSE_MS = 700;
+const DIE_PULSE_MS = 600;
 /** How long a card's When icon flashes when it fires (R3-19). */
 const TRIG_FLASH_MS = 400;
 /** When a hit's shake ends, in animation ms after its wave lands (80 ms in, 400 ms long). */
@@ -198,6 +203,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   // are unique (mvpPool), so the name finds one body. A revived unit keeps its own id.
   const summoned = new Map(log.flatMap((e) => (e.type === "Summon" && !e.resurrected && !units.has(e.unit) ? [[e.unit, summonById(a.content, summonId(e.name))] as const] : [])));
   const emojiOf = (id: string) => units.get(id)?.emoji ?? summoned.get(id)?.emoji ?? "✨";
+  /** A unit's sigil (arena#39), small, beside its name: a fighter's own, a summoned body's, else the generic one. */
+  const sigilOfId = (id: string, px: number, team: "you" | "them" = "you"): HTMLCanvasElement => {
+    const bu = units.get(id);
+    return bu ? unitSigil(bu, px, { team }) : sigilIcon(summoned.get(id)?.portrait, px, { team });
+  };
   const whenOf = whenLookup(units, a.content, summoned);
   // The end card's numbers (R2-14).
   const damage = damageByUnit(log, name, sides);
@@ -896,13 +906,14 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const wide = fit.size === "M" ? `;min-width:${s + 28}px` : "";
     return `padding-top:${Math.round(tabH * 0.62) + 2}px;height:${boxHeight(fit.size, s)}px${wide}`;
   }
+  const stacks = (list: { status: string; stacks: number }[], status: string): number => list.find((st) => st.status === status)?.stacks ?? 0;
   /** A unit as the piece (mobile/ui/piece.ts): its face, live stats, statuses on the shelf. */
   function pieceOf(id: string, live: BoardUnit | null, side: Side, compact: boolean): HTMLElement {
     const bu = units.get(id);
     const sum = summoned.get(id);
     const base: PieceUnit = bu
       ? lineToPiece(bu, a.content)
-      : { name: live?.name ?? name(id), emoji: emojiOf(id), stats: { pwr: live?.pwr ?? 0, hp: live?.hp ?? 0 }, face: sum?.form ? faceFallback(sum.form) : { when: { icon: "✨", label: "" }, headline: { icon: "✨" } } };
+      : { name: live?.name ?? name(id), emoji: emojiOf(id), stats: { pwr: live?.pwr ?? 0, hp: live?.hp ?? 0 }, face: sum?.form ? faceFallback(sum.form) : { when: { icon: "spark", label: "" }, headline: { icon: "spark" } }, ...(sum?.portrait ? { portrait: sum.portrait } : {}) };
     // A v2 pool battle can field units the served content lacks: their face is by name (V2_FACE).
     if (!bu || !a.content.units.some((x) => x.id === bu.unitId)) base.face = V2_FACE[base.name] ?? base.face;
     const unit: PieceUnit = { ...base, name: live?.name ?? base.name, stats: { pwr: live?.pwr ?? base.stats.pwr, hp: live ? live.hp : 0 } };
@@ -915,6 +926,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       floor: textFloor(),
       side: side === you ? "you" : "them",
       statuses: onShelf.slice(0, compact ? 2 : 3),
+      // the sigil's numbers are the unit's own, whatever the shelf has room for
+      bound: { hp: live && live.maxHp > 0 ? Math.max(0, live.hp) / live.maxHp : 1, charge: stacks(statuses, "Charge"), shield: stacks(statuses, "Shield") },
       ...(ring ? { counter: statuses.find((st) => st.status === ring.status)?.stacks ?? 0 } : {}),
     });
     if (live && live.hp < live.maxHp) el.querySelector<HTMLElement>(".pc-b.h")?.classList.add("hurt");
@@ -925,7 +938,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const bu = units.get(id);
     const sum = summoned.get(id);
     const base = bu ? lineToPiece(bu, a.content) : null;
-    const face = base?.face ?? (sum?.form ? faceFallback(sum.form) : { when: { icon: "✨", label: "" }, headline: { icon: "✨" } });
+    const face = base?.face ?? (sum?.form ? faceFallback(sum.form) : { when: { icon: "spark", label: "" }, headline: { icon: "spark" } });
     if (!bu || !a.content.units.some((x) => x.id === bu.unitId)) return V2_FACE[base?.name ?? name(id)] ?? face;
     return face;
   }
@@ -941,7 +954,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     // The tab is the rule that fired (it lights on its piece too); a plain strike has none.
     const c = causeOf(log, step, whenOf);
     const f = c?.kind === "ability" && c.at ? faceFor(c.at) : null;
-    const tab = f?.when.label || f?.when.icon ? [h("span", { class: "bv-cap-when", "data-testid": "caption-when", style: `background:${whenTone(f.when.icon)}` }, f.when.icon, f.when.label ? h("span", {}, f.when.label) : null)] : [];
+    const tab = f?.when.label ? [h("span", { class: "bv-cap-when", "data-testid": "caption-when", style: `background:${whenTone(f.when.icon)}` }, h("span", {}, f.when.label))] : [];
     return [...tab, h("span", { class: "bv-strip-text bv-rail-line" }, ...richCaption(step.caption))];
   }
   function unitCard(u: BoardUnit, side: Side, v: View, _stsWidth: number, compact: boolean): HTMLElement {
@@ -1076,7 +1089,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     return h(
       "div",
       { class: "stack bv-now", "data-testid": "now-sheet", "data-unit": u.id },
-      h("h2", {}, `${emojiOf(u.id)} `, unitName(u.id), " ", sideTag(side, "now-side")),
+      h("h2", {}, sigilOfId(u.id, 36, side === you ? "you" : "them"), " ", unitName(u.id), " ", sideTag(side, "now-side")),
       // "Full card" sits up here, not last: at 640 tall the last line went under the Close bar (R3-26).
       h("div", { class: "row spread bv-now-turn" }, h("div", { class: "label", "data-testid": "now-turn" }, tr("battle.now.thisBeat", { turn: shownTurn >= 1 ? tr("battle.turn", { n: shownTurn }) : tr("battle.battleStart") })), full),
       h("div", { class: "num", "data-testid": "now-stats" }, pwr, " · ", hp),
@@ -1273,6 +1286,13 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       const t = `${-Math.round(age * speed)}ms`;
       const mine = step.changes.filter((c) => c.unit === id);
       let move: string | null = null;
+      // The sigil reacts as the card does (real ms: the animations run `speed` times faster): a hit flashes and shakes it,
+      // its rule firing bursts a ring, and a death shatters it once the killing blow's shake and the freeze are over.
+      const sg = sigilOf(el);
+      if (sg) {
+        if (mine.some((c) => c.kind === "damage")) sg.pulse("hit", HIT_PULSE_MS / speed, age);
+        if (step.actor === id) sg.pulse("fire", FIRE_PULSE_MS / speed, age);
+      }
       if (step.actor === id) {
         const first = log[step.eventIds[0]!];
         const struck = first?.type === "Hurt" && first.source === "kernel" && first.causedBy !== null && log[first.causedBy]?.type === "Strike";
@@ -1298,6 +1318,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         const start = hitAge !== null ? Math.max(-own, SHAKE_END_MS + KILL_FREEZE_MS - hitAge) : -own;
         el.classList.add("bv-dying");
         el.style.setProperty("--bv-dt", `${Math.round(start)}ms`);
+        sigilOf(el)?.pulse("die", DIE_PULSE_MS / speed, -start / speed);
         skullsOf.set(el, h("span", { class: "bv-skull", "aria-hidden": "true", style: `--bv-dt:${Math.round(start)}ms` }, "✝"));
         if (hitAge === null) el.classList.remove("bv-lunge-up", "bv-lunge-down", "bv-pulse");
         move = null;
@@ -1823,6 +1844,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       if (!card || stays.has(card.dataset.unit)) continue;
       const r = sl.getBoundingClientRect();
       const ghost = sl.cloneNode(true) as HTMLElement;
+      copySigils(sl, ghost);
       ghost.classList.add("bv-cleared");
       Object.assign(ghost.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
       runs.append(ghost);
@@ -2242,7 +2264,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         : null,
       h("div", { class: "bv-trace-text mono", "data-testid": "trace-text" }, t.text),
       // R2-15: the whole chain, change first, back to the turn; a step's click shows its moment.
-      chain ? chainView(chain, { units, summoned, content: a.content, you, name, active: chainAt, onStep: seekEvent, rich: richCaption, tag: (sd) => sideTag(sd) }) : null,
+      chain ? chainView(chain, { units, summoned, content: a.content, you, name, sigil: (id) => sigilOfId(id, 20), active: chainAt, onStep: seekEvent, rich: richCaption, tag: (sd) => sideTag(sd) }) : null,
       chain ? h("div", { class: "dim bv-why-keys" }, isDesktop() ? tr("battle.trace.keysDesktop") : tr("battle.trace.keysPhone")) : null,
     ].filter((n): n is HTMLDivElement => n !== null);
   }
@@ -2352,8 +2374,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
           const row = h(
             "div",
             { class: `bv-dmg ${side === you ? "you" : "ghost"}${u ? " open" : ""}`, "data-testid": "damage-row", title: tr("battle.dmg.title", { name: d.name, n: d.damage }), ...(u ? { role: "button", tabindex: "0" } : {}) },
-            // A fused unit's two emojis, smaller, in a column that holds both (R2-17 batch F: "🥁⚡" counts as two code points, so the old test missed it).
-            h("span", { class: `emoji${u?.kind === "fused" ? " two" : ""}` }, emojiOf(d.unit)),
+            h("span", { class: "emoji" }, sigilOfId(d.unit, 26, side === you ? "you" : "them")),
             unitName(d.unit),
             h("span", { class: "bv-dmg-bar" }, h("i", { style: `width:${Math.round((d.damage / top) * 100)}%` })),
             h("span", { class: "mono" }, String(d.damage)),
@@ -2521,7 +2542,7 @@ function whenLookup(units: Map<string, BattleUnit>, content: MvpContent, summone
  * included; a word's meaning is a long press (or a hover) away (R2-17).
  * With `rich` (names tagged by id) and `tag`, change and event steps read
  * like the captions: side tags, side-coloured names, highlighted terms. */
-function chainView(c: Chain, o: { units: Map<string, BattleUnit>; summoned: Map<string, SummonContent | undefined>; content: MvpContent; you: Side; name: (id: string) => string; active?: number | null; onStep?: (eventId: number) => void; rich?: (text: string) => Node[]; tag?: (side: Side) => HTMLElement }): HTMLElement {
+function chainView(c: Chain, o: { units: Map<string, BattleUnit>; summoned: Map<string, SummonContent | undefined>; content: MvpContent; you: Side; name: (id: string) => string; sigil: (id: string) => Node; active?: number | null; onStep?: (eventId: number) => void; rich?: (text: string) => Node[]; tag?: (side: Side) => HTMLElement }): HTMLElement {
   const stepIcon = (n: ChainNode) => {
     const tone = n.kind === "firing" ? "tone-when" : n.kind === "root" ? "tone-gold" : "dim";
     let id = n.trigger ? termIcon(n.trigger as TermId, n.triggerStatus) : undefined;
@@ -2549,7 +2570,7 @@ function chainView(c: Chain, o: { units: Map<string, BattleUnit>; summoned: Map<
     const w = u && n.ref?.when !== undefined ? u.recipe.when[n.ref.when] : undefined;
     const fired = u && w ? formRich({ ...u.recipe, when: [w] }, o.content) : [];
     return [
-      h("span", { class: "bv-step-head" }, ...tagOf(n), h("span", { class: "emoji" }, u?.emoji ?? "✨"), " ", h("b", { class: who }, o.name(n.unit ?? "")), h("span", { class: "dim" }, `${tr("battle.trace.ability")}${label ? ` · ${label}` : ""}`)),
+      h("span", { class: "bv-step-head" }, ...tagOf(n), h("span", { class: "emoji" }, o.sigil(id)), " ", h("b", { class: who }, o.name(n.unit ?? "")), h("span", { class: "dim" }, `${tr("battle.trace.ability")}${label ? ` · ${label}` : ""}`)),
       fired.length ? h("span", { class: "bv-step-text" }, ...fired) : null,
     ].filter((x): x is HTMLElement => x !== null);
   };

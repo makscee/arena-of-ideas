@@ -12,6 +12,10 @@
 // The reader only drafts: ./idea-checks.ts checks every option, and
 // ./idea-reading.ts shows nothing that didn't pass. The player's text goes to
 // the model as data between <idea> tags, never as instructions.
+// Mission arena#34 (slice C): an archetype also comes back with `portrait`,
+// the unit's sigil spec (mobile/ui/sigil); ./portrait.ts checks it with the
+// sigil `validate`, asks `portrait()` once more with the problem list when it
+// fails and falls back to the generic sigil. The emoji stays for now.
 // M4-5: an idea may be written in Russian or English; every archetype comes
 // back with its name and line in both (English for the unit's Row, Russian
 // kept beside it), and the parts it quotes stay in the idea's own words.
@@ -21,8 +25,10 @@ import { tmpdir } from "node:os";
 import { parseEnvelope } from "../../../src/create/claude-code.js";
 import type { IdeaArchetype, IdeaReading } from "../../../src/mvp/contract.js";
 import { WHEN, WHO, type Row } from "../../../src/mvp/units.js";
+import { PORTRAIT_SCHEMA, portraitRetryNote, sigilBrief } from "./portrait.js";
 import { checkReading, takenShapes, type ArchetypeDraft, type ReadingDraft } from "./idea-checks.js";
 import { cyrillic } from "./translate.js";
+import type { Spec } from "../../../mobile/ui/sigil/spec.js";
 
 /** A part of the idea the game has no word for: `part` quoted from the text,
  * `word` the game word it would need ("steal gold"). */
@@ -72,6 +78,10 @@ export interface IdeaReader {
   readings(text: string, archetype: IdeaArchetype, opts: ReadOpts): Promise<ReaderAnswer<ReadingDraft>>;
   /** M3-4: is this reading of a new version true to `archetype`'s line? */
   faithful(text: string, archetype: IdeaArchetype, reading: IdeaReading): Promise<Faithfulness>;
+  /** Slice C: the sigil spec for `archetype`, written again after the last one
+   * failed `validate` (`problems`). Unchecked; a reader without it gets the
+   * generic sigil after a bad first try. */
+  portrait?(text: string, archetype: IdeaArchetype, problems?: string[]): Promise<unknown>;
 }
 
 /** The reader ARENA_IDEA_READER names: `claude`, or the fake (default). */
@@ -216,6 +226,20 @@ const FAKE_SIDES = [
 
 const hashOf = (s: string) => createHash("sha256").update(s).digest().readUInt32BE(0);
 
+/** The fake's sigil: one of a few valid shapes of silhouette, picked by the subject, so dev worlds show different portraits and no test calls a model. */
+export function fakePortrait(subject: string): Spec {
+  const h = hashOf(subject);
+  const fill = (["owner", "ember", "venom", "frost", "arcane", "blood"] as const)[h % 6]!;
+  const sides = 3 + ((h >>> 3) % 5);
+  return {
+    body: [
+      { shape: "poly", n: sides, r: 0.74, rot: "0.05*beat", s: "1+0.04*beat", fill: { grad: [fill, "night"] } },
+      { shape: "circle", r: 0.24, y: -0.04, fill: "paper" },
+    ],
+    mark: [{ shape: "star", count: "1+aw", n: 5, r: 0.14, r2: 0.06, x: "-0.3+0.6*i", y: -0.6, fill: "gold" }],
+  };
+}
+
 /** Russian letters spelled in English, for the fake's English names ("Травит" → "Travit"). */
 const CYR: Record<string, string> = {
   а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ё: "yo", ж: "zh", з: "z", и: "i", й: "y", к: "k", л: "l", м: "m", н: "n", о: "o", п: "p",
@@ -304,7 +328,7 @@ export function fakeIdeaReader(): IdeaReader {
         : [`${R} со своей хитростью.`, `Маленький ${r}, что дорастает до дела.`, `Старый ${r}, на кого опирается команда.`];
       const options = names
         .slice(0, opts.want)
-        .map((name, i) => ({ name, emoji, line: lines[i]!, ru: { name: ruNames[i]!, line: ruLines[i]! } }));
+        .map((name, i) => ({ name, emoji, line: lines[i]!, ru: { name: ruNames[i]!, line: ruLines[i]! }, portrait: fakePortrait(`${subject}:${i}`) }));
       return { options, cantExpress: cantExpressOf(text) };
     },
     async readings(text, archetype, opts) {
@@ -331,6 +355,9 @@ export function fakeIdeaReader(): IdeaReader {
         }
       }
       return { options, cantExpress: cantExpressOf(text), nearMiss: nearMissOf(text) };
+    },
+    async portrait(_text, archetype) {
+      return fakePortrait(archetype.name);
     },
     async faithful(text, archetype) {
       return /\bunfaithful\b|неверн/i.test(text) ? { true: false, reason: `it isn't ${archetype.name} any more` } : { true: true, reason: `still ${archetype.name}` };
@@ -426,7 +453,7 @@ const DOES_HELP = [
 ];
 
 /** The system prompt: the game's words, the units there are, the rules. */
-export function readerSystemPrompt(units: Row[]): string {
+export function readerSystemPrompt(units: Row[], sigil = false): string {
   const lines = units.map((u) => `- ${u.emoji} ${u.name}: ${u.when} · ${u.who} · ${u.does} | awoken ${JSON.stringify(u.awoken)} | "${u.archetype}"`);
   return [
     "You design units for Arena of Ideas, an auto-battler whose units come from its players' ideas.",
@@ -449,10 +476,12 @@ export function readerSystemPrompt(units: Row[]): string {
     ...lines,
     "",
     "An archetype is a name (1 to 3 plain English words, a capital first, no emoji, not one of the names above), one emoji that pictures the idea's own subject (a lantern for a lantern keeper, a wolf for a wolf; when nothing in the idea is a thing you can picture, one fitting symbol, never an unrelated animal or object), and a line: one English sentence of at most 15 words, a capital first and a full stop at the end, in the style of the lines above, about what the unit does in the game.",
+    ...(sigil ? ["Every archetype also has `portrait`: its sigil spec, the unit's picture, in the format below. Draw the archetype's own subject.", ""] : []),
     "Every archetype also has `ru`: the same name and line in Russian, written as a Russian player would say them (not letter by letter): the name 1 to 3 Russian words in Cyrillic, a capital first, at most 24 characters; the line one sentence, a full stop at the end.",
     "If part of the idea needs something the game has no words for (for example stealing gold, moving units, money), still make what you can, and list that part in cantExpress: `part` quoted exactly from the idea, in the idea's own language, `word` the missing game word in 1 to 3 English words.",
     "When readings use a nearby game word for something the player meant that the game has no exact word for (for example random for \"the weakest enemy\"), list it in nearMiss: `part` quoted exactly from the idea, in the idea's own language, `meant` what the player meant in 1 to 4 words of the idea's language, `used` the game word you used instead.",
     "Answer only through the structured output.",
+    ...(sigil ? ["", "THE SIGIL FORMAT", sigilBrief()] : []),
   ].join("\n");
 }
 
@@ -479,8 +508,9 @@ export const ARCHETYPES_SCHEMA = {
           emoji: { type: "string" },
           line: { type: "string" },
           ru: { type: "object", properties: { name: { type: "string" }, line: { type: "string" } }, required: ["name", "line"], additionalProperties: false },
+          portrait: PORTRAIT_SCHEMA,
         },
-        required: ["name", "emoji", "line", "ru"],
+        required: ["name", "emoji", "line", "ru", "portrait"],
         additionalProperties: false,
       },
     },
@@ -558,6 +588,14 @@ export function versionPrompt(text: string, archetype: IdeaArchetype, rule: NonN
   );
 }
 
+/** Slice C: the sigil spec of one archetype, alone (the retry after a refused one). */
+export function portraitPrompt(text: string, archetype: IdeaArchetype, problems?: string[]): string {
+  return (
+    `${ideaBlock(text)}\n\nWrite the sigil spec (the unit's picture) for this archetype: ${archetype.emoji} ${archetype.name}, "${archetype.line}".\n` +
+    `Answer with the spec only: { body, mark? }.${problems?.length ? `\n${portraitRetryNote(problems)}` : ""}`
+  );
+}
+
 /** M3-4: the faithfulness question for one reading of a new version. */
 export function faithfulPrompt(text: string, archetype: IdeaArchetype, reading: IdeaReading): string {
   return (
@@ -630,12 +668,15 @@ export function claudeIdeaReader(o: ClaudeReaderOptions): IdeaReader {
   return {
     kind: "claude",
     async archetypes(text, opts) {
-      const out = (await callClaude(o, readerSystemPrompt(opts.units), archetypesPrompt(text, opts), ARCHETYPES_SCHEMA)) as { archetypes?: unknown; cantExpress?: unknown };
+      const out = (await callClaude(o, readerSystemPrompt(opts.units, true), archetypesPrompt(text, opts), ARCHETYPES_SCHEMA)) as { archetypes?: unknown; cantExpress?: unknown };
       return { options: Array.isArray(out?.archetypes) ? (out.archetypes as ArchetypeDraft[]).slice(0, opts.want) : [], cantExpress: cantOf(out?.cantExpress) };
     },
     async readings(text, archetype, opts) {
       const out = (await callClaude(o, readerSystemPrompt(opts.units), readingsPrompt(text, archetype, opts), READINGS_SCHEMA)) as { readings?: unknown; cantExpress?: unknown; nearMiss?: unknown };
       return { options: Array.isArray(out?.readings) ? (out.readings as ReadingDraft[]).slice(0, opts.want) : [], cantExpress: cantOf(out?.cantExpress), nearMiss: nearOf(out?.nearMiss) };
+    },
+    async portrait(text, archetype, problems) {
+      return callClaude(o, readerSystemPrompt([], true), portraitPrompt(text, archetype, problems), PORTRAIT_SCHEMA);
     },
     async faithful(text, archetype, reading) {
       const out = (await callClaude(o, readerSystemPrompt([]), faithfulPrompt(text, archetype, reading), FAITHFUL_SCHEMA)) as { true?: unknown; reason?: unknown };

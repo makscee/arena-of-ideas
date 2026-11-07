@@ -1,19 +1,25 @@
 // The piece (mission #1286, slice 1, makscee/void-board#1291): one unit drawn
-// the same way on every screen, at four sizes. A big emoji on a rim in its
-// side's colour, PWR and HP on the rim, the when tab on top, one headline
+// the same way on every screen, at four sizes. A sigil (arena#38, ./sigil: a bold
+// silhouette on a canvas, no plate behind it, bound to its hp, pwr, charge and
+// shield; a battle pulses it on hit, fire and die), PWR and HP on the rim, the when tab on top, one headline
 // badge (with a counter ring when the unit builds one), statuses on a shelf
 // hanging below, ★ / ✦ when awoken / fused, the name under it (L, M) and the
 // tier with copies (L). The design: r/arena-redesign/final/ (its P()).
 //
 //   L  · shop 800      everything
 //   M  · battle 800    − tier, − copies
-//   S  · phone battle  − name, − when word (its icon stays)
-//   XS · chips         the emoji on a rim in the when colour, the headline icon
+//   S  · phone battle  − name
+//   XS · chips         the sigil, the headline glyph
+// No emoji in the chrome (arena#41): the when tab is its word alone, and the headline
+// badge and status chips are drawn glyphs (./glyph glyphIcon: src/mvp/glyph-names.ts's set).
 import { faceFallback, fusedFace, type Face } from "../../src/mvp/face";
 import type { LineUnit, MvpContent, UnitContent } from "../../src/mvp/contract";
 import type { Stats } from "../../src/types";
 import { h } from "./dom";
+import { glyphIcon } from "./glyph";
+import { glyphName, statusGlyph, type GlyphName } from "../../src/mvp/glyph-names";
 import { roman } from "./roman";
+import { fuse, mountSigil, specOrFallback, type Pulse, type SigilHandle, type Spec } from "./sigil";
 
 export type PieceSize = "L" | "M" | "S" | "XS";
 
@@ -28,14 +34,16 @@ export interface PieceUnit {
   face: Face;
   tier?: number;
   awoken?: boolean;
-  /** A fusion: its second part's emoji sits small at the bottom right. */
+  /** A fusion: its second part's emoji (the text lines keep it). Its sigil is `portrait`, `fuse(a, b)`: the first part's body, the second's mark. */
   fused?: { emoji: string };
   copies?: number;
+  /** The sigil spec (arena#38): the unit's own portrait, a fusion's `fuse(a, b)` (arena#40); absent or invalid draws the generic sigil. */
+  portrait?: Spec;
 }
 
 export interface PieceOptions {
   size: PieceSize;
-  /** Whose rim: yours, theirs, or the shop's neutral one. */
+  /** Whose stand and numbers: yours, theirs, or the shop's neutral one. */
   side?: "you" | "them" | "shop";
   /** Statuses on it, by status name, in order. A status the counter ring shows stays off the shelf. */
   statuses?: { status: string; stacks: number }[];
@@ -52,59 +60,48 @@ export interface PieceOptions {
   /** The smallest text, px, on a stage that is drawn scaled down (the table's landscape stage,
    * where 18px is 11px at 800×450): every number, word and tab grows to it, and the piece's parts with them. */
   floor?: number;
-  /** Shows the when tab's word (default: L, M and a px override); off keeps its icon only (a narrow row). */
-  word?: boolean;
+  /** The numbers the sigil is bound to when the piece's own do not say them: hp is the fraction left (a battle's live
+   * hp over its max), charge and shield the stacks. Left out, hp is whole and the stacks come from `statuses` and `counter`. */
+  bound?: { hp?: number; charge?: number; shield?: number };
 }
 
-/** The when tab's colour, by its icon's family; a new icon gets the plain one. */
-const WHEN_TONE: Record<string, string> = {
-  "🌅": "#ffd36a", "🕯️": "#ffd36a",
-  "🌙": "#a3a8f7",
-  "🚩": "#f7a184",
-  "⚔️": "#f2a65a",
-  "💔": "#f5a3b0",
-  "💀": "#d3cbe6",
-  "♾️": "#7fdcc0", "🐺": "#7fdcc0",
-  "🧪": "#c8b4f0", "📜": "#c8b4f0",
-  "💚": "#9fe3b4",
-  "🛡️": "#9cc7f2",
-  "💪": "#f7c08a",
-  "🥚": "#9fe3d8",
+/** The when tab's colour, by its glyph's family; a new glyph gets the plain one. */
+const WHEN_TONE: Partial<Record<GlyphName, string>> = {
+  sunrise: "#ffd36a",
+  moon: "#a3a8f7",
+  flag: "#f7a184",
+  swords: "#f2a65a",
+  "broken-heart": "#f5a3b0",
+  skull: "#d3cbe6",
+  infinity: "#7fdcc0", paw: "#7fdcc0",
+  flask: "#c8b4f0", scroll: "#c8b4f0",
+  plus: "#9fe3b4",
+  shield: "#9cc7f2",
+  fist: "#f7c08a",
+  egg: "#9fe3d8",
 };
 const WHEN_PLAIN = "#d3cbe6";
 
-/** The headline badge's colour comes from its icon's family. */
+/** The headline badge's colour comes from its glyph's family. */
 const FAMILY: Record<string, string> = { shield: "#5aa0e8", hex: "#d65db1", rule: "#3fbfd6", str: "#f0953e", dmg: "#e2546b", summon: "#9a6be0", heal: "#47b96f" };
-const HEAD_FAMILY: Record<string, keyof typeof FAMILY> = {
-  "🛡️": "shield",
-  "💧": "hex", "❄️": "hex", "🔻": "hex", "🤫": "hex",
-  "🔁": "rule", "📜": "rule", "🔀": "rule", "🪞": "rule",
-  "💪": "str",
-  "💥": "dmg",
-  "🐲": "summon", "🦋": "summon", "🥚": "summon",
-  "💚": "heal", "😇": "heal", "❤️": "heal", "🪦": "heal",
+const HEAD_FAMILY: Partial<Record<GlyphName, keyof typeof FAMILY>> = {
+  shield: "shield",
+  drop: "hex", snowflake: "hex", curse: "hex", silence: "hex",
+  repeat: "rule", scroll: "rule", swap: "rule", mirror: "rule",
+  fist: "str",
+  burst: "dmg",
+  summon: "summon", egg: "summon",
+  plus: "heal", halo: "heal", heart: "heal", grave: "heal",
 };
 const HEAD_PLAIN = "#8b7fb0";
 
-export const whenTone = (icon: string): string => WHEN_TONE[icon] ?? WHEN_PLAIN;
+export const whenTone = (icon: string): string => WHEN_TONE[glyphName(icon)] ?? WHEN_PLAIN;
 export const headTone = (icon: string): string => {
-  const f = HEAD_FAMILY[icon];
+  const f = HEAD_FAMILY[glyphName(icon)];
   return f ? FAMILY[f]! : HEAD_PLAIN;
 };
 
-/** A status chip's emoji and whether it helps its holder. */
-const STATUS: Record<string, [string, "good" | "bad"]> = {
-  Shield: ["🛡️", "good"],
-  Strength: ["💪", "good"],
-  Vitality: ["❤️", "good"],
-  Blessing: ["😇", "good"],
-  Charge: ["⚡", "good"],
-  Poison: ["💧", "bad"],
-  Curse: ["🔻", "bad"],
-  Freeze: ["❄️", "bad"],
-  Silence: ["🤫", "bad"],
-};
-export const statusEmoji = (status: string): [string, "good" | "bad"] => STATUS[status] ?? ["✨", "good"];
+export { statusGlyph };
 
 /** A unit's face: its own, else its trigger's fallback. */
 export function faceOfUnit(u: Pick<UnitContent, "face" | "forms">): Face {
@@ -122,12 +119,14 @@ export function faceOfLine(u: Pick<LineUnit, "unitId" | "recipe" | "fusion">, co
 export function lineToPiece(u: LineUnit, content: Pick<MvpContent, "units">): PieceUnit {
   const unit = content.units.find((x) => x.id === u.unitId);
   const second = u.fusion ? content.units.find((x) => x.id === u.fusion!.second) : undefined;
+  const portrait = u.kind === "fused" ? fuse(unit?.portrait, second?.portrait) : unit?.portrait;
   return {
     name: u.name,
     emoji: u.emoji,
     stats: u.stats,
     face: faceOfLine(u, content),
     ...(unit ? { tier: unit.tier } : {}),
+    ...(portrait ? { portrait } : {}),
     awoken: u.kind !== "fused" && u.form === "awoken",
     ...(u.kind === "fused" ? { fused: { emoji: second?.emoji ?? "✨" } } : {}),
     copies: u.copies,
@@ -142,21 +141,52 @@ const css = (o: Record<string, string | number>) =>
     .map(([k, v]) => `${k}:${typeof v === "number" ? px(v) : v}`)
     .join(";");
 
-function emoji(u: PieceUnit, s: number): HTMLElement {
-  if (!u.fused) return h("span", { class: "pc-em", style: `font-size:${px(s)}` }, u.emoji);
-  return h(
-    "span",
-    { class: "pc-em2" },
-    h("span", { class: "pc-em a", style: `font-size:${px(s * 0.72)}` }, u.emoji),
-    h("span", { class: "pc-em b", style: `font-size:${px(s * 0.58)}` }, u.fused.emoji),
-  );
+const handles = new WeakMap<HTMLCanvasElement, SigilHandle>();
+const SIGIL_BOX = 1.12; // the sigil's canvas, in face boxes: its outline and stand sit just past the box
+
+/** A piece's sigil, to drive its reactions (a battle's hit, fire and die pulses); null when it has none. */
+export function sigilOf(el: Element | null | undefined): { pulse: SigilHandle["pulse"]; update: SigilHandle["update"] } | null {
+  const cv = el?.querySelector<HTMLCanvasElement>("canvas.pc-sg");
+  return (cv && handles.get(cv)) || null;
 }
+
+/** Paints each sigil canvas of `from` onto the same canvas of its `cloneNode(true)` copy (a copy is not mounted: it keeps one still frame). */
+export function copySigils(from: Element, to: Element): void {
+  const a = from.querySelectorAll<HTMLCanvasElement>("canvas.pc-sg, canvas.sg-ic");
+  const b = to.querySelectorAll<HTMLCanvasElement>("canvas.pc-sg, canvas.sg-ic");
+  a.forEach((src, i) => b[i]?.getContext("2d")?.drawImage(src, 0, 0));
+}
+
+const stacksOf = (o: PieceOptions, ring: Face["counter"], status: string): number =>
+  ring?.status === status ? (o.counter ?? 0) : ((o.statuses ?? []).find((x) => x.status === status)?.stacks ?? 0);
+
+/** The unit's sigil on a canvas of `s` px, mounted in the shared loop with its numbers bound (hp, pwr, charge, shield). */
+function sigil(u: PieceUnit, o: PieceOptions, s: number, side: "you" | "them" | "shop"): HTMLCanvasElement {
+  const cv = document.createElement("canvas");
+  cv.className = "pc-sg";
+  cv.setAttribute("aria-hidden", "true");
+  const seed = [...u.name].reduce((n, c) => (n * 31 + c.charCodeAt(0)) % 997, 7) / 100;
+  handles.set(cv, mountSigil(cv, {
+    spec: specOrFallback(u.portrait),
+    S: Math.round(s * SIGIL_BOX),
+    team: side === "them" ? "them" : "you",
+    hp: o.bound?.hp ?? 1,
+    pwr: u.stats.pwr,
+    charge: o.bound?.charge ?? stacksOf(o, u.face.counter, "Charge"),
+    shield: o.bound?.shield ?? stacksOf(o, u.face.counter, "Shield"),
+    aw: u.awoken || u.fused ? 1 : 0, // the 3rd copy grows what the spec says; a fusion's parts were both awoken
+    seed,
+  }));
+  return cv;
+}
+
+export type { Pulse };
 
 function chips(list: { status: string; stacks: number }[], cz: number, floor = 0): HTMLElement[] {
   return list.map(({ status, stacks }) => {
-    const [ic, tone] = statusEmoji(status);
+    const [g, tone] = statusGlyph(status);
     const fs = Math.max(Math.round(cz * 0.6), floor);
-    return h("div", { class: `pc-st ${tone}`, "data-status": status, style: css({ height: cz, "font-size": fs }) }, ic, h("i", { style: `font-size:${px(fs)}` }, String(stacks)));
+    return h("div", { class: `pc-st ${tone}`, "data-status": status, style: css({ height: cz, "font-size": fs }) }, glyphIcon(g, Math.round(cz * 0.74)), h("i", { style: `font-size:${px(fs)}` }, String(stacks)));
   });
 }
 
@@ -175,7 +205,7 @@ export function piece(u: PieceUnit, o: PieceOptions): HTMLElement {
   const s = o.px ?? PIECE_PX[o.size];
   const face = u.face;
   const side = o.side ?? "you";
-  const cls = ["pc", `pc-${o.size}`, `side-${side}`, u.awoken ? "aw" : "", u.fused ? "fu" : ""].filter(Boolean).join(" ");
+  const cls = ["pc", "sg", `pc-${o.size}`, `side-${side}`, u.awoken ? "aw" : "", u.fused ? "fu" : ""].filter(Boolean).join(" ");
   const attrs: Record<string, string> = { class: cls, style: css({ width: s, height: s }), "data-name": u.name };
   if (o.testid) attrs["data-testid"] = o.testid;
   const root = h("div", attrs);
@@ -184,42 +214,36 @@ export function piece(u: PieceUnit, o: PieceOptions): HTMLElement {
   if (o.size === "XS") {
     const fx = Math.round(s * 0.5);
     root.append(
-      h("div", { class: "pc-face", "data-k": "face", style: `border-width:2.5px;box-shadow:inset 0 0 0 4px ${when},0 2px 0 var(--outline)` }, emoji(u, s * 0.6)),
+      h("div", { class: "pc-face", "data-k": "face" }, sigil(u, o, s, side)),
       h(
         "div",
         { class: "pc-hb", "data-k": "head", style: css({ left: s - fx * 0.62, top: s - fx * 0.62, width: fx, height: fx }) },
-        h("div", { class: "core", style: `background:${headTone(face.headline.icon)};border-width:2px;font-size:${px(fx * 0.58)}` }, face.headline.icon),
+        h("div", { class: "core", style: `background:${headTone(face.headline.icon)};border-width:2px` }, glyphIcon(face.headline.icon, fx * 0.64)),
       ),
     );
     return root;
   }
 
-  const showWord = o.word ?? (o.size === "L" || o.size === "M" || o.px !== undefined);
   const showName = o.size === "L" || o.size === "M";
   const showMeta = o.size === "L";
   const fl = o.floor ?? stageFloor();
   const tabH = Math.round(Math.max(20, s * 0.27, fl * 1.45));
   const tf = Math.round(Math.max(12, s * 0.17, fl));
-  const ti = Math.round(Math.max(13, s * 0.19, fl));
   const d = Math.round(Math.max(22, s * 0.37, fl * 1.5));
   const sf = Math.round(Math.max(14, d * 0.6, fl));
   const hb = Math.round(Math.max(23, s * 0.42, fl * 1.5));
   const big = s >= 120;
 
-  // the face, on a rim in its side's colour (awoken lilac, fused gold and pink)
-  const inset = Math.max(4, Math.round(s * 0.07));
-  const rim = u.awoken ? "var(--awoken)" : side === "them" ? "var(--them)" : side === "shop" ? "#8b7fb0" : "var(--you)";
-  const shadow = u.fused ? `inset 0 0 0 ${inset}px #f0c24b,inset 0 0 0 ${inset * 2}px #d65db1` : `inset 0 0 0 ${inset}px ${rim},inset 0 0 0 ${inset + 2}px #120e1c55`;
-  root.append(h("div", { class: "pc-face", "data-k": "face", style: `border-width:${big ? 4 : 3}px;box-shadow:${shadow},0 ${big ? 5 : 3}px 0 var(--outline)` }, emoji(u, s * 0.64)));
+  // the face: the sigil, no plate (its stand is in the side's colour)
+  root.append(h("div", { class: "pc-face", "data-k": "face" }, sigil(u, o, s, side)));
 
   // the when tab
   const pad = Math.round(tabH * 0.32);
   root.append(
     h(
       "div",
-      { class: "pc-tab", "data-k": "tab", title: face.when.label, style: css({ top: -Math.round(tabH * 0.62), height: tabH, padding: `0 ${showWord ? pad + 3 : pad}px 0 ${pad}px`, background: when, "border-radius": Math.round(tabH * 0.45) }) },
-      h("span", { class: "ti", style: `font-size:${px(ti)}` }, face.when.icon),
-      showWord ? h("span", { class: "tw", style: `font-size:${px(tf)}` }, face.when.label) : null,
+      { class: "pc-tab", "data-k": "tab", title: face.when.label, style: css({ top: -Math.round(tabH * 0.62), height: tabH, padding: `0 ${pad + 3}px 0 ${pad + 3}px`, background: when, "border-radius": Math.round(tabH * 0.45) }) },
+      h("span", { class: "tw", style: `font-size:${px(tf)}` }, face.when.label),
     ),
   );
 
@@ -234,7 +258,7 @@ export function piece(u: PieceUnit, o: PieceOptions): HTMLElement {
     h(
       "div",
       { class: ring ? "pc-hb ring" : "pc-hb", "data-k": ring ? "ring" : "head", ...(ring ? { title: `${ring.status} ${o.counter ?? 0}/${ring.max}` } : {}), style: `${css({ left: hx, top: hy, width: tot, height: tot })};${ringStyle}` },
-      h("div", { class: "core", style: `background:${headTone(face.headline.icon)};font-size:${px(Math.max(hb * 0.52, fl))};box-shadow:inset 0 -${Math.max(2, Math.round(hb * 0.08))}px 0 #0003` }, face.headline.icon),
+      h("div", { class: "core", style: `background:${headTone(face.headline.icon)};box-shadow:inset 0 -${Math.max(2, Math.round(hb * 0.08))}px 0 #0003` }, glyphIcon(face.headline.icon, Math.max(hb * 0.62, 14))),
     ),
   );
   if (face.headline.amount) {
@@ -285,7 +309,7 @@ export function piece(u: PieceUnit, o: PieceOptions): HTMLElement {
       for (let i = 0; i < 3; i++) pips.append(h("u", i < c ? {} : { class: "o" }));
       meta.append(pips);
     }
-    if (o.lock) meta.append(h("span", { class: "pc-lock lock-mark" }, "🔒"));
+    if (o.lock) meta.append(h("span", { class: "pc-lock lock-mark" }, glyphIcon("lock", Math.round(Math.max(16, (o.px ?? PIECE_PX[o.size]) * 0.25, fl)))));
     root.append(meta);
   }
   return root;

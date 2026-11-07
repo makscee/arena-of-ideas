@@ -75,7 +75,7 @@ export function homeTable(p: HomeParts): HTMLElement {
     { class: "hm-row hm-theirs", "data-testid": "home-their", style: `height:${g.rowH}px` },
     ...line.slice(0, 5).map((u, i) => {
       const cell = h("div", { class: "hm-pbox", ...box(g.cx[0]! + (start + i) * g.pitch, g.above) });
-      cell.append(piece(lineToPiece(u, p.content), { size: "M", side: "them", px: g.px, word: o === "L", testid: `home-champ-${i}`, floor }));
+      cell.append(piece(lineToPiece(u, p.content), { size: "M", side: "them", px: g.px, testid: `home-champ-${i}`, floor }));
       return cell;
     }),
   );

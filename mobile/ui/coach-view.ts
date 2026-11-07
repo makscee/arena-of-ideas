@@ -47,7 +47,7 @@ export function coachView(step: CoachStep, content: MvpContent, how: CoachHow): 
   const a = byName(content, step.anchor);
   const r = byName(content, step.answer);
   const p = (u: UnitContent | undefined, side: "you" | "shop") =>
-    u ? piece({ name: u.name, emoji: u.emoji, stats: u.base, face: faceOfUnit(u), tier: u.tier, copies: 1 }, { size: "XS", side }) : null;
+    u ? piece({ name: u.name, emoji: u.emoji, stats: u.base, face: faceOfUnit(u), tier: u.tier, copies: 1, ...(u.portrait ? { portrait: u.portrait } : {}) }, { size: "XS", side }) : null;
   const params = { anchor: step.anchor, answer: step.answer };
   const title = step.step === "buy-first" ? t("coach.buyFirst", params) : step.step === "buy-second" ? t("coach.buySecond", params) : t("coach.fight");
   const why = step.step === "buy-first" ? t("coach.buyFirstWhy", params) : step.step === "buy-second" ? t("coach.buySecondWhy", params) : t("coach.fightWhy", params);

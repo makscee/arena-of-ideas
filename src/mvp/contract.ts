@@ -10,6 +10,7 @@ import type { AbilityRegistry, BattleEvent, Condition, Selector, Side, Stats, St
 import type { AwokenRow, WhenKey, WhoKey } from "./units.js";
 import type { FusionDesign } from "./codex.js";
 import type { Face } from "./face.js";
+import type { Spec } from "../../mobile/ui/sigil/spec.js";
 
 export const MVP_API_VERSION = 1;
 /** Every API path hangs off this prefix, relative to the app's base URL
@@ -243,6 +244,9 @@ export interface UnitContent {
    * counter ring the designer picked. Absent on a v1 unit: the client falls
    * back to the trigger (faceFallback). */
   face?: Face;
+  /** Mission arena#34 (slice B): the unit's sigil spec (./portraits.ts, by name).
+   * Absent on a unit with none of its own: the client draws the generic sigil. */
+  portrait?: Spec;
   /** M4-4, GET /content only: the name and line (`archetype`) in Russian,
    * when the unit has been translated. Never part of the version. */
   texts?: { ru?: { name: string; line: string } };
@@ -259,6 +263,8 @@ export interface SummonContent {
   emoji: string;
   base: Stats;
   form: UnitForm | null;
+  /** Mission arena#34 (slice B): the body's sigil spec (./portraits.ts, by name). */
+  portrait?: Spec;
 }
 
 /** Everything a run plays with, carried with a version so logs stay replayable. */
@@ -844,6 +850,10 @@ export interface IdeaArchetype {
    * Russian goes beside the unit (`StoredUnit.texts.ru`) once it is picked.
    * Absent on ideas read before M4-5 and on versions of untranslated units. */
   texts?: { ru?: { name: string; line: string } };
+  /** Mission arena#34 (slice C): the unit's sigil spec its LLM wrote, checked by
+   * the sigil `validate` (the generic sigil when the model failed twice). It
+   * rides in the idea's JSON and then in the unit's: no migration. */
+  portrait?: Spec;
 }
 
 /** M2-5: a reading of an idea as When → Who → Does in the words of

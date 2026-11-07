@@ -157,3 +157,11 @@ describe("the language switch's reload (#919)", () => {
     expect(langAddress("https://x.test/arena/?lang=ru&theme=felt")).toBe("https://x.test/arena/?theme=felt");
   });
 });
+
+describe("a unit's emoji is not in a string (arena#39)", () => {
+  it("no catalog line takes {emoji}: the screen draws the unit's sigil beside the name", () => {
+    const has = (m: unknown): boolean => (typeof m === "string" ? m.includes("{emoji}") : Object.values(m as Record<string, string>).some((s) => s.includes("{emoji}")));
+    const bad = [...Object.entries(en), ...Object.entries(ru)].filter(([, m]) => has(m)).map(([k]) => k);
+    expect(bad).toEqual([]);
+  });
+});

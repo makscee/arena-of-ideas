@@ -47,7 +47,7 @@ const byName = (pool: UnitContent[], names: readonly string[], skip = 0): UnitCo
   return named.every(Boolean) ? (named as UnitContent[]) : pool.slice(skip, skip + 4);
 };
 
-const asPiece = (u: UnitContent): PieceUnit => ({ name: u.name, emoji: u.emoji, stats: u.base, face: faceOfUnit(u), tier: u.tier, copies: 1 });
+const asPiece = (u: UnitContent): PieceUnit => ({ name: u.name, emoji: u.emoji, stats: u.base, face: faceOfUnit(u), tier: u.tier, copies: 1, ...(u.portrait ? { portrait: u.portrait } : {}) });
 
 /** The geometry of one orientation, in stage pixels. */
 interface Layout {
@@ -64,9 +64,9 @@ const LAYOUT_L: Layout = { w: 1280, h: 720, cx: [340, 535, 730, 925], theirTop: 
 const layoutP = (compact: boolean): Layout => ({ w: 390, h: compact ? 270 : 345, cx: [52, 149, 246, 343], theirTop: compact ? 34 : 38, mineTop: compact ? 168 : 210, px: 60 });
 
 /** One piece, placed by its box's top left. */
-function placed(u: PieceUnit, side: "you" | "them", cx: number, top: number, px: number, testid: string, word: boolean, floor: number): HTMLElement {
+function placed(u: PieceUnit, side: "you" | "them", cx: number, top: number, px: number, testid: string, floor: number): HTMLElement {
   const box = h("div", { class: "st-piece", style: `left:${cx - px / 2}px;top:${top}px;width:${px}px;height:${px}px` });
-  box.append(piece(u, { size: "L", side, px, word, testid, floor }));
+  box.append(piece(u, { size: "L", side, px, testid, floor }));
   return box;
 }
 
@@ -76,8 +76,8 @@ function demo(lay: Layout, mine: UnitContent[], theirs: PieceUnit[], word: boole
   // The table's text floor: the landscape stage is drawn at 0.625 on the 800×450 frame, where 18 is 11.
   const floor = word ? 18 : 0;
   const root = h("div", { class: "st-demo", "data-testid": "start-chain", style: `width:${lay.w}px;height:${lay.h}px` });
-  theirs.forEach((u, i) => root.append(placed(u, "them", cx[i]!, lay.theirTop, px, `start-their-${i}`, word, floor)));
-  mine.forEach((u, i) => root.append(placed(asPiece(u), "you", cx[i]!, lay.mineTop, px, `start-piece-${i}`, word, floor)));
+  theirs.forEach((u, i) => root.append(placed(u, "them", cx[i]!, lay.theirTop, px, `start-their-${i}`, floor)));
+  mine.forEach((u, i) => root.append(placed(asPiece(u), "you", cx[i]!, lay.mineTop, px, `start-piece-${i}`, floor)));
 
   // The wires, by step. Points are on the pieces' boxes: a = Gambler, t = their front piece, b = Drummer, c/d = the two behind it.
   const mc = (i: number): Pt => ({ x: cx[i]!, y: lay.mineTop + px / 2 });
