@@ -36,7 +36,7 @@ const readField = (page) => page.evaluate(() => {
   const sr = st.getBoundingClientRect();
   const k = sr.width / st.offsetWidth;
   const toStage = (r) => ({ l: (r.left - sr.left) / k, t: (r.top - sr.top) / k, r: (r.right - sr.left) / k, b: (r.bottom - sr.top) / k });
-  const cards = (id) => [...document.querySelectorAll(`[data-testid="${id}"] .bv-card:not(.dead)`)].map((c) => ({ card: toStage(c.getBoundingClientRect()), face: toStage((c.querySelector(".pc") ?? c).getBoundingClientRect()), w: (c.querySelector(".pc") ?? c).offsetWidth }));
+  const cards = (id) => [...document.querySelectorAll(`[data-testid="${id}"] .bv-card`)].map((c) => ({ card: toStage(c.getBoundingClientRect()), face: toStage((c.querySelector(".pc") ?? c).getBoundingClientRect()), w: (c.querySelector(".pc") ?? c).offsetWidth }));
   const row = (id) => {
     const cs = cards(id);
     if (!cs.length) return null;
@@ -75,8 +75,11 @@ function fieldProblems(f, what) {
   const bad = [];
   if (!f.them || !f.you) return [`${what}: a line is empty at the line-up (${JSON.stringify({ them: !!f.them, you: !!f.you })})`];
   const mid = f.stageW / 2;
+  // The lines share one set of columns (arena#48): the fronts face each other, the longer line is centred, a shorter one stands under its front columns.
+  const span = (Math.min(f.them.l, f.you.l) + Math.max(f.them.r, f.you.r)) / 2;
+  if (Math.abs(span - mid) > f.stageW * 0.02) bad.push(`${what}: the field is centred at ${Math.round(span)}, the stage's middle is ${Math.round(mid)}`);
+  if (Math.abs(f.them.l - f.you.l) > 2 && Math.abs(f.them.r - f.you.r) > 2) bad.push(`${what}: the fronts do not face each other (${Math.round(f.them.l)} against ${Math.round(f.you.l)})`);
   for (const [who, r] of [["their", f.them], ["your", f.you]]) {
-    if (Math.abs(r.mid - mid) > f.stageW * 0.02) bad.push(`${what}: ${who} line is centred at ${Math.round(r.mid)}, the stage's middle is ${Math.round(mid)}`);
     const shop = SHOP_PX[f.orient];
     if (r.px < shop * 0.9 - 0.5) bad.push(`${what}: ${who} pieces are ${r.px} px, under the shop's ${shop} × 0.9`);
     if (r.px > shop * 1.4 + 0.5) bad.push(`${what}: ${who} pieces are ${r.px} px, over the shop's ${shop} × 1.4`);
