@@ -381,7 +381,7 @@ try {
     if (round === 4) {
       // The ☰ run menu (R2-10): Title menu leaves the run waiting; Continue
       // on the title menu brings back the same round.
-      const at = await page.getByTestId("round").textContent();
+      const at = await page.getByTestId("round").getAttribute("aria-label");
       await tap44("☰", page.getByTestId("menu-open")); await tap44("☰", page.getByTestId("menu-open"), "width");
       await page.getByTestId("menu-open").click();
       await page.getByTestId("run-menu").waitFor();
@@ -400,14 +400,14 @@ try {
       await page.getByTestId("codex-units").waitFor();
       await page.getByTestId("codex-back").click();
       await page.getByTestId("fight").waitFor();
-      if ((await page.getByTestId("round").textContent()) !== at) errors.push(`codex from ☰: back in ${await page.getByTestId("round").textContent()}, not ${at}`);
+      if ((await page.getByTestId("round").getAttribute("aria-label")) !== at) errors.push(`codex from ☰: back in ${await page.getByTestId("round").getAttribute("aria-label")}, not ${at}`);
       // Back and Forward (R3-26, #1146) step through the screens: Back from the
       // shop is Home (the run waits: Continue), Forward is the same round's shop.
       await back();
       await page.getByTestId("play").waitFor({ timeout: 5_000 }).catch(() => errors.push(`back: Back in the shop didn't reach Home (${page.url()})`));
       await page.evaluate(() => history.forward());
       await page.getByTestId("fight").waitFor({ timeout: 5_000 }).catch(() => errors.push("back: Forward from Home didn't return to the shop"));
-      if ((await page.getByTestId("round").textContent().catch(() => "")) !== at) errors.push(`forward: back in ${await page.getByTestId("round").textContent().catch(() => "?")}, not ${at}`);
+      if ((await page.getByTestId("round").getAttribute("aria-label").catch(() => "")) !== at) errors.push(`forward: back in ${await page.getByTestId("round").getAttribute("aria-label").catch(() => "?")}, not ${at}`);
       // The menu is a sheet: Back closes it and stays in the shop.
       await page.getByTestId("menu-open").click();
       await page.getByTestId("run-menu").waitFor();
@@ -431,7 +431,7 @@ try {
       await shot("home-continue"); await noHScroll("home-continue"); await onScreen("home: Continue", page.getByTestId("play"));
       await page.getByTestId("play").click();
       await page.getByTestId("fight").waitFor();
-      if ((await page.getByTestId("round").textContent()) !== at) errors.push(`continue: back in ${await page.getByTestId("round").textContent()}, not ${at}`);
+      if ((await page.getByTestId("round").getAttribute("aria-label")) !== at) errors.push(`continue: back in ${await page.getByTestId("round").getAttribute("aria-label")}, not ${at}`);
     }
     // Lock (R3-12): in the first shop, lock offer 1 from its sheet and reroll:
     // it moves to the left, still locked; unlock it again. A locked offer from
@@ -854,7 +854,7 @@ try {
   await shot("run-over-new-run"); await noHScroll("run-over-new-run");
   await page.getByTestId("new-run-start").click();
   await page.getByTestId("fight").waitFor();
-  if ((await page.getByTestId("round").textContent()) !== L("run.roundLabel", { round: 1, rounds: 12 })) errors.push(`new run: starts at ${await page.getByTestId("round").textContent()}`);
+  if ((await page.getByTestId("round").getAttribute("aria-label")) !== L("run.roundLabel", { round: 1, rounds: 12 })) errors.push(`new run: starts at ${await page.getByTestId("round").getAttribute("aria-label")}`);
 
   // Awakening and fusion (slice 8): a second player plays through the API
   // until it has one Awoken unit, a second unit one copy short and that copy
