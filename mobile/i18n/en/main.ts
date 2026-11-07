@@ -144,6 +144,7 @@ export const main = {
   "home.bannerNone": "No champion yet",
   "home.bannerSlayers": { one: "{n} slayer · new day in {h} h", other: "{n} slayers · new day in {h} h" },
   "home.toBeat": "To beat",
+  "home.yourLineSub": "empty until round 1",
   "home.yourLine": "Your line",
   "home.note": { one: "{n} round, then this team", other: "{n} rounds, then this team" },
   "home.resume": "Resume",

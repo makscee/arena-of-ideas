@@ -43,7 +43,7 @@ import { galleryScreen } from "./screens/gallery";
 import { copySigils, faceOfUnit, lineToPiece, piece, pieceReach } from "./ui/piece";
 import { predictRun } from "./ui/predict";
 import { orient, stage } from "./ui/stage";
-import { fieldLayout, fit } from "./ui/stage-fit";
+import { fieldLayout, fit, P_FULL_H } from "./ui/stage-fit";
 import { initSound, music, onSoundChange, play, setSound, soundSettings } from "./ui/sound";
 import { shopSound } from "./ui/sound-map";
 import { t, withNodes } from "./i18n";
@@ -514,7 +514,7 @@ function drawHome(home: HomeView, content: MvpContent, active: RunView | null, e
   const r = home.rating;
   const own = champ?.player.id === api.player?.id;
   const draw = () => drawHome(home, content, active, ended, err, false);
-  // PLAY, or RESUME while a run waits: over the middle of your five slots.
+  // PLAY, or RESUME while a run waits: in Fight's place in the tray.
   const play = active
     ? button("", () => void guarded(err, async () => shopScreen(await api.run(active.runId), content)), "primary", "play")
     : button("", () => void guarded(err, async () => shopScreen(await api.startRun(), content)), "primary", "play");
@@ -524,8 +524,9 @@ function drawHome(home: HomeView, content: MvpContent, active: RunView | null, e
       ? h("span", { class: "play-main" }, t("home.resume"), h("span", { class: "play-where" }, active.round > rules.rounds ? t("home.continueCrown") : t("home.resumeRound", { round: active.round }), " ", hearts(active.hearts)))
       : h("span", { class: "play-main" }, t("start.play")),
   );
+  // PLAY sits where Fight sits, and says what a run is in the words Fight has for its second line (arena#51).
+  if (!active) play.append(h("span", { class: "play-sub", "data-testid": "home-note" }, t(!champ ? "home.playSubNone" : own ? "home.playSubOwn" : "home.note", { n: rules.rounds })));
   if (isDesktop()) play.append(h("kbd", { class: "play-key" }, "Enter"));
-  const note = active ? null : h("div", { class: "hm-note", "data-testid": "home-note" }, t(!champ ? "home.playSubNone" : own ? "home.playSubOwn" : "home.note", { n: rules.rounds }));
   const newRun = active
     ? button(t("home.newRun"), () => abandonSheet(active, "new", () => void guarded(err, async () => {
         // The given-up run's end and rating change first, as ☰ Abandon shows
@@ -587,8 +588,8 @@ function drawHome(home: HomeView, content: MvpContent, active: RunView | null, e
       notice,
       toBeat: t("home.toBeat"),
       yourLine: t("home.yourLine"),
+      yourLineSub: t("home.yourLineSub"),
       play,
-      note,
       newRun,
       workshop: workshopCard(home.ideas),
       vote,
@@ -1010,7 +1011,8 @@ function offerPositions(run: RunView): number[] {
     });
     if (next === live) at = matched;
   }
-  const n = Math.max(offersAt(rules, run.round), at.length);
+  // Six wells whatever the round (arena#51): the ones the round has not opened, and the bought ones, stay as empty wells.
+  const n = Math.max(offersAt(rules, rules.rounds), at.length);
   at = Array.from({ length: n }, (_, i) => at[i] ?? -1);
   offerRow = { runId: run.runId, round: run.round, at, ids: at.map((i) => (i >= 0 ? run.offers[i]!.unitId : "")) };
   return at;
@@ -1044,8 +1046,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   // is only a keyboard being there: it adds the key caps and the key hints.
   const kb = hasKeys();
   const tall = orient() === "P";
-  /** A short phone window (ui/stage.ts: under 780 stage px): the offers draw smaller to leave the detail its room. */
-  const compact = tall && fit("P", window.innerWidth, window.innerHeight).h < 780;
+  /** A short phone window (ui/stage.ts: under P_FULL_H stage px): the offers draw smaller to leave the detail its room. */
+  const compact = tall && fit("P", window.innerWidth, window.innerHeight).h < P_FULL_H;
   /** The landscape stage's rows (their wells, your line, the bench, the tray) for the height this window gives it. */
   const lay = tall ? null : fieldLayout(fit("L", window.innerWidth, window.innerHeight, true).h);
   const crown = run.phase === "crown";
@@ -1175,7 +1177,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
    * five keeps the when tab's icon only, the bench is a size down. */
   /** The line's pieces never change size for what is in hand (arena#47): the detail is in the tray, the field stays. */
   const pieceSizes = () =>
-    tall || !lay ? { line: 56, bench: 44, offer: compact ? 48 : 64, their: 48, benchBare: true } : { line: lay.s, bench: lay.sb, offer: 72, their: lay.sb, benchBare: true };
+    tall || !lay ? { line: 42, bench: 34, offer: compact ? 30 : 36, their: 40, benchBare: false } : { line: lay.s, bench: lay.sb, offer: 60, their: lay.sb, benchBare: false };
   /** Tap-tap: the offer in hand (chosen) or the unit in hand (picked) lights
    * every slot it can go to; the twin it merges into is gold. */
   /** The board slot an offer's copy merges into, or -1. */
@@ -1297,7 +1299,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const drawLine = () => {
     line.replaceChildren(...Array.from({ length: L }, (_, i) => slotCard(i)));
     bench.replaceChildren(
-      h("div", { class: "bench-label label" }, h("span", {}, t("board.bench")), h("span", {}, `${run.bench.length}/${B}`)),
+      h("div", { class: "bench-label label", "data-testid": "bench-label" }, h("span", {}, t("board.bench")), h("span", {}, `${run.bench.length}/${B}`)),
       ...Array.from({ length: B }, (_, i) => slotCard(L + i)),
     );
     for (const o of offers.children) o.classList.toggle("selected", chosen !== null && (o as HTMLElement).dataset.testid === `offer-${chosen}`);
@@ -1884,12 +1886,11 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     return { sheet, blocked };
   };
   const offerSlots = offerPositions(run);
-  // The shop row has the tray's width: more offers than three shrink their pieces to fit.
-  const manyOffers = offerSlots.length > 3;
-  const offerPx = Math.min(pieceSizes().offer, Math.floor((tall ? 366 : manyOffers ? 610 : 462) / offerSlots.length) - 14);
+  // The six wells are one row on the landscape tray, three by two on the phone: the piece fits its well.
+  const offerPx = pieceSizes().offer;
   const offers = h(
     "div",
-    { class: "tb-row tb-offers", style: `--n:${offerSlots.length}`, "data-testid": "offers" },
+    { class: "tb-row tb-offers", style: `--n:${tall && !compact ? 3 : offerSlots.length}`, "data-testid": "offers" },
     // Every slot keeps its place: a bought offer leaves an empty slot, the rest never shift (CrazyGames audit, arena#14).
     ...offerSlots.map((at, pos) => (at >= 0 ? run.offers[at]! : pos)).map((o: Offer | number) => {
       if (typeof o === "number") return h("div", { class: "cell offer-gap", "data-testid": `offer-gap-${o}`, "aria-hidden": "true", style: cellStyle(offerPx) });
@@ -1973,7 +1974,6 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   }
 
   const opp = run.nextOpponent;
-  const pin = h("div", { class: "pin", "data-testid": "champion-pin" });
   // The Crown has no shop: where the offers were, the team you are about to
   // face, as plainly as your own line (R2-17 batch E: it was only the pin).
   const foe = crown ? h("div", { class: "stack crown-foe", "data-testid": "crown-foe" }) : null;
@@ -1997,20 +1997,10 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         : h("div", { class: "dim small foe-wait" }, settled ? t("foe.lineInFight") : "…"),
     );
   };
-  const fillPin = (d: DayView | null) => {
-    const ch = d?.champion;
-    if (!ch) return pin.replaceChildren(h("span", { class: "dim" }, t("pin.noChampion")));
-    const b = h("button", { class: "pin-btn", "data-testid": "champion-pin-open" }, h("span", {}, "👑"), who(ch.player.name, "ghost-name"), h("span", { class: "pin-emoji" }, ...ch.line.map((u) => unitSigil(u, 30))));
-    b.addEventListener("click", () => closable(h("div", { class: "label" }, t("pin.championOfDay", { seq: d!.seq }), who(ch.player.name)), team(ch.line, "ghost", content)));
-    pin.replaceChildren(b);
-  };
   if (crown) {
     // "Crown vs @X" and the foe's line already name the champion: no pin.
     fillFoe(day);
     void api.day().then((d) => ((day = d), fillFoe(d))).catch(() => fillFoe(day, true));
-  } else {
-    fillPin(day);
-    if (!day) void api.day().then((d) => ((day = d), fillPin(d))).catch(() => {});
   }
 
 
@@ -2108,7 +2098,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   }
 
   // "?" opens the Codex's How to play (M5-6: the rules and how to read a card); until a player has opened it once, it says so.
-  const legendBtn = button(seen("legend") ? "?" : t("shop.legendNew"), () => (markSeen("legend"), void guarded(err, () => openCodex({ tab: "howto" }))), seen("legend") ? "small" : "small new", "legend-open");
+  // Cards stays in the HUD, one word and one place before, during and after a run (arena#51).
+  const legendBtn = button(t("shop.cards"), () => (markSeen("legend"), void guarded(err, () => openCodex({ tab: "howto" }))), "small", "legend-open");
   renderLine();
 
   const menuBtn = button("☰", () => runMenu(run, content, err), "menu-btn", "menu-open");
@@ -2124,8 +2115,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     "div",
     { class: "tb-hud", "data-testid": "hud" },
     plate("menu", menuBtn),
-    tall ? null : plate("help", legendBtn),
-    plate("round", tall ? h("span", { class: "round-pill", "data-testid": "round" }, roundLabel(run.round)) : runTrack(run)),
+    plate("help", legendBtn),
+    // The full round track, twelve rounds and the Crown, at both sizes.
+    plate("round", runTrack(run)),
     h("span", { class: "hud-gap" }),
     plate("hearts", heartIcons(run.hearts)),
     // The Crown has no shop: no gold to show.
@@ -2135,22 +2127,21 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     "div",
     { class: "tb-their", "data-testid": "their-line" },
     // Their line stays hidden until the fight (the Crown shows the champion's team); wells keep its place.
-    ...(crown ? [foe!] : Array.from({ length: L }, (_, i) => h("div", { class: "cell empty ghost", "data-testid": `their-${i}`, "aria-hidden": "true", style: lay ? `--s:${Math.round(lay.wellsH * 0.8)}px;padding-top:4px;height:${lay.wellsH}px` : "--s:48px;padding-top:4px;height:58px" }, h("div", { class: "cell-well" }, "?")))),
+    ...(crown ? [foe!] : Array.from({ length: L }, (_, i) => h("span", { class: "their-mark", "data-testid": `their-${i}`, "aria-hidden": "true" }, "?"))),
   );
   const table = stage(
     [
       hud,
-      h("div", { class: "tb-side them" }, nextOpp, crown ? null : pin),
+      h("div", { class: "tb-side them" }, nextOpp, crown ? null : h("span", { class: "hidden-team", "data-testid": "team-hidden" }, t("opp.hidden"))),
       theirs,
-      h("div", { class: "tb-side you" }, h("div", { class: "label" }, crown ? t("line.crown") : t("line.phone"))),
-      tall ? plate("help tb-help", legendBtn) : null,
+      h("div", { class: "tb-side you", "data-testid": "line-label" }, h("div", { class: "label" }, t("line.title")), h("div", { class: "sub" }, crown ? t("line.finalSub") : t("line.front", { n: run.line.length, max: L }))),
       line,
       B > 0 ? bench : null,
       h(
         "div",
-        { class: manyOffers ? "tb-tray many" : "tb-tray", "data-testid": "tray" },
+        { class: "tb-tray", "data-testid": "tray" },
         inspector,
-        crown ? null : h("div", { class: "tb-shop" }, h("div", { class: "label" }, t("shop.offersDesk", { n: run.offers.length })), offers),
+        crown ? null : h("div", { class: "tb-shop" }, offers),
         h("div", { class: "tb-go" }, crown ? null : reroll, fight),
       ),
       err,
@@ -2159,6 +2150,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     !tall,
   );
   table.classList.add("t-shop");
+  // The play table has the fixed places (arena#51); the Crown keeps its own rows.
+  if (!crown) table.classList.add("t-places");
   cueScroll();
   if (lay) for (const [k, v] of Object.entries({ "wells-top": lay.wellsTop, "wells-h": lay.wellsH, "line-top": lay.lineTop, "bench-top": lay.benchTop, "tray-top": lay.trayTop })) table.style.setProperty(`--${k}`, `${v}px`);
   show(table);

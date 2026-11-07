@@ -12,6 +12,10 @@ export const orientOf = (w: number, hh: number): Orient => (w / hh < 0.8 ? "P" :
 /** The shortest portrait stage, px: a window shorter than this at its width scales the stage down instead. */
 export const P_MIN_H = 690;
 
+/** The portrait stage's full table (arena#51: the six offers three by two) needs this much height; a shorter window (a phone
+ * with its browser bars) is the compact table: the offers in one row of six. */
+export const P_FULL_H = 844;
+
 /** The tallest a flexible landscape stage grows (4:3 windows): 1280×960. */
 export const L_MAX_H = 960;
 
@@ -59,20 +63,21 @@ export interface FieldLayout {
 }
 export function fieldLayout(H: number): FieldLayout {
   const trayTop = H - 244;
-  const wellsTop = 76;
-  const wellsH = 50;
+  // The rail over the line (arena#51): a strip of `?` marks, no wells.
+  const wellsTop = 74;
+  const wellsH = 30;
   const room = trayTop - 6 - (wellsTop + wellsH + 8);
   let s = 84;
   for (let t = 116; t >= 84; t -= 2) {
     const sb = Math.round(t * 0.68);
-    if (cellHeight(t).h + 4 + cellHeight(sb, true).h <= room) {
+    if (cellHeight(t).h + 4 + cellHeight(sb).h <= room) {
       s = t;
       break;
     }
   }
   const sb = Math.round(s * 0.68);
   const lineH = cellHeight(s).h;
-  const benchH = cellHeight(sb, true).h;
+  const benchH = cellHeight(sb).h;
   const spare = Math.max(0, room - lineH - 4 - benchH);
   const lineTop = wellsTop + wellsH + 8 + Math.round(spare / 2);
   const benchTop = lineTop + lineH + 4 + Math.round(spare / 2);

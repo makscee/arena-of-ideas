@@ -17,12 +17,11 @@
 #app[data-screen="home"] .stage.L { width: 1280px; }
 #app[data-screen="home"] .stage.P { width: 390px; }
 
-:is(#app[data-screen="home"], #under) .t-home .home { position: absolute; inset: 0; display: flex; flex-direction: column; box-sizing: border-box; padding: 12px 0; }
+:is(#app[data-screen="home"], #under) .t-home .home { position: absolute; inset: 0; }
 :is(#app[data-screen="home"], #under) .t-home .home > * { margin: 0; }
-:is(#app[data-screen="home"], #under) .t-home .hm-gap { flex: 1 1 0; min-height: 6px; }
 
 /* HUD plates */
-:is(#app[data-screen="home"], #under) .t-home .hm-hud { flex: none; height: 56px; display: flex; align-items: center; gap: 12px; padding: 0 16px; }
+:is(#app[data-screen="home"], #under) .t-home .hm-hud { position: absolute; left: 0; right: 0; top: 12px; height: 56px; display: flex; align-items: center; gap: 12px; padding: 0 16px; }
 :is(#app[data-screen="home"], #under) .t-home .hm-hud .hud-gap { flex: 1; }
 :is(#app[data-screen="home"], #under) .t-home .hm-brand { margin: 0; font: 400 42px/1 var(--font-head); letter-spacing: 1px; color: var(--action); text-shadow: 0 4px 0 var(--outline); text-transform: uppercase; white-space: nowrap; }
 :is(#app[data-screen="home"], #under) .t-home .plate { display: flex; align-items: center; gap: 10px; box-sizing: border-box; height: 56px; min-height: 56px; padding: 0 16px; background: linear-gradient(#3d3360, #2c2442); border: 4px solid var(--outline); border-radius: 16px; box-shadow: 0 5px 0 var(--outline), inset 0 2px 0 rgba(255, 255, 255, 0.1); color: var(--paper); font: 400 28px/1 var(--font-head); letter-spacing: 0; }
@@ -35,54 +34,62 @@
 :is(#app[data-screen="home"], #under) .t-home .hm-burger { font: 400 36px/1 var(--font-head); }
 :is(#app[data-screen="home"], #under) .t-home kbd { font: 600 18px/1 var(--font-body); border: 2px solid currentColor; border-radius: 6px; padding: 2px 6px 3px; margin: 0; background: none; opacity: 0.75; min-width: 0; }
 
-/* The banner and the two lines */
-:is(#app[data-screen="home"], #under) .t-home .hm-sec { flex: none; display: flex; flex-direction: column; align-items: center; }
-:is(#app[data-screen="home"], #under) .t-home .hm-banner { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 12px; box-sizing: border-box; max-width: calc(100% - 32px); padding: 8px 28px 10px; background: linear-gradient(#f6d77a, #e9b13c); color: var(--outline); border: 4px solid var(--outline); border-radius: 14px; box-shadow: 0 6px 0 var(--outline); font: 400 30px/1.05 var(--font-head); text-align: center; }
-:is(#app[data-screen="home"], #under) .t-home .hm-banner .crown-badge { position: static; transform: none; width: 32px; height: 26px; border: 0; background: none; border-radius: 0; flex: none; }
-:is(#app[data-screen="home"], #under) .t-home .hm-banner .crown-badge svg { width: 32px; height: 26px; }
-:is(#app[data-screen="home"], #under) .t-home .hm-banner .who { color: inherit; }
-:is(#app[data-screen="home"], #under) .t-home .hm-banner-sub { font: 600 18px/1.1 var(--font-body); color: #5c4210; }
-:is(#app[data-screen="home"], #under) .t-home .hm-notice { margin-top: 12px; padding: 4px 14px; background: var(--paper); color: var(--outline); border: 3px solid var(--outline); border-radius: 12px; font: 600 18px/1.25 var(--font-body); text-align: center; max-width: calc(100% - 32px); }
-:is(#app[data-screen="home"], #under) .t-home .hm-lines { position: relative; width: 100%; margin-top: 10px; }
-:is(#app[data-screen="home"], #under) .t-home .hm-row { position: relative; width: 100%; }
-:is(#app[data-screen="home"], #under) .t-home .hm-pbox, :is(#app[data-screen="home"], #under) .t-home .hm-slot { position: absolute; }
-:is(#app[data-screen="home"], #under) .t-home .hm-side { position: absolute; left: 28px; z-index: 2; font: 400 26px/1 var(--font-head); letter-spacing: 0.5px; text-transform: uppercase; text-shadow: 0 3px 0 var(--outline); }
-:is(#app[data-screen="home"], #under) .t-home .hm-side.them { color: #ff8f9c; }
-:is(#app[data-screen="home"], #under) .t-home .hm-side.you { color: var(--you); }
-:is(#app[data-screen="home"], #under) .t-home .hm-slot { box-sizing: border-box; display: grid; place-items: center; border: 4px dashed rgba(185, 177, 204, 0.4); border-radius: 50%; color: rgba(185, 177, 204, 0.4); font: 400 44px/1 var(--font-head); }
-:is(#app[data-screen="home"], #under) .t-home .hm-playbox { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); display: flex; justify-content: center; pointer-events: none; z-index: 3; }
-:is(#app[data-screen="home"], #under) .t-home .hm-playbox > button { pointer-events: auto; }
-:is(#app[data-screen="home"], #under) .t-home button.play-big { display: inline-flex; flex-direction: row; align-items: center; justify-content: center; gap: 18px; height: auto; min-height: 84px; min-width: 340px; padding: 0 56px; border: 4px solid var(--outline); border-radius: 22px; box-shadow: 0 6px 0 var(--outline), 0 0 0 8px rgba(240, 194, 75, 0.22); font: 400 56px/1 var(--font-head); text-transform: uppercase; letter-spacing: 0; }
+/* ===== Home is the table (arena#51, mission #44 move 6): the shop's places, no run ===== */
+:is(#app[data-screen="home"], #under) .t-home { --gap: 14px; --fx: 224px; --fw: 1044px; --cw: calc((var(--fw) - 4 * var(--gap)) / 5); }
+/* the banner: a dark plate where the shop has its rail */
+:is(#app[data-screen="home"], #under) .t-home .hm-champion { position: absolute; left: 16px; right: 16px; top: var(--wells-top, 74px); }
+:is(#app[data-screen="home"], #under) .t-home .hm-banner { box-sizing: border-box; display: flex; align-items: center; gap: 4px 12px; width: 100%; height: 36px; padding: 0 16px; background: var(--surface); color: var(--paper); border: 4px solid var(--outline); border-radius: 14px; box-shadow: 0 4px 0 var(--outline); font: 400 26px/1 var(--font-head); white-space: nowrap; overflow: hidden; }
+:is(#app[data-screen="home"], #under) .t-home .hm-banner .crown-badge { position: static; transform: none; width: 28px; height: 22px; border: 0; background: none; border-radius: 0; flex: none; }
+:is(#app[data-screen="home"], #under) .t-home .hm-banner .crown-badge svg { width: 28px; height: 22px; }
+:is(#app[data-screen="home"], #under) .t-home .hm-banner .who { color: var(--them); }
+:is(#app[data-screen="home"], #under) .t-home .hm-banner-main { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+:is(#app[data-screen="home"], #under) .t-home .hm-banner-sub { margin-left: auto; font: 500 18px/1.1 var(--font-body); color: var(--dim); }
+:is(#app[data-screen="home"], #under) .t-home .hm-notice { position: absolute; left: 16px; top: calc(var(--wells-top, 74px) + 52px); width: 200px; padding: 4px 10px; background: var(--surface); color: var(--paper); border: 3px solid var(--outline); border-radius: 12px; font: 600 18px/1.25 var(--font-body); z-index: 5; }
+/* the two lines, in the shop's frames: a plate where a unit stands, a dashed well where none does */
+:is(#app[data-screen="home"], #under) .t-home .hm-side { position: absolute; left: 16px; width: 200px; display: flex; flex-direction: column; gap: 2px; z-index: 2; }
+:is(#app[data-screen="home"], #under) .t-home .hm-side .label { font: 400 24px/1.15 var(--font-head); letter-spacing: 0.5px; text-transform: uppercase; }
+:is(#app[data-screen="home"], #under) .t-home .hm-side .sub { font: 500 18px/1.25 var(--font-body); color: var(--dim); }
+:is(#app[data-screen="home"], #under) .t-home .hm-side.them .label { color: var(--them); }
+:is(#app[data-screen="home"], #under) .t-home .hm-side.you .label { color: var(--you); }
+:is(#app[data-screen="home"], #under) .t-home .hm-frames { position: absolute; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); column-gap: var(--gap); align-items: start; z-index: 3; }
+:is(#app[data-screen="home"], #under) .t-home .hm-cell { position: relative; box-sizing: border-box; display: flex; justify-content: center; align-items: flex-start; min-width: 0; border: 3px solid var(--outline); border-radius: 18px; background: var(--surface); }
+:is(#app[data-screen="home"], #under) .t-home .hm-cell.them { box-shadow: inset 0 -7px 0 color-mix(in srgb, var(--them) 55%, transparent); }
+:is(#app[data-screen="home"], #under) .t-home .hm-cell.empty { background: var(--well); border: 3px dashed color-mix(in srgb, var(--paper) 26%, transparent); box-shadow: none; }
+:is(#app[data-screen="home"], #under) .t-home .hm-cell .hm-num { position: absolute; inset: 0; display: grid; place-items: center; font: 400 38px/1 var(--font-head); color: color-mix(in srgb, var(--paper) 30%, transparent); }
+:is(#app[data-screen="home"], #under) .t-home .hm-cell .pc-meta { display: none; }
+:is(#app[data-screen="home"], #under) .t-home .hm-theirs { z-index: 3; }
+
+/* PLAY sits where Fight sits; New run where Reroll is */
+:is(#app[data-screen="home"], #under) .t-home .hm-go { display: flex; flex-direction: column; gap: 12px; }
+:is(#app[data-screen="home"], #under) .t-home button.play-big { box-sizing: border-box; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 0; min-width: 0; width: 100%; padding: 0 8px; border: 4px solid var(--outline); border-radius: 18px; background: var(--action); color: var(--outline); box-shadow: 0 6px 0 var(--outline), inset 0 -5px 0 rgba(0, 0, 0, 0.12), inset 0 3px 0 rgba(255, 255, 255, 0.35); font: 400 40px/1 var(--font-head); text-transform: uppercase; position: relative; }
 :is(#app[data-screen="home"], #under) .t-home button.play-big:active:not(:disabled) { translate: 0 4px; box-shadow: 0 2px 0 var(--outline); }
-:is(#app[data-screen="home"], #under) .t-home button.play-big .play-main { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-:is(#app[data-screen="home"], #under) .t-home button.play-big .play-main { font-size: inherit; text-transform: uppercase; }
-:is(#app[data-screen="home"], #under) .t-home button.play-big .play-where { display: block; font: 700 20px/1.1 var(--font-body); text-transform: none; }
-:is(#app[data-screen="home"], #under) .t-home button.play-big .hearts { font-size: 20px; letter-spacing: 2px; }
-:is(#app[data-screen="home"], #under) .t-home button.play-big kbd { font: 600 20px/1 var(--font-body); }
-:is(#app[data-screen="home"], #under) .t-home .hm-you { --playh: 84px; }
-:is(#app[data-screen="home"], #under) .t-home .hm-you:has(.play-where) { --playh: 100px; }
-:is(#app[data-screen="home"], #under) .t-home .hm-under { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: calc((var(--playh) - var(--slot)) / 2 + 14px); }
-:is(#app[data-screen="home"], #under) .t-home .hm-note { font: 400 24px/1.2 var(--font-head); text-shadow: 0 2px 0 var(--outline); text-align: center; }
-:is(#app[data-screen="home"], #under) .t-home .hm-newrun { min-height: 52px; background: none; border: 0; box-shadow: none; color: var(--dim); font: 600 20px/1 var(--font-body); text-decoration: underline; padding: 0 16px; }
-:is(#app[data-screen="home"], #under) .t-home .hm-under .error { margin: 0; padding: 0; min-height: 0; font: 700 18px/1.25 var(--font-body); color: #ff8f9c; text-align: center; max-width: 560px; }
-:is(#app[data-screen="home"], #under) .t-home .hm-under .error:empty { display: none; }
+:is(#app[data-screen="home"], #under) .t-home button.play-big .play-main { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: inherit; text-transform: uppercase; }
+:is(#app[data-screen="home"], #under) .t-home button.play-big .play-sub { font: 600 18px/1.15 var(--font-body); text-transform: none; text-align: center; }
+:is(#app[data-screen="home"], #under) .t-home button.play-big .play-where { display: block; font: 700 18px/1.1 var(--font-body); text-transform: none; }
+:is(#app[data-screen="home"], #under) .t-home button.play-big .hearts { font-size: 18px; letter-spacing: 2px; }
+:is(#app[data-screen="home"], #under) .t-home button.play-big kbd { position: absolute; top: 6px; right: 8px; font: 600 18px/1 var(--font-body); }
+:is(#app[data-screen="home"], #under) .t-home .hm-newrun { box-sizing: border-box; height: 58px; min-height: 0; background: none; border: 0; box-shadow: none; color: var(--dim); font: 600 20px/1 var(--font-body); text-decoration: underline; padding: 0 8px; }
+:is(#app[data-screen="home"], #under) .t-home > .home > .error, :is(#app[data-screen="home"], #under) .t-home .home > .error { position: absolute; z-index: 30; left: 50%; transform: translateX(-50%); top: calc(var(--wells-top, 74px) + 50px); max-width: 70%; margin: 0; padding: 6px 14px; background: var(--surface); color: var(--them); border: 3px solid var(--outline); border-radius: 12px; box-shadow: 0 4px 0 var(--outline); font: 600 18px/1.25 var(--font-body); text-align: center; pointer-events: none; }
+:is(#app[data-screen="home"], #under) .t-home .home > .error:empty { display: none; }
 @media (prefers-reduced-motion: no-preference) {
   :is(#app[data-screen="home"]) .t-home button.play-big { animation: want-pulse 1.8s ease-in-out infinite; }
 }
 
-/* The tray */
-:is(#app[data-screen="home"], #under) .t-home .hm-tray { flex: none; position: relative; box-sizing: border-box; margin: 0 14px; border: 4px solid var(--outline); border-radius: 24px; background: linear-gradient(180deg, #3d3360 0, #2f2747 18px, #2a2240 100%); box-shadow: 0 -2px 0 #5b4d85 inset, 0 6px 0 var(--outline), 0 -18px 40px rgba(0, 0, 0, 0.35); }
+/* The tray: the one the shop has */
+:is(#app[data-screen="home"], #under) .t-home .hm-tray { position: absolute; box-sizing: border-box; border: 4px solid var(--outline); border-radius: 24px; background: linear-gradient(180deg, #3d3360 0, #2f2747 18px, #2a2240 100%); box-shadow: 0 -2px 0 #5b4d85 inset, 0 6px 0 var(--outline), 0 -18px 40px rgba(0, 0, 0, 0.35); z-index: 5; }
 :is(#app[data-screen="home"], #under) .t-home .hm-tray::before { content: ""; position: absolute; left: 24px; right: 24px; top: -4px; height: 6px; border-radius: 0 0 6px 6px; background: var(--power); opacity: 0.85; }
 :is(#app[data-screen="home"], #under) .t-home .hm-tray .vote-box:empty { display: none; }
-:is(#app[data-screen="home"], #under) .t-home .hm-workshop, :is(#app[data-screen="home"], #under) .t-home .hm-vote, :is(#app[data-screen="home"], #under) .t-home .hm-rowbtn { box-sizing: border-box; background: linear-gradient(#3d3360, #2c2442); color: var(--paper); border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 6px 0 var(--outline); letter-spacing: 0; text-transform: none; }
+:is(#app[data-screen="home"], #under) .t-home .hm-workshop, :is(#app[data-screen="home"], #under) .t-home .hm-vote, :is(#app[data-screen="home"], #under) .t-home .hm-rowbtn { box-sizing: border-box; color: var(--paper); border: 4px solid var(--outline); border-radius: 18px; letter-spacing: 0; text-transform: none; }
+:is(#app[data-screen="home"], #under) .t-home .hm-rowbtn { background: var(--surface); box-shadow: 0 6px 0 var(--outline); }
+:is(#app[data-screen="home"], #under) .t-home .hm-workshop, :is(#app[data-screen="home"], #under) .t-home .hm-vote { background: var(--well); box-shadow: 0 6px 0 var(--outline); }
 :is(#app[data-screen="home"], #under) .t-home .hm-workshop { position: relative; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 6px; padding: 12px 20px; text-align: left; min-width: 0; min-height: 0; height: 100%; }
 :is(#app[data-screen="home"], #under) .t-home .hm-workshop kbd { position: absolute; top: 12px; right: 16px; }
 :is(#app[data-screen="home"], #under) .t-home .hm-ws-head { display: flex; align-items: center; gap: 10px; }
 :is(#app[data-screen="home"], #under) .t-home .hm-ws-title { font: 400 30px/1 var(--font-head); }
 :is(#app[data-screen="home"], #under) .t-home .hm-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--action); box-shadow: 0 0 0 3px rgba(240, 194, 75, 0.3); }
-:is(#app[data-screen="home"], #under) .t-home .hm-ws-status { font: 600 20px/1.25 var(--font-body); font-family: var(--font-body); }
+:is(#app[data-screen="home"], #under) .t-home .hm-ws-status { font: 600 20px/1.25 var(--font-body); }
 :is(#app[data-screen="home"], #under) .t-home .hm-ws-meter { font: 500 18px/1.25 var(--font-body); color: var(--dim); }
-:is(#app[data-screen="home"], #under) .t-home .hm-vote { height: 100%; padding: 12px 12px 0; display: flex; flex-direction: column; min-width: 0; }
+:is(#app[data-screen="home"], #under) .t-home .hm-vote { padding: 12px 12px 0; display: flex; flex-direction: column; min-width: 0; height: 100%; }
 :is(#app[data-screen="home"], #under) .t-home .hm-vote.hm-thanks { align-items: center; justify-content: center; font: 600 20px/1.25 var(--font-body); }
 :is(#app[data-screen="home"], #under) .t-home .hm-vote-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 28px; }
 :is(#app[data-screen="home"], #under) .t-home .hm-vote-q { font: 400 22px/1.1 var(--font-head); }
@@ -90,19 +97,28 @@
 :is(#app[data-screen="home"], #under) .t-home .hm-vote-pair { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 :is(#app[data-screen="home"], #under) .t-home button.hm-pick { display: flex; justify-content: center; align-items: flex-start; padding: 14px 0 0; min-height: 0; background: none; border: 0; box-shadow: none; border-radius: 12px; }
 :is(#app[data-screen="home"], #under) .t-home button.hm-pick:hover { background: rgba(255, 255, 255, 0.06); }
-:is(#app[data-screen="home"], #under) .t-home .hm-rows { display: grid; grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 7px; min-height: 0; min-width: 0; }
-:is(#app[data-screen="home"], #under) .t-home .hm-rows:has(> :nth-child(2):last-child) { grid-template-rows: repeat(2, minmax(0, 1fr)); }
+:is(#app[data-screen="home"], #under) .t-home .hm-rows { display: grid; gap: 6px; min-height: 0; min-width: 0; }
 :is(#app[data-screen="home"], #under) .t-home button.hm-rowbtn { display: flex; align-items: center; gap: 10px; min-height: 0; padding: 0 16px; cursor: pointer; text-align: left; }
 :is(#app[data-screen="home"], #under) .t-home .hm-rowname { font: 400 26px/1 var(--font-head); }
 :is(#app[data-screen="home"], #under) .t-home .hm-rowsub { margin-left: auto; font: 500 18px/1 var(--font-body); color: var(--dim); white-space: nowrap; }
+:is(#app[data-screen="home"], #under) .t-home kbd { font: 600 18px/1 var(--font-body); border: 2px solid currentColor; border-radius: 6px; padding: 2px 6px 3px; margin: 0; background: none; opacity: 0.75; min-width: 0; }
 
-/* Landscape stage: the tray holds three columns (two without a vote) */
-:is(#app[data-screen="home"], #under) .stage.L .hm-tray { height: 206px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; }
-:is(#app[data-screen="home"], #under) .stage.L .hm-tray:has(.vote-box:not(:empty)) { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) 300px; }
+/* Landscape: the shop's rows (their rail row is the banner) and its tray, Fight's column for PLAY */
+:is(#app[data-screen="home"], #under) .stage.L .hm-side.them { top: calc(var(--line-top) + 12px); }
+:is(#app[data-screen="home"], #under) .stage.L .hm-side.you { top: var(--bench-top); }
+:is(#app[data-screen="home"], #under) .stage.L .hm-theirs { left: var(--fx); top: var(--line-top); width: var(--fw); }
+:is(#app[data-screen="home"], #under) .stage.L .hm-slots { left: var(--fx); top: var(--bench-top); width: var(--fw); }
+:is(#app[data-screen="home"], #under) .stage.L .hm-tray { left: 14px; right: 14px; top: var(--tray-top); bottom: 12px; }
+:is(#app[data-screen="home"], #under) .stage.L .hm-tray > .hm-workshop { position: absolute; left: 16px; top: 16px; bottom: 22px; width: 640px; height: auto; }
+:is(#app[data-screen="home"], #under) .stage.L .hm-tray:has(.vote-box:not(:empty)) > .hm-workshop { width: 330px; }
+:is(#app[data-screen="home"], #under) .stage.L .hm-tray > .vote-box { position: absolute; left: 358px; top: 16px; bottom: 22px; width: 298px; }
+:is(#app[data-screen="home"], #under) .stage.L .hm-tray > .hm-rows { position: absolute; left: 676px; top: 16px; bottom: 22px; width: 360px; grid-template-rows: repeat(3, minmax(0, 1fr)); }
+:is(#app[data-screen="home"], #under) .stage.L .hm-tray > .hm-rows:has(> :nth-child(2):last-child) { grid-template-rows: repeat(2, minmax(0, 1fr)); }
+:is(#app[data-screen="home"], #under) .stage.L .hm-tray > .hm-go { position: absolute; right: 18px; top: 16px; bottom: 22px; width: 170px; padding-top: 70px; }
+:is(#app[data-screen="home"], #under) .stage.L .hm-go > .hm-newrun { position: absolute; left: 0; right: 0; top: 0; }
 
-/* Portrait stage (a phone): the tray stacks */
-:is(#app[data-screen="home"], #under) .stage.P .home { padding: 8px 0; }
-:is(#app[data-screen="home"], #under) .stage.P .hm-hud { height: 48px; gap: 6px; padding: 0 8px; }
+/* Portrait: the HUD, the banner, the two lines in the shop's rows, the tray stacked in the shop's tray */
+:is(#app[data-screen="home"], #under) .stage.P .hm-hud { top: 8px; height: 52px; gap: 6px; padding: 0 8px; }
 :is(#app[data-screen="home"], #under) .stage.P .hm-brand { font-size: 21px; letter-spacing: 0.5px; text-shadow: 0 3px 0 var(--outline); }
 :is(#app[data-screen="home"], #under) .stage.P .plate { height: 48px; min-height: 48px; padding: 0 10px; gap: 6px; border-width: 3px; border-radius: 14px; box-shadow: 0 4px 0 var(--outline), inset 0 2px 0 rgba(255, 255, 255, 0.1); }
 :is(#app[data-screen="home"], #under) .stage.P .hm-rate .hm-rate-l { font-size: 11px; letter-spacing: 1px; }
@@ -110,38 +126,51 @@
 :is(#app[data-screen="home"], #under) .stage.P .hm-rate .delta { font-size: 12px; }
 :is(#app[data-screen="home"], #under) .stage.P button.hm-menu { min-width: 48px; padding: 0 8px; }
 :is(#app[data-screen="home"], #under) .stage.P .hm-burger { font-size: 30px; }
-:is(#app[data-screen="home"], #under) .stage.P .hm-banner { gap: 2px 8px; padding: 6px 14px 8px; border-width: 3px; font-size: 19px; box-shadow: 0 4px 0 var(--outline); }
+:is(#app[data-screen="home"], #under) .stage.P { --gap: 6px; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-champion { left: 8px; right: 8px; top: 70px; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-banner { height: 56px; flex-wrap: wrap; align-content: center; gap: 0 8px; padding: 0 12px; border-width: 3px; font-size: 19px; box-shadow: 0 4px 0 var(--outline); white-space: normal; }
 :is(#app[data-screen="home"], #under) .stage.P .hm-banner .crown-badge, :is(#app[data-screen="home"], #under) .stage.P .hm-banner .crown-badge svg { width: 22px; height: 18px; }
-:is(#app[data-screen="home"], #under) .stage.P .hm-banner-sub { flex-basis: 100%; font-size: 13px; }
-:is(#app[data-screen="home"], #under) .stage.P .hm-notice { margin-top: 8px; font-size: 13px; }
-:is(#app[data-screen="home"], #under) .stage.P .hm-lines { margin-top: 6px; }
-:is(#app[data-screen="home"], #under) .stage.P .hm-side { position: static; display: block; padding: 0 14px 2px; font-size: 15px; text-shadow: none; letter-spacing: 1px; }
-:is(#app[data-screen="home"], #under) .stage.P .hm-slot { border-width: 3px; font-size: 28px; }
-:is(#app[data-screen="home"], #under) .stage.P .hm-you { --playh: 56px; }
-:is(#app[data-screen="home"], #under) .stage.P .hm-you:has(.play-where) { --playh: 62px; }
-:is(#app[data-screen="home"], #under) .stage.P .hm-under { gap: 0; margin-top: calc((var(--playh) - var(--slot)) / 2 + 10px); }
-:is(#app[data-screen="home"], #under) .stage.P button.play-big { min-height: 56px; min-width: 220px; padding: 0 28px; gap: 10px; border-width: 3px; border-radius: 16px; box-shadow: 0 4px 0 var(--outline), 0 0 0 5px rgba(240, 194, 75, 0.22); font-size: 32px; }
-:is(#app[data-screen="home"], #under) .stage.P button.play-big .play-main { gap: 2px; }
-:is(#app[data-screen="home"], #under) .stage.P button.play-big .play-where { font-size: 14px; }
-:is(#app[data-screen="home"], #under) .stage.P button.play-big .hearts { font-size: 14px; letter-spacing: 1px; }
-:is(#app[data-screen="home"], #under) .stage.P .hm-note { font-size: 17px; }
-:is(#app[data-screen="home"], #under) .stage.P .hm-newrun { min-height: 44px; font-size: 15px; }
-:is(#app[data-screen="home"], #under) .stage.P .hm-under .error { font-size: 13px; }
-:is(#app[data-screen="home"], #under) .stage.P .hm-tray { margin: 0 8px; border-width: 3px; border-radius: 20px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-:is(#app[data-screen="home"], #under) .stage.P .hm-workshop { flex: none; min-height: 84px; height: auto; border-width: 3px; border-radius: 14px; box-shadow: 0 4px 0 var(--outline); padding: 8px 14px; gap: 3px; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-banner-main { flex: 1; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-banner-sub { flex-basis: 100%; margin-left: 30px; font-size: 14px; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-notice { left: 8px; top: 132px; width: 250px; font-size: 13px; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-side { left: 14px; right: 14px; width: auto; flex-direction: row; align-items: baseline; gap: 8px; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-side .label { font-size: 16px; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-side .sub { font-size: 14px; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-side.them { top: 162px; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-side.you { top: 290px; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-theirs { left: 12px; top: 184px; width: 366px; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-slots { left: 12px; top: 312px; width: 366px; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-cell .hm-num { font-size: 30px; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-tray { left: 8px; right: 8px; top: calc(var(--sh) * 1px - 424px); bottom: 8px; border-width: 3px; border-radius: 20px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-tray > .hm-workshop { flex: 1 1 0; min-height: 80px; height: auto; border-width: 3px; border-radius: 14px; box-shadow: 0 4px 0 var(--outline); padding: 8px 14px; gap: 3px; }
 :is(#app[data-screen="home"], #under) .stage.P .hm-ws-title { font-size: 22px; }
 :is(#app[data-screen="home"], #under) .stage.P .hm-ws-status { font-size: 15px; }
 :is(#app[data-screen="home"], #under) .stage.P .hm-ws-meter { font-size: 13px; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-tray > .vote-box { flex: none; }
 :is(#app[data-screen="home"], #under) .stage.P .hm-vote { flex: none; height: auto; border-width: 3px; border-radius: 14px; box-shadow: 0 4px 0 var(--outline); padding: 4px 10px 0; }
 :is(#app[data-screen="home"], #under) .stage.P .hm-vote-head { min-height: 44px; }
-:is(#app[data-screen="home"], #under) .stage.P button.hm-skip { margin: 0; }
+:is(#app[data-screen="home"], #under) .stage.P button.hm-skip { margin: 0; min-height: 44px; font-size: 14px; }
 :is(#app[data-screen="home"], #under) .stage.P .hm-vote-q { font-size: 17px; }
-:is(#app[data-screen="home"], #under) .stage.P button.hm-skip { min-height: 44px; font-size: 14px; }
 :is(#app[data-screen="home"], #under) .stage.P .hm-vote-pair { flex: none; height: 96px; }
 :is(#app[data-screen="home"], #under) .stage.P button.hm-pick { padding-top: 14px; }
-:is(#app[data-screen="home"], #under) .stage.P .hm-rows { display: flex; flex-direction: column; gap: 6px; }
-:is(#app[data-screen="home"], #under) .stage.P button.hm-rowbtn { flex: none; height: 46px; border-width: 3px; border-radius: 14px; box-shadow: 0 4px 0 var(--outline); padding: 0 14px; }
-:is(#app[data-screen="home"], #under) .stage.P .hm-rowname { font-size: 20px; }
-:is(#app[data-screen="home"], #under) .stage.P .hm-rowsub { font-size: 14px; }
-/* A short phone (the compact table, a stage under 780): the vote waits for a taller one */
+:is(#app[data-screen="home"], #under) .stage.P .hm-rows { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; flex: none; }
+:is(#app[data-screen="home"], #under) .stage.P button.hm-rowbtn { flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; height: 50px; border-width: 3px; border-radius: 14px; box-shadow: 0 4px 0 var(--outline); padding: 0 10px; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-rowname { font-size: 18px; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-rowsub { margin-left: 0; font-size: 12px; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-rowbtn kbd { display: none; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-tray > .hm-go { flex: none; flex-direction: row; justify-content: flex-end; gap: 8px; height: 48px; margin-top: 4px; }
+:is(#app[data-screen="home"], #under) .stage.P .hm-newrun { flex: 0 1 120px; min-width: 0; height: 48px; font-size: 15px; }
+:is(#app[data-screen="home"], #under) .stage.P button.play-big { flex: 0 0 218px; width: 218px; border-width: 3px; border-radius: 16px; box-shadow: 0 4px 0 var(--outline), inset 0 -4px 0 rgba(0, 0, 0, 0.12), inset 0 3px 0 rgba(255, 255, 255, 0.35); font-size: 30px; flex-direction: column; }
+:is(#app[data-screen="home"], #under) .stage.P button.play-big .play-sub { display: none; }
+:is(#app[data-screen="home"], #under) .stage.P button.play-big .play-where { font-size: 12px; }
+:is(#app[data-screen="home"], #under) .stage.P button.play-big .hearts { font-size: 12px; letter-spacing: 1px; }
+:is(#app[data-screen="home"], #under) .stage.P button.play-big kbd { display: none; }
+/* A short phone (the compact table): the lines close up as the shop's do, the vote waits for a taller one */
+:is(#app[data-screen="home"], #under) .stage.P.compact .hm-champion { top: 66px; }
+:is(#app[data-screen="home"], #under) .stage.P.compact .hm-banner { height: 44px; }
+:is(#app[data-screen="home"], #under) .stage.P.compact .hm-side.them { top: 132px; }
+:is(#app[data-screen="home"], #under) .stage.P.compact .hm-theirs { top: 150px; }
+:is(#app[data-screen="home"], #under) .stage.P.compact .hm-side.you { top: 262px; }
+:is(#app[data-screen="home"], #under) .stage.P.compact .hm-slots { top: 280px; }
+:is(#app[data-screen="home"], #under) .stage.P.compact .hm-tray { top: 386px; }
 :is(#app[data-screen="home"], #under) .stage.P.compact .hm-tray .vote-box { display: none; }
