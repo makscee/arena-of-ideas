@@ -144,6 +144,8 @@ export interface RunOutro {
 
 /** A line with more cards than this draws them compact (R4-11). */
 const COMPACT_OVER = 5;
+/** A list of same-side names in a ladder row shows this many, then "+N" (arena#52). */
+const LIST_SHOWN = 3;
 /** A phone on its side: compact cards with one status row (style.css, R2-17 batch E). */
 const shortScreen = matchMedia("(max-width: 1023.98px) and (max-height: 520px)");
 
@@ -2097,20 +2099,28 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * `led`: the cause whose icon the caption leads with, which its term then doesn't repeat. */
   function richCaption(text: string, led: string | null = null, tagged: boolean | "always" = false): Node[] {
     const out: Node[] = [];
+    const ms = [...text.matchAll(TAG)];
+    // The ladder's rows: a name that follows one of the same side in a list ("on @Brave Gambler, Medic, Coin Thief") needs no tag of its own,
+    // and a list longer than three reads "Gambler, Medic, Hornet +2" (the Why and the Log have them all).
+    const listed = (k: number): boolean => tagged === "always" && k > 0 && k < ms.length && /^(?:, | and )$/.test(text.slice(ms[k - 1]!.index! + ms[k - 1]![0].length, ms[k]!.index)) && sides.get(ms[k - 1]![1]!) === sides.get(ms[k]![1]!);
+    const runAt: number[] = [];
+    ms.forEach((_, k) => { runAt[k] = listed(k) ? runAt[k - 1]! + 1 : 1; });
     let i = 0;
-    let prevId = "";
-    for (const m of text.matchAll(TAG)) {
-      if (m.index! > i) out.push(...termsIn(text.slice(i, m.index), led));
+    ms.forEach((m, k) => {
+      const hidden = tagged === "always" && runAt[k]! > LIST_SHOWN;
+      if (m.index! > i && !hidden) out.push(...termsIn(text.slice(i, m.index), led));
+      const id = m[1]!;
       // A key moment tags each name with its side: a mirror match has a Fodder on both (R3-26).
-      // The ladder's rows tag every name with its side, except a name that follows one of the same side in a list ("on @Brave Gambler, Medic, Coin Thief").
-      const side = sides.get(m[1]!) ?? you;
-      const listed = i > 0 && /^(?:, | and )$/.test(text.slice(i, m.index)) && sides.get(prevId) === side;
-      if (tagged === "always") out.push(listed ? unitName(m[1]!) : h("span", { class: "bv-tagged" }, sideTag(side, "", true), unitName(m[1]!)));
-      else if (tagged && a.you) out.push(h("span", { class: "bv-tagged" }, sideTag(sides.get(m[1]!) ?? you, "moment-side"), unitName(m[1]!)));
-      else out.push(unitName(m[1]!));
-      prevId = m[1]!;
+      if (hidden) { /* folded into the run's "+N" */ }
+      else if (tagged === "always") out.push(listed(k) ? unitName(id) : h("span", { class: "bv-tagged" }, sideTag(sides.get(id) ?? you, "", true), unitName(id)));
+      else if (tagged && a.you) out.push(h("span", { class: "bv-tagged" }, sideTag(sides.get(id) ?? you, "moment-side"), unitName(id)));
+      else out.push(unitName(id));
+      if (tagged === "always" && runAt[k]! > LIST_SHOWN && !listed(k + 1)) {
+        const more = ms.slice(k - (runAt[k]! - LIST_SHOWN) + 1, k + 1).map((x) => name(x[1]!));
+        out.push(h("span", { class: "bv-more dim", title: more.join(", ") }, ` +${runAt[k]! - LIST_SHOWN}`));
+      }
       i = m.index! + m[0].length;
-    }
+    });
     if (i < text.length) out.push(...termsIn(text.slice(i), led));
     return out;
   }
