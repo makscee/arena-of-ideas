@@ -1,15 +1,14 @@
-// Home as a state of the table (arena#31, mission #26 move 1; the duel's mockup, home-1280x800.png):
-// one stage like the shop's. The HUD's plates on top (the title, RATING n, the ≡ Esc menu), the gold
-// banner "Today's champion · @name", the champion's line as TO BEAT (real pieces, centred, sized by
-// ui/line-layout.ts), YOUR LINE as five empty slots with PLAY over them and its note under, and the
-// tray: the Workshop card, the vote when one is open, and the rows Codex, Forge, Champions.
+// Home as a state of the table (arena#31, mission #26 move 1; arena#51, mission #44 move 6): one stage, the shop's own places.
+// The HUD's plates on top (the title, RATING n, the ≡ Esc menu), a dark banner "Today's champion · @name" where the shop has its
+// rail, the champion's line as TO BEAT in the shop's line frames, YOUR LINE as five empty frames in the shop's bench row (no
+// fictional round, hearts or gold before a run starts), and the tray: the Workshop card where the detail is, the vote when
+// one is open, the rows Codex, Forge and Champions where the offers are, and PLAY where Fight is.
 // This file lays the table out; main.ts makes what needs the game (the buttons, the banner's words).
 import type { LineUnit, MvpContent } from "../../src/mvp/contract";
-import { linePitch, pieceCap, spreadLine } from "../ui/line-layout";
-import { lineToPiece, piece, pieceReach } from "../ui/piece";
+import { lineToPiece, piece } from "../ui/piece";
 import { h } from "../ui/dom";
 import { orient, stage } from "../ui/stage";
-import { fit, STAGE, type Orient } from "../ui/stage-fit";
+import { cellHeight, fieldLayout, fit, type Orient } from "../ui/stage-fit";
 
 export interface HomeParts {
   content: MvpContent;
@@ -19,15 +18,15 @@ export interface HomeParts {
   title: string;
   rating: HTMLElement;
   menu: HTMLElement;
-  /** The gold banner, and a one-off notice under it (the dev "End day now"). */
+  /** The banner, and a one-off notice under it (the dev "End day now"). */
   banner: HTMLElement;
   notice: HTMLElement | null;
-  /** The labels of the two lines. */
+  /** The labels of the two lines, and what your line says before a run. */
   toBeat: string;
   yourLine: string;
-  /** PLAY (RESUME), its note, and New run (a run waits). */
+  yourLineSub: string;
+  /** PLAY (RESUME; its note is inside it) and New run (a run waits). */
   play: HTMLElement;
-  note: HTMLElement | null;
   newRun: HTMLElement | null;
   /** The tray. */
   workshop: HTMLElement;
@@ -40,67 +39,71 @@ export interface HomeParts {
 
 /** The table's text floor on the landscape stage (drawn at 0.625 on 800×450, where 18 reads 11). */
 const FLOOR: Record<Orient, number> = { L: 18, P: 0 };
-/** The line's piece on Home: the shop's, or the bigger one the stage's width allows (never past the cap). */
-const PIECE_L = 84;
 
-/** A taller window gives the landscape line bigger pieces, as the shop's does (84 on the 720 stage, up to the cap on a 960 one). */
-export function landscapePiece(stageH: number): number {
-  return Math.min(pieceCap("L", 5), PIECE_L + Math.round(((Math.min(960, Math.max(720, stageH)) - 720) / 240) * (pieceCap("L", 5) - PIECE_L)));
+/** The piece sizes of the shop's line and bench per stage (main.ts pieceSizes): Home's frames are the same boxes. */
+export function homeSizes(o: Orient, stageH: number): { line: number; bench: number } {
+  if (o === "P") return { line: 42, bench: 34 };
+  const f = fieldLayout(stageH);
+  return { line: f.s, bench: f.sb };
 }
 
-/** Where the line's five columns sit (stage x of each centre) and how large its piece and slot are. */
-export function homeGeometry(o: Orient): { px: number; pitch: number; cx: number[]; above: number; rowH: number } {
-  // The phone's line spreads over the stage's whole width (the tray is as wide), and its piece is the one that
-  // leaves a counter chip or a star room beside its neighbour (ui/line-layout.ts spreadLine); the landscape line is the shop's pitch.
-  const wide = spreadLine(STAGE.P.w, 5);
-  const pitch = o === "L" ? linePitch(o, 5) : wide.pitch;
-  const px = o === "L" ? landscapePiece(fit("L", window.innerWidth, window.innerHeight, true).h) : wide.px;
-  const mid = o === "L" ? 640 : 195;
-  const reach = pieceReach(px, FLOOR[o]);
-  return { px, pitch, cx: [0, 1, 2, 3, 4].map((i) => mid + (i - 2) * pitch), above: reach.above, rowH: reach.above + reach.below + 4 };
-}
+/** A frame's height for a piece of side `s`: the piece's own reach plus the tier row (`bare`: none). */
+const frameStyle = (s: number, floor: number, bare = false): string => {
+  const c = cellHeight(s, bare, floor);
+  return `--s:${s}px;padding-top:${c.top}px;height:${c.h}px`;
+};
 
 /** The table: a stage holding Home. */
 export function homeTable(p: HomeParts): HTMLElement {
   const o = orient();
-  const g = homeGeometry(o);
   const floor = FLOOR[o];
-  const box = (cx: number, top: number) => ({ style: `left:${Math.round(cx - g.px / 2)}px;top:${top}px;width:${g.px}px;height:${g.px}px` });
+  const lay = o === "L" ? fieldLayout(fit("L", window.innerWidth, window.innerHeight, true).h) : null;
+  const sz = homeSizes(o, lay ? fit("L", window.innerWidth, window.innerHeight, true).h : 844);
 
-  // TO BEAT: the champion's units centred on the row, their order front first.
+  // TO BEAT: the champion's units in the shop's line frames, front first; a short line leaves plain frames.
   const line = p.champion ?? [];
-  const start = (5 - line.length) / 2;
   const theirs = h(
     "div",
-    { class: "hm-row hm-theirs", "data-testid": "home-their", style: `height:${g.rowH}px` },
-    ...line.slice(0, 5).map((u, i) => {
-      const cell = h("div", { class: "hm-pbox", ...box(g.cx[0]! + (start + i) * g.pitch, g.above) });
-      cell.append(piece(lineToPiece(u, p.content), { size: "M", side: "them", px: g.px, testid: `home-champ-${i}`, floor }));
-      return cell;
+    { class: "hm-frames hm-theirs", "data-testid": "home-their" },
+    ...Array.from({ length: 5 }, (_, i) => {
+      const u = line[i];
+      if (!u) return h("div", { class: "hm-cell empty blank", "aria-hidden": "true", style: frameStyle(sz.line, floor) });
+      return h("div", { class: "hm-cell them", style: frameStyle(sz.line, floor) }, piece(lineToPiece(u, p.content), { size: o === "L" ? "L" : "M", side: "them", px: o === "L" ? sz.line : sz.line - 6, testid: `home-champ-${i}`, floor }));
     }),
   );
-  // YOUR LINE: five empty slots, PLAY over their middle.
+  // YOUR LINE: five empty frames, numbered, where the shop's bench is.
   const slots = h(
     "div",
-    { class: "hm-row hm-slots", style: `height:${g.px}px` },
-    ...g.cx.map((cx, i) => h("div", { class: "hm-slot", "data-testid": `home-slot-${i}`, ...box(cx, 0) }, h("span", {}, String(i + 1)))),
-    h("div", { class: "hm-playbox" }, p.play),
+    { class: "hm-frames hm-slots" },
+    ...Array.from({ length: 5 }, (_, i) => h("div", { class: "hm-cell empty", "data-testid": `home-slot-${i}`, style: frameStyle(sz.bench, floor) }, h("span", { class: "hm-num" }, String(i + 1)))),
   );
-  const side = (cls: string, text: string, testid: string) => h("div", { class: `hm-side ${cls}`, "data-testid": testid, style: `top:${g.above + 22}px` }, text);
+  const side = (cls: string, text: string, testid: string, sub?: string) =>
+    h("div", { class: `hm-side ${cls}`, "data-testid": testid }, h("div", { class: "label" }, text), sub ? h("div", { class: "sub" }, sub) : null);
 
-  const tray = h("div", { class: "hm-tray", "data-testid": "home-tray" }, p.workshop, p.vote, h("div", { class: "hm-rows" }, ...p.rows.filter((r): r is HTMLElement => r !== null)));
+  const tray = h(
+    "div",
+    { class: "hm-tray", "data-testid": "home-tray" },
+    p.workshop,
+    p.vote,
+    h("div", { class: "hm-rows" }, ...p.rows.filter((r): r is HTMLElement => r !== null)),
+    // Where Reroll and Fight are: New run (while a run waits) above, PLAY below.
+    h("div", { class: "hm-go" }, p.newRun, p.play),
+  );
   const root = h(
     "div",
-    { class: `home ${o}`, "data-testid": "home", style: `--px:${g.px}px;--slot:${g.px}px` },
+    { class: `home ${o}`, "data-testid": "home" },
     h("div", { class: "hm-hud", "data-testid": "hud" }, h("h1", { class: "hm-brand", "data-testid": "home-title" }, p.title), h("span", { class: "hud-gap" }), p.rating, p.menu),
-    h("div", { class: "hm-gap" }),
-    h("section", { class: "hm-sec hm-champion", "data-testid": "champion" }, p.banner, p.notice, h("div", { class: "hm-lines" }, side("them", p.toBeat, "home-side-them"), theirs)),
-    h("div", { class: "hm-gap" }),
-    h("section", { class: "hm-sec hm-you" }, h("div", { class: "hm-lines" }, side("you", p.yourLine, "home-side-you"), slots), h("div", { class: "hm-under" }, p.note, p.newRun, p.err)),
-    h("div", { class: "hm-gap" }),
+    h("section", { class: "hm-champion", "data-testid": "champion" }, p.banner),
+    p.notice,
+    side("them", p.toBeat, "home-side-them"),
+    theirs,
+    side("you", p.yourLine, "home-side-you", p.yourLineSub),
+    slots,
     tray,
+    p.err,
   );
   const table = stage([root], p.redraw, o === "L");
   table.classList.add("t-home");
+  if (lay) for (const [k, v] of Object.entries({ "wells-top": lay.wellsTop, "line-top": lay.lineTop, "bench-top": lay.benchTop, "tray-top": lay.trayTop })) table.style.setProperty(`--${k}`, `${v}px`);
   return table;
 }

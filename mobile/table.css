@@ -85,9 +85,9 @@
 /* The inspector floats over the table: tap any unit and it reads its rule and whose idea it was */
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp { z-index: 20; background: var(--surface); color: var(--paper); border: 4px solid var(--outline); border-radius: 18px; box-shadow: 0 8px 0 var(--outline), 0 20px 60px rgba(0, 0, 0, 0.6); padding: 12px 16px 14px; overflow-y: auto; overscroll-behavior: contain; font-size: 18px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp[hidden] { display: none; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .dim, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .small, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .label { color: var(--dim); font-size: 18px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .actions { flex-wrap: wrap; gap: 8px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp button { font-size: 18px; min-height: 44px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) :is(.tb-insp, .tb-detail) .dim, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) :is(.tb-insp, .tb-detail) .small, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) :is(.tb-insp, .tb-detail) .label { color: var(--dim); font-size: 18px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) :is(.tb-insp, .tb-detail) .actions { flex-wrap: wrap; gap: 8px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) :is(.tb-insp, .tb-detail) button { font-size: 18px; min-height: 44px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage > .error { z-index: 30; left: 50%; transform: translateX(-50%); top: 74px; max-width: 70%; padding: 6px 14px; background: var(--surface); color: var(--them); border: 3px solid var(--outline); border-radius: 12px; box-shadow: 0 4px 0 var(--outline); font: 600 18px/1.25 var(--font-body); pointer-events: none; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage > .error:empty { display: none; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .cell.selected { background: color-mix(in srgb, var(--action) 14%, transparent); box-shadow: inset 0 0 0 3px var(--action); }
@@ -136,8 +136,8 @@
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-go button.reroll-btn .cost-chip { font-size: 13px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-go button.primary { font-size: 30px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-insp { left: 8px; right: 8px; bottom: 90px; max-height: 430px; border-width: 3px; padding: 10px 12px 12px; font-size: 15px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-insp .dim, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-insp .small, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-insp .label { font-size: 13px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-insp button { font-size: 15px; min-height: 44px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P :is(.tb-insp, .tb-detail) .dim, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P :is(.tb-insp, .tb-detail) .small, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P :is(.tb-insp, .tb-detail) .label { font-size: 13px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P :is(.tb-insp, .tb-detail) button { font-size: 15px; min-height: 44px; }
 
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-help { right: 12px; top: 200px; height: 34px; padding: 0 4px; border-width: 3px; border-radius: 12px; box-shadow: 0 3px 0 var(--outline); z-index: 4; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-help button { height: 28px; min-height: 28px; min-width: 32px; font-size: 18px; padding: 0 8px; }
@@ -151,35 +151,31 @@
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .pc-flag, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .pc-lock { font-size: 18px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .pc-pips u { width: 13px; height: 13px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .pc-meta { gap: 6px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp :is(.ik-name, .sheet-form, .t-glue, .tw, .ti, .sheet-credit, .credit-line, .num, .rates, [data-testid="unit-rates"]) { font-size: 18px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp .pc-tab { height: auto; min-height: 26px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L :is(.tb-insp, .tb-detail) :is(.ik-name, .sheet-form, .t-glue, .tw, .ti, .sheet-credit, .credit-line, .num, .rates, [data-testid="unit-rates"]) { font-size: 18px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L :is(.tb-insp, .tb-detail) .pc-tab { height: auto; min-height: 26px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .pin-emoji { font-size: 18px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .sheet-xl-grid { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 4px 12px; align-items: start; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp .sheet-xl-grid { display: block; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp .sheet-hero { float: left; width: 120px; height: 120px; margin: 0 12px 4px 0; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp .sheet-body { display: block; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp .sheet-body > * { margin-bottom: 6px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp .sheet-body > .row.sheet-head { margin-top: 0; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp .sheet-hero > .pc { transform: none; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-insp .sheet-hero > .pc { transform: scale(0.72); transform-origin: 0 0; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) :is(.tb-insp, .tb-detail) .sheet-xl-grid { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 4px 12px; align-items: start; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L :is(.tb-insp, .tb-detail) .sheet-xl-grid { display: block; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L :is(.tb-insp, .tb-detail) .sheet-hero { float: left; width: 120px; height: 120px; margin: 0 12px 4px 0; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L :is(.tb-insp, .tb-detail) .sheet-body { display: block; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L :is(.tb-insp, .tb-detail) .sheet-body > * { margin-bottom: 6px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L :is(.tb-insp, .tb-detail) .sheet-body > .row.sheet-head { margin-top: 0; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L :is(.tb-insp, .tb-detail) .sheet-hero > .pc { transform: none; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P :is(.tb-insp, .tb-detail) .sheet-hero > .pc { transform: scale(0.72); transform-origin: 0 0; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .cell .fuse-tag { font-size: 18px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .cell .fuse-mark { font-size: 18px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .sheet-hero { overflow: visible; min-width: 0; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .sheet-hero { padding-top: 22px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) :is(.tb-insp, .tb-detail) .sheet-hero { overflow: visible; min-width: 0; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) :is(.tb-insp, .tb-detail) .sheet-hero { padding-top: 22px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp { display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .insp-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 8px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp > .row { flex: none; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .insp-body > .label { margin-bottom: 4px; padding-right: 40px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) :is(.tb-insp, .tb-detail) .insp-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 8px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) :is(.tb-insp, .tb-detail) > .row { flex: none; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) :is(.tb-insp, .tb-detail) .insp-body > .label { margin-bottom: 4px; padding-right: 40px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go button.primary { flex-direction: column; flex-wrap: nowrap; gap: 2px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-go button.primary .fight-warn { flex-basis: auto; background: none; border: 0; padding: 0; margin: 0; font: 600 18px/1.1 var(--font-body); color: var(--outline); text-shadow: none; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-go button.primary.half-empty { font-size: 24px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-go button.primary .fight-warn { font-size: 13px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-insp { max-height: 300px; }
 
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-tray.many .tb-coach { width: 300px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-tray.many .tb-shop { left: 330px; width: 640px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-tray.many .tb-go { width: 250px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-tray.many .tb-coach .hint { font-size: 18px; }
 
 /* Codex and Workshop: windows over the dimmed table */
 #under { position: fixed; inset: 0; z-index: 1; filter: blur(3px) brightness(0.45); pointer-events: none; }
@@ -191,11 +187,11 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 @media (max-width: 600px) { body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="forge"], body.over-table #app[data-screen="ideas"] { inset: 6px; border-width: 3px; border-radius: 20px; } }
 
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp { position: absolute; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp button.insp-x { position: absolute; top: 2px; right: 4px; z-index: 2; min-width: 44px; width: 44px; height: 40px; min-height: 40px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; color: var(--dim); font: 600 20px/1 var(--font-body); }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) :is(.tb-insp, .tb-detail) button.insp-x { position: absolute; top: 2px; right: 4px; z-index: 2; min-width: 44px; width: 44px; height: 40px; min-height: 40px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; color: var(--dim); font: 600 20px/1 var(--font-body); }
 
 /* Portrait, 48px taps: the stage may be scaled to 0.92 on a 360-wide phone, and a tap stays 44px */
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate { height: 52px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate button, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-insp button { min-height: 48px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate button, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P :is(.tb-insp, .tb-detail) button { min-height: 48px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate button { height: 48px; min-width: 48px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-hud { height: 52px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-help { height: 40px; }
@@ -203,23 +199,17 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-coach .gift-banner button { min-height: 48px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-go { height: 64px; }
 /* The compact portrait table (a window under 780 stage px tall): no wells for the hidden team, the tray comes up */
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P.compact .tb-their:not(:has(.crown-foe)) { display: none; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-side.you { top: 98px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-help { top: 90px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-line { top: 128px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-bench { top: 262px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P.compact:not(:has(.crown-foe)) .tb-tray { top: 364px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P.compact .tb-coach { height: 66px; padding: 6px 12px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P.compact .tb-shop { top: 90px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P.compact .tb-insp { max-height: 250px; bottom: 96px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-side.them .next-opp .who { display: inline; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-insp .actions button { min-width: 48px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P :is(.tb-insp, .tb-detail) .actions button { min-width: 48px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-hud { gap: 4px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate { gap: 6px; padding: 0 6px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate.menu { padding: 0 2px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate .heart-icons .heart { width: 18px; height: 18px; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .plate .gold { font-size: 22px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .sheet-hero { padding-left: 12px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) :is(.tb-insp, .tb-detail) .sheet-hero { padding-left: 12px; }
 
 /* The first run's coach (arena#31) is the tray's card */
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach:has(> .coach) { padding: 0; background: none; border: 0; box-shadow: none; border-radius: 0; overflow: visible; justify-content: stretch; }
@@ -340,8 +330,8 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 /* The traced change's window and the unit inspector: 18 and up on the landscape stage, 12 on the portrait one */
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 > .bv-sheet :is(.label, .bv-trace-text, .bv-step-by, .bv-why-keys, .dim, .small, .mono, .bv-step, .bv-step *, .bv-chain *, .t, b) { font-size: 18px; }
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet :is(.label, .bv-trace-text, .bv-step-by, .bv-why-keys, .dim, .small, .mono) { font-size: 12px; }
-:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 .tb-insp :is(.bv-live-st, .bv-live-st *, .bv-now *, .credit-line, .bv-now-turn *, .label) { font-size: 18px; }
-:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 .tb-insp :is(.bv-live-st, .bv-live-st *, .credit-line) { font-size: 13px; }
+:is(#app[data-screen="battle"], #under) .stage.L.bv-v3 :is(.tb-insp, .tb-detail) :is(.bv-live-st, .bv-live-st *, .bv-now *, .credit-line, .bv-now-turn *, .label) { font-size: 18px; }
+:is(#app[data-screen="battle"], #under) .stage.P.bv-v3 :is(.tb-insp, .tb-detail) :is(.bv-live-st, .bv-live-st *, .credit-line) { font-size: 13px; }
 :is(#app[data-screen="battle"], #under) .stage.bv-v3 > .bv-sheet { max-width: none; right: auto; bottom: auto; }
 :is(#app[data-screen="battle"], #under) .stage.L.bv-v3 > .bv-sheet { height: 396px; max-height: 396px; }
 :is(#app[data-screen="battle"], #under) .stage.P.bv-v3 > .bv-sheet { right: 8px; bottom: 8px; max-height: none; }
@@ -375,21 +365,20 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-coach > .coach .coach-why { display: none; }
 
 /* The forge's claim panel (arena#32): a rule's words are words in a line, not 44 px controls that spread the line apart, so three designs and Claim fit */
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .seal-rule button, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .seal-rule .t-glue button { min-height: 0; padding: 0; margin: 0; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .seal-list { gap: 6px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .seal { padding: 6px 8px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) :is(.tb-insp, .tb-detail) .seal-rule button, :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) :is(.tb-insp, .tb-detail) .seal-rule .t-glue button { min-height: 0; padding: 0; margin: 0; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) :is(.tb-insp, .tb-detail) .seal-list { gap: 6px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) :is(.tb-insp, .tb-detail) .seal { padding: 6px 8px; }
 /* Key hints on the landscape stage read 11 px at 800×450 (arena#32) */
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L kbd { font-size: 18px; }
 /* ===== The shop's field and unit panel, round 4 (arena#28): the landscape table spends its whole width ===== */
 /* The columns are the same five for their wells, your line and (the first three) the bench; the labels sit in a left gutter of 120px; the tray takes the foot. A taller window gives the rows more height (--sh). */
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop { --fx: 140px; --fw: 1132px; }
-:is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel { --fw: 678px; }
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-their { left: var(--fx); top: var(--wells-top); width: var(--fw); height: var(--wells-h); }
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-line { left: var(--fx); top: var(--line-top); width: var(--fw); --n: 5; }
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-bench { left: var(--fx); top: var(--bench-top); width: calc(var(--fw) * 3 / 5); }
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-tray { top: var(--tray-top); }
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-side.them { left: 16px; top: var(--wells-top); width: 118px; }
-:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-side.you { left: 16px; top: calc(var(--line-top) + 36px); width: 118px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-side.you { left: 16px; top: calc(var(--line-top) + 112px); width: 118px; }
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-side.them .next-opp { max-width: 118px; font-size: 18px; }
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-side.them .next-opp .who { font-size: 20px; overflow-wrap: anywhere; }
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-side .pin, :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-side button.pin-btn { max-width: 118px; }
@@ -398,58 +387,53 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-their .cell.ghost { padding-top: 4px; }
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-line .cell-well { width: var(--s); height: var(--s); }
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-line .cell, :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-bench .cell { border-radius: 14px; }
-:is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel .tb-line .pc-tab, :is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel .tb-bench .pc-tab { padding-right: 8px; }
 
 /* The unit panel docks in the right column of the field, from under the HUD to above the tray */
-:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp { left: 832px; top: 76px; width: 432px; max-height: calc(var(--tray-top) - 82px); padding: 12px 16px 12px; gap: 8px; }
-:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp .insp-body { gap: 8px; }
-:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp .insp-body > .label { margin: 0; padding-right: 44px; line-height: 1.1; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact { container-type: normal; display: flex; flex-direction: column; gap: 6px; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-top { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: start; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-hero { position: static; display: block; padding: 20px 10px 4px 12px; width: auto; height: auto; float: none; margin: 0; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-hero > .pc { transform: none; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-hero:has(.pc-shelf) { padding-bottom: 36px; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-top-text { min-width: 0; gap: 4px; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-name h2 { font-size: 24px; line-height: 1.1; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-body { min-width: 0; gap: 4px; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-body > * { margin: 0; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-rule-head { display: none; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-icons { display: none; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .archetype { font-size: 18px; line-height: 1.25; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-form { font-size: 18px; line-height: 1.3; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .preview-card { display: none; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .after > .label { margin: 0; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-detail .insp-body { gap: 8px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-detail .insp-body > .label { margin: 0; padding-right: 44px; line-height: 1.1; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact { container-type: normal; display: flex; flex-direction: column; gap: 6px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-top { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: start; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-hero { position: static; display: block; padding: 20px 10px 4px 12px; width: auto; height: auto; float: none; margin: 0; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-hero > .pc { transform: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-hero:has(.pc-shelf) { padding-bottom: 36px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-top-text { min-width: 0; gap: 4px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-name h2 { font-size: 24px; line-height: 1.1; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-body { min-width: 0; gap: 4px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-body > * { margin: 0; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-rule-head { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-icons { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .archetype { font-size: 18px; line-height: 1.25; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-form { font-size: 18px; line-height: 1.3; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .preview-card { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .after > .label { margin: 0; }
 
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact :is(.sheet-body, .sheet-top-text) > :empty { display: none; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact button.see-awoken { min-height: 30px; padding: 0; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact :is(.sheet-body, .sheet-top-text) > :empty { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact button.see-awoken { min-height: 30px; padding: 0; }
 
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-form :is(button, .t), :is(#app[data-screen="shop"], #under) .tb-insp .sheet-form button.t { min-height: 0; height: auto; padding-top: 0; padding-bottom: 0; line-height: 1.25; }
-:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp .insp-body > .label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-form :is(button, .t), :is(#app[data-screen="shop"], #under) :is(.tb-insp, .tb-detail) .sheet-form button.t { min-height: 0; height: auto; padding-top: 0; padding-bottom: 0; line-height: 1.25; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-detail .insp-body > .label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Small facts share a row so the panel stays short: how long it has been live, what buying does, the pick rate */
-:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp .insp-body > .label { line-height: 1.35; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-body { display: flex; flex-flow: row wrap; align-items: baseline; column-gap: 14px; row-gap: 2px; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-body > * { flex: 1 1 100%; min-width: 0; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-body > :is(.credit-line, [data-testid="unit-rates"], [data-testid="buy-preview"], [data-testid="sheet-credit"], .discovered, button.see-awoken) { flex: 0 1 auto; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-body > .dim.small:not(.credit-line):not([data-testid="unit-rates"]) { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-detail .insp-body > .label { line-height: 1.35; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-body { display: flex; flex-flow: row wrap; align-items: baseline; column-gap: 14px; row-gap: 2px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-body > * { flex: 1 1 100%; min-width: 0; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-body > :is(.credit-line, [data-testid="unit-rates"], [data-testid="buy-preview"], [data-testid="sheet-credit"], .discovered, button.see-awoken) { flex: 0 1 auto; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-body > .dim.small:not(.credit-line):not([data-testid="unit-rates"]) { display: none; }
 :is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-side.them .next-opp .who { white-space: normal; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-hero { padding-right: 24px; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-body { row-gap: 0; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-hero { padding-top: 16px; padding-bottom: 0; }
-:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp { padding-top: 10px; padding-bottom: 10px; gap: 6px; }
-:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp .insp-body { gap: 4px; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact { gap: 2px; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-hero { padding-bottom: 14px; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .after > .label { letter-spacing: 0; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .after { flex: 0 0 auto; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-hero { padding-right: 24px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-body { row-gap: 0; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-hero { padding-top: 16px; padding-bottom: 0; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-detail .insp-body { gap: 4px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact { gap: 2px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-hero { padding-bottom: 14px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .after > .label { letter-spacing: 0; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .after { flex: 0 0 auto; }
 
 /* The panel at 16:9 has 412px: the summoned unit's piece is drawn small and its status chips ride on the hero's shelf */
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-hero:has(.pc-shelf) { padding-bottom: 46px; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-now { display: none; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .summons > .label { display: none; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .summon-row { display: flex; align-items: center; gap: 4px; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .summon-row > :first-child { zoom: 0.62; flex: none; }
-:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp { top: 72px; width: 440px; left: 824px; max-height: calc(var(--tray-top) - 76px); }
-:is(#app[data-screen="shop"], #under) .stage.L.t-shop.with-panel { --fw: 668px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-hero:has(.pc-shelf) { padding-bottom: 46px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-now { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .summons > .label { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .summon-row { display: flex; align-items: center; gap: 4px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .summon-row > :first-child { zoom: 0.62; flex: none; }
 
 /* The first run's coach on the landscape stage: the step and the pair on one row, the text across the card */
 :is(#app[data-screen="shop"], #under) .stage.L .tb-coach > .coach { display: grid; grid-template-columns: 1fr auto; align-content: center; column-gap: 10px; row-gap: 4px; }
@@ -459,28 +443,26 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 :is(#app[data-screen="shop"], #under) .stage.L .tb-coach > .coach .coach-text { grid-column: 1 / -1; grid-row: 2; }
 
 /* Where the unit stands rides on its state line; the label row above it goes (the panel keeps the height for the rule) */
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .insp-body > .label { display: none; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-hero { padding-top: 18px; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .summon-row > :first-child { zoom: 0.5; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .summon-row .pc-nm, :is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .summon-row .name { display: none; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .summons { border-top: 0; padding-top: 0; margin-top: 0; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-where { margin-left: 4px; white-space: nowrap; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .insp-body > .label { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-hero { padding-top: 18px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .summon-row > :first-child { zoom: 0.5; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .summon-row .pc-nm, :is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .summon-row .name { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .summons { border-top: 0; padding-top: 0; margin-top: 0; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-where { margin-left: 4px; white-space: nowrap; }
 /* The small facts (the way back to sleeping, its age, what buying does, the rates) follow the summons and share rows */
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact .sheet-body > :is(button.see-awoken, button[data-testid="see-sleeping"], .credit-line, [data-testid="buy-preview"], [data-testid="unit-rates"], .discovered) { order: 5; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-body > :is(button.see-awoken, button[data-testid="see-sleeping"], .credit-line, [data-testid="buy-preview"], [data-testid="unit-rates"], .discovered) { order: 5; }
 
 /* The phone's panel: a bottom sheet as tall as its content, at most 55% of the window, above Reroll and Fight; its text scrolls only when it must, with a cue */
-:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp { left: 6px; right: 6px; bottom: 90px; max-height: calc(var(--sh) * 0.55px); padding: 8px 12px 10px; font-size: 15px; gap: 6px; }
-:is(#app[data-screen="shop"], #under) .stage.P.t-shop.compact .tb-insp { max-height: calc(var(--sh) * 0.55px); bottom: 96px; }
-:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .insp-body > .label { display: none; }
-:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact .sheet-form { font-size: 15px; line-height: 1.3; }
-:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact .sheet-name h2 { font-size: 22px; }
-:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact .archetype { font-size: 14px; }
-:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact .sheet-hero { padding: 12px 6px 14px 8px; }
-:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact .sheet-hero:has(.pc-shelf) { padding-bottom: 36px; }
-:is(#app[data-screen="shop"], #under) .tb-insp > .insp-more { position: absolute; left: 0; right: 0; z-index: 3; bottom: 56px; height: 26px; display: grid; place-items: end center; font: 600 18px/1 var(--font-body); color: var(--dim); pointer-events: none; background: linear-gradient(to bottom, transparent, var(--surface) 85%); }
-:is(#app[data-screen="shop"], #under) .tb-insp > .insp-more.done { display: none; }
-:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-insp > .insp-more { bottom: 62px; }
-:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact .sheet-hero { padding-right: 24px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-detail .insp-body > .label { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-detail .sheet-compact .sheet-form { font-size: 15px; line-height: 1.3; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-detail .sheet-compact .sheet-name h2 { font-size: 22px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-detail .sheet-compact .archetype { font-size: 14px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-detail .sheet-compact .sheet-hero { padding: 12px 6px 14px 8px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-detail .sheet-compact .sheet-hero:has(.pc-shelf) { padding-bottom: 36px; }
+:is(#app[data-screen="shop"], #under) :is(.tb-insp, .tb-detail) > .insp-more { position: absolute; left: 0; right: 0; z-index: 3; bottom: 56px; height: 26px; display: grid; place-items: end center; font: 600 18px/1 var(--font-body); color: var(--dim); pointer-events: none; background: linear-gradient(to bottom, transparent, var(--surface) 85%); }
+:is(#app[data-screen="shop"], #under) :is(.tb-insp, .tb-detail) > .insp-more.done { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-shop .tb-detail > .insp-more { bottom: 62px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-detail .sheet-compact .sheet-hero { padding-right: 24px; }
 
 /* The first screen (arena#31, round 4): the table's stage, the duel's first screen on it. L is 1280×720 and P 390 × the window's
  * height, scaled by ui/stage.ts, so these sizes are the design's own; landscape text is 18px and up (800×450 is 0.625 of it). */
@@ -595,8 +577,8 @@ body.over-table #app[data-screen="codex"], body.over-table #app[data-screen="for
 body.over-table #app[data-screen="ideas"] .ws-head { display: flex; align-items: center; gap: 14px; }
 body.over-table #app[data-screen="ideas"] .ws-head h1 { margin: 0; }
 button.ws-back { min-height: 44px; min-width: 44px; padding: 0 12px; flex: none; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .seal > .card { min-height: 0; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-insp .seal > .card .pcard-stage { height: 64px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) :is(.tb-insp, .tb-detail) .seal > .card { min-height: 0; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) :is(.tb-insp, .tb-detail) .seal > .card .pcard-stage { height: 64px; }
 /* The coach's pair (arena#31) is a picture of who answers whom: no badge glyphs (they read under 11 px at 800×450) and a step number at the table's text floor. */
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .tb-coach > .coach .coach-pair .pc-hb { display: none; }
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-coach > .coach .coach-wire-n { width: 32px; height: 32px; font-size: 18px; }
@@ -624,14 +606,14 @@ button.ws-back { min-height: 44px; min-width: 44px; padding: 0 12px; flex: none;
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.P .tb-side.them button.pin-btn { min-height: 44px; }
 :is(#app[data-screen="shop"], #under) .stage.P.t-shop:not(.compact) .tb-their { top: 114px; height: 104px; }
 .sheet-xl button.see-awoken { min-height: 36px; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp .sheet-compact button.see-awoken { min-height: 36px; }
-:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-insp .sheet-compact button.see-awoken, .stage.P button.see-awoken { min-height: 44px; }
-:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-insp [data-testid="fuse-preview"] { padding-right: 44px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact button.see-awoken { min-height: 36px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-detail .sheet-compact button.see-awoken, .stage.P button.see-awoken { min-height: 44px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail [data-testid="fuse-preview"] { padding-right: 44px; }
 .sheet[data-scroll] { background: linear-gradient(var(--panel) 30%, transparent) top / 100% 28px no-repeat local, linear-gradient(transparent, var(--panel) 70%) bottom / 100% 28px no-repeat local, linear-gradient(rgba(0, 0, 0, 0.35), transparent) top / 100% 10px no-repeat scroll, linear-gradient(transparent, rgba(0, 0, 0, 0.35)) bottom / 100% 10px no-repeat scroll, var(--panel); }
 
 /* Round 8: the landscape stage is scaled (0.8 at 1024 wide, 0.625 at 800), so a control must be 40 stage px to be 32 / 25 drawn */
 :is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-side button.pin-btn { min-height: 40px; }
-:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L .tb-insp button.see-awoken, :is(#app[data-screen="shop"], #under) .stage.t-shop.L .tb-insp .sheet-compact button.see-awoken { min-height: 40px; }
+:is(#app[data-screen="shop"], #app[data-screen="battle"], #under) .stage.L :is(.tb-insp, .tb-detail) button.see-awoken, :is(#app[data-screen="shop"], #under) .stage.t-shop.L :is(.tb-insp, .tb-detail) .sheet-compact button.see-awoken { min-height: 40px; }
 
 /* ===== Round 6 (arena#29): the header and the THEM label's Report link ===== */
 /* "vs @name" shrinks with an ellipsis inside its plate and never runs under the Report link beside it */
@@ -783,3 +765,146 @@ button.ws-back { min-height: 44px; min-width: 44px; padding: 0 12px; flex: none;
 :is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 > .bv-end[data-row="theirs"] { top: 88px; }
 :is(#app[data-screen="battle"], #under) .stage.P.compact.bv-v3 > .bv-end[data-row="mine"] { top: 285px; }
 :is(#app[data-screen="battle"], #under) .bt-tray .bv-ladder.explain button.bv-carry { background: color-mix(in srgb, var(--paper) 12%, var(--panel)); }
+
+/* ===== The tray's one detail surface (arena#47, mission #44 move 1) =====
+ * The shop's inspector is one fixed component in the tray, where the coach's card was: idle, one hint; with an offer or a unit in
+ * hand, its words (name, rule, whose idea it was) and its buttons. Selecting changes the words only: the line, the bench, the offers
+ * and Reroll/Fight never move. Battle reuses this surface for its step log (arena#45): one slot for the content. */
+:is(#app[data-screen="shop"], #under) .tb-detail { gap: 6px; overflow: hidden; z-index: 3; color: var(--paper); font-size: 18px; }
+:is(#app[data-screen="shop"], #under) .tb-detail.holds { justify-content: flex-start; padding-top: 10px; padding-bottom: 10px; }
+:is(#app[data-screen="shop"], #under) .tb-detail .insp-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 4px; padding-right: 30px; }
+:is(#app[data-screen="shop"], #under) .tb-detail > .row { flex: none; gap: 8px; }
+:is(#app[data-screen="shop"], #under) .tb-detail :is(.dim, .small, .label) { color: var(--dim); font-size: 18px; }
+:is(#app[data-screen="shop"], #under) .tb-detail .hint { margin: 0; padding: 0; border: 0; background: none; color: var(--paper); font: 500 20px/1.3 var(--font-body); }
+:is(#app[data-screen="shop"], #under) .tb-detail.holds .hint { color: var(--action); font-size: 18px; line-height: 1.25; font-weight: 700; flex: none; }
+:is(#app[data-screen="shop"], #under) .tb-detail button { font-size: 18px; min-height: 40px; }
+/* Words only: the piece is already on the table, so the sheet's hero art stays out of the tray */
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-hero { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-top { display: block; }
+/* The name, its tier and its form share a row; where the unit stands is the highlighted piece itself */
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-title { display: flex; flex-flow: row wrap; align-items: baseline; column-gap: 12px; row-gap: 0; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-name h2 { font-size: 22px; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact .sheet-where { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail.holds { padding: 8px 12px 10px 14px; }
+/* A fusion waiting for its Fuse keeps its buttons in view at the foot of the scrolling words */
+:is(#app[data-screen="shop"], #under) .tb-detail .sheet-actions { position: sticky; bottom: 0; margin: 0; padding: 4px 0 0; background: var(--well); z-index: 2; }
+
+/* Landscape, four or more offers: a detail wide enough to read, Reroll and Fight a little narrower, the offers take the rest */
+
+/* Portrait: the detail is 180px tall, so the hidden team's wells shrink (they are only a "?" each) and the tray rises to make room */
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-tray > .tb-detail.holds { padding: 8px 10px 8px 12px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-detail .insp-body { padding-right: 34px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-tray .tb-shop > .label { display: none; }
+/* The crown has no shop: its tray keeps the detail at its old height */
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop:has(.crown-foe) .tb-tray > .tb-detail { height: 112px; }
+/* A short phone window: the offers are smaller, the line and the bench sit a little higher and Reroll/Fight a little lower, so the detail keeps 138px */
+/* What a copy bought would become (6 PWR / 9 HP → 8 PWR / 15 HP) is a line of words, not a headline */
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact [data-testid="sheet-stats"] { font: 700 18px/1.2 var(--font-body); color: var(--paper); }
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-detail .sheet-compact [data-testid="sheet-stats"] { font-size: 15px; }
+/* The PWR / HP words of "3 PWR / 9 HP → 4 PWR / 11 HP" read as big as the numbers (no text under 11 px at 800×450, arena#49). */
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact [data-testid="sheet-stats"] small { font-size: inherit; }
+/* A locked offer's mark is a dark chip, never a light box */
+:is(#app[data-screen="shop"], #under) .tb-offers .pc-lock { background: var(--well); border: 2px solid var(--outline); border-radius: 8px; padding: 1px 4px; display: inline-flex; align-items: center; }
+
+/* ===== Fixed places (arena#51, mission #44 move 3 and 6) =====
+ * Frames for the five line slots and three bench slots that stay put whatever is in them, six offer wells that keep their
+ * holes, a compact rail of "?" marks over the line, the full round track and Cards in the HUD at both sizes. Everything is
+ * stage pixels; the portrait table is "full" from P_FULL_H up (the offers three by two), else compact (one row of six). */
+:is(#app[data-screen="shop"], #under) .stage.t-places { --gap: 14px; }
+:is(#app[data-screen="shop"], #under) .stage.t-places :is(.tb-their, .tb-line, .tb-bench) { column-gap: var(--gap); }
+:is(#app[data-screen="shop"], #under) .stage.t-places .tb-hud .plate.help { padding: 0 6px; }
+:is(#app[data-screen="shop"], #under) .stage.t-places .tb-hud .plate.help button { font: 400 26px/1 var(--font-head); color: var(--paper); }
+/* the rail: a "?" over each line column, and the words that say why */
+:is(#app[data-screen="shop"], #under) .stage.t-places .their-mark { text-align: center; font: 400 28px/30px var(--font-head); color: var(--them); }
+:is(#app[data-screen="shop"], #under) .stage.t-places .tb-side.them .next-opp { color: var(--them); background: none; border: 0; border-radius: 0; box-shadow: none; padding: 0; }
+:is(#app[data-screen="shop"], #under) .stage.t-places .tb-side .hidden-team { font: 500 18px/1.25 var(--font-body); color: var(--paper); }
+:is(#app[data-screen="shop"], #under) .stage.t-places .tb-side .sub { font: 500 18px/1.25 var(--font-body); color: var(--dim); text-transform: none; letter-spacing: 0; }
+/* the frames: a plate where a unit stands, a dashed well where none does; same box either way */
+:is(#app[data-screen="shop"], #under) .stage.t-places :is(.tb-line, .tb-bench) .cell { box-sizing: border-box; border: 3px solid var(--outline); border-radius: 18px; background: var(--surface); box-shadow: inset 0 -7px 0 color-mix(in srgb, var(--you) 55%, transparent); }
+:is(#app[data-screen="shop"], #under) .stage.t-places :is(.tb-line, .tb-bench) .cell.empty { background: var(--well); border: 3px dashed color-mix(in srgb, var(--paper) 26%, transparent); box-shadow: none; }
+:is(#app[data-screen="shop"], #under) .stage.t-places :is(.tb-line, .tb-bench) .cell.empty .cell-well { position: absolute; inset: 0; width: auto; height: auto; border: 0; border-radius: 0; background: none; box-shadow: none; display: grid; place-items: center; font: 400 38px/1 var(--font-head); color: color-mix(in srgb, var(--paper) 30%, transparent); }
+:is(#app[data-screen="shop"], #under) .stage.t-places :is(.tb-line, .tb-bench) .cell.selected { background: color-mix(in srgb, var(--action) 14%, var(--surface)); box-shadow: inset 0 0 0 3px var(--action), inset 0 -7px 0 color-mix(in srgb, var(--you) 55%, transparent); }
+:is(#app[data-screen="shop"], #under) .stage.t-places :is(.tb-line, .tb-bench) .cell.lit:not(.empty) { box-shadow: inset 0 0 0 3px var(--you), inset 0 -7px 0 color-mix(in srgb, var(--you) 55%, transparent); }
+:is(#app[data-screen="shop"], #under) .stage.t-places :is(.tb-line, .tb-bench) .cell.empty.lit { border: 3px solid var(--you); background: color-mix(in srgb, var(--you) 14%, var(--well)); box-shadow: 0 0 12px 2px color-mix(in srgb, var(--you) 45%, transparent); }
+:is(#app[data-screen="shop"], #under) .stage.t-places :is(.tb-line, .tb-bench) .cell.empty.want { border-color: var(--action); }
+:is(#app[data-screen="shop"], #under) .stage.t-places :is(.tb-line, .tb-bench) .cell.lit-twin { background: color-mix(in srgb, var(--action) 16%, var(--surface)); box-shadow: inset 0 0 0 3px var(--action), inset 0 -7px 0 color-mix(in srgb, var(--you) 55%, transparent); }
+:is(#app[data-screen="shop"], #under) .stage.t-places .tb-offers .cell.offer-gap { box-sizing: border-box; border: 3px dashed color-mix(in srgb, var(--paper) 26%, transparent); border-radius: 18px; background: var(--well); }
+:is(#app[data-screen="shop"], #under) .stage.t-places .tb-offers { gap: 4px 8px; }
+:is(#app[data-screen="shop"], #under) .stage.t-places .tb-shop > .label { display: none; }
+
+/* Landscape */
+:is(#app[data-screen="shop"], #under) .stage.L.t-places { --fx: 224px; --fw: 1044px; --cw: calc((var(--fw) - 4 * var(--gap)) / 5); }
+:is(#app[data-screen="shop"], #under) .stage.L.t-places .tb-bench { width: calc(var(--cw) * 3 + var(--gap) * 2); }
+:is(#app[data-screen="shop"], #under) .stage.L.t-places .tb-side.them { left: 16px; top: calc(var(--wells-top) - 2px); width: 200px; gap: 0; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-places .tb-side.them .next-opp { max-width: 200px; font-size: 20px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-places .tb-side.them .next-opp .who { display: inline; font-size: 20px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-places .tb-side.you { left: 16px; top: calc(var(--line-top) + 84px); width: 200px; gap: 2px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-places .tb-side.you .label { font-size: 24px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-places .tb-bench > .bench-label { right: auto; left: calc(16px - var(--fx)); margin: 0; top: 40px; text-align: left; align-items: flex-start; font-size: 24px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-places .tb-bench > .bench-label span:last-child { font: 500 18px/1.25 var(--font-body); text-transform: none; letter-spacing: 0; color: var(--dim); }
+:is(#app[data-screen="shop"], #under) .stage.L.t-places .tb-coach { left: 16px; width: 340px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-places .tb-shop { left: 368px; top: 12px; width: 690px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-places .tb-go { width: 170px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-places .tb-go button.primary { font-size: 38px; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-places .tb-go button.reroll-btn { font-size: 24px; }
+
+/* Portrait: the full table */
+:is(#app[data-screen="shop"], #under) .stage.P.t-places { --gap: 6px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-hud .plate.round { position: absolute; left: 0; right: 0; top: 58px; height: 30px; width: auto; padding: 0 4px; border-width: 3px; border-radius: 14px; box-shadow: 0 3px 0 var(--outline); justify-content: center; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-hud .plate.round .track { gap: 2px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-hud .plate .track-dot { width: 22px; height: 22px; font-size: 12px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-hud .plate .track-dot.now { width: 24px; height: 24px; font-size: 13px; box-shadow: 0 0 0 2px rgba(240, 194, 75, 0.3); }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-hud .plate .track-dot.crown { width: 26px; height: 22px; font-size: 12px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-side.them { left: 14px; top: 98px; right: 14px; flex-direction: column; align-items: flex-start; gap: 0; height: 38px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-side.them .next-opp { font-size: 15px; line-height: 1.25; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-side.them .next-opp .who { font-size: 16px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-side .hidden-team { font-size: 14px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-their:not(:has(.crown-foe)) { left: 12px; top: 140px; width: 366px; height: 20px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .their-mark { font-size: 20px; line-height: 20px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-side.you { left: 14px; top: 162px; right: 14px; flex-direction: row; align-items: baseline; gap: 8px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-side.you .label { font-size: 16px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-side.you .sub { font-size: 14px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-line { left: 12px; top: 184px; width: 366px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-bench { left: 12px; top: 312px; width: calc((366px - 4 * var(--gap)) / 5 * 3 + 2 * var(--gap)); }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-bench > .bench-label { position: absolute; left: calc(100% + 12px); right: auto; top: 6px; flex-direction: row; gap: 8px; font-size: 16px; text-align: left; align-items: baseline; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-bench > .bench-label span:last-child { font: 500 14px/1 var(--font-body); text-transform: none; letter-spacing: 0; color: var(--dim); }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-tray { top: calc(var(--sh) * 1px - 424px); bottom: 8px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-coach { top: 10px; height: 122px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-shop { top: 140px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-go { bottom: 8px; height: 48px; gap: 8px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-go button.reroll-btn { width: 140px; flex-wrap: nowrap; gap: 6px; font-size: 20px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-go button.reroll-btn .cost-chip { font-size: 14px; padding: 1px 7px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places .tb-go button { box-shadow: 0 4px 0 var(--outline), inset 0 -4px 0 rgba(0, 0, 0, 0.12), inset 0 3px 0 rgba(255, 255, 255, 0.35); }
+
+/* Portrait: the compact table (a short window): the rows close up and the six offers are one row */
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-hud .plate.round { top: 58px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-side.them { top: 94px; height: 18px; flex-direction: row; align-items: baseline; gap: 8px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-side.them .next-opp { font-size: 13px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-side.them .next-opp .who { font-size: 14px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-side .hidden-team { font-size: 12px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-their:not(:has(.crown-foe)) { display: block; top: 114px; height: 16px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .their-mark { font-size: 16px; line-height: 16px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-side.you { top: 132px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-line { top: 150px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-bench { top: 280px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-bench > .bench-label { top: 2px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-tray { top: 386px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-coach { height: 120px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-shop { top: 138px; }
+
+/* Fixed places, fit: a name wider than its well is cut, never over its neighbour; Reroll's word and price wrap in RU */
+:is(#app[data-screen="shop"], #under) .stage.t-places .tb-offers .cell.offer .pc-nm { max-width: 112px; overflow: hidden; text-overflow: ellipsis; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-offers .cell.offer .pc-nm { max-width: 62px; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-offers .cell.offer .pc-tab { max-width: 64px; justify-content: flex-start; }
+:is(#app[data-screen="shop"], #under) .stage.L.t-places .tb-go button.reroll-btn { flex-wrap: wrap; row-gap: 0; align-content: center; font-size: 22px; line-height: 1.05; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-offers .cell.offer { overflow: hidden; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-offers .cell.offer .pc-tab { max-width: 100%; overflow: hidden; text-overflow: ellipsis; justify-content: center; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-offers .cell.offer .pc-tier { display: none; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-their:not(:has(.crown-foe)) { display: grid; }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-side.them { top: 98px; }
+/* A wide window's old auto-fit rule for the offers (style.css) must not make a seventh column: the wells are --n columns */
+:is(#app[data-screen="shop"], #under) .stage.t-places .tb-offers { grid-template-columns: repeat(var(--n, 6), minmax(0, 1fr)); }
+:is(#app[data-screen="shop"], #under) .stage.P.t-places :is(.tb-line, .tb-bench) .cell .pc-tab { padding: 0 4px !important; }
+
+/* The phone's detail is short: its cue is a chevron at the right, not a fade over the "from → to" line (arena#49). */
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-detail > .insp-more { background: none; place-items: end end; padding-right: 16px; }

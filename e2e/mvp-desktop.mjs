@@ -133,21 +133,21 @@ try {
   await shot("home"); await noHScroll("home"); await wide("home", 1100); await onScreen("home: Play", page.getByTestId("play"));
   {
     // The champion's pieces (void-board#1295): sized from the panel, so no two touch, each tab and name whole.
-    const reach = await page.getByTestId("champion").locator(".pc").evaluateAll((els) => els.map((pc) => {
+    const reach = await page.getByTestId("home-their").locator(".pc").evaluateAll((els) => els.map((pc) => {
       const rs = [pc, ...pc.querySelectorAll("*")].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
       return { l: Math.min(...rs.map((r) => r.left)), r: Math.max(...rs.map((r) => r.right)), t: Math.min(...rs.map((r) => r.top)), b: Math.max(...rs.map((r) => r.bottom)) };
     }));
     const touch = reach.some((a, i) => reach.some((b, j) => j > i && a.r > b.l && b.r > a.l && a.b > b.t && b.b > a.t));
     if (reach.length !== 5 || touch) errors.push(`home champion: ${reach.length} pieces${touch ? ", two touch" : ""}`);
   }
-  // Home is a table state (arena#31): PLAY sits under the champion's line, over the middle of your slots.
+  // Home is a table state (arena#31, arena#51): PLAY sits in the tray, in Fight's place, under the champion's line.
   const [champBox, playBox] = [await page.getByTestId("home-their").boundingBox(), await page.getByTestId("play").boundingBox()];
   if (!(playBox.y > champBox.y + champBox.height * 0.8)) errors.push("home: Play isn't under the champion's line");
   {
     // At 1024px the champion's 5 pieces stay on one row.
     const size = page.viewportSize();
     await page.setViewportSize({ width: 1024, height: size.height });
-    const tops = await page.getByTestId("champion").locator(".pc").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+    const tops = await page.getByTestId("home-their").locator(".pc").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
     if (tops.length !== 5 || new Set(tops).size > 1) errors.push(`home at 1024px: the champion's pieces wrap (${tops.join(",")})`);
     await shot("home-1024");
     await page.setViewportSize(size);
@@ -246,9 +246,9 @@ try {
       await page.keyboard.press("l");
       await settle();
       if (!(await locked(1))) errors.push("lock: L didn't lock the chosen offer");
-      // A locked offer is put down: tap it again and the inspector offers Unlock.
-      await offer(1).click();
+      // Lock keeps the offer in hand (arena#47): the inspector stays on it and now offers Unlock.
       await page.getByTestId("inspector").getByTestId("lock").waitFor();
+      if (!(await offer(1).evaluate((el) => el.classList.contains("selected")))) errors.push("lock: Lock put the offer down");
       if (!(await page.getByTestId("inspector").getByTestId("lock").textContent()).startsWith("🔓 Unlock")) errors.push("lock: the locked offer's inspector doesn't say Unlock");
       await page.keyboard.press("Escape");
       // M5-6: the keys line moved to Codex › How to play; the L sits on the inspector's Lock (checked above).
@@ -269,20 +269,31 @@ try {
       { const box = await page.getByTestId("offers").locator(".cell").first().boundingBox(); if (!box || box.width < 112) errors.push(`shop offers: cell ${box ? Math.round(box.width) : "missing"}px wide, want ≥ 112`); }
       await onScreen("shop: Fight", page.getByTestId("fight"));
       await onScreen("shop: last offer", page.getByTestId("offers").locator(".cell").last());
-      // A tap on an offer reads it in the inspector, with its Buy (the table's inspector floats right of the lines).
-      await page.getByTestId("offers").locator(".cell").first().click();
+      // A tap on an offer reads it in the inspector, with its Buy (arena#47: the inspector is one fixed surface in the tray; selecting changes its words only).
+      const still = ["line", "bench", "offers", "reroll", "fight", "inspector"];
+      const boxes = async () => Object.fromEntries(await Promise.all(still.map(async (id) => [id, await page.getByTestId(id).boundingBox()])));
+      const beforeTap = await boxes();
+      // (A right-click Lock keeps its offer in hand: tap only when the first offer is not already the one read.)
+      const firstOffer = page.getByTestId("offers").locator(".cell").first();
+      if (!(await firstOffer.evaluate((el) => el.classList.contains("selected")))) await firstOffer.click();
       await page.getByTestId("inspector").getByTestId("unit-sheet").waitFor();
-      await page.getByTestId("inspector").getByTestId("buy").waitFor();
+      // No Buy button (arena#49): the gold destination wears the price and is the purchase.
+      await page.getByTestId("buy").waitFor();
+      if (await page.getByTestId("inspector").locator("button", { hasText: /Buy|Купить/ }).count()) errors.push("shop: the inspector still has a Buy button");
       await shot("shop-offer-inspector"); await noOverlay("offer");
       await onScreen("shop: inspector", page.getByTestId("inspector"));
       const [lineBox, insp] = [await page.getByTestId("line").boundingBox(), await page.getByTestId("inspector").boundingBox()];
-      if (!(insp.x >= lineBox.x + lineBox.width)) errors.push("shop: the inspector covers the line");
+      if (!(insp.y >= lineBox.y + lineBox.height)) errors.push("shop: the inspector covers the line");
+      const afterTap = await boxes();
+      for (const id of still) { const [a, b] = [beforeTap[id], afterTap[id]]; if (!a || !b || ["x", "y", "width", "height"].some((k) => Math.abs(a[k] - b[k]) > 0.5)) errors.push(`shop: selecting an offer moved or resized ${id}`); }
       await page.keyboard.press("Escape");
-      // Double-click buys the first offer.
+      // A tap on the first offer, then on its gold destination, buys it: one gold tap, and the receipt says so.
       const before = await lineCount();
-      await page.getByTestId("offers").locator(".cell").first().dblclick();
+      await page.getByTestId("offers").locator(".cell").first().click();
+      await page.getByTestId("buy").click();
       await settle();
-      if ((await lineCount()) !== before + 1) errors.push("shop: double-click didn't buy");
+      if ((await lineCount()) !== before + 1) errors.push("shop: a tap on the gold destination didn't buy");
+      if (!(await page.getByTestId("receipt").count())) errors.push("shop: no receipt line after a buy");
       await dropOwnGift();
     }
     // Buy with the number keys while gold lasts (and the line has room).
@@ -307,9 +318,11 @@ try {
       const g0 = g;
       // →: the first offer in hand; the digit of the first empty slot buys it there.
       await page.keyboard.press("ArrowRight");
-      await page.keyboard.press(String(n + 1));
+      // Its slot number commits the buy, on the gold destination only (a twin's slot when you own one).
+      const digit = await page.getByTestId("buy").evaluate((el) => { const m = /^(line|bench)-(\d+)/.exec(el.closest(".cell").dataset.testid); return m[1] === "line" ? +m[2] + 1 : 5 + +m[2] + 1; }).catch(() => n + 1);
+      await page.keyboard.press(String(digit));
       await settle();
-      if ((await gold()) === g0) { errors.push(`round ${round}: → then ${n + 1} didn't buy`); break; }
+      if ((await gold()) === g0) { errors.push(`round ${round}: → then ${digit} didn't buy`); break; }
       await wantSfx("key → 1–5 (buy)", /^(coin|merge|level-up)$/);
       // A copy that awakens a unit brings a gift; its chooser (checked below) blocks the keys: skip it.
       await dropOwnGift();
@@ -342,7 +355,7 @@ try {
         errors.push("the dragged unit isn't selected");
         await page.getByTestId("line-1").click();
       }
-      await page.getByTestId("inspector").getByTestId("move-left").waitFor();
+      await page.getByTestId("inspector").getByTestId("move").waitFor();
       await shot("shop-selected"); await noOverlay("selected");
       await page.keyboard.press("ArrowLeft");
       await settle();
