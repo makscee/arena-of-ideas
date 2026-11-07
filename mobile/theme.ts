@@ -13,7 +13,7 @@ const THEME_KEY = "arena.theme";
  * and the switch's swatches: [ground, your side, their side, the action].
  * The same values as style.css's token block. */
 export const THEME_SWATCH: Record<Theme, readonly [string, string, string, string]> = {
-  plum: ["#241d33", "#3fb9a0", "#e07a86", "#f0c24b"],
+  plum: ["#221b31", "#3fb9a0", "#e9838f", "#f0c24b"],
   brass: ["#1b2133", "#3fa98f", "#d9765f", "#e8b44a"],
   felt: ["#1f3229", "#5ab0d6", "#d0644f", "#e6b93d"],
 };

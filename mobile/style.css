@@ -8,14 +8,16 @@
  * Action, Power, Card (--paper), Your side, Their side; the rest are the
  * boards' shades of them (dot grid, muted lines, dim text, card faces…). */
 :root, .swatch[data-theme="plum"] {
-  --ground: #241d33;
+  --ground: #221b31;
+  --well: #191326;
+  --surface: #2f2646;
   --panel: #32294a;
   --outline: #120e1c;
   --action: #f0c24b;
   --power: #e99a45;
-  --paper: #fbf7f0;
+  --paper: #f4ecdf;
   --you: #3fb9a0;
-  --them: #e07a86;
+  --them: #e9838f;
   --dots: #2a2240;
   --muted: #75699a;
   --them-deep: #d0566a;
@@ -35,6 +37,8 @@
 }
 :root[data-theme="brass"], .swatch[data-theme="brass"] {
   --ground: #1b2133;
+  --well: #131827;
+  --surface: #28304a;
   --panel: #252d45;
   --outline: #0e1220;
   --action: #e8b44a;
@@ -61,6 +65,8 @@
 }
 :root[data-theme="felt"], .swatch[data-theme="felt"] {
   --ground: #1f3229;
+  --well: #16241d;
+  --surface: #2c473a;
   --panel: #2a4538;
   --outline: #101a15;
   --action: #e6b93d;
