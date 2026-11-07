@@ -890,7 +890,6 @@ button.bv-why.won { color: var(--you); border-color: color-mix(in srgb, var(--yo
 .bv-end-sub { font-size: 14px; line-height: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* A run's fight: the round fought, hearts and record after it, what it cost or won (R2-17 batch E). */
 /* arena#16: why I lost, one plain line under the result. */
-.bv-lost-line { font-size: 15px; font-weight: 700; line-height: 19px; color: var(--loss); margin-top: -2px; }
 .bv-end-run { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: 13px; line-height: 17px; margin-top: -4px; }
 .bv-end-run .hearts { color: var(--them); letter-spacing: 1px; }
 .bv-end-run .error { font-size: inherit; min-height: 0; }
@@ -900,35 +899,11 @@ button.bv-why.won { color: var(--you); border-color: color-mix(in srgb, var(--yo
 .bv-error .error { flex: 1; min-width: 0; min-height: 0; }
 .bv-error:has(> .error:empty) { display: none; }
 .bv-trace-end { gap: 6px; }
-.bv-end-body { display: flex; flex-direction: column; gap: 12px; }
 /* The phone's card is tight (R2-17 batch F): with the run line and the ☰
  * HUD, three whole moments still fit under the caption at 360×640. */
 .bv-end { padding-top: 8px; gap: 4px; }
-.bv-end-moments { gap: 3px; }
-.bv-end-moments > .label { line-height: 14px; }
-.bv-end-more { text-transform: none; letter-spacing: 0; color: var(--dim); }
-.bv-dmg-list { gap: 2px; }
 /* The emoji column holds a fused unit's two emojis (.two) whole, clear of its name (R2-17 batch F). */
-.bv-dmg { display: grid; grid-template-columns: 24px minmax(0, 6.5em) 1fr 28px; gap: 6px; align-items: center; font-size: 14px; line-height: 20px; }
-.bv-dmg .emoji { font-size: 15px; text-align: center; white-space: nowrap; }
 /* A fused unit's two emojis share the column on one line, so every row's name and bar line up (R2-17 batch E). */
-.bv-dmg .emoji.two { font-size: 10px; letter-spacing: -1px; }
-.bv-dmg.open { cursor: pointer; }
-.bv-dmg.open:hover .bv-cn { text-decoration: underline; }
-.bv-dmg-list > .label { align-items: center; }
-button.bv-dmg-more { padding: 0 10px; font-size: 13px; }
-.bv-dmg .bv-cn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bv-dmg .mono { text-align: right; font-weight: 700; }
-.bv-dmg-bar { height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--line) 50%, transparent); overflow: hidden; }
-.bv-dmg-bar i { display: block; height: 100%; border-radius: 4px; }
-.bv-dmg.you .bv-dmg-bar i { background: var(--you); }
-.bv-dmg.ghost .bv-dmg-bar i { background: var(--them); }
-button.bv-moment { display: grid; grid-template-columns: 38px 18px minmax(0, 1fr) auto; gap: 6px; align-items: center; min-height: 44px; text-align: left; text-transform: none; letter-spacing: 0; font-family: var(--font-body); font-weight: 600; font-size: 15px; color: var(--text); border-color: var(--line); padding: 2px 10px; }
-.bv-moment-t { font-size: 12px; }
-.bv-moment-ic { display: flex; }
-.bv-moment-l { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 17px; }
-.bv-end-actions { gap: 6px; position: sticky; bottom: -12px; margin: 0 -12px -12px; padding: 4px 12px 6px; background: var(--panel); }
-.bv-end-actions button { flex: 1 1 auto; padding: 0 6px; font-size: 15px; letter-spacing: 0.02em; white-space: nowrap; }
 .bv-line.empty { min-height: 0; display: block; }
 .bv-word.neutral { color: var(--text); font-size: 24px; }
 /* Slice 11: a unit's rates, only a hint since round 2: the sheet's dim last line. */
@@ -1347,16 +1322,6 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-end .bv-word.neutral { font-size: 40px; }
   #app[data-screen="battle"] .bv-end-sub { font-size: 18px; line-height: 24px; white-space: normal; }
   #app[data-screen="battle"] .bv-end-run { font-size: 18px; line-height: 24px; gap: 4px 16px; margin-top: -12px; }
-  #app[data-screen="battle"] .bv-end-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: start; }
-  #app[data-screen="battle"] .bv-dmg-list { order: -1; gap: 4px; }
-  #app[data-screen="battle"] button.bv-dmg-more { min-height: 32px; }
-  #app[data-screen="battle"] .bv-dmg .emoji.two { font-size: 12px; }
-  #app[data-screen="battle"] .bv-dmg { font-size: 16px; line-height: 24px; grid-template-columns: 28px minmax(0, 7em) 1fr 32px; gap: 10px; }
-  #app[data-screen="battle"] .bv-end-moments { gap: 8px; }
-  #app[data-screen="battle"] button.bv-moment { font-size: 16px; }
-  #app[data-screen="battle"] .bv-end-actions { bottom: -24px; margin: 0 -28px -24px; padding: 8px 28px 24px; }
-  #app[data-screen="battle"] .bv-end-actions button { flex: 0 0 auto; min-width: 128px; padding: 0 20px; }
-  #app[data-screen="battle"] .bv-end-actions button[data-testid="battle-done"] { margin-left: auto; min-width: 220px; }
 }
 @media (min-width: 1280px) {
   #app[data-screen="battle"] { --insp: 380px; }
@@ -1484,11 +1449,9 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
 .gift-choice button { padding: 0 6px; }
 .gift-banner { align-items: center; gap: 8px; font-size: 15px; color: var(--you); border-left: 2px solid var(--you); padding: 2px 0 2px 8px; background: color-mix(in srgb, var(--you) 6%, transparent); }
 /* R3-26: an end card taller than what it holds (it fills from the caption down) keeps its buttons at its foot. */
-.bv-end-actions { margin-top: auto; }
 .bv-now-turn { align-items: center; gap: 8px; }
 .bv-now-turn > button { flex: none; }
 /* A key moment's names carry a small side tag (R3-26). */
-.bv-moment-l .bv-who { font-size: 10px; line-height: 13px; padding: 0 3px; margin-right: 3px; vertical-align: 1px; letter-spacing: 0.04em; }
 .bv-tagged { white-space: nowrap; }
 /* A short desktop screen (1024×768): a tighter end card, so its key moments
  * fit above the caption it must not touch (R3-26). */
@@ -1496,9 +1459,6 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-end { padding: 16px 24px; gap: 12px; }
   #app[data-screen="battle"] .bv-end .bv-word { font-size: 44px; }
   #app[data-screen="battle"] .bv-end-run { margin-top: -6px; }
-  #app[data-screen="battle"] .bv-end-body { gap: 24px; }
-  #app[data-screen="battle"] .bv-end-moments { gap: 6px; }
-  #app[data-screen="battle"] .bv-end-actions { bottom: -16px; margin: 0 -24px -16px; padding: 8px 24px 16px; }
 }
 /* R4-5: on desktop the gift chooser reads the hovered card in a pane beside the three cards. */
 @media (min-width: 1024px) {
@@ -1978,7 +1938,6 @@ button.link.report-link { min-height: 32px; min-width: 44px; align-self: center;
 .card .emoji .sg-ic { display: block; height: 100%; width: auto; aspect-ratio: 1; margin: 0 auto; }
 .pin-emoji { display: inline-flex; align-items: center; }
 .forge-picker button .sg-ic { display: block; margin: auto; }
-.bv-dmg .emoji .sg-ic { display: block; }
 .vote-tag .sg-ic, .idea-row .sg-ic, .chip .sg-ic { margin: -3px 0; }
 .pc-em { line-height: 1; transform: translateY(4%); font-family: system-ui, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
 .pc-em2 { position: relative; width: 100%; height: 100%; }
@@ -2338,13 +2297,7 @@ button.link.report-link { min-height: 32px; min-width: 44px; align-self: center;
 .cell.offer-gap { border: 2px dashed color-mix(in srgb, var(--outline) 35%, transparent); border-radius: 14px; background: color-mix(in srgb, var(--panel) 60%, transparent); pointer-events: none; }
 
 /* The result card: the next step is the one big button, Replay and Why are small and quiet (CrazyGames audit, arena#14). */
-.bv-end-actions { flex-wrap: wrap; align-items: stretch; }
-.bv-end-actions button[data-testid="battle-done"] { order: 1; flex: 1 1 100%; min-height: 60px; font-size: 24px; letter-spacing: 0.04em; text-transform: uppercase; box-shadow: 0 5px 0 var(--outline); }
-.bv-end-actions button:not([data-testid="battle-done"]) { order: 2; flex: 1 1 0; min-height: 44px; font-size: 13px; font-weight: 500; opacity: 0.85; box-shadow: none; background: transparent; }
 @media (orientation: landscape) and (max-height: 560px) {
-  .bv-end-actions button[data-testid="battle-done"] { order: 2; flex: 2 1 0; min-height: 52px; font-size: 22px; }
-  .bv-end-actions button:not([data-testid="battle-done"]) { order: 1; flex: 0 1 auto; }
-  #app[data-screen="battle"] .bv-end-actions button[data-testid="battle-done"] { margin-left: 0; min-width: 0; }
 }
 /* Phone landscape under 760 px wide (667×375): the same layout, a narrower side column (arena#14). */
 @media (orientation: landscape) and (min-width: 560px) and (max-width: 759.98px) and (max-height: 560px) {

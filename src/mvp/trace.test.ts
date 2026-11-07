@@ -10,7 +10,7 @@ import { MVP_RULES, type MvpContent, type PlayerRef } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { lineUnitOf } from "./forms.js";
 import { mvpPool } from "./units.js";
-import { setTraceLang, BEAT_MS, DEATH_BEAT_MS, TURN_BEAT_MS, CUE_MS, CONTACT_MS, RECEIPT_END_MS, phaseOf, waveMs, LINEUP_MS, waveWaitMs, playbackMs, chainSummaryOf, chainSideText, type PlayBeat, END_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, beamsOf, stepsOf, sidesOf, timelineOf, timingOf, traceOf, turnLabel, turnSummaryOf, whyILost, TURN_END_MS, turnEndHoldMs, turnEndsOf, totalsPartsOf, totalsText, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, type UnitTurnTotals } from "./trace.js";
+import { setTraceLang, BEAT_MS, DEATH_BEAT_MS, TURN_BEAT_MS, CUE_MS, CONTACT_MS, RECEIPT_END_MS, phaseOf, waveMs, LINEUP_MS, waveWaitMs, playbackMs, chainSummaryOf, chainSideText, type PlayBeat, END_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, carryOf, endCaption, keyMomentsOf, firingOf, causeOf, beamsOf, stepsOf, sidesOf, timelineOf, timingOf, traceOf, turnLabel, turnSummaryOf, whyILost, TURN_END_MS, turnEndHoldMs, turnEndsOf, totalsPartsOf, totalsText, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, type UnitTurnTotals } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -1146,4 +1146,35 @@ describe("rules v2 event captions", () => {
         setTraceLang("en");
       }
     });
+});
+
+describe("carryOf: what carried a side, from the events alone (arena#53)", () => {
+  test("damage goes to the unit nearest the hit, heal and shield to who gave them, in a fixed order", () => {
+    const log = run([Shieldbearer, Smith, Archer, Medic], [dummy("Dummy", 20, 3)]);
+    const rows = carryOf(log, "A");
+    expect(rows.map((r) => r.kind)).toEqual(["damage", "heal", "buff", "block"].filter((k) => rows.some((r) => r.kind === k)));
+    const dmg = damageByUnit(log).find((d) => d.side === "A" && d.damage > 0)!;
+    const top = rows.find((r) => r.kind === "damage")!;
+    expect(top.unit).toBe(dmg.unit);
+    expect(top.amount).toBe(dmg.damage);
+    // Every row opens a real event of its own kind.
+    for (const r of rows) {
+      const e = log[r.eventId]!;
+      expect(e.type).toBe(r.kind === "damage" ? "Hurt" : r.kind === "heal" ? "Heal" : r.kind === "buff" ? "StatChanged" : "Hurt");
+    }
+    const block = rows.find((r) => r.kind === "block");
+    expect(block?.unit).toBe("A1:Shieldbearer");
+    const absorbed = log.filter((e) => e.type === "Hurt" && e.unit.startsWith("A") && (e.absorbed ?? 0) > 0).reduce((n, e) => n + (e.type === "Hurt" ? (e.absorbed ?? 0) : 0), 0);
+    expect(block!.amount).toBeLessThanOrEqual(absorbed);
+    expect(block!.amount).toBeGreaterThan(0);
+  });
+
+  test("the other side's carry is read the same way, and a side that did nothing has no rows", () => {
+    const log = run([Shieldbearer, Smith, Archer], [dummy("Dummy", 20, 3)]);
+    const theirs = carryOf(log, "B");
+    expect(theirs.map((r) => r.kind)).toEqual(["damage"]);
+    expect(theirs[0]!.unit).toBe("B1:Dummy");
+    const log2 = run([dummy("Wall", 9, 0)], [dummy("Wall", 9, 0)]);
+    expect(carryOf(log2, "A")).toEqual([]);
+  });
 });
