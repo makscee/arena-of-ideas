@@ -254,18 +254,38 @@ try {
         if (!seen) fail(at, "no offer of this scene lit a twin");
       }
 
-      // ---- 5. An awakening: the tag names the verb, the price and the numbers (2/13→4/18).
+      // ---- 5. An awakening: the tag says the verb and the price on one line inside its frame (the numbers 2/13→4/18 stay
+      // while they fit); the tray always reads the "from → to" line, whole, not under the scroll cue.
       {
         const at = `${v.name} ${lang} awaken`;
         await open("awaken");
         let seen = false;
         for (const id of await offerIds()) {
           await page.getByTestId(id).click();
-          await page.waitForTimeout(300);
-          const txt = (await page.getByTestId("buy").innerText().catch(() => "")).replace(/\s+/g, " ");
-          if (/\d+\/\d+\s*→\s*\d+\/\d+/.test(txt)) { seen = true; await tagChecks(at); await shot("awaken"); break; }
+          await page.waitForTimeout(400);
+          const tag = page.getByTestId("buy");
+          const txt = (await tag.innerText().catch(() => "")).replace(/\s+/g, " ");
+          const kind = await page.evaluate(() => (document.querySelector(".cell.lit-twin .lit-tag") ? "twin" : ""));
+          if (kind && !/^\+1|copy|копи/i.test(txt)) {
+            seen = true;
+            if (!/\d/.test(txt)) fail(at, `the awaken tag has no price: ${txt}`);
+            const h = await tag.evaluate((el) => el.getBoundingClientRect().height);
+            if (h > 26) fail(at, `the awaken tag is ${Math.round(h)} px tall: one line only`);
+            const read = await page.evaluate(() => {
+              const body = document.querySelector(".insp-body"), st = document.querySelector('[data-testid="sheet-stats"]');
+              if (!body || !st) return null;
+              const [b, r] = [body.getBoundingClientRect(), st.getBoundingClientRect()];
+              return { text: st.innerText, inside: r.top >= b.top - 0.5 && r.bottom <= b.bottom + 0.5, cue: !!document.querySelector('[data-testid="insp-more"]') && getComputedStyle(document.querySelector('[data-testid="insp-more"]')).backgroundImage !== "none" && r.bottom > document.querySelector('[data-testid="insp-more"]').getBoundingClientRect().top + 0.5 };
+            });
+            if (!read || !/→/.test(read.text)) fail(at, "the tray has no from → to line for the awakening");
+            else if (!read.inside) fail(at, "the from → to line is cut by the detail's box");
+            else if (read.cue) fail(at, "the from → to line is under the scroll cue's fade");
+            await tagChecks(at);
+            await shot("awaken");
+            break;
+          }
         }
-        if (!seen) fail(at, "no offer of this scene showed an awaken tag with its numbers");
+        if (!seen) fail(at, "no offer of this scene showed an awaken tag");
       }
       await ctx.close();
     }

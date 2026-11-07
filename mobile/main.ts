@@ -1228,8 +1228,15 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     if (d.kind === "buy") return h("span", { class: "lit-tag buy", "data-testid": "buy" }, t("slot.buy", { cost: o.cost }));
     if (d.kind === "copy") return h("span", { class: "lit-tag buy", "data-testid": "buy" }, t("slot.copy"), h("small", {}, price));
     const verb = t(tall && uiLang() === "ru" ? "slot.awakenShort" : "slot.awaken", { cost: o.cost });
-    return h("span", { class: "lit-tag buy", "data-testid": "buy" }, verb, ...(d.from && d.to ? [h("small", {}, `${d.from.pwr}/${d.from.hp}→${d.to.pwr}/${d.to.hp}`)] : []));
+    return h("span", { class: "lit-tag buy", "data-testid": "buy" }, verb, ...(d.from && d.to ? [h("small", { class: "nums" }, `${d.from.pwr}/${d.from.hp}→${d.to.pwr}/${d.to.hp}`)] : []));
   };
+  /** One line, inside its cell: an awakening's numbers (2/13→4/18) stay in the tag only while they fit; the tray always has them. */
+  const fitTag = (el: HTMLElement) =>
+    requestAnimationFrame(() => {
+      const nums = el.querySelector(".nums");
+      const cell = el.closest(".cell");
+      if (nums && cell && el.getBoundingClientRect().width > cell.getBoundingClientRect().width - 4) nums.remove();
+    });
   /** What Move offers for the unit in hand on `slot`: a teal destination named for what it does, or null. Only an occupied
    * slot or the next free well of a zone is one (the line stays packed front-first). */
   const moveKind = (slot: number): "here" | "swap" | "zone" | null => {
@@ -1249,7 +1256,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       if (d?.slot !== slot) return;
       el.classList.add("lit", "lit-buy");
       if (d.kind !== "buy") el.classList.add("lit-twin");
-      el.append(buyTag(o, d));
+      const tag = buyTag(o, d);
+      el.append(tag);
+      fitTag(tag);
       return;
     }
     const m = moveKind(slot);
