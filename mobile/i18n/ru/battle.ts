@@ -31,6 +31,7 @@ export const battle = {
   "battle.turn": "Ход {n}",
   "battle.turnShort": "Х{n}",
   "battle.more": "ещё {n}",
+  "battle.blockedTag": "−{n} · заблокировано",
   "battle.noDmg": "без урона",
   "battle.statusMoreAria": "ещё {over}: все статусы ({n})",
   "battle.now.noAbility": "Без способности: бьётся своими АТК / ОЗ.",

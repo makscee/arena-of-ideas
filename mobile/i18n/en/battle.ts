@@ -31,6 +31,7 @@ export const battle = {
   "battle.turn": "Turn {n}",
   "battle.turnShort": "T{n}",
   "battle.more": "{n} more",
+  "battle.blockedTag": "−{n} · blocked",
   "battle.noDmg": "no dmg",
   "battle.statusMoreAria": "{over} more: all {n} statuses",
   "battle.now.noAbility": "No ability: it fights with its PWR / HP.",
