@@ -438,8 +438,12 @@ try {
     // the last shop is still there, locked, at the left.
     const offerName = (slot) => page.getByTestId(`offer-${slot}`).locator(".name").textContent();
     const isLocked = async (slot) => (await page.getByTestId(`offer-${slot}`).getAttribute("class")).includes("locked") && (await page.getByTestId(`offer-${slot}`).locator(".lock-mark").count()) === 1;
+    // Lock keeps the offer in hand (arena#47): tap it only when it is not already the one the detail reads.
+    const selectOffer = async (slot) => {
+      if (!(await page.getByTestId(`offer-${slot}`).evaluate((e) => e.classList.contains("selected")))) await page.getByTestId(`offer-${slot}`).click();
+    };
     const lockFromSheet = async (slot, want) => {
-      await page.getByTestId(`offer-${slot}`).click();
+      await selectOffer(slot);
       await page.getByTestId("lock").waitFor();
       if (!(await page.getByTestId("lock").textContent()).includes(L(want === "Lock" ? "board.lock" : "board.unlock"))) errors.push(`lock: offer ${slot}'s sheet says "${await page.getByTestId("lock").textContent()}", not ${want}`);
       if (want === "Lock" && round === 0) { await shot("offer-sheet-lock"); await tap44("Lock", page.getByTestId("lock")); }
@@ -473,7 +477,7 @@ try {
       const filled = await page.getByTestId("line").locator(".cell.you").count();
       if (filled >= 5) break;
       // An offer opens its sheet (both forms, what buying does); Buy buys.
-      await page.getByTestId("offer-0").click();
+      await selectOffer(0);
       await page.getByTestId("buy").waitFor();
       if (round === 0 && k === 0) { await shot("offer-sheet"); await noHScroll("offer-sheet"); }
       if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("inspector-close").click(); break; }

@@ -78,7 +78,7 @@ try {
       await shot(page, s);
       if ((await page.locator('[data-testid^="fuse-mark-"], [data-testid^="fuse-offer-"]').count()) > 0) fail(s, "a fusion mark shows");
       if ((await page.locator(".card.fuse-ready, .card.fusable").count()) > 0) fail(s, "a fusion glow shows");
-      if (/fuse:|слить:|F\.|«Слить»/.test((await page.locator(".hint-slot").textContent()) ?? "")) fail(s, "the fuse hint shows");
+      if (/fuse:|слить:|F\.|«Слить»/.test((await page.getByTestId("inspector").textContent()) ?? "")) fail(s, "the fuse hint shows");
       await select(page, "line-0");
       if ((await page.getByTestId("fuse").count()) > 0) fail(s, "a Fuse button on an Awoken unit of an unforged pair");
       if (desk) {

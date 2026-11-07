@@ -209,9 +209,7 @@ async function fullRun(lang) {
         await press("l");
         await settle();
         expect("L locks the chosen offer", (await page.locator('[data-testid^="offer-"] .lock-mark').count()) >= 1);
-        // A locked offer is put down: take it in hand again, then L unlocks it.
-        await tabTo("offer-0");
-        await press("Enter");
+        // Lock keeps the offer in hand (arena#47): L again unlocks it.
         await press("l");
         await settle();
         expect("L unlocks it", (await page.locator('[data-testid^="offer-"] .lock-mark').count()) === 0);
