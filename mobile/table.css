@@ -938,3 +938,6 @@ button.ws-back { min-height: 44px; min-width: 44px; padding: 0 12px; flex: none;
 /* A wide window's old auto-fit rule for the offers (style.css) must not make a seventh column: the wells are --n columns */
 :is(#app[data-screen="shop"], #under) .stage.t-places .tb-offers { grid-template-columns: repeat(var(--n, 6), minmax(0, 1fr)); }
 :is(#app[data-screen="shop"], #under) .stage.P.t-places :is(.tb-line, .tb-bench) .cell .pc-tab { padding: 0 4px !important; }
+
+/* The phone's detail is short: its cue is a chevron at the right, not a fade over the "from → to" line (arena#49). */
+:is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-detail > .insp-more { background: none; place-items: end end; padding-right: 16px; }
