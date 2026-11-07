@@ -68,7 +68,7 @@ export function homeTable(p: HomeParts): HTMLElement {
     ...Array.from({ length: 5 }, (_, i) => {
       const u = line[i];
       if (!u) return h("div", { class: "hm-cell empty blank", "aria-hidden": "true", style: frameStyle(sz.line, floor) });
-      return h("div", { class: "hm-cell them", style: frameStyle(sz.line, floor) }, piece(lineToPiece(u, p.content), { size: "L", side: "them", px: sz.line, testid: `home-champ-${i}`, floor }));
+      return h("div", { class: "hm-cell them", style: frameStyle(sz.line, floor) }, piece(lineToPiece(u, p.content), { size: o === "L" ? "L" : "M", side: "them", px: o === "L" ? sz.line : sz.line - 6, testid: `home-champ-${i}`, floor }));
     }),
   );
   // YOUR LINE: five empty frames, numbered, where the shop's bench is.

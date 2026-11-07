@@ -110,9 +110,9 @@
 :is(#app[data-screen="home"], #under) .stage.L .hm-slots { left: var(--fx); top: var(--bench-top); width: var(--fw); }
 :is(#app[data-screen="home"], #under) .stage.L .hm-tray { left: 14px; right: 14px; top: var(--tray-top); bottom: 12px; }
 :is(#app[data-screen="home"], #under) .stage.L .hm-tray > .hm-workshop { position: absolute; left: 16px; top: 16px; bottom: 22px; width: 640px; height: auto; }
-:is(#app[data-screen="home"], #under) .stage.L .hm-tray:has(.vote-box:not(:empty)) > .hm-workshop { width: 330px; }
-:is(#app[data-screen="home"], #under) .stage.L .hm-tray > .vote-box { position: absolute; left: 358px; top: 16px; bottom: 22px; width: 298px; }
-:is(#app[data-screen="home"], #under) .stage.L .hm-tray > .hm-rows { position: absolute; left: 676px; top: 16px; bottom: 22px; width: 360px; grid-template-rows: repeat(3, minmax(0, 1fr)); }
+:is(#app[data-screen="home"], #under) .stage.L .hm-tray:has(.vote-box:not(:empty)) > .hm-workshop { width: 300px; }
+:is(#app[data-screen="home"], #under) .stage.L .hm-tray > .vote-box { position: absolute; left: 328px; top: 16px; bottom: 22px; width: 342px; }
+:is(#app[data-screen="home"], #under) .stage.L .hm-tray > .hm-rows { position: absolute; left: 684px; top: 16px; bottom: 22px; width: 352px; grid-template-rows: repeat(3, minmax(0, 1fr)); }
 :is(#app[data-screen="home"], #under) .stage.L .hm-tray > .hm-rows:has(> :nth-child(2):last-child) { grid-template-rows: repeat(2, minmax(0, 1fr)); }
 :is(#app[data-screen="home"], #under) .stage.L .hm-tray > .hm-go { position: absolute; right: 18px; top: 16px; bottom: 22px; width: 170px; padding-top: 70px; }
 :is(#app[data-screen="home"], #under) .stage.L .hm-go > .hm-newrun { position: absolute; left: 0; right: 0; top: 0; }
@@ -174,3 +174,5 @@
 :is(#app[data-screen="home"], #under) .stage.P.compact .hm-slots { top: 280px; }
 :is(#app[data-screen="home"], #under) .stage.P.compact .hm-tray { top: 386px; }
 :is(#app[data-screen="home"], #under) .stage.P.compact .hm-tray .vote-box { display: none; }
+/* On a phone the when tabs of five neighbours share 73 stage px each: their padding closes up so two long ones don't touch */
+:is(#app[data-screen="home"], #under) .stage.P .hm-cell .pc-tab { padding: 0 4px !important; }

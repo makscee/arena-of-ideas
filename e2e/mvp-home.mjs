@@ -131,7 +131,7 @@ function check(label, m, fail, { vote }) {
     if (m.champs.map((c) => c.name).join() !== champ.join()) fail(`TO BEAT is ${m.champs.map((c) => c.name)}, not today's champion's ${champ}`);
     const k = m.k;
     const px = m.champs[0].w / k;
-    if (px < (L ? 70 : 40) - 0.5) fail(`the champion's pieces are ${px.toFixed(0)} px on the stage, under ${L ? "the shop's 70" : 40}`);
+    if (px < (L ? 70 : 34) - 0.5) fail(`the champion's pieces are ${px.toFixed(0)} px on the stage, under ${L ? "the shop's 70" : 34}`);
     // The shop's places (arena#51): each piece stands in a frame of the line row, over the same column as your slot below it.
     m.champs.forEach((c, i) => {
       const s = m.slots[i];
