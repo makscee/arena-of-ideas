@@ -1656,6 +1656,90 @@ export function damageByUnit(log: BattleEvent[], name: NameOf = displayNames(log
   return out.sort((p, q) => (p.side === q.side ? q.damage - p.damage : p.side < q.side ? -1 : 1));
 }
 
+/** One cause of the result (arena#53, MOVES 5): what one unit did most of, over the battle. */
+export interface CarryRow {
+  kind: "damage" | "heal" | "buff" | "block";
+  unit: string;
+  name: string;
+  /** HP of damage dealt (overkill not counted), HP healed, PWR added or damage a Shield it gave took. */
+  amount: number;
+  /** The unit's single biggest event of this kind: the moment the row opens. */
+  eventId: number;
+}
+
+/** What carried `side` through the battle, computed from the events alone: its unit that dealt the most damage
+ * to the other side, the one that healed the most, the one that added the most PWR and the one whose Shield
+ * took the most. Credit goes to the nearest unit of that side in the event's chain (as damageByUnit does; a
+ * Shield to the unit that put it on). A kind nobody did is left out; the order is fixed: damage, heal, buff, block. */
+export function carryOf(log: BattleEvent[], side: Side, name: NameOf = displayNames(log), sides = sidesOf(log)): CarryRow[] {
+  const hp = new Map<string, number>();
+  for (const e of log) if (e.type === "BattleStart") for (const s of ["A", "B"] as const) for (const r of e.teams[s]) hp.set(r.id, r.hp);
+  type Acc = { total: number; best: number; eventId: number };
+  const acc: Record<CarryRow["kind"], Map<string, Acc>> = { damage: new Map(), heal: new Map(), buff: new Map(), block: new Map() };
+  const add = (kind: CarryRow["kind"], unit: string, amount: number, eventId: number) => {
+    if (amount <= 0) return;
+    const m = acc[kind];
+    const a = m.get(unit) ?? { total: 0, best: 0, eventId };
+    a.total += amount;
+    if (amount > a.best) { a.best = amount; a.eventId = eventId; }
+    m.set(unit, a);
+  };
+  /** The nearest unit of `side` behind an event. */
+  const by = (id: number): string | null => {
+    const l = traceOf(log, id, name, sides).links[0];
+    return l && l.side === side ? l.unit : null;
+  };
+  // Shield stacks as they were put on, oldest first, with who put them there.
+  const shields = new Map<string, { by: string | null; stacks: number }[]>();
+  for (const e of log) {
+    if (e.type === "Hurt") {
+      const before = hp.get(e.unit) ?? e.amount;
+      hp.set(e.unit, e.hpAfter ?? before - e.amount);
+      const victim = sides.get(e.unit);
+      if (victim && victim !== side) {
+        const u = by(e.id);
+        if (u) add("damage", u, Math.min(e.amount, before), e.id);
+      }
+      if (victim === side && (e.absorbed ?? 0) > 0) {
+        let left = e.absorbed ?? 0;
+        const q = shields.get(e.unit) ?? [];
+        while (left > 0 && q.length) {
+          const head = q[0]!;
+          const take = Math.min(left, head.stacks);
+          if (head.by) add("block", head.by, take, e.id);
+          head.stacks -= take;
+          left -= take;
+          if (head.stacks <= 0) q.shift();
+        }
+      }
+    } else if (e.type === "Heal") {
+      hp.set(e.unit, e.hpAfter ?? (hp.get(e.unit) ?? 0) + e.amount);
+      if (sides.get(e.unit) === side) {
+        const u = by(e.id);
+        if (u) add("heal", u, e.amount, e.id);
+      }
+    } else if (e.type === "StatChanged") {
+      if (e.hpAfter !== undefined) hp.set(e.unit, e.hpAfter);
+      if (e.stat === "pwr" && e.delta > 0 && sides.get(e.unit) === side) {
+        const u = by(e.id);
+        if (u) add("buff", u, e.delta, e.id);
+      }
+    } else if (e.type === "Summon") hp.set(e.unit, e.atHp ?? e.hp);
+    else if (e.type === "StatusApplied" && e.status === "Shield" && sides.get(e.unit) === side) {
+      const q = shields.get(e.unit) ?? [];
+      q.push({ by: by(e.id), stacks: e.stacks });
+      shields.set(e.unit, q);
+    }
+  }
+  const out: CarryRow[] = [];
+  for (const kind of ["damage", "heal", "buff", "block"] as const) {
+    let top: [string, Acc] | null = null;
+    for (const [unit, a] of acc[kind]) if (!top || a.total > top[1].total) top = [unit, a];
+    if (top) out.push({ kind, unit: top[0], name: name(top[0]), amount: top[1].total, eventId: top[1].eventId });
+  }
+  return out;
+}
+
 export interface KeyMoment {
   /** "summon": a turning point that is a unit joining ("Imp joins"), no kill (R2-17 batch F). */
   kind: "kill" | "summon" | "combo" | "fatigue" | "hit";
