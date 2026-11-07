@@ -20,7 +20,7 @@
 import { boardAt, type BoardState, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView, SummonContent } from "../../src/mvp/contract";
 import { chainCappedTip, STATUS_TERMS, suddenDeathTip, termDef, timeUpTip, termIcon, triggerLabel, type IconId, type TermId } from "../../src/glossary";
-import { isChain, chainSummaryOf, chainSideText, FATIGUE_BANNER_MS, NO_ROOM, NO_ROOM_RU, setTraceLang, BIG_HIT_MIN, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, foldTurnsOf, isLogFold, keyMomentsOf, logRowsOf, stepsOf, timelineOf, traceOf, weightsOf, waveWaitMs, repeatTurnsOf, playSpeed, playbackMs, whyILost as lossChains, sidesOf, turnSummaryOf, turnEndsOf, turnEndHoldMs, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, changeOf, type RunRow, type TurnSummary, type UnitTurnTotals, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type LogRow, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
+import { isChain, FATIGUE_BANNER_MS, NO_ROOM, NO_ROOM_RU, setTraceLang, BIG_HIT_MIN, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, foldTurnsOf, isLogFold, keyMomentsOf, logRowsOf, stepsOf, timelineOf, traceOf, weightsOf, waveWaitMs, repeatTurnsOf, playSpeed, playbackMs, whyILost as lossChains, sidesOf, turnSummaryOf, turnEndsOf, turnEndHoldMs, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, changeOf, type RunRow, type TurnSummary, type UnitTurnTotals, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type LogRow, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { summonId } from "../../src/describe";
@@ -30,14 +30,14 @@ import { linePitch, pieceCap } from "../ui/line-layout";
 import { fieldAt, type Field } from "../ui/field";
 import { isMine, reportLink } from "../ui/report";
 import { unitSigil, sigilIcon } from "../ui/glyph";
-import { lineToPiece, piece, PIECE_PX, sigilOf, whenTone, type PieceSize, type PieceUnit } from "../ui/piece";
+import { lineToPiece, piece, PIECE_PX, sigilOf, type PieceSize, type PieceUnit } from "../ui/piece";
 import { faceFallback, V2_FACE } from "../../src/mvp/face";
 import { actionable, app, button, closable, fitText, h, isDesktop, keyLabel, keyOf, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
 import { t as tr } from "../i18n";
 import { icon } from "../ui/icon";
 import { statusesShown, STATUS_ROW_FALLBACK } from "../ui/status-row";
-import { numFormOf, planStrip } from "../ui/strip-fit";
-import { chainCount, chainRows, chainShown, wireMiddle } from "../ui/chain-wire";
+import { chainCount, chainShown, wireMiddle } from "../ui/chain-wire";
+import { ladderAbove } from "../ui/ladder";
 import { effectsOf, statNets, type Effect } from "../ui/effects";
 import { beatCues, endSound } from "../ui/sound-map";
 import { play as playSfx } from "../ui/sound";
@@ -55,11 +55,6 @@ const END_MIN_PX = 240;
 
 /** The end card's Damage rows a side, until "All n" (R2-17 batch E). */
 const DMG_ROWS = 3;
-/** What the action strip draws for each kind of change, before its target (mission 1007). */
-const KIND_ICON: Record<Change["kind"], IconId> = { damage: "broadsword", heal: "heart-plus", buff: "upgrade", debuff: "broken-heart", status: "cursed-star", death: "death-skull", summon: "magic-portal", silence: "silence", noRoom: "tombstone" };
-/** The kinds of change the strip tells as actor → effect → target; the rest read as their caption. */
-const ARROWED = new Set<Change["kind"]>(["damage", "heal", "buff", "debuff", "status", "silence"]);
-
 /** How long a Crown fight's line-up shows, under its "Crown fight" title, at 1× (round 3, note 14). */
 const CROWN_LINEUP_MS = 1200;
 /** How long a landed wave's motion runs, in animation time (real time × speed): the longest animation (a killing blow's shake, its 120 ms freeze, then its 0.5 s pop, ends at 1.1 s; a float, 0.9 s, after up to 220 ms). A beat holds its last wave at least 0.8 s (1.15 s after a kill), so a beat change cuts motion off at most in its fade. */
@@ -146,8 +141,6 @@ export interface RunOutro {
 
 /** A line with more cards than this draws them compact (R4-11). */
 const COMPACT_OVER = 5;
-/** The rail's small rows under the event on screen (#1294). */
-const RECENT_ROWS = 4;
 /** A phone on its side: compact cards with one status row (style.css, R2-17 batch E). */
 const shortScreen = matchMedia("(max-width: 1023.98px) and (max-height: 520px)");
 
@@ -365,6 +358,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   let fxWaves: View["waves"] = [];
   // The clash mark (desktop) carries fatigue's badge (R3-19).
   const clash = h("div", { class: "bv-clash" }, clashMark);
+  /** The turn plate (arena#52): in the gap between the lines, never a chip. It shows while no step is on the field (the face-off, a turn's totals). */
+  const turnPlate = h("div", { class: "bv-plate", "data-testid": "battle-turn", "aria-hidden": "true" });
   const end = h("div", { class: "bv-end panel stack", "data-testid": "end-card" });
   /** A title over the board for a big moment (note 14): "Crown fight" over
    * the line-up, "Fatigue" as it first sets in. Redrawn only when it changes,
@@ -379,41 +374,26 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const replayBtn = button("↻", () => replay(), "", "battle-replay");
   // With the end card put away (✕), the way on stays in the controls, in End's place: the result is never a dead end.
   const nextBtn = a.outro ? button(a.outro.doneLabel, () => leave(), "primary", "battle-next") : null;
-  /** Skip chain (#913): while a chain plays, jumps to its last link and its summary. */
+  /** The tray's ladder (arena#52, MOVES 3): four fixed rows of steps in words, the newest at the foot, then the rule that fired under it.
+   * Its head names the turn (and CHAIN ×N while a chain plays). Nothing in it changes size: an empty row keeps its place. */
+  const ladderTurn = h("span", { class: "bv-lturn", "data-testid": "ledger-turn" });
+  const ladderChain = h("span", { class: "bv-lchain", "data-testid": "chain-count" });
+  const ladderRows = h("ol", { class: "bv-lrows", "data-testid": "ladder" });
+  const ladderRule = h("div", { class: "bv-rule", "data-testid": "rule", role: "status" });
+  const ladder = h("div", { class: "bv-ladder" }, h("div", { class: "bv-lhead" }, ladderTurn, ladderChain), ladderRows, ladderRule);
+  /** Every step of the fight in play order: the ladder shows the last four up to the one on screen, across beats and turns. */
+  const ladderSeq = beats.flatMap((b, bi) => b.waves.map((step, wi) => ({ beat: bi, wave: wi, step })));
+  const ladderIndex = new Map(ladderSeq.map((e, i) => [`${e.beat}:${e.wave}`, i] as const));
+  /** The skip-chain cell of the controls: always there, lit only while a chain plays. */
   const skipBtn = button(tr("battle.chain.skip"), () => skipChain(), "bv-skip", "chain-skip");
   skipBtn.title = tr("battle.chain.skipKey");
-  /** The turn bar under the board (mission 1007, slimmed in #1030): its head names the turn and holds Skip chain while a chain plays; its foot is
-   * one line: a chain's summary at its last link, the turn's bottom line once the turn ends. The per-unit rows went (#1030): the numbers on the
-   * board, the step numbers and the spent cards say what they said. */
-  const ledgerHead = h("div", { class: "bv-ledger-head" });
-  const ledgerFoot = h("div", { class: "bv-ledger-foot", "data-testid": "ledger-foot", role: "status" });
-  const ledgerBody = h("div", { class: "bv-ledger-body" }, ledgerFoot);
-  const ledger = h("div", { class: "bv-ledger", "data-testid": "ledger" }, ledgerHead, ledgerBody);
-  /** The rail's last few events, newest first, small under the one on screen (#1294). */
-  const recent = h("div", { class: "bv-recent", "data-testid": "recent" });
-  function drawRecent(): void {
-    // A beat of two links or more is a chain (arena#30): the tray lists its steps so far, CHAIN ×N beside them.
-    const beat = beats[at];
-    const rows = beat && ending !== at ? chainRows(beat.waves, wave) : [];
-    recent.classList.toggle("chain", rows.length > 0);
-    if (rows.length) {
-      const list = h("ol", { class: "bv-chain-steps", "data-testid": "chain-steps" }, ...rows.map((r) => h("li", { class: `bv-chain-step ${r.now ? "now" : "past"}`, "data-testid": "chain-step", "data-n": String(r.n) }, h("span", { class: "bv-chain-no", "aria-hidden": "true" }, String(r.n)), h("span", { class: "bv-chain-text" }, ...richCaption(r.step.caption)))));
-      recent.replaceChildren(h("div", { class: "bv-chain-count", "data-testid": "chain-count", "data-n": String(chainCount(wave)) }, tr("battle.chain.count", { n: chainCount(wave) })), list);
-      // A step the list has no room for goes whole, oldest first, never cut mid-line: the numbers keep their place.
-      while (list.children.length > 1 && list.scrollHeight > list.clientHeight + 0.5) list.firstElementChild!.remove();
-      return;
-    }
-    const done = rowAt.filter((r) => r.beat < at).slice(-RECENT_ROWS).reverse();
-    recent.replaceChildren(...done.map((r) => h("div", { class: "bv-recent-row" }, ...richCaption(r.caption))));
-    // A row the rail has no room for goes whole, never cut mid-line (check of #1286, case 4).
-    const foot = recent.getBoundingClientRect().bottom;
-    for (const row of [...recent.children].reverse()) if (row.getBoundingClientRect().bottom > foot + 0.5) row.remove();
-  }
+  skipBtn.setAttribute("aria-label", tr("battle.chain.skip"));
+  skipBtn.replaceChildren(h("span", { class: "bv-skip-w" }, tr("battle.chain.skip")), h("span", { class: "bv-skip-i", "aria-hidden": "true" }, "⏭"));
   replayBtn.setAttribute("aria-label", tr("battle.replayAria"));
   // Desktop's keys, as the mockup lists them (the phone hides the line).
   const kbd = (k: string) => h("kbd", {}, keyLabel(k));
-  const keys = h("div", { class: "bv-keys dim", "data-testid": "battle-keys", "aria-hidden": "true" }, kbd(tr("battle.keys.space")), tr("battle.keys.pause"), kbd("←"), kbd("→"), tr("battle.keys.beat"), kbd("R"), tr("battle.keys.replay"), kbd("E"), tr("battle.keys.end"), tr("battle.keys.tap"));
-  const controls = h("div", { class: "row bv-controls" }, backBtn, playBtn, fwdBtn, speedBtn, endBtn, replayBtn, keys);
+  const keys = h("div", { class: "bv-keys dim", "data-testid": "battle-keys", "aria-hidden": "true" }, kbd(tr("battle.keys.space")), tr("battle.keys.pause"), kbd("←"), kbd("→"), tr("battle.keys.beat"), kbd("R"), tr("battle.keys.replay"), kbd("E"), tr("battle.keys.end"));
+  const controls = h("div", { class: "row bv-controls" }, backBtn, playBtn, fwdBtn, speedBtn, endBtn, replayBtn, skipBtn, keys);
   // How long playback should take at 1× (the line-up plus every beat), for
   // the e2e to compare with what the screen takes.
   // the turn-end summaries included (R4-12).
@@ -925,30 +905,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     });
     if (live && live.hp < live.maxHp) el.querySelector<HTMLElement>(".pc-b.h")?.classList.add("hurt");
     return el;
-  }
-  /** The face a unit's piece shows (its when tab, its headline), as pieceOf finds it. */
-  function faceFor(id: string): PieceUnit["face"] {
-    const bu = units.get(id);
-    const sum = summoned.get(id);
-    const base = bu ? lineToPiece(bu, a.content) : null;
-    const face = base?.face ?? (sum?.form ? faceFallback(sum.form) : { when: { icon: "spark", label: "" }, headline: { icon: "spark" } });
-    if (!bu || !a.content.units.some((x) => x.id === bu.unitId)) return V2_FACE[base?.name ?? name(id)] ?? face;
-    return face;
-  }
-  /** The event on screen in the rail (#1294, check of #1286 case 3): the when
-   * tab of the unit whose rule fired, then the caption as one plain sentence that wraps; a
-   * turn's totals read as the turn's bottom line. */
-  function railKids(step: Step | undefined, sum: TurnSummary | undefined): Node[] {
-    if (sum) {
-      const head = h("b", { class: "bv-strip-text", "data-testid": "caption-turn-end" }, sum.turn >= 1 ? tr("battle.totals.turn", { n: sum.turn }) : tr("battle.totals.start"));
-      return [head, h("span", { class: "bv-rail-line" }, turnLine(sum))];
-    }
-    if (!step) return [h("span", { class: "bv-strip-text" }, tr("battle.caption.faceOff"))];
-    // The tab is the rule that fired (it lights on its piece too); a plain strike has none.
-    const c = causeOf(log, step, whenOf);
-    const f = c?.kind === "ability" && c.at ? faceFor(c.at) : null;
-    const tab = f?.when.label ? [h("span", { class: "bv-cap-when", "data-testid": "caption-when", style: `background:${whenTone(f.when.icon)}` }, h("span", {}, f.when.label))] : [];
-    return [...tab, h("span", { class: "bv-strip-text bv-rail-line" }, ...richCaption(step.caption))];
   }
   function unitCard(u: BoardUnit, side: Side, v: View, _stsWidth: number, compact: boolean): HTMLElement {
     const step = v.now;
@@ -1530,9 +1486,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       ...runBar(),
       ...(a.outro?.bar ? [] : [plate("round", h("span", { class: "round-pill" }, battle.kind === "crown" ? tr("battle.hud.crown") : battle.kind === "playoff" ? tr("battle.hud.playoff") : tr("battle.hud.round", { n: battle.round })))]),
       plate("vs", h("span", { class: "dim who", "data-testid": "battle-vs", title: battle.opponent.name }, tr("battle.hud.vs", { name: battle.opponent.name })), ...(a.outro?.bar ? [] : reportFoe())),
-      h("span", { class: "hud-gap" }),
-      // A repeat turn's ⏩ is drawn by CSS, so the label's text stays "T7" and the row keeps its spacing.
-      plate("turn", h("span", { "data-testid": "battle-turn", ...(repeating ? { class: "bv-repeat", title: tr("battle.repeat"), "aria-label": `${turnLabel(hudTurn ?? turn)} · ${tr("battle.repeat")}` } : {}) }, turnLabel(hudTurn ?? turn))),
     );
     clash.replaceChildren(clashMark, ...[triggerBadge("clash", v)].filter((x): x is HTMLElement => x !== null));
     drawBanner(v);
@@ -1590,20 +1543,16 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     playEffects(v);
     const runRows = runningTotalsOf(log, soFar);
     drawRuns(runRows, turnKey, v.waves.some((w) => w.age !== null));
-    // The action strip (mission 1007): one line, actor → effect → target → number, a chain's links as dots.
-    const chained = !sum && !!beat && isChain(beat);
-    caption.replaceChildren(h("span", { class: "bv-strip-line bv-cap" }, ...railKids(step, sum)));
-    caption.setAttribute("aria-label", sum ? tr("battle.totals.turn", { n: sum.turn }) : plainCaption(step));
-    drawRecent();
-    fitStrip();
-    // The ledger (below the board): the turn, Skip chain while a chain plays, a row per unit changed, a chain's summary or the turn's bottom line.
-    ledgerHead.replaceChildren(h("span", { class: "bv-ledger-turn", "data-testid": "ledger-turn" }, turnLabel(shownTurn)), ...(inChain() ? [skipBtn] : []));
-    ledger.classList.toggle("frozen", !!sum);
-    // The turn's bottom line reads in the rail's event card (#1294), not twice.
-    ledgerFoot.replaceChildren(...(sum ? [] : chained && !inChain() && wave === lastWave(at) ? [chainSummary(beat!)] : []));
+    // The ladder (arena#52): the last four steps in words, the rule that fired under the newest, the turn and CHAIN ×N above.
+    const chained = !sum && !!beat && chainShown(beat.waves.length);
+    drawLadder(step, sum, chained);
+    skipBtn.disabled = !inChain();
     caption.classList.toggle("tappable", !sum && !!step?.changes.length);
     controls.dataset.turnEnd = sum ? String(sum.turn) : "";
-    // Under the end card the phone's caption keeps only its line (style.css).
+    // The turn plate sits in the gap between the lines while no step is on the field: the face-off, a turn's totals.
+    const platePlace = shownTurn >= 1 ? tr("battle.turn", { n: shownTurn }) : tr("battle.timeline.start");
+    turnPlate.replaceChildren(h("span", { ...(repeating ? { class: "bv-repeat", title: tr("battle.repeat") } : {}) }, platePlace));
+    turnPlate.classList.toggle("on", !step || !!sum || hudTurn !== null);
     caption.classList.toggle("ended", finished && !trace);
     placeCaption();
     // The caption measures the acting card's slot: once the lines' slides and
@@ -1990,135 +1939,86 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     banner.replaceChildren(...(crown ? [h("span", {}, "👑"), h("span", {}, tr("battle.banner.crown"))] : fatigue ? [icon("hourglass", 26, "tone-dmg"), h("span", {}, tr("battle.banner.fatigue"))] : []));
   }
   /** Whose a unit is, as a tag: YOU / THEM, or its owner without a side. */
-  /** What a chain did to each side, under its last link's caption (#913):
-   * at a strong team's Start, the line that says why it is strong. */
-  function chainSummary(beat: (typeof beats)[number]): HTMLElement {
-    const sum = chainSummaryOf(log, beat, sides);
-    const status = (st: string) => (rulesLangOpt() === "ru" ? ruStatusName(st) : st);
-    const parts = ([you, them] as const).flatMap((sd) => {
-      const t = sum[sd];
-      const text = t && chainSideText(t, status);
-      return text ? [h("span", { class: "bv-chain-side" }, sideTag(sd), ...richCaption(text))] : [];
-    });
-    return h("span", { class: "bv-chain-sum", "data-testid": "chain-summary" }, h("span", { class: "bv-chain-of" }, tr("battle.chain.summary", { n: beat.waves.length })), ...parts);
+  /** The ladder's rows and rule for the step on screen. The newest step is the foot row (the caption button, which opens its Why);
+   * the three above it are the steps before it, across beats and turns. A turn's totals take the foot row's place. */
+  function drawLadder(step: Step | undefined, sum: TurnSummary | undefined, chained: boolean): void {
+    const cur = beats[at] && step ? (ladderIndex.get(`${at}:${wave}`) ?? -1) : -1;
+    const rowOf = (e: (typeof ladderSeq)[number], now: boolean): Node[] => stepKids(e.step, chained && e.beat === at ? e.wave + 1 : null, now);
+    const slots = ladderAbove(ladderSeq, cur, !!sum).map((e) => h("div", { class: `bv-lrow${e ? " previous" : " empty"}`, "data-testid": "ladder-row" }, ...(e ? rowOf(e, false) : [])));
+    ladderRows.replaceChildren(...slots, caption);
+    caption.className = `bv-caption bv-lrow current${chained ? " chain" : ""}`;
+    caption.replaceChildren(...(sum ? totalsKids(sum) : step ? rowOf({ beat: at, wave, step }, true) : [h("span", { class: "bv-ltxt bv-strip-text" }, tr("battle.caption.faceOff"))]));
+    caption.setAttribute("aria-label", sum ? tr("battle.totals.turn", { n: sum.turn }) : plainCaption(step));
+    ladderTurn.textContent = shownTurn >= 1 ? tr("battle.turn", { n: shownTurn }) : tr("battle.timeline.start");
+    ladderChain.textContent = chained ? tr("battle.chain.count", { n: chainCount(wave) }) : "";
+    ladderChain.dataset.n = chained ? String(chainCount(wave)) : "";
+    // A turn's totals say the rules are ready again (a unit acts once per chain; the next turn starts fresh).
+    ladderRule.replaceChildren(...(sum ? [h("span", { class: "bv-rule-t", "data-testid": "turn-reset" }, tr("battle.rule.turnReset"))] : step ? ruleKids(step) : []));
   }
-  function sideTag(side: Side, testid = ""): HTMLElement {
-    const tag = a.you ? (side === you ? tr("battle.you") : tr("battle.them")) : owner(side);
-    return h("span", { class: `bv-who ${side === you ? "you" : "ghost"}`, ...(testid ? { "data-testid": testid } : {}) }, tag);
+  /** A step as a ladder row: its number in a chain (a dot outside one), the rule that set it off as a chip (the desktop's), then the sentence
+   * with every unit tagged by its side, so two Duelists are told apart by the word and the colour. */
+  function stepKids(step: Step, n: number | null, now: boolean): Node[] {
+    const c = causeOf(log, step, whenOf);
+    const ic = c ? causeIcon(c) : undefined;
+    const chip = c
+      ? [h("span", { class: "bv-lchip", ...(now ? { "data-testid": "caption-cause", "data-cause": c.cause } : {}), title: causeLabel(c) }, ...(ic ? [icon(ic, 14, causeTone(c))] : []), h("span", { class: "bv-lchip-t" }, causeLabel(c)))]
+      : [];
+    return [h("span", { class: "bv-lno", "aria-hidden": "true" }, n === null ? "•" : String(n)), ...chip, h("span", { class: "bv-ltxt bv-strip-text" }, ...richCaption(step.caption, null, "always"))];
   }
-  /** The action strip's words (mission 1007): actor → effect icon → target, then the
-   * number in the kind's colour. A step that changes nothing, or has no actor
-   * (the face-off, Fatigue, a fall, the end), reads as its caption. */
-  function stripKids(step: Step | undefined): Node[] {
-    const c = step?.changes[0];
-    const actor = step?.actor ?? step?.subject ?? null;
-    if (!step || !c || !actor || !ARROWED.has(c.kind)) return [h("span", { class: "bv-strip-text" }, ...captionKids(step))];
-    const targets = [...new Set(step.changes.map((x) => x.unit))];
-    const arrow = () => h("span", { class: "bv-arrow dim", "aria-hidden": "true" }, "→");
-    return [
-      stripName(actor, "actor"),
-      arrow(),
-      kindIcon(c),
-      ...(targets.length === 1 && targets[0] === actor ? [] : [arrow(), stripName(c.unit, "target"), ...(targets.length > 1 ? [h("span", { class: "bv-more dim" }, `+${targets.length - 1}`)] : [])]),
-      stripNum(c),
-    ];
+  /** A turn's totals on the foot row: "Turn 3 totals" and its bottom line. */
+  function totalsKids(sum: TurnSummary): Node[] {
+    return [h("span", { class: "bv-lno", "aria-hidden": "true" }, "•"), h("b", { class: "bv-lchip bv-ltotals", "data-testid": "caption-turn-end" }, sum.turn >= 1 ? tr("battle.totals.turn", { n: sum.turn }) : tr("battle.totals.start")), h("span", { class: "bv-ltxt bv-strip-text" }, turnLine(sum))];
   }
-  /** The number in the strip: "Curse ×1" is a word and its count. A line too full to hold it drops the word ("×1", "no damage" → "0"): fitStrip. A short one ("−4") keeps its width. */
-  function stripNum(c: Change): HTMLElement {
-    const f = numFormOf(c.label, c.kind);
-    const el = f.word !== undefined
-      ? h("b", { class: `bv-num ${c.kind}`, "data-testid": "strip-num" }, ...(f.wordFirst ? [h("span", { class: "bv-w" }, `${f.word} `), f.count!] : [`${f.count} `, h("span", { class: "bv-w" }, f.word)]))
-      : h("b", { class: `bv-num ${c.kind}`, "data-testid": "strip-num" }, c.label);
-    if (f.wordOnly) el.classList.add(f.short === "" ? "wordonly" : "wordy"); // "silenced": the icon says it
-    if (f.short) el.dataset.short = f.short;
-    el.style.flexShrink = "0";
-    el.style.minWidth = "0";
-    return el;
-  }
-  /** Fits the strip's line (planStrip, mobile/ui/strip-fit.ts): when it runs over, the target shrinks, then the actor (never under ~6 characters), then the number drops its word to the icon; the number stays. */
-  function fitStrip(): void {
-    const line = caption.querySelector<HTMLElement>(".bv-strip-line");
-    if (!line) return;
-    line.classList.remove("tight");
-    const kids = [...line.children] as HTMLElement[];
-    const actor = line.querySelector<HTMLElement>(":scope > .bv-strip-actor");
-    const target = line.querySelector<HTMLElement>(":scope > .bv-strip-target");
-    const num = line.querySelector<HTMLElement>(":scope > .bv-num");
-    for (const el of [actor, target]) if (el) { el.style.removeProperty("flex"); el.style.removeProperty("width"); }
-    if (!actor || !num || !line.clientWidth) return;
-    const GAP = 4;
-    // Natural widths: every name unshrunk, the number with and without its word; the plan then gives them back what the line can hold.
-    for (const el of [actor, target]) if (el) { el.style.flex = "none"; el.style.width = "auto"; }
-    const w = (el: HTMLElement) => el.getBoundingClientRect().width;
-    const em = (el: HTMLElement) => parseFloat(getComputedStyle(el).fontSize) || 16;
-    const floor = (el: HTMLElement, role: "actor" | "target") => Math.min(w(el), (role === "actor" ? 6 * 0.62 + 0.8 : 2.4) * em(el));
-    const full = w(num);
-    line.classList.add("tight");
-    const short = getComputedStyle(num).display === "none" ? 0 : w(num);
-    line.classList.remove("tight");
-    const rest = kids.filter((k) => k !== actor && k !== target && k !== num);
-    const restW = rest.reduce((sum, k) => sum + (k.classList.contains("bv-dots") ? Math.min(w(k), parseFloat(getComputedStyle(k).minWidth) || 0) : w(k)), 0);
-    const parts = rest.length + 1 + (target ? 1 : 0);
-    const plan = planStrip({
-      avail: line.clientWidth,
-      others: restW + GAP * (parts - 1),
-      actor: { nat: w(actor), min: floor(actor, "actor") },
-      target: target ? { nat: w(target), min: floor(target, "target") } : null,
-      num: { full: full + GAP, short: short ? short + GAP : 0 },
-    });
-    for (const [el, px] of [[actor, plan.actor], [target, plan.target]] as const) {
-      if (!el) continue;
-      if (px < w(el) - 0.01) { el.style.flex = `0 0 ${px}px`; el.style.width = `${px}px`; } else { el.style.flex = "none"; el.style.width = "auto"; el.style.minWidth = "0"; }
+  /** The rule that fired for the step on screen, in words, under its row: the unit's own When → Does (just the rule that fired), a status's
+   * tip, the strike's, fatigue's. A step with no rule behind it (the kernel's own) shows none. */
+  function ruleKids(step: Step): Node[] {
+    const c = causeOf(log, step, whenOf);
+    if (!c) return [];
+    const lang = rulesLangOpt();
+    if (c.kind === "strike") return [h("span", { class: "bv-rule-t" }, tr("battle.rule.strike"))];
+    if (c.kind === "status" || c.kind === "battle") {
+      const def = termDef(c.cause as TermId, a.content.statuses, lang);
+      return def ? [h("span", { class: "bv-rule-t" }, ...(c.kind === "status" ? [h("b", {}, `${def.label}: `)] : []), def.tip)] : [];
     }
-    line.classList.toggle("tight", plan.short);
+    const src = step.eventIds.map((id) => log[id]).find((e) => e && e.source !== "kernel")?.source;
+    const ref = src && src !== "kernel" ? src : undefined;
+    const w = ref ? whenOf(ref) : undefined;
+    const body = ref ? (units.get(ref.unit)?.recipe ?? summoned.get(ref.unit)?.form ?? undefined) : undefined;
+    // A card with one When reads whole; one with several reads just the rule that fired.
+    const one = body && w && body.when.length > 1 ? (({ say: _say, ...rest }) => ({ ...rest, when: [w] }))(body) : body;
+    const form = w ? one : undefined;
+    return form ? [h("span", { class: "bv-rule-t", "data-testid": "rule-text" }, ...formRich(form, a.content))] : [];
   }
-  /** A name in the strip. A short name keeps its whole width; a long one gives way with an ellipsis, the target first (CSS) and the actor last, never under 6 characters. */
-  function stripName(id: string, role: "actor" | "target"): HTMLElement {
-    const el = unitName(id) as HTMLElement;
-    el.classList.add(`bv-strip-${role}`);
-    const n = [...name(id)].length;
-    if (n <= (role === "actor" ? 6 : 4)) { el.style.flexShrink = "0"; el.style.minWidth = "0"; }
-    else if (role === "actor") el.style.minWidth = `${6 * 0.62 + 0.8}em`;
-    return el;
-  }
-  /** The effect's icon in its kind's colour (a status shows its own). */
-  function kindIcon(c: Change): Node {
-    const e = log[c.eventId];
-    const status = c.kind === "status" && e?.type === "StatusApplied" ? termDef(`status:${e.status}` as TermId, a.content.statuses) : undefined;
-    return h("span", { class: `bv-eff ${c.kind}`, "data-testid": "strip-icon", "data-kind": c.kind }, icon(status?.icon ?? KIND_ICON[c.kind], 18, status ? `tone-${status.tone}` : ""));
+  function sideTag(side: Side, testid = "", short = false): HTMLElement {
+    // A watched battle names the owner; the ladder's rows keep to its first word ("@Ash"), the field's label says the rest.
+    const tag = a.you ? (side === you ? tr("battle.you") : tr("battle.them")) : short ? owner(side).split(/\s+/)[0]! : owner(side);
+    return h("span", { class: `bv-who ${side === you ? "you" : "ghost"}`, ...(testid ? { "data-testid": testid } : {}) }, tag);
   }
   /** The caption as plain text, for the strip's label. */
   function plainCaption(step: Step | undefined): string {
     return step ? step.caption.replace(TAG, (_m, id: string) => name(id)) : tr("battle.caption.faceOff");
   }
 
-  /** The caption, led by whose unit it is about (the first one it names). */
-  function captionKids(step: Step | undefined): Node[] {
-    if (!step) return [document.createTextNode(tr("battle.caption.faceOff"))];
-    const side = step.subjectSide;
-    // It starts with its cause's icon, the one on the badge (R3-19).
-    const c = causeOf(log, step, whenOf);
-    const ic = c ? causeIcon(c) : undefined;
-    const lead = c && ic ? [h("span", { class: "bv-cap-cause", "data-testid": "caption-cause", "data-cause": c.cause, title: causeLabel(c) }, icon(ic, 14, causeTone(c)))] : [];
-    // Fatigue's and a capped chain's lead icon is their term's own: the term doesn't repeat it.
-    const led = lead.length ? c!.cause : null;
-    if (!side) return [...lead, ...richCaption(step.caption, led)];
-    return [...lead, sideTag(side, "caption-side"), ...richCaption(step.caption, led)];
-  }
 
   /** A caption with its terms highlighted (R2-13, like R2-8's unit text):
    * unit names in their side's colour, statuses with their icon and colour,
    * PWR / HP, damage and healing numbers, and a Shield block as the Shield
    * icon. Plain spans: the caption itself is the button that opens Why.
    * `led`: the cause whose icon the caption leads with, which its term then doesn't repeat. */
-  function richCaption(text: string, led: string | null = null, tagged = false): Node[] {
+  function richCaption(text: string, led: string | null = null, tagged: boolean | "always" = false): Node[] {
     const out: Node[] = [];
     let i = 0;
+    let prevId = "";
     for (const m of text.matchAll(TAG)) {
       if (m.index! > i) out.push(...termsIn(text.slice(i, m.index), led));
       // A key moment tags each name with its side: a mirror match has a Fodder on both (R3-26).
-      if (tagged && a.you) out.push(h("span", { class: "bv-tagged" }, sideTag(sides.get(m[1]!) ?? you, "moment-side"), unitName(m[1]!)));
+      // The ladder's rows tag every name with its side, except a name that follows one of the same side in a list ("on @Brave Gambler, Medic, Coin Thief").
+      const side = sides.get(m[1]!) ?? you;
+      const listed = i > 0 && /^(?:, | and )$/.test(text.slice(i, m.index)) && sides.get(prevId) === side;
+      if (tagged === "always") out.push(listed ? unitName(m[1]!) : h("span", { class: "bv-tagged" }, sideTag(side, "", true), unitName(m[1]!)));
+      else if (tagged && a.you) out.push(h("span", { class: "bv-tagged" }, sideTag(sides.get(m[1]!) ?? you, "moment-side"), unitName(m[1]!)));
       else out.push(unitName(m[1]!));
+      prevId = m[1]!;
       i = m.index! + m[0].length;
     }
     if (i < text.length) out.push(...termsIn(text.slice(i), led));
@@ -2179,7 +2079,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * a beat with nobody acting keep it centred. It slides, never leaves the board. */
   /** The caption sits in the rail (#1294): it no longer follows the acting card. */
   function placeCaption(): void {
-    fitStrip();
     delete caption.dataset.at;
     caption.style.translate = "";
   }
@@ -2362,7 +2261,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   // The table (arena#29): the battle plays on the same stage as the shop. The HUD's plates on top, their line and
   // yours in the middle, the tray at the foot: the event on screen and the last few, the controls, and, once it
   // ends, the run's result. A tapped unit reads in the floating inspector; a traced change opens as a window.
-  const tray = h("div", { class: "tb-tray bt-tray", "data-testid": "tray" }, caption, recent, h("div", { class: "bv-below" }, ledger), controls, end);
+  const tray = h("div", { class: "tb-tray bt-tray", "data-testid": "tray" }, ladder, controls, end);
   const table = tableStage(
     [
       hud,
@@ -2370,6 +2269,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       enemy,
       banner,
       clash,
+      turnPlate,
       mine,
       h("div", { class: "label tb-side you bv-lab-you" }, sideLabel(you)),
       timeline,
