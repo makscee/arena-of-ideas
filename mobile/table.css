@@ -834,6 +834,8 @@ button.ws-back { min-height: 44px; min-width: 44px; padding: 0 12px; flex: none;
 /* What a copy bought would become (6 PWR / 9 HP → 8 PWR / 15 HP) is a line of words, not a headline */
 :is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact [data-testid="sheet-stats"] { font: 700 18px/1.2 var(--font-body); color: var(--paper); }
 :is(#app[data-screen="shop"], #under) .stage.P.t-shop .tb-detail .sheet-compact [data-testid="sheet-stats"] { font-size: 15px; }
+/* The PWR / HP words of "3 PWR / 9 HP → 4 PWR / 11 HP" read as big as the numbers (no text under 11 px at 800×450, arena#49). */
+:is(#app[data-screen="shop"], #under) .stage.t-shop .tb-detail .sheet-compact [data-testid="sheet-stats"] small { font-size: inherit; }
 /* A locked offer's mark is a dark chip, never a light box */
 :is(#app[data-screen="shop"], #under) .tb-offers .pc-lock { background: var(--well); border: 2px solid var(--outline); border-radius: 8px; padding: 1px 4px; display: inline-flex; align-items: center; }
 

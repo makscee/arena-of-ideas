@@ -23,3 +23,18 @@ export function predictRun(run: RunView, d: Decision, content: MvpContent, rules
     return null;
   }
 }
+
+/** The unit a buy would change (the twin it merges into, or the new one), as the shop's own rules leave it: an
+ * awakening tag reads its before and after numbers off it. The gift the awakening brings is the server's dice and
+ * is ignored here. Null when the kernel refuses the buy. */
+export function boughtUnit(run: RunView, slot: number, uid: string | null, content: MvpContent, rules: MvpRules): RunView["line"][number] | null {
+  try {
+    const state: MvpRunState = { ...structuredClone(run), opponent: null, crownSeq: null, seed: 0, rng: 0, nextUid: pending, rules };
+    const next = applyMvpDecision(state, { kind: "buy", slot }, content).state;
+    const all = [...next.line, ...next.bench];
+    const known = new Set([...run.line, ...run.bench].map((u) => u.uid));
+    return all.find((u) => (uid === null ? !known.has(u.uid) : u.uid === uid)) ?? null;
+  } catch {
+    return null;
+  }
+}

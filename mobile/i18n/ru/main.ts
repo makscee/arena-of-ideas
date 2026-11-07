@@ -95,8 +95,6 @@ export const main = {
   "coach.chain": "{anchor} → {answer}",
   "start.starting": "Запускаем…",
   "start.failed": "Не получилось начать. Проверь соединение и нажми ИГРАТЬ ещё раз.",
-  "coach.slotFirst": "{anchor} идёт первым: слот {n}",
-  "coach.slotBehind": "{answer} встаёт за {anchor}: слот {n}",
   "coach.howTap": "Нажми {name}, затем слот {n}",
   "coach.howKey": "или клавиша {n}",
   "coach.howFight": "Нажми «В бой»",
@@ -247,5 +245,5 @@ export const main = {
   "board.crownFinal": "Твой строй для Короны окончательный.",
   "board.clickSelect": "Щёлкни или нажми Enter, чтобы выбрать: двигать, в запас, слить или продать.",
   "board.offerHead": "Лавка · карта {n} · клавиша {n}",
-  "board.buyDesk": "Купить {cost} зол. · {n}",
+  "board.move": "Переставить",
 } satisfies Record<keyof typeof en, Msg>;

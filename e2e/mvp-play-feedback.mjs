@@ -140,8 +140,7 @@ try {
       const before = seen.buys.length;
       await tid("line-0").click();
       await page.waitForTimeout(300);
-      const said = (await tid("error").textContent())?.trim();
-      if (said !== "Medic goes behind Gambler: slot 2") fail(`tapping slot 1 said ${JSON.stringify(said)}`);
+      // Slot 1 holds Gambler: a tap on it only reads it (arena#49), nothing is bought, and slot 2 stays the one gold well.
       if (seen.buys.length !== before) fail("a tap on slot 1 bought Medic");
       await tid("line-1-empty").click();
       await page.waitForFunction(() => document.querySelector('[data-testid="coach"]')?.getAttribute("data-step") === "fight", null, { timeout: 5000 }).catch(() => fail("Medic in slot 2 does not lead to Now Fight"));
