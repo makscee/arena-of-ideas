@@ -13,7 +13,7 @@ import type { BattleRecord, CandidateScore, DayView, FightResult, HomeView, Idea
 import { benchSizeOf, lockedFull, MVP_RULES, offersAt, sellValue } from "../src/mvp/contract";
 import { mergeTarget } from "../src/mvp/forms";
 import type { ForgeOffer, ForgeSlot, ForgeView, RunForge } from "../src/mvp/codex";
-import { buttonRefusal, plainRefusal } from "./ui/refusal";
+import { plainRefusal } from "./ui/refusal";
 import { ApiError, api, savedPlayer } from "./api";
 import { getContent, unitIn } from "./content";
 import { battleScreen, type RunOutro } from "./screens/battle";
@@ -41,9 +41,9 @@ import { telegramSheet } from "./screens/telegram";
 import { emailAttach, emailSignIn, emailSignUp } from "./screens/email";
 import { galleryScreen } from "./screens/gallery";
 import { copySigils, faceOfUnit, lineToPiece, piece, pieceReach } from "./ui/piece";
-import { predictRun } from "./ui/predict";
+import { boughtUnit, predictRun } from "./ui/predict";
 import { orient, stage } from "./ui/stage";
-import { fieldLayout, fit } from "./ui/stage-fit";
+import { fieldLayout, fit, P_FULL_H } from "./ui/stage-fit";
 import { initSound, music, onSoundChange, play, setSound, soundSettings } from "./ui/sound";
 import { shopSound } from "./ui/sound-map";
 import { t, withNodes } from "./i18n";
@@ -514,7 +514,7 @@ function drawHome(home: HomeView, content: MvpContent, active: RunView | null, e
   const r = home.rating;
   const own = champ?.player.id === api.player?.id;
   const draw = () => drawHome(home, content, active, ended, err, false);
-  // PLAY, or RESUME while a run waits: over the middle of your five slots.
+  // PLAY, or RESUME while a run waits: in Fight's place in the tray.
   const play = active
     ? button("", () => void guarded(err, async () => shopScreen(await api.run(active.runId), content)), "primary", "play")
     : button("", () => void guarded(err, async () => shopScreen(await api.startRun(), content)), "primary", "play");
@@ -524,8 +524,9 @@ function drawHome(home: HomeView, content: MvpContent, active: RunView | null, e
       ? h("span", { class: "play-main" }, t("home.resume"), h("span", { class: "play-where" }, active.round > rules.rounds ? t("home.continueCrown") : t("home.resumeRound", { round: active.round }), " ", hearts(active.hearts)))
       : h("span", { class: "play-main" }, t("start.play")),
   );
+  // PLAY sits where Fight sits, and says what a run is in the words Fight has for its second line (arena#51).
+  if (!active) play.append(h("span", { class: "play-sub", "data-testid": "home-note" }, t(!champ ? "home.playSubNone" : own ? "home.playSubOwn" : "home.note", { n: rules.rounds })));
   if (isDesktop()) play.append(h("kbd", { class: "play-key" }, "Enter"));
-  const note = active ? null : h("div", { class: "hm-note", "data-testid": "home-note" }, t(!champ ? "home.playSubNone" : own ? "home.playSubOwn" : "home.note", { n: rules.rounds }));
   const newRun = active
     ? button(t("home.newRun"), () => abandonSheet(active, "new", () => void guarded(err, async () => {
         // The given-up run's end and rating change first, as ☰ Abandon shows
@@ -587,8 +588,8 @@ function drawHome(home: HomeView, content: MvpContent, active: RunView | null, e
       notice,
       toBeat: t("home.toBeat"),
       yourLine: t("home.yourLine"),
+      yourLineSub: t("home.yourLineSub"),
       play,
-      note,
       newRun,
       workshop: workshopCard(home.ideas),
       vote,
@@ -986,6 +987,9 @@ let forgeScene: [number, number, string | undefined] | null = null;
 /** What the shop is in the middle of: nothing, a unit picked, or a fuse waiting for its second unit. */
 type Pick = { mode: "none" } | { mode: "picked"; index: number } | { mode: "fuse"; first: number };
 
+/** What the last buy cost and where it went, shown where the idle words are until something is picked or the round moves on. */
+let receipt: { runId: string; round: number; text: string } | null = null;
+
 /** The shop, as the table (arena#28): one stage at every size (ui/stage.ts, table.css), tap-tap
  * and keys, the inspector floating over it instead of pop-up sheets. `selected`: the line slot to
  * keep selected (a unit just moved by key or drag stays in hand). */
@@ -1010,7 +1014,8 @@ function offerPositions(run: RunView): number[] {
     });
     if (next === live) at = matched;
   }
-  const n = Math.max(offersAt(rules, run.round), at.length);
+  // Six wells whatever the round (arena#51): the ones the round has not opened, and the bought ones, stay as empty wells.
+  const n = Math.max(offersAt(rules, rules.rounds), at.length);
   at = Array.from({ length: n }, (_, i) => at[i] ?? -1);
   offerRow = { runId: run.runId, round: run.round, at, ids: at.map((i) => (i >= 0 ? run.offers[i]!.unitId : "")) };
   return at;
@@ -1044,6 +1049,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   // is only a keyboard being there: it adds the key caps and the key hints.
   const kb = hasKeys();
   const tall = orient() === "P";
+  /** A short phone window (ui/stage.ts: under P_FULL_H stage px): the offers draw smaller to leave the detail its room. */
+  const compact = tall && fit("P", window.innerWidth, window.innerHeight).h < P_FULL_H;
   /** The landscape stage's rows (their wells, your line, the bench, the tray) for the height this window gives it. */
   const lay = tall ? null : fieldLayout(fit("L", window.innerWidth, window.innerHeight, true).h);
   const crown = run.phase === "crown";
@@ -1063,6 +1070,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const coachNow: CoachStep | null = !crown && !run.gift && !notice && coaching({ round: run.round, fights: run.fights.length, firstRun }) ? coachStep(coachState(run, L, content)) : null;
   const owns = (unitId: string) => mergeTarget(board, unitId) >= 0;
   let pick: Pick = unitAt(selected) ? { mode: "picked", index: selected } : { mode: "none" };
+  /** Move was pressed on the unit in hand (arena#49): its named teal destinations are lit. Reading a unit arms nothing. */
+  let moving = false;
+  const armed = () => moving && pick.mode === "picked" && !crown;
   const unitOf = (id: string) => unitIn(content, id); // a run on an older pool may hold a unit that left
   /** Buy previews still out: a decision waits for them, or the server may
    * apply a buy first and refuse the preview of its slot (a 409, R4-19). */
@@ -1088,14 +1098,15 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
    * request goes out; a reroll or a fight shows its pressed state and starts its motion. */
   const decide = (d: Parameters<typeof api.decide>[1], select = -1, offer = -1) =>
     guarded(err, async () => {
+      if (d.kind !== "buy") receipt = null;
       if (d.kind === "fight") pressFight();
       else if (d.kind === "reroll") pressReroll(run);
       const next = predictRun(run, d, content, rules);
       if (next) shopScreen(next, content, "", select, offer, true);
       await answered(d, select, offer, next !== null || d.kind === "fight" || d.kind === "reroll");
     });
-  /** Lock or unlock an offer (free); the offer is put down, so the inspector never covers the shop. */
-  const lock = (o: Offer) => void decide({ kind: "lock", slot: o.slot });
+  /** Lock or unlock an offer (free); it stays in hand, so the detail keeps reading it (arena#47). */
+  const lock = (o: Offer) => void decide({ kind: "lock", slot: o.slot }, -1, o.slot);
   const lockLabel = (o: Offer) => (o.locked ? t("board.unlock") : t("board.lock"));
   // The last shop round has no Lock: the Crown clears the offers. Unlock stays.
   const lastShop = run.round >= rules.rounds;
@@ -1103,10 +1114,10 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
 
   const line = h("div", { class: "tb-row tb-line", "data-testid": "line" });
   const bench = h("div", { class: "tb-row tb-bench", "data-testid": "bench" });
-  const hintSlot = h("div", { class: "hint-slot tb-coach" });
   const awoken = board.filter((u) => u.kind === "unit" && u.form === "awoken").length;
-  // Desktop: the inspector, the card under the mouse, an offer clicked, a fusion waiting for its Fuse.
-  const inspector = h("aside", { class: "inspector tb-insp stack", "data-testid": "inspector", hidden: "" });
+  // The tray's one detail surface (arena#47): the hint of the moment while nothing is in hand, else the words of the
+  // unit or offer in hand (or the fusion waiting for its Fuse). It never moves or resizes: only its words change.
+  const inspector = h("aside", { class: "tb-coach tb-detail stack", "data-testid": "inspector" });
   type At = { kind: "line"; index: number } | { kind: "offer"; slot: number };
   let chosen: number | null = run.offers[offer] ? offer : null;
   let fuseView: HTMLElement | null = null;
@@ -1171,11 +1182,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   };
   /** The piece's side per layout (mission #1286 slice 2): the phone's line of
    * five keeps the when tab's icon only, the bench is a size down. */
-  /** A panel is open: it docks on the right and the field narrows, so the line's pieces are drawn smaller. */
-  const docked = () => chosen !== null || pick.mode !== "none" || fuseView !== null;
-  /** With a panel open the columns are narrow: a When word stays wherever it fits its column (10 characters at the floor size). */
+  /** The line's pieces never change size for what is in hand (arena#47): the detail is in the tray, the field stays. */
   const pieceSizes = () =>
-    tall || !lay ? { line: 56, bench: 44, offer: 64, their: 48, benchBare: true } : { line: docked() ? lay.sDock : lay.s, bench: lay.sb, offer: 72, their: lay.sb, benchBare: true };
+    tall || !lay ? { line: 42, bench: 34, offer: compact ? 30 : 36, their: 40, benchBare: false } : { line: lay.s, bench: lay.sb, offer: 60, their: lay.sb, benchBare: false };
   /** Tap-tap: the offer in hand (chosen) or the unit in hand (picked) lights
    * every slot it can go to; the twin it merges into is gold. */
   /** The board slot an offer's copy merges into, or -1. */
@@ -1194,41 +1203,84 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const top = Math.max(15, r.above + 2);
     return `--s:${s}px;padding-top:${top}px;height:${Math.round(top + r.below + 7 + (bare ? 0 : floor ? 30 : 20))}px`;
   };
-  /** A buy goes to the line while it has room (the audit's "slot 5 went to the bench" was a tap on the lit bench beside it): the bench takes one only once the line is full, or to merge into a twin there. */
-  const benchWhileLineHasRoom = (o: Offer, slot: number) => slot >= L && run.line.length < L && twinSlot(o.unitId) !== slot;
-  /** The coach's one slot for the offer it points at: the first free line slot, which is right behind the anchor (arena#31: players put Medic in front of Gambler). Null: no limit. */
-  const coachSlotFor = (o: Offer): number | null => (coachNow && coachNow.step !== "fight" && coachNow.offer === o.slot ? run.line.length : null);
+  /** Where the offer in hand is bought (arena#49): the gold destination is the purchase. The twin if you own one ("+1 copy",
+   * or "Awaken" with its numbers), else the next free well: the line's, and the bench's only once the line is full. Null:
+   * it can't be bought now, so nothing is gold. */
+  type Dest = { slot: number; kind: "buy" | "copy" | "awaken"; from?: { pwr: number; hp: number }; to?: { pwr: number; hp: number } };
+  const buyDest = (o: Offer): Dest | null => {
+    if (crown || buyBlock(o)) return null;
+    const twin = twinSlot(o.unitId);
+    if (twin >= 0) {
+      const u = unitAt(twin)!;
+      if (u.kind === "unit" && u.form === "sleeping" && u.copies + 1 >= rules.copiesToAwaken) {
+        const after = boughtUnit(run, o.slot, u.uid, content, rules);
+        return { slot: twin, kind: "awaken", from: u.stats, ...(after ? { to: after.stats } : {}) };
+      }
+      return { slot: twin, kind: "copy" };
+    }
+    if (run.line.length < L) return { slot: run.line.length, kind: "buy" };
+    if (run.bench.length < B) return { slot: L + run.bench.length, kind: "buy" };
+    return null;
+  };
+  /** The price tag on a gold destination: "Buy 3g", "+1 copy" over 3g, "Awaken 3g" over 2/13→4/18. Short on a Russian phone. */
+  const buyTag = (o: Offer, d: Dest): HTMLElement => {
+    const price = t("shop.gold", { n: o.cost });
+    if (d.kind === "buy") return h("span", { class: "lit-tag buy", "data-testid": "buy" }, t("slot.buy", { cost: o.cost }));
+    if (d.kind === "copy") return h("span", { class: "lit-tag buy", "data-testid": "buy" }, t("slot.copy"), h("small", {}, price));
+    const verb = t(tall && uiLang() === "ru" ? "slot.awakenShort" : "slot.awaken", { cost: o.cost });
+    return h("span", { class: "lit-tag buy", "data-testid": "buy" }, verb, ...(d.from && d.to ? [h("small", { class: "nums" }, `${d.from.pwr}/${d.from.hp}→${d.to.pwr}/${d.to.hp}`)] : []));
+  };
+  /** One line, inside its cell: an awakening's numbers (2/13→4/18) stay in the tag only while they fit; the tray always has them. */
+  const fitTag = (el: HTMLElement) =>
+    requestAnimationFrame(() => {
+      const nums = el.querySelector(".nums");
+      const cell = el.closest(".cell");
+      if (nums && cell && el.getBoundingClientRect().width > cell.getBoundingClientRect().width - 4) nums.remove();
+    });
+  /** What Move offers for the unit in hand on `slot`: a teal destination named for what it does, or null. Only an occupied
+   * slot or the next free well of a zone is one (the line stays packed front-first). */
+  const moveKind = (slot: number): "here" | "swap" | "zone" | null => {
+    if (!armed() || pick.mode !== "picked" || pick.index === slot) return null;
+    const start = zoneStart(slot);
+    const len = slot < L ? run.line.length : run.bench.length;
+    const occupied = slot - start < len;
+    if (!occupied && slot !== start + len) return null;
+    if (destFor(run, pick.index, slot) === null) return null;
+    if ((slot < L) === (pick.index < L)) return "here";
+    return occupied && len >= (slot < L ? L : B) ? "swap" : "zone";
+  };
   const lightTarget = (el: HTMLElement, slot: number) => {
     const o = chosen !== null ? run.offers[chosen] : undefined;
-    const u = unitAt(slot);
     if (o) {
-      const only = coachSlotFor(o);
-      if (only !== null && slot !== only) return;
-      if (benchWhileLineHasRoom(o, slot)) return;
-      if (buyBlock(o) && !(u && twinSlot(o.unitId) === slot && run.gold >= o.cost && !run.gift)) return;
-      if (u && twinSlot(o.unitId) === slot) {
-        el.classList.add("lit", "lit-twin");
-        el.append(h("span", { class: "lit-tag" }, u.kind === "unit" && u.form === "sleeping" && u.copies + 1 >= rules.copiesToAwaken ? t("slot.awakens") : t("slot.merges")));
-      } else if (!u || !owns(o.unitId)) el.classList.add("lit");
-    } else if (pick.mode === "picked" && pick.index !== slot && destFor(run, pick.index, slot) !== null && !u) el.classList.add("lit");
+      const d = buyDest(o);
+      if (d?.slot !== slot) return;
+      el.classList.add("lit", "lit-buy");
+      if (d.kind !== "buy") el.classList.add("lit-twin");
+      const tag = buyTag(o, d);
+      el.append(tag);
+      fitTag(tag);
+      return;
+    }
+    const m = moveKind(slot);
+    if (!m) return;
+    el.classList.add("lit", "lit-move");
+    el.append(h("span", { class: "lit-tag move", "data-testid": "move-tag" }, m === "here" ? t("slot.here") : m === "swap" ? t("slot.swap") : slot < L ? t("board.toLine") : t("board.toBench")));
   };
-  /** The second tap of tap-tap, on a slot: buys the offer in hand there, or
-   * moves the unit in hand there. False: not a second tap (the slot's own click goes on). */
+  /** The second tap of tap-tap, on a slot: the gold destination buys the offer in hand, a teal one moves the unit in hand
+   * (Move was pressed). False: not a commit (the slot's own click goes on: a unit of yours is only read). */
   const tapSlot = (slot: number): boolean => {
     if (crown) return false;
     const o = chosen !== null ? run.offers[chosen] : undefined;
     if (o) {
-      const u = unitAt(slot);
-      if (benchWhileLineHasRoom(o, slot)) return false;
-      // An offer you own goes to its twin; a tap on another unit of yours picks that one instead.
-      if (u && owns(o.unitId) && twinSlot(o.unitId) !== slot) return false;
-      if (u && !owns(o.unitId) && run.line.length >= L && run.bench.length >= B) return false;
+      const d = buyDest(o);
+      if (!d || d.slot !== slot) return false;
       play("click");
-      buyAt(o, slot);
+      buyAt(o, d);
       return true;
     }
-    if (pick.mode === "picked" && pick.index !== slot && !unitAt(slot) && destFor(run, pick.index, slot) !== null) {
+    if (pick.mode === "picked" && moveKind(slot)) {
       play("click");
+      moving = false;
       moveTo(pick.index, slot);
       return true;
     }
@@ -1243,7 +1295,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const id = onBench ? `bench-${slot - L}` : `line-${slot}`;
     if (!u) {
       // A line slot left empty while gold can still fill it glows (arena#16), with Fight's warning.
-      const want = !onBench && wantsFill();
+      const want = !onBench && wantsFill() && chosen === null;
       const e = h("div", { class: want ? "cell empty want" : "cell empty", "data-testid": `${id}-empty`, style: onBench ? cellStyle(pieceSizes().bench, pieceSizes().benchBare) : cellStyle(pieceSizes().line) }, h("div", { class: "cell-well" }, onBench ? "" : `${slot + 1}`));
       if (!crown) dropTarget(e, slot);
       if (!crown) lightTarget(e, slot);
@@ -1273,12 +1325,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         if (pick.first === slot) pick = { mode: "none" };
         else if (fusesWith(pick.first, slot)) return void fusePreview(pick.first, slot);
         else return;
-      } else if (!crown && pick.mode === "picked" && pick.index >= L && !onBench && run.line.length >= L) {
-        // A bench unit in hand and the line full: a tap on a line unit swaps the two.
-        return moveTo(pick.index, slot);
-      } else
-        // A tap keeps the unit in hand (the inspector reads it), so the next B, S or F still has one (Esc lets go).
+      } else {
+        // A tap only reads the unit (arena#49): it stays in hand so the next B, S or F has one (Esc lets go), and arms
+        // nothing: Move does that.
         pick = { mode: "picked", index: slot };
+        moving = false;
+      }
       chosen = null;
       renderLine();
     });
@@ -1297,20 +1349,11 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const drawLine = () => {
     line.replaceChildren(...Array.from({ length: L }, (_, i) => slotCard(i)));
     bench.replaceChildren(
-      h("div", { class: "bench-label label" }, h("span", {}, t("board.bench")), h("span", {}, `${run.bench.length}/${B}`)),
+      h("div", { class: "bench-label label", "data-testid": "bench-label" }, h("span", {}, t("board.bench")), h("span", {}, `${run.bench.length}/${B}`)),
       ...Array.from({ length: B }, (_, i) => slotCard(L + i)),
     );
     for (const o of offers.children) o.classList.toggle("selected", chosen !== null && (o as HTMLElement).dataset.testid === `offer-${chosen}`);
     renderInspector(true);
-    // The coach card in the tray: a gift waiting, else the hint of the moment, else how a buy works. With
-    // something in hand and a slot lit it says what a tap on that slot does.
-    const banner = giftBanner();
-    const lit = line.querySelector(".lit") || bench.querySelector(".lit");
-    const step = !lit ? null : chosen !== null ? t("hint.tapSlotBuy") : pick.mode === "picked" ? t("hint.tapSlotMove") : null;
-    const said = banner ? null : (pick.mode === "picked" ? shopHint() : null) ?? step ?? shopHint();
-    // The first run's coach (arena#31) is the tray's card: its step, the pair, why.
-    hintSlot.replaceChildren(banner ?? (coachNow ? coachView(coachNow, content, { slot: run.line.length + 1, keys: kb }) : hint(said ?? (kb ? t("hint.buyDesk") : t("shop.howPhone")))));
-    hintSlot.classList.toggle("quiet", !banner && !coachNow && said === null);
   };
 
   /** What a drag carries: a board unit (by slot) or a shop offer (by its slot). */
@@ -1366,11 +1409,17 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
             sellZone = h("div", { class: "sell-zone", "data-drop-sell": "1", "data-testid": "sell-zone" }, t("board.sell", { n: value }));
             document.body.append(sellZone);
           }
-          for (const el of targets()) if (src.kind !== "board" || Number(el.dataset.dropSlot) !== src.slot) el.classList.add("drop-ok");
+          if (src.kind === "offer") {
+            // An offer in the hand: its gold destination is drawn (price tag), and is the only place it can be dropped.
+            if (chosen !== src.offer.slot) ((chosen = src.offer.slot), (pick = { mode: "none" }), (moving = false), drawLine());
+            const d = buyDest(src.offer);
+            for (const el of targets()) if (d && Number(el.dataset.dropSlot) === d.slot) el.classList.add("drop-ok");
+          } else for (const el of targets()) if (Number(el.dataset.dropSlot) !== src.slot) el.classList.add("drop-ok");
           sellZone?.classList.add("drop-ok");
         }
         place(e);
-        const now = at(e);
+        const found = at(e);
+        const now = found?.classList.contains("drop-ok") ? found : undefined;
         if (now !== over) {
           over?.classList.remove("drop");
           over = now ?? null;
@@ -1378,7 +1427,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         }
       };
       const up = (e: PointerEvent) => {
-        const hit = ghost ? at(e) : undefined;
+        const found = ghost ? at(e) : undefined;
+        const hit = found?.classList.contains("drop-ok") ? found : undefined;
         finish();
         if (!hit) return;
         if (hit.dataset.dropSell !== undefined) {
@@ -1387,7 +1437,10 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         }
         const to = Number(hit.dataset.dropSlot);
         if (src.kind === "board") moveTo(src.slot, to);
-        else buyAt(src.offer, to);
+        else {
+          const d = buyDest(src.offer);
+          if (d && d.slot === to) buyAt(src.offer, d);
+        }
       };
       const cancel = () => finish();
       const esc = (e: KeyboardEvent) => e.key === "Escape" && (e.stopPropagation(), finish());
@@ -1403,56 +1456,34 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const dropTarget = (c: HTMLElement, slot: number) => {
     c.dataset.dropSlot = String(slot);
   };
-  /** An offer dropped on a slot: buy it, then move the new unit there (a twin merges where it stands). */
-  const buyAt = (o: Offer, to: number) => {
+  /** A buy, from a tap, a drop or a key on the gold destination: one gold tap, no confirmation. The gold and the receipt
+   * line show at once (an awakening is the one buy that can't be predicted, its gift is the server's dice: it draws them
+   * by hand); a refusal puts the table back as it was, with the reason. */
+  const buyAt = (o: Offer, d: Dest) => {
     const why = buyBlock(o);
     if (why) return void ((err.textContent = why), play("wrong"));
-    const only = coachSlotFor(o);
-    if (only !== null && to !== only && coachNow && coachNow.step !== "fight")
-      return void ((err.textContent = t(coachNow.step === "buy-first" ? "coach.slotFirst" : "coach.slotBehind", { anchor: coachNow.anchor, answer: coachNow.answer, n: only + 1 })), play("wrong"));
-    const d = { kind: "buy", slot: o.slot } as const;
-    /** The server's side of it: the buy, then the move to where it was dropped. */
-    const buyThenMove = async () => {
-      let res = await api.decide(run.runId, d);
-      if (res.fight) return fightScreens(res.run, res.fight, content, run);
-      const had = new Set(board.map((u) => u.uid));
-      const now = [...res.run.line, ...res.run.bench];
-      const i = now.findIndex((u) => !had.has(u.uid));
-      let sel = -1;
-      if (i >= 0) {
-        const from = i < res.run.line.length ? i : L + i - res.run.line.length;
-        const dest = destFor(res.run, from, to);
-        if (dest !== null) {
-          // The buy stands even if the move is refused: draw the shop as bought, never the one before it.
-          res = await api.decide(run.runId, { kind: "reorder", from, to: dest }).then((r) => ((sel = dest), r), () => res);
-        }
-      }
-      play(shopSound(d, run, res.run));
-      shopScreen(res.run, content, "", sel, -1);
+    const u = unitAt(d.slot);
+    const name = unitOf(o.unitId)?.name ?? o.unitId;
+    const cost = o.cost;
+    receipt = {
+      runId: run.runId,
+      round: run.round,
+      text:
+        d.kind === "awaken"
+          ? t("receipt.awakens", { name, cost })
+          : d.kind === "copy"
+            ? t("receipt.copy", { name, copies: Math.min(rules.copiesToAwaken, (u?.copies ?? 0) + 1), of: rules.copiesToAwaken, cost })
+            : d.slot < L
+              ? t("receipt.line", { name, n: d.slot + 1, cost })
+              : t("receipt.bench", { name, cost }),
     };
-    void guarded(err, async () => {
-      // The unit is drawn where it goes as bought, before the server answers (the move is predicted too).
-      const bought = predictRun(run, d, content, rules);
-      if (bought) {
-        const had = new Set(board.map((u) => u.uid));
-        const now = [...bought.line, ...bought.bench];
-        const j = now.findIndex((u) => !had.has(u.uid));
-        const from = j < 0 ? -1 : j < bought.line.length ? j : L + j - bought.line.length;
-        const dest = from < 0 ? null : destFor(bought, from, to);
-        const moved = dest === null ? bought : predictRun(bought, { kind: "reorder", from, to: dest }, content, rules) ?? bought;
-        shopScreen(moved, content, "", dest ?? -1, -1, true);
-      }
-      try {
-        await Promise.allSettled([...previewsOut]);
-        await buyThenMove();
-      } catch (e) {
-        if (bought && !(e instanceof ApiError && e.status === 401)) {
-          play("wrong");
-          shopScreen(run, content, e instanceof ApiError && e.status === 409 ? plainRefusal(e.message) : e instanceof Error ? e.message : String(e));
-        }
-        throw e;
-      }
-    });
+    if (!predictRun(run, { kind: "buy", slot: o.slot }, content, rules)) {
+      const gold = document.querySelector('[data-testid="gold"]');
+      if (gold) gold.textContent = t("shop.gold", { n: run.gold - cost });
+      inspector.classList.remove("holds");
+      inspector.replaceChildren(receiptView());
+    }
+    void decide({ kind: "buy", slot: o.slot });
   };
 
   const actionButtons = (): HTMLElement[] => {
@@ -1461,12 +1492,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const i = pick.index;
     const u = unitAt(i)!;
     if (crown) return [];
-    const left = button(kb ? "◀ ←" : "◀", () => void decide({ kind: "reorder", from: i, to: i - 1 }, i - 1), "", "move-left");
-    const right = button(kb ? "→ ▶" : "▶", () => void decide({ kind: "reorder", from: i, to: i + 1 }, i + 1), "", "move-right");
-    left.disabled = i === zoneStart(i);
-    right.disabled = i >= zoneStart(i) + zoneLen(i) - 1;
-    // The inspector already is the sheet: no Info.
-    const out: HTMLElement[] = [left, right];
+    // Reading arms nothing (arena#49): Move lights the teal destinations, named for what each does; the inspector already is the sheet.
+    const out: HTMLElement[] = [button(moving ? t("board.cancel") : t("board.move"), () => ((moving = !moving), renderLine()), moving ? "armed" : "", "move")];
     const other = otherZone(i);
     if (other !== null) {
       // Into the other zone's first empty slot, else a swap with its back unit: the button says which.
@@ -1507,22 +1534,21 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const cueWatch = new MutationObserver(() => requestAnimationFrame(cueScroll));
   const layoutInspector = () => {
     inspector.querySelector(":scope > button.insp-x")?.remove();
+    cueWatch.disconnect();
+    // Nothing in hand: the hint or the coach's card sits straight in the surface.
+    if (!inspector.classList.contains("holds")) return void inspector.querySelector('[data-testid="insp-more"]')?.remove();
     const rows = [...inspector.children].filter((c) => c.classList.contains("row"));
     const body = h("div", { class: "insp-body", "data-scroll": "", style: "--scroll-cue:1" }, ...[...inspector.children].filter((c) => !rows.includes(c)).map((c) => c as HTMLElement));
     inspector.replaceChildren(...(body.childElementCount ? [body] : []), ...rows);
-    cueWatch.disconnect();
     if (body.childElementCount) cueWatch.observe(body, { childList: true, subtree: true, characterData: true });
     if (inspector.isConnected) cueScroll();
   };
   const renderInspector = (force = false) => {
     drawInspector(force);
-    inspector.hidden = inspector.childElementCount === 0;
-    // The field narrows to make room for a docked panel (landscape).
-    inspector.closest(".stage")?.classList.toggle("with-panel", !inspector.hidden);
-    // What reads scrolls; the buttons (Buy, Lock, move, sell) stay at the card's foot.
+    // What reads scrolls; the buttons (Buy, Lock, move, sell) stay at the surface's foot.
     layoutInspector();
-    // A close on the card (the mockup's "Esc ✕"): the offers under it on a phone are out of reach otherwise.
-    if (!inspector.hidden) inspector.prepend(closeBtn());
+    // Nothing in hand: the hint of the moment, no close. Else a ✕ clears the selection (Esc and a second tap on an offer do too).
+    if (inspector.classList.contains("holds")) inspector.prepend(closeBtn());
   };
   const closeBtn = () =>
     button(
@@ -1536,18 +1562,56 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       "insp-x",
       "inspector-close",
     );
+  /** The hint of the moment: with something in hand and a slot lit, what a tap on that slot does; else the shop's own hint. */
+  const saidNow = (): string | null => {
+    const lit = line.querySelector(".lit") || bench.querySelector(".lit");
+    const step = !lit || chosen !== null || !armed() ? null : t("hint.tapSlotMove");
+    return (pick.mode === "picked" ? shopHint() : null) ?? step ?? shopHint();
+  };
+  /** Under the words of what is in hand: the shop's own hint if it has one (the line is full: swap), or nothing. Where it can go needs
+   * no sentence: the lit slots and the Buy and move buttons say it. */
+  const handHint = (): HTMLElement[] => {
+    const said = shopHint();
+    return said ? [hint(said)] : [];
+  };
+  /** Nothing in hand: a gift waiting, else the first run's coach (arena#31), else the hint of the moment, else how a buy works. */
+  const idleWords = (): HTMLElement => {
+    const banner = giftBanner();
+    const said = banner ? null : saidNow();
+    const slip = !banner && receipt && receipt.runId === run.runId && receipt.round === run.round ? receiptView() : null;
+    inspector.classList.toggle("quiet", !banner && !slip && !coachNow && said === null);
+    return banner ?? slip ?? (coachNow ? coachView(coachNow, content, { slot: run.line.length + 1, keys: kb }) : hint(said ?? (kb ? t("hint.buyDesk") : t("shop.howPhone"))));
+  };
+  /** The receipt of the last buy, where the idle words are: what joined where, and what it cost. */
+  const receiptView = (): HTMLElement => h("div", { class: "receipt", role: "status", "data-testid": "receipt" }, receipt?.text ?? "");
+  /** An offer's Lock at the foot of the detail, and what the gold slot does (there is no Buy button: the gold slot is the purchase). */
+  const offerRow = (o: Offer, _n: number, blocked: string) => {
+    const lockBtn = canLock(o) ? [button(`${lockLabel(o)} · L`, () => lock(o), "", "lock")] : [];
+    return h("div", { class: "row" }, ...lockBtn, h("span", { class: "say dim grow", "data-testid": "buy-say" }, blocked || t("hint.tapSlotBuy")));
+  };
   const drawInspector = (force: boolean) => {
-    if (fuseView) return inspector.replaceChildren(fuseView);
+    inspector.classList.remove("holds");
+    if (fuseView) return void (inspector.classList.add("holds"), inspector.replaceChildren(fuseView));
     const at: At | null = (pick.mode === "picked" ? { kind: "line", index: pick.index } : chosen !== null ? { kind: "offer", slot: chosen } : null);
     const key = at ? `${at.kind}:${at.kind === "line" ? at.index : at.slot}` : "none";
     if (key === inspected && !force) return;
     inspected = key;
     const sel = pick.mode === "picked" ? pick.index : -1;
+    if (!at) return void inspector.replaceChildren(idleWords());
+    receipt = null;
+    // The first run's coach speaks for the offer it points at (its card names the slot to use); Lock and Buy stay under it.
+    if (at.kind === "offer" && coachNow && coachNow.step !== "fight" && coachNow.offer === at.slot) {
+      const n = run.offers.findIndex((o) => o.slot === at.slot);
+      const o = run.offers[n];
+      return void inspector.replaceChildren(idleWords(), ...(o ? [offerRow(o, n, buyBlock(o))] : []));
+    }
+    inspector.classList.add("holds");
     if (at?.kind === "line" && unitAt(at.index)) {
       const mine = at.index === sel;
       inspector.replaceChildren(
         h("div", { class: "label" }, (mine ? t("board.selected") : "") + (at.index < L ? t("board.inLine", { n: at.index + 1 }) : t("board.onBench", { n: at.index - L + 1 }))),
         unitSheet(unitAt(at.index)!, content, sheetOpts(at.index < L ? t("panel.slot", { n: at.index + 1 }) : t("panel.bench", { n: at.index - L + 1 }))),
+        ...handHint(),
         mine || pick.mode === "fuse" ? h("div", { class: "row actions", "data-testid": "actions" }, ...actionButtons()) : h("div", { class: "dim small" }, crown ? t("board.crownFinal") : t("board.clickSelect")),
       );
       return ratesToFoot();
@@ -1559,10 +1623,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const head = h("div", { class: "label" }, t("board.offerHead", { n: n + 1 }));
       /** The card: its sheet, then Lock and Buy at the foot. */
       const card_ = (sheet: HTMLElement, blocked: string) => {
-        const buy = button(buttonRefusal(blocked) || t("board.buyDesk", { cost: o.cost, n: n + 1 }), () => void decide({ kind: "buy", slot: o.slot }), "primary grow", "buy");
-        buy.disabled = blocked !== "";
-        const lockBtn = canLock(o) ? [button(`${lockLabel(o)} · L`, () => lock(o), "", "lock")] : [];
-        inspector.replaceChildren(head, sheet, h("div", { class: "row" }, ...lockBtn, buy));
+        inspector.replaceChildren(head, sheet, ...handHint(), offerRow(o, n, blocked));
         ratesToFoot();
         layoutInspector();
         inspector.prepend(closeBtn());
@@ -1587,7 +1648,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       );
       return;
     }
-    inspector.replaceChildren(...(pick.mode === "fuse" ? [h("div", { class: "row actions", "data-testid": "actions" }, ...actionButtons())] : []));
+    inspector.classList.remove("holds");
+    inspector.replaceChildren(idleWords());
   };
 
   /** The hint that matters most right now, or none. */
@@ -1801,13 +1863,6 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     if (run.line.length >= L && run.bench.length >= B && !owns(o.unitId)) return B > 0 ? t("refusal.bothFull") : t("refusal.lineFull");
     return "";
   };
-  /** Desktop's double-click and number keys: a blocked offer says why instead of asking the server. */
-  const buy = (o: Offer) => {
-    const why = buyBlock(o);
-    if (why) return void ((err.textContent = why), play("wrong"));
-    void decide({ kind: "buy", slot: o.slot });
-  };
-
   /** An offer's sheet: its form, and what buying it does to your line;
    * `blocked` says why it can't be bought now ("" when it can). The buy's dry
    * run is asked once per offer a shop (hovering on desktop asks again and
@@ -1860,12 +1915,11 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     return { sheet, blocked };
   };
   const offerSlots = offerPositions(run);
-  // The shop row has the tray's width: more offers than three shrink their pieces to fit.
-  const manyOffers = offerSlots.length > 3;
-  const offerPx = Math.min(pieceSizes().offer, Math.floor((tall ? 366 : manyOffers ? 626 : 462) / offerSlots.length) - 14);
+  // The six wells are one row on the landscape tray, three by two on the phone: the piece fits its well.
+  const offerPx = pieceSizes().offer;
   const offers = h(
     "div",
-    { class: "tb-row tb-offers", style: `--n:${offerSlots.length}`, "data-testid": "offers" },
+    { class: "tb-row tb-offers", style: `--n:${tall && !compact ? 3 : offerSlots.length}`, "data-testid": "offers" },
     // Every slot keeps its place: a bought offer leaves an empty slot, the rest never shift (CrazyGames audit, arena#14).
     ...offerSlots.map((at, pos) => (at >= 0 ? run.offers[at]! : pos)).map((o: Offer | number) => {
       if (typeof o === "number") return h("div", { class: "cell offer-gap", "data-testid": `offer-gap-${o}`, "aria-hidden": "true", style: cellStyle(offerPx) });
@@ -1898,7 +1952,6 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         if (pick.mode === "picked") pick = { mode: "none" };
         renderLine();
       });
-      c.addEventListener("dblclick", () => buy(o));
       c.addEventListener("contextmenu", (e) => (e.preventDefault(), canLock(o) && lock(o)));
       return c;
     }),
@@ -1949,7 +2002,6 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   }
 
   const opp = run.nextOpponent;
-  const pin = h("div", { class: "pin", "data-testid": "champion-pin" });
   // The Crown has no shop: where the offers were, the team you are about to
   // face, as plainly as your own line (R2-17 batch E: it was only the pin).
   const foe = crown ? h("div", { class: "stack crown-foe", "data-testid": "crown-foe" }) : null;
@@ -1973,20 +2025,10 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         : h("div", { class: "dim small foe-wait" }, settled ? t("foe.lineInFight") : "…"),
     );
   };
-  const fillPin = (d: DayView | null) => {
-    const ch = d?.champion;
-    if (!ch) return pin.replaceChildren(h("span", { class: "dim" }, t("pin.noChampion")));
-    const b = h("button", { class: "pin-btn", "data-testid": "champion-pin-open" }, h("span", {}, "👑"), who(ch.player.name, "ghost-name"), h("span", { class: "pin-emoji" }, ...ch.line.map((u) => unitSigil(u, 30))));
-    b.addEventListener("click", () => closable(h("div", { class: "label" }, t("pin.championOfDay", { seq: d!.seq }), who(ch.player.name)), team(ch.line, "ghost", content)));
-    pin.replaceChildren(b);
-  };
   if (crown) {
     // "Crown vs @X" and the foe's line already name the champion: no pin.
     fillFoe(day);
     void api.day().then((d) => ((day = d), fillFoe(d))).catch(() => fillFoe(day, true));
-  } else {
-    fillPin(day);
-    if (!day) void api.day().then((d) => ((day = d), fillPin(d))).catch(() => {});
   }
 
 
@@ -2084,7 +2126,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   }
 
   // "?" opens the Codex's How to play (M5-6: the rules and how to read a card); until a player has opened it once, it says so.
-  const legendBtn = button(seen("legend") ? "?" : t("shop.legendNew"), () => (markSeen("legend"), void guarded(err, () => openCodex({ tab: "howto" }))), seen("legend") ? "small" : "small new", "legend-open");
+  // Cards stays in the HUD, one word and one place before, during and after a run (arena#51).
+  const legendBtn = button(t("shop.cards"), () => (markSeen("legend"), void guarded(err, () => openCodex({ tab: "howto" }))), "small", "legend-open");
   renderLine();
 
   const menuBtn = button("☰", () => runMenu(run, content, err), "menu-btn", "menu-open");
@@ -2100,8 +2143,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     "div",
     { class: "tb-hud", "data-testid": "hud" },
     plate("menu", menuBtn),
-    tall ? null : plate("help", legendBtn),
-    plate("round", tall ? h("span", { class: "round-pill", "data-testid": "round" }, roundLabel(run.round)) : runTrack(run)),
+    plate("help", legendBtn),
+    // The full round track, twelve rounds and the Crown, at both sizes.
+    plate("round", runTrack(run)),
     h("span", { class: "hud-gap" }),
     plate("hearts", heartIcons(run.hearts)),
     // The Crown has no shop: no gold to show.
@@ -2111,32 +2155,31 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     "div",
     { class: "tb-their", "data-testid": "their-line" },
     // Their line stays hidden until the fight (the Crown shows the champion's team); wells keep its place.
-    ...(crown ? [foe!] : Array.from({ length: L }, (_, i) => h("div", { class: "cell empty ghost", "data-testid": `their-${i}`, "aria-hidden": "true", style: lay ? `--s:${Math.round(lay.wellsH * 0.8)}px;padding-top:4px;height:${lay.wellsH}px` : cellStyle(pieceSizes().their) }, h("div", { class: "cell-well" }, "?")))),
+    ...(crown ? [foe!] : Array.from({ length: L }, (_, i) => h("span", { class: "their-mark", "data-testid": `their-${i}`, "aria-hidden": "true" }, "?"))),
   );
   const table = stage(
     [
       hud,
-      h("div", { class: "tb-side them" }, nextOpp, crown ? null : pin),
+      h("div", { class: "tb-side them" }, nextOpp, crown ? null : h("span", { class: "hidden-team", "data-testid": "team-hidden" }, t("opp.hidden"))),
       theirs,
-      h("div", { class: "tb-side you" }, h("div", { class: "label" }, crown ? t("line.crown") : t("line.phone"))),
-      tall ? plate("help tb-help", legendBtn) : null,
+      h("div", { class: "tb-side you", "data-testid": "line-label" }, h("div", { class: "label" }, t("line.title")), h("div", { class: "sub" }, crown ? t("line.finalSub") : t("line.front", { n: run.line.length, max: L }))),
       line,
       B > 0 ? bench : null,
       h(
         "div",
-        { class: manyOffers ? "tb-tray many" : "tb-tray", "data-testid": "tray" },
-        hintSlot,
-        crown ? null : h("div", { class: "tb-shop" }, h("div", { class: "label" }, t("shop.offersDesk", { n: run.offers.length })), offers),
+        { class: "tb-tray", "data-testid": "tray" },
+        inspector,
+        crown ? null : h("div", { class: "tb-shop" }, offers),
         h("div", { class: "tb-go" }, crown ? null : reroll, fight),
       ),
-      inspector,
       err,
     ],
     () => shopScreen(run, content, err.textContent ?? "", pick.mode === "picked" ? pick.index : -1, chosen ?? -1, predicted),
     !tall,
   );
   table.classList.add("t-shop");
-  table.classList.toggle("with-panel", !inspector.hidden);
+  // The play table has the fixed places (arena#51); the Crown keeps its own rows.
+  if (!crown) table.classList.add("t-places");
   cueScroll();
   if (lay) for (const [k, v] of Object.entries({ "wells-top": lay.wellsTop, "wells-h": lay.wellsH, "line-top": lay.lineTop, "bench-top": lay.benchTop, "tray-top": lay.trayTop })) table.style.setProperty(`--${k}`, `${v}px`);
   show(table);
@@ -2166,6 +2209,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const sel = pick.mode === "picked" ? pick.index : -1;
     if (k === "Escape") {
       if (fuseView) fuseView = null;
+      else if (moving) moving = false;
       else if (pick.mode !== "none") pick = { mode: "none" };
       else if (chosen !== null) chosen = null;
       else return runMenu(run, content, err), true;
@@ -2181,14 +2225,24 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     // 1–5 are the line, 6–8 the bench slots after it (the board's own numbering).
     if (/^[1-9]$/.test(k) && Number(k) <= L + B) {
       const slot = Number(k) - 1;
+      // With an offer in hand its slot number commits the purchase, only on the gold slot; Enter takes it as it stands.
       if (tapSlot(slot)) return true;
-      if (pick.mode === "none" && chosen === null && unitAt(slot)) pick = { mode: "picked", index: slot };
+      if (chosen === null && unitAt(slot)) ((pick = { mode: "picked", index: slot }), (moving = false));
       else {
-        err.textContent = chosen !== null ? t("hint.tapSlotBuy") : t("shop.selectFirst");
+        const o = chosen !== null ? run.offers[chosen] : undefined;
+        err.textContent = o ? buyBlock(o) || t("hint.tapSlotBuy") : armed() ? t("hint.tapSlotMove") : t("shop.selectFirst");
         play("wrong");
         return true;
       }
       renderLine();
+      return true;
+    }
+    if (k === "Enter" && chosen !== null) {
+      const o = run.offers[chosen];
+      const d = o ? buyDest(o) : null;
+      if (!o || !d) return false;
+      play("click");
+      buyAt(o, d);
       return true;
     }
     if (k === "r") {
@@ -2218,6 +2272,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const next = at < 0 ? (k === "ArrowRight" ? 0 : n - 1) : (at + (k === "ArrowRight" ? 1 : n - 1)) % n;
       chosen = run.offers[next]!.slot;
       play("click");
+      // Enter then takes the gold destination (a focused card would press itself instead).
+      if (document.activeElement instanceof HTMLElement && /^(line|bench|offer)-/.test(document.activeElement.dataset.testid ?? "")) document.activeElement.blur();
       renderLine();
       return true;
     }

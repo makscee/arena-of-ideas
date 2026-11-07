@@ -381,7 +381,7 @@ try {
     if (round === 4) {
       // The ☰ run menu (R2-10): Title menu leaves the run waiting; Continue
       // on the title menu brings back the same round.
-      const at = await page.getByTestId("round").textContent();
+      const at = await page.getByTestId("round").getAttribute("aria-label");
       await tap44("☰", page.getByTestId("menu-open")); await tap44("☰", page.getByTestId("menu-open"), "width");
       await page.getByTestId("menu-open").click();
       await page.getByTestId("run-menu").waitFor();
@@ -400,14 +400,14 @@ try {
       await page.getByTestId("codex-units").waitFor();
       await page.getByTestId("codex-back").click();
       await page.getByTestId("fight").waitFor();
-      if ((await page.getByTestId("round").textContent()) !== at) errors.push(`codex from ☰: back in ${await page.getByTestId("round").textContent()}, not ${at}`);
+      if ((await page.getByTestId("round").getAttribute("aria-label")) !== at) errors.push(`codex from ☰: back in ${await page.getByTestId("round").getAttribute("aria-label")}, not ${at}`);
       // Back and Forward (R3-26, #1146) step through the screens: Back from the
       // shop is Home (the run waits: Continue), Forward is the same round's shop.
       await back();
       await page.getByTestId("play").waitFor({ timeout: 5_000 }).catch(() => errors.push(`back: Back in the shop didn't reach Home (${page.url()})`));
       await page.evaluate(() => history.forward());
       await page.getByTestId("fight").waitFor({ timeout: 5_000 }).catch(() => errors.push("back: Forward from Home didn't return to the shop"));
-      if ((await page.getByTestId("round").textContent().catch(() => "")) !== at) errors.push(`forward: back in ${await page.getByTestId("round").textContent().catch(() => "?")}, not ${at}`);
+      if ((await page.getByTestId("round").getAttribute("aria-label").catch(() => "")) !== at) errors.push(`forward: back in ${await page.getByTestId("round").getAttribute("aria-label").catch(() => "?")}, not ${at}`);
       // The menu is a sheet: Back closes it and stays in the shop.
       await page.getByTestId("menu-open").click();
       await page.getByTestId("run-menu").waitFor();
@@ -431,15 +431,19 @@ try {
       await shot("home-continue"); await noHScroll("home-continue"); await onScreen("home: Continue", page.getByTestId("play"));
       await page.getByTestId("play").click();
       await page.getByTestId("fight").waitFor();
-      if ((await page.getByTestId("round").textContent()) !== at) errors.push(`continue: back in ${await page.getByTestId("round").textContent()}, not ${at}`);
+      if ((await page.getByTestId("round").getAttribute("aria-label")) !== at) errors.push(`continue: back in ${await page.getByTestId("round").getAttribute("aria-label")}, not ${at}`);
     }
     // Lock (R3-12): in the first shop, lock offer 1 from its sheet and reroll:
     // it moves to the left, still locked; unlock it again. A locked offer from
     // the last shop is still there, locked, at the left.
     const offerName = (slot) => page.getByTestId(`offer-${slot}`).locator(".name").textContent();
     const isLocked = async (slot) => (await page.getByTestId(`offer-${slot}`).getAttribute("class")).includes("locked") && (await page.getByTestId(`offer-${slot}`).locator(".lock-mark").count()) === 1;
+    // Lock keeps the offer in hand (arena#47): tap it only when it is not already the one the detail reads.
+    const selectOffer = async (slot) => {
+      if (!(await page.getByTestId(`offer-${slot}`).evaluate((e) => e.classList.contains("selected")))) await page.getByTestId(`offer-${slot}`).click();
+    };
     const lockFromSheet = async (slot, want) => {
-      await page.getByTestId(`offer-${slot}`).click();
+      await selectOffer(slot);
       await page.getByTestId("lock").waitFor();
       if (!(await page.getByTestId("lock").textContent()).includes(L(want === "Lock" ? "board.lock" : "board.unlock"))) errors.push(`lock: offer ${slot}'s sheet says "${await page.getByTestId("lock").textContent()}", not ${want}`);
       if (want === "Lock" && round === 0) { await shot("offer-sheet-lock"); await tap44("Lock", page.getByTestId("lock")); }
@@ -472,11 +476,11 @@ try {
       if (gold < 3 || (await page.getByTestId("offers").locator(".cell").count()) === 0) break;
       const filled = await page.getByTestId("line").locator(".cell.you").count();
       if (filled >= 5) break;
-      // An offer opens its sheet (both forms, what buying does); Buy buys.
-      await page.getByTestId("offer-0").click();
-      await page.getByTestId("buy").waitFor();
+      // An offer in hand lights its gold destination ("Buy 3g"); a tap on it buys.
+      await selectOffer(0);
+      await page.getByTestId("buy-say").waitFor();
       if (round === 0 && k === 0) { await shot("offer-sheet"); await noHScroll("offer-sheet"); }
-      if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("inspector-close").click(); break; }
+      if (!(await page.getByTestId("buy").count())) { await page.getByTestId("inspector-close").click(); break; }
       await page.getByTestId("buy").click();
       await page.waitForFunction((g) => !document.querySelector('[data-testid="gold"]') || document.querySelector('[data-testid="gold"]').textContent !== g, L("shop.gold", { n: gold }));
       // The gold moves at once now (the press shows its result before the answer): wait for the answer too.
@@ -517,7 +521,10 @@ try {
       await page.getByTestId("line-1").click();
       await page.getByTestId("champion-pin-open").click().catch(() => {});
       if (await page.getByTestId("overlay").isVisible().catch(() => false)) { await shot("champion-pin"); await page.getByTestId("overlay").click({ position: { x: 180, y: 10 } }); }
-      await page.getByTestId("move-left").click();
+      // Move arms the teal destinations; a tap on one reorders (arena#49: reading a unit arms nothing).
+      if ((await page.locator(".cell.lit").count()) !== 0) errors.push("move: a unit read in the tray armed destinations by itself");
+      await page.getByTestId("move").click();
+      await page.getByTestId("move-tag").first().click();
       await page.getByTestId("fight").waitFor();
     }
     await page.getByTestId("fight").click();
@@ -847,7 +854,7 @@ try {
   await shot("run-over-new-run"); await noHScroll("run-over-new-run");
   await page.getByTestId("new-run-start").click();
   await page.getByTestId("fight").waitFor();
-  if ((await page.getByTestId("round").textContent()) !== L("run.roundLabel", { round: 1, rounds: 12 })) errors.push(`new run: starts at ${await page.getByTestId("round").textContent()}`);
+  if ((await page.getByTestId("round").getAttribute("aria-label")) !== L("run.roundLabel", { round: 1, rounds: 12 })) errors.push(`new run: starts at ${await page.getByTestId("round").getAttribute("aria-label")}`);
 
   // Awakening and fusion (slice 8): a second player plays through the API
   // until it has one Awoken unit, a second unit one copy short and that copy
@@ -977,7 +984,7 @@ try {
     for (const i of [first, second]) if ((await page.getByTestId(`fuse-mark-${i}`).count()) !== 1) errors.push(`fusion: no ⚗ on line-${i} of a discovered pair`);
     await page.getByTestId(`line-${first}`).click();
     await shot("shop-fuse-actions"); await noHScroll("shop-fuse-actions");
-    await tap44("move buttons beside Fuse", page.locator('[data-testid="move-left"], [data-testid="move-right"]'), "width");
+    await tap44("Move beside Fuse", page.getByTestId("move"), "width");
     await page.getByTestId("fuse").click();
     await shot("fuse-pick"); await noHScroll("fuse-pick");
     // The Fuse opens the forge on the pair (#1049 reopened, case 5): no splice
@@ -1046,13 +1053,16 @@ try {
       const name = (id) => page.getByTestId(id).locator(".name").textContent();
       const benched = await name("bench-0");
       await shot("shop-bench"); await noHScroll("shop-bench"); await footInView("shop-bench");
-      // A bench unit selected, the line full: a tap on a line unit swaps the two.
+      // A bench unit selected, the line full: Move, then a tap on a line unit swaps the two.
       const last = await name("line-4");
       await page.getByTestId("bench-0").click();
       await page.getByTestId("to-line").waitFor();
       if ((await page.getByTestId("hint").filter({ hasText: L("hint.lineFullSwap") }).count()) === 0) errors.push("bench: no swap hint with a bench unit selected and the line full");
       await shot("bench-selected"); await noHScroll("bench-selected"); await footInView("bench-selected");
       await tap44("bench actions", page.getByTestId("actions").locator("button"));
+      // Reading arms nothing (arena#49): Move lights the line units as named "Swap" targets, and a tap on one swaps.
+      await page.getByTestId("move").click();
+      await page.locator('[data-testid="line-4"] [data-testid="move-tag"]').waitFor();
       await page.getByTestId("line-4").click();
       await page.waitForFunction((n) => document.querySelector('[data-testid="line-4"] .name')?.textContent === n, benched, { timeout: 5_000 }).catch(() => {});
       if ((await name("line-4")) !== benched || (await name("bench-0")) !== last) errors.push(`bench: the tap-to-swap left line-4 "${await name("line-4")}" and bench-0 "${await name("bench-0")}"`);

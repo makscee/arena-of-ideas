@@ -1,9 +1,9 @@
 // Home as a table state (arena#31, mission #26 move 1; the duel's mockup, home-1280x800.png):
 // a signed-in player with no run in progress sees one stage like the shop: the HUD plates (the
-// title top left; RATING n and the ≡ Esc menu plate top right), the gold banner "Today's champion
+// title top left; RATING n and the ≡ Esc menu plate top right), the banner "Today's champion
 // · @name" with the slayers and the new day, the champion's five-unit line as TO BEAT (real
-// pieces, centred), YOUR LINE as five empty slots with PLAY over them and "12 rounds, then this
-// team" under it, and the tray: the Workshop card, the vote (when one is open) and the rows
+// pieces in the shop's line frames), YOUR LINE as five empty frames in the shop's bench row and, in the tray, PLAY
+// where Fight sits with "12 rounds, then this team" as its second line, and the tray: the Workshop card, the vote (when one is open) and the rows
 // Codex, Forge and Champions. At 1920×1080, 1440×900, 1280×720, 1024×768, 800×450 and 390×844:
 // nothing clipped or overlapping, no text under 11 px as drawn, no scroll, PLAY on screen, the
 // tray's rows 44 px on a phone. Measures boxes. Starts its own server (rules v2's pool).
@@ -84,7 +84,7 @@ const measure = () => {
     titleText: $("home-title")?.textContent?.trim(), ratingText: $("home-rating")?.textContent?.replace(/\s+/g, " ").trim(),
     bannerText: $("home-banner")?.textContent?.replace(/\s+/g, " ").trim(), noteText: $("home-note")?.textContent?.trim(),
     playText: $("play")?.textContent?.replace(/\s+/g, " ").trim(),
-    labels: { them: $("home-side-them")?.textContent?.trim(), you: $("home-side-you")?.textContent?.trim() },
+    labels: { them: $("home-side-them")?.querySelector(".label")?.textContent?.trim(), you: $("home-side-you")?.querySelector(".label")?.textContent?.trim() },
     rows: { codex: $("codex")?.textContent?.replace(/\s+/g, " ").trim(), forge: $("forge-open")?.textContent?.replace(/\s+/g, " ").trim(), stats: $("stats")?.textContent?.replace(/\s+/g, " ").trim() },
     workshop: $("ideas")?.textContent?.replace(/\s+/g, " ").trim(), vote: !!$("vote-card"),
     old: ["home-actions", "last-run", "idea-meter"].filter((id) => $(id)),
@@ -131,9 +131,12 @@ function check(label, m, fail, { vote }) {
     if (m.champs.map((c) => c.name).join() !== champ.join()) fail(`TO BEAT is ${m.champs.map((c) => c.name)}, not today's champion's ${champ}`);
     const k = m.k;
     const px = m.champs[0].w / k;
-    if (px < (L ? 70 : 48) - 0.5) fail(`the champion's pieces are ${px.toFixed(0)} px on the stage, under ${L ? "the shop's 70" : 48}`);
-    const mid = (Math.min(...m.champs.map((c) => c.reach.l)) + Math.max(...m.champs.map((c) => c.reach.r))) / 2;
-    if (Math.abs((mid - S.l) / S.w - 0.5) > 0.03) fail(`the champion's line is not centred (${(((mid - S.l) / S.w) * 100).toFixed(0)}% across)`);
+    if (px < (L ? 70 : 34) - 0.5) fail(`the champion's pieces are ${px.toFixed(0)} px on the stage, under ${L ? "the shop's 70" : 34}`);
+    // The shop's places (arena#51): each piece stands in a frame of the line row, over the same column as your slot below it.
+    m.champs.forEach((c, i) => {
+      const s = m.slots[i];
+      if (s && Math.abs((c.reach.l + c.reach.r) / 2 - (s.l + s.r) / 2) > m.k * 14) fail(`champion piece ${i} is not over your slot ${i + 1}`);
+    });
     for (let i = 1; i < m.champs.length; i++) if (hit(m.champs[i - 1].reach, m.champs[i].reach)) fail(`champion pieces ${i - 1} and ${i} overlap (${JSON.stringify(m.champs[i - 1].reach)} / ${JSON.stringify(m.champs[i].reach)})`);
   } else fail(`the server has no champion line to show (${champ.length} units)`);
   if (m.labels.them !== "TO BEAT" && m.labels.them?.toUpperCase() !== "TO BEAT") fail(`the champion's line is labelled ${JSON.stringify(m.labels.them)}`);
@@ -142,20 +145,21 @@ function check(label, m, fail, { vote }) {
   else {
     const sw = m.slots[0].w / m.k;
     if (sw < (L ? 70 : 48) - 0.5) fail(`the slots are ${sw.toFixed(0)} px, under the piece's`);
+    // PLAY sits where Fight sits: in the tray's right column at the foot, never over the slots.
     const play = m.boxes.play;
-    const slotsMid = (m.slots[0].l + m.slots[4].r) / 2;
-    if (!play || Math.abs((play.l + play.r) / 2 - slotsMid) > 4) fail("PLAY is not over the middle of the slots");
-    if (play && !(play.l < m.slots[2].r && play.r > m.slots[2].l && play.t < m.slots[2].b && play.b > m.slots[2].t)) fail("PLAY is not over your line's middle slot");
-    if (play && (play.t > m.slots[0].b || play.b < m.slots[0].t)) fail("PLAY is not level with the slots");
+    const tr = m.boxes["home-tray"];
+    if (!play || !tr || play.r > tr.r + 1 || play.b > tr.b + 1 || play.l < tr.l + (tr.r - tr.l) * (L ? 0.7 : 0.2) || play.t < tr.t + (tr.b - tr.t) * 0.2) fail(`PLAY is not at Fight's place in the tray: ${JSON.stringify({ play, tr })}`);
+    if (play && hit(play, m.slots[2])) fail("PLAY is over your line's slots");
     for (let i = 1; i < 5; i++) if (hit(m.slots[i - 1], m.slots[i])) fail(`slots ${i - 1} and ${i} overlap`);
     if (Math.min(...m.champs.map((c) => c.reach.b)) > m.slots[0].t + 1 && m.champs.length) fail("the champion's line is not above your line");
   }
   const play = m.boxes.play;
   if (!play || play.t < 0 || play.b > m.H + 0.5 || play.l < 0 || play.r > m.W + 0.5) fail(`PLAY is not on screen: ${JSON.stringify(play)}`);
-  else if (play.h < (L ? 48 : 52)) fail(`PLAY is only ${play.h.toFixed(0)} px tall`);
+  else if (play.h < 48 - 0.5) fail(`PLAY is only ${play.h.toFixed(0)} px tall`);
   if (!/^PLAY|Play/i.test(m.playText ?? "")) fail(`PLAY reads ${JSON.stringify(m.playText)}`);
   if (m.noteText !== `${rounds} rounds, then this team`) fail(`the note under PLAY reads ${JSON.stringify(m.noteText)}, not "${rounds} rounds, then this team"`);
-  if (m.boxes["home-note"] && play && m.boxes["home-note"].t < play.b - 1) fail("the note is not under PLAY");
+  // The note is PLAY's second line (the phone's PLAY has no room for it).
+  if (L && m.boxes["home-note"] && play && (m.boxes["home-note"].t < play.t - 1 || m.boxes["home-note"].b > play.b + 1)) fail("the note is not inside PLAY");
   // 4. The tray.
   const tray = m.boxes["home-tray"];
   if (!tray || tray.b > S.b + 1 || tray.l < S.l - 1 || tray.r > S.r + 1) fail(`the tray is not inside the stage: ${JSON.stringify(tray)}`);
@@ -172,20 +176,24 @@ function check(label, m, fail, { vote }) {
     else if (b.h < (phone ? 44 : 32) - 0.5) fail(`the ${id} row is ${b.h.toFixed(0)} px tall (${phone ? 44 : 32} wanted)`);
   }
   if (phone) {
-    // The tray stacks: the Workshop card, the vote, then the three rows, one under the other.
-    const col = ["ideas", ...(vote ? ["vote-card"] : []), "codex", "forge-open", "stats"].map((id) => m.boxes[id]);
+    // The tray stacks: the Workshop card, the vote, the three rows side by side, then PLAY.
+    const col = ["ideas", ...(vote ? ["vote-card"] : []), "codex", "play"].map((id) => m.boxes[id]);
     if (col.some((b) => !b)) fail("the phone's tray lacks a part");
     else for (let i = 1; i < col.length; i++) if (col[i].t < col[i - 1].b - 1) fail(`the phone's tray does not stack (part ${i} starts at ${col[i].t.toFixed(0)}, the one above ends ${col[i - 1].b.toFixed(0)})`);
+    const rows = ["codex", "forge-open", "stats"].map((id) => m.boxes[id]);
+    if (rows.every(Boolean) && (rows[1].l < rows[0].r - 1 || rows[2].l < rows[1].r - 1)) fail("the phone's three rows are not side by side");
   }
   // Nothing clipped or overlapping.
-  const named = { title: "home-title", rating: "home-rating", menu: "settings", banner: "home-banner", note: "home-note", tray: "home-tray" };
+  const named = { title: "home-title", rating: "home-rating", menu: "settings", banner: "home-banner", tray: "home-tray" };
   const parts = Object.entries(named).map(([n, id]) => [n, m.boxes[id]]).filter(([, b]) => b);
   for (let i = 0; i < parts.length; i++) for (let j = i + 1; j < parts.length; j++) if (hit(parts[i][1], parts[j][1])) fail(`${parts[i][0]} and ${parts[j][0]} overlap`);
   for (const c of m.champs) {
     for (const [n, b] of parts) if (hit(c.reach, b)) fail(`champion piece ${c.name} overlaps the ${n}`);
   }
   if (vote && (m.picks.length !== 2 || hit(m.picks[0], m.picks[1]))) fail(`the vote's two candidates ${m.picks.length === 2 ? "overlap" : "are not two"}`);
-  if (m.boxes["new-run"] && hit(m.boxes["new-run"], m.boxes["home-tray"])) fail("New run overlaps the tray");
+  // New run is in the tray, where Reroll is (above PLAY, or beside it on a phone).
+  const nr = m.boxes["new-run"], tr2 = m.boxes["home-tray"];
+  if (nr && tr2 && (nr.l < tr2.l - 1 || nr.r > tr2.r + 1 || nr.t < tr2.t - 1 || nr.b > tr2.b + 1)) fail("New run leaves the tray");
   for (const [n, b] of [["title", title], ["banner", m.boxes["home-banner"]], ["tray", tray], ["menu", menu]]) if (b && (b.l < S.l - 1 || b.r > S.r + 1 || b.t < S.t - 1 || b.b > S.b + 1)) fail(`${n} leaves the stage`);
   if (m.clipped.length) fail(`clipped text: ${m.clipped.join(", ")}`);
   if (m.leaks.length) fail(`a card's contents leave it: ${m.leaks.join(", ")}`);
@@ -251,7 +259,7 @@ try {
     await ctx.close();
   }
 
-  // A run in progress: the same button reads RESUME, New run stays under it.
+  // A run in progress: the same button reads RESUME, New run is where Reroll is.
   for (const [name, W, H] of [SIZES[2], SIZES[4], SIZES[5]]) {
     const ctx = await browser.newContext({ viewport: { width: W, height: H }, hasTouch: W < 600, isMobile: W < 600 });
     const label = `resume ${name}`;
@@ -266,7 +274,7 @@ try {
     const m = await page.evaluate(measure);
     if (!/resume/i.test(m.playText ?? "")) fail(`the button reads ${JSON.stringify(m.playText)}, not RESUME`);
     if (!m.boxes["new-run"]) fail("New run is gone while a run waits");
-    else if (m.boxes.play && m.boxes["new-run"].t < m.boxes.play.b - 1) fail("New run is not under RESUME");
+    else if (m.boxes.play && !(m.boxes["new-run"].b <= m.boxes.play.t + 1 || m.boxes["new-run"].r <= m.boxes.play.l + 1)) fail("New run is not above or beside RESUME, in Reroll's place");
     check(label, m, (x) => (/the note under PLAY|the note is not under PLAY|PLAY reads/.test(x) ? undefined : fail(x)), { vote: m.vote });
     await page.screenshot({ path: `${out}/resume-${name}.png` });
     await ctx.close();

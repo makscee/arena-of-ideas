@@ -2483,3 +2483,21 @@ button.link.keep { min-height: 32px; min-width: 44px; }
 
 /* The idea picks on a short window (800×450): the player's quote and the "read it again" button keep their height, the page scrolls instead of squeezing them to nothing (arena#32) */
 .idea-quote, button.pick-none { flex: none; }
+
+/* Buying (arena#49): the gold destination is the purchase and wears its price; a teal one (after Move) names what it does.
+ * Spend is gold, rearranging is teal. */
+.cell.lit-buy .cell-well { border-color: var(--action); background: color-mix(in srgb, var(--action) 14%, transparent); box-shadow: 0 0 12px 2px color-mix(in srgb, var(--action) 45%, transparent); color: var(--action); }
+.cell.lit-buy:not(.empty) { box-shadow: inset 0 0 0 3px var(--action); }
+.cell .lit-tag.move { background: var(--you); }
+.cell .lit-tag small { font: 600 1em/1 var(--font-body); white-space: nowrap; margin-left: 0.35em; }
+.cell.empty .lit-tag { bottom: auto; top: 50%; transform: translate(-50%, -50%); text-align: center; }
+.cell:not(.empty) .lit-tag { bottom: 3px; line-height: 1; padding: 1px 6px; border-width: 2px; white-space: nowrap; }
+/* One line, in the footer's place (it replaces the tier and copy dots: the tray reads the copies, and the numbers when the tag has no room): it never covers the name. */
+.cell:not(.empty):has(.lit-tag) .pc-meta { visibility: hidden; }
+/* A bench piece has no footer to give: its tag takes the name's place (the unit in hand is the same unit, named in the tray). */
+.cell.bare:not(.empty):has(.lit-tag) .pc-nm { visibility: hidden; }
+button.armed { background: var(--you); color: var(--outline); }
+.receipt { margin: 0; color: var(--paper); font: 500 20px/1.3 var(--font-body); }
+.say { color: var(--dim); align-self: center; }
+/* A phone's cell is narrow: the tag tightens (and drops the numbers of an awakening, see fitTag, when they don't fit). */
+.stage.P .cell .lit-tag { padding: 1px 3px; }

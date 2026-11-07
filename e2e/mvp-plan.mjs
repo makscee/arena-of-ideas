@@ -259,9 +259,10 @@ try {
       return { dots, hearts: vis(hearts), heartsN: hearts ? hearts.querySelectorAll("svg, .heart, [class*=heart], span").length : 0, gold: vis(document.querySelector('[data-testid="gold"]')), round: vis(document.querySelector('[data-testid="round"]')) };
     });
     // The phone's round plate is "R1/12" (the mockup's "Round 1 of 12"); a landscape table shows the 12-dot track.
-    const roundText = (await tid("round").textContent().catch(() => "")) ?? "";
-    const trackOk = wantPhone ? /\d+\s*\/\s*12|of 12/.test(roundText) : hud.dots >= 12;
-    rec(S, "HUD plates (round track, hearts at every size, gold)", trackOk && hud.hearts && hud.gold, `round ${wantPhone ? `plate "${roundText.trim()}"` : `track of ${hud.dots} dots`}, hearts in view ${hud.hearts}, gold in view ${hud.gold}`);
+    // The full track (twelve rounds and the Crown) at every size (arena#51); its label says the round.
+    const roundText = (await tid("round").getAttribute("aria-label").catch(() => "")) ?? "";
+    const trackOk = /\d+\s*\/\s*12|of 12/.test(roundText) && hud.dots >= 12;
+    rec(S, "HUD plates (round track, hearts at every size, gold)", trackOk && hud.hearts && hud.gold, `round ${`track of ${hud.dots} dots, "${roundText.trim()}"`}, hearts in view ${hud.hearts}, gold in view ${hud.gold}`);
     await shot("shop-2");
     await tid("legend-open").click();
     await page.waitForTimeout(700);

@@ -46,7 +46,7 @@ for (const [label, viewport, mobile] of [["phone", { width: 360, height: 640 }, 
       const gold = Number((await page.getByTestId("gold").textContent()).replace("g", ""));
       if (gold < 3 || (await page.getByTestId("line").locator(".card.you").count()) >= 5) break;
       await page.getByTestId("offer-0").click();
-      if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("inspector-close").click(); break; }
+      if (!(await page.getByTestId("buy").count())) { await page.getByTestId("inspector-close").click(); break; }
       await page.getByTestId("buy").click();
       await page.waitForFunction((g) => document.querySelector('[data-testid="gold"]')?.textContent !== `${g}g`, gold);
     }

@@ -95,8 +95,6 @@ export const main = {
   "coach.chain": "{anchor} → {answer}",
   "start.starting": "Запускаем…",
   "start.failed": "Не получилось начать. Проверь соединение и нажми ИГРАТЬ ещё раз.",
-  "coach.slotFirst": "{anchor} идёт первым: слот {n}",
-  "coach.slotBehind": "{answer} встаёт за {anchor}: слот {n}",
   "coach.howTap": "Нажми {name}, затем слот {n}",
   "coach.howKey": "или клавиша {n}",
   "coach.howFight": "Нажми «В бой»",
@@ -141,6 +139,7 @@ export const main = {
   "home.bannerNone": "Чемпиона пока нет",
   "home.bannerSlayers": { one: "{n} цареубийца · новый день через {h} ч", few: "{n} цареубийцы · новый день через {h} ч", many: "{n} цареубийц · новый день через {h} ч", other: "{n} цареубийцы · новый день через {h} ч" },
   "home.toBeat": "Победить",
+  "home.yourLineSub": "пусто до раунда 1",
   "home.yourLine": "Твоя линия",
   "home.note": { one: "{n} раунд, потом эта команда", few: "{n} раунда, потом эта команда", many: "{n} раундов, потом эта команда", other: "{n} раунда, потом эта команда" },
   "home.resume": "Продолжить",
@@ -246,5 +245,5 @@ export const main = {
   "board.crownFinal": "Твой строй для Короны окончательный.",
   "board.clickSelect": "Щёлкни или нажми Enter, чтобы выбрать: двигать, в запас, слить или продать.",
   "board.offerHead": "Лавка · карта {n} · клавиша {n}",
-  "board.buyDesk": "Купить {cost} зол. · {n}",
+  "board.move": "Переставить",
 } satisfies Record<keyof typeof en, Msg>;
