@@ -21,6 +21,7 @@ const SIZES = [
   { name: "800x450", viewport: { width: 800, height: 450 } },
   { name: "390x844", viewport: { width: 390, height: 844 } },
   { name: "390x700", viewport: { width: 390, height: 700 } },
+  { name: "1440x900", viewport: { width: 1440, height: 900 }, desktop: true },
 ];
 const errors = [];
 const r1 = (n) => Math.round(n * 10) / 10;
@@ -63,7 +64,7 @@ const browser = await launchChromium();
 try {
   for (const v of SIZES) {
     // Reduced motion: a pulsing PLAY or a tapped offer scales for a moment, which moves its box without moving its place.
-    const ctx = await browser.newContext({ viewport: v.viewport, isMobile: true, hasTouch: true, deviceScaleFactor: 2, reducedMotion: "reduce" });
+    const ctx = await browser.newContext({ viewport: v.viewport, isMobile: !v.desktop, hasTouch: !v.desktop, deviceScaleFactor: 2, reducedMotion: "reduce" });
     const page = await ctx.newPage();
     page.on("pageerror", (e) => errors.push(`${v.name}: page error ${e.message}`));
     for (const [scene, lang] of scenes.flatMap((sc) => langs.map((l) => [sc, l]))) {

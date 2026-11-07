@@ -933,3 +933,5 @@ button.ws-back { min-height: 44px; min-width: 44px; padding: 0 12px; flex: none;
 :is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-offers .cell.offer .pc-tier { display: none; }
 :is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-their:not(:has(.crown-foe)) { display: grid; }
 :is(#app[data-screen="shop"], #under) .stage.P.t-places.compact .tb-side.them { top: 98px; }
+/* A wide window's old auto-fit rule for the offers (style.css) must not make a seventh column: the wells are --n columns */
+:is(#app[data-screen="shop"], #under) .stage.t-places .tb-offers { grid-template-columns: repeat(var(--n, 6), minmax(0, 1fr)); }
