@@ -5,7 +5,7 @@
 // never reflows it: the same table, smaller or larger.
 import { h } from "./dom";
 
-import { fit, orientOf, type Orient } from "./stage-fit";
+import { fit, orientOf, P_FULL_H, type Orient } from "./stage-fit";
 
 /** Landscape or portrait for the window now. */
 export const orient = (): Orient => orientOf(window.innerWidth, window.innerHeight);
@@ -42,8 +42,8 @@ export function stage(kids: (Node | null)[], onFlip: () => void, flex = false): 
     el.style.top = `${f.top}px`;
     el.style.height = `${f.h}px`;
     el.style.transform = `scale(${f.k})`;
-    // A portrait stage under 780 tall is the compact table (their line's empty wells make room).
-    el.classList.toggle("compact", o === "P" && f.h < 780);
+    // A portrait stage under the full table's height is the compact table (the offers in one row).
+    el.classList.toggle("compact", o === "P" && f.h < P_FULL_H);
   };
   apply();
   addEventListener("resize", place);

@@ -133,21 +133,21 @@ try {
   await shot("home"); await noHScroll("home"); await wide("home", 1100); await onScreen("home: Play", page.getByTestId("play"));
   {
     // The champion's pieces (void-board#1295): sized from the panel, so no two touch, each tab and name whole.
-    const reach = await page.getByTestId("champion").locator(".pc").evaluateAll((els) => els.map((pc) => {
+    const reach = await page.getByTestId("home-their").locator(".pc").evaluateAll((els) => els.map((pc) => {
       const rs = [pc, ...pc.querySelectorAll("*")].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
       return { l: Math.min(...rs.map((r) => r.left)), r: Math.max(...rs.map((r) => r.right)), t: Math.min(...rs.map((r) => r.top)), b: Math.max(...rs.map((r) => r.bottom)) };
     }));
     const touch = reach.some((a, i) => reach.some((b, j) => j > i && a.r > b.l && b.r > a.l && a.b > b.t && b.b > a.t));
     if (reach.length !== 5 || touch) errors.push(`home champion: ${reach.length} pieces${touch ? ", two touch" : ""}`);
   }
-  // Home is a table state (arena#31): PLAY sits under the champion's line, over the middle of your slots.
+  // Home is a table state (arena#31, arena#51): PLAY sits in the tray, in Fight's place, under the champion's line.
   const [champBox, playBox] = [await page.getByTestId("home-their").boundingBox(), await page.getByTestId("play").boundingBox()];
   if (!(playBox.y > champBox.y + champBox.height * 0.8)) errors.push("home: Play isn't under the champion's line");
   {
     // At 1024px the champion's 5 pieces stay on one row.
     const size = page.viewportSize();
     await page.setViewportSize({ width: 1024, height: size.height });
-    const tops = await page.getByTestId("champion").locator(".pc").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+    const tops = await page.getByTestId("home-their").locator(".pc").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
     if (tops.length !== 5 || new Set(tops).size > 1) errors.push(`home at 1024px: the champion's pieces wrap (${tops.join(",")})`);
     await shot("home-1024");
     await page.setViewportSize(size);
