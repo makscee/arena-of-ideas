@@ -80,9 +80,11 @@ export async function escPass(browser, url, { label, viewport, touch = false, er
       const gold = await tid("gold").textContent();
       // Tap-tap (#1293): the tap takes the offer in hand and the inspector reads it; Esc puts it down, unbought.
       await tid("offer-0").click();
+      // The tray's detail is always there (arena#47): the offer in hand reads in it, and Esc puts the offer down (the detail goes back to its hint).
       await tid("inspector").waitFor({ state: "visible" });
+      await page.locator('[data-testid="offer-0"].selected').waitFor();
       await esc();
-      await expectShown("Shop → offer → Esc", tid("inspector"), false);
+      await expectShown("Shop → offer → Esc", page.locator('[data-testid="offer-0"].selected'), false);
       if ((await tid("gold").textContent()) !== gold) fail(`Shop → offer → Esc bought it (${gold} → ${await tid("gold").textContent()})`);
     }
     await tid("legend-open").click();

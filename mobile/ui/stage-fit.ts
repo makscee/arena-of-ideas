@@ -58,9 +58,9 @@ export interface FieldLayout {
   trayTop: number;
 }
 export function fieldLayout(H: number): FieldLayout {
-  const trayTop = H - 218;
+  const trayTop = H - 244;
   const wellsTop = 76;
-  const wellsH = 76;
+  const wellsH = 50;
   const room = trayTop - 6 - (wellsTop + wellsH + 8);
   let s = 84;
   for (let t = 116; t >= 84; t -= 2) {

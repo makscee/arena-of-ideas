@@ -246,9 +246,9 @@ try {
       await page.keyboard.press("l");
       await settle();
       if (!(await locked(1))) errors.push("lock: L didn't lock the chosen offer");
-      // A locked offer is put down: tap it again and the inspector offers Unlock.
-      await offer(1).click();
+      // Lock keeps the offer in hand (arena#47): the inspector stays on it and now offers Unlock.
       await page.getByTestId("inspector").getByTestId("lock").waitFor();
+      if (!(await offer(1).evaluate((el) => el.classList.contains("selected")))) errors.push("lock: Lock put the offer down");
       if (!(await page.getByTestId("inspector").getByTestId("lock").textContent()).startsWith("🔓 Unlock")) errors.push("lock: the locked offer's inspector doesn't say Unlock");
       await page.keyboard.press("Escape");
       // M5-6: the keys line moved to Codex › How to play; the L sits on the inspector's Lock (checked above).
@@ -269,14 +269,21 @@ try {
       { const box = await page.getByTestId("offers").locator(".cell").first().boundingBox(); if (!box || box.width < 112) errors.push(`shop offers: cell ${box ? Math.round(box.width) : "missing"}px wide, want ≥ 112`); }
       await onScreen("shop: Fight", page.getByTestId("fight"));
       await onScreen("shop: last offer", page.getByTestId("offers").locator(".cell").last());
-      // A tap on an offer reads it in the inspector, with its Buy (the table's inspector floats right of the lines).
-      await page.getByTestId("offers").locator(".cell").first().click();
+      // A tap on an offer reads it in the inspector, with its Buy (arena#47: the inspector is one fixed surface in the tray; selecting changes its words only).
+      const still = ["line", "bench", "offers", "reroll", "fight", "inspector"];
+      const boxes = async () => Object.fromEntries(await Promise.all(still.map(async (id) => [id, await page.getByTestId(id).boundingBox()])));
+      const beforeTap = await boxes();
+      // (A right-click Lock keeps its offer in hand: tap only when the first offer is not already the one read.)
+      const firstOffer = page.getByTestId("offers").locator(".cell").first();
+      if (!(await firstOffer.evaluate((el) => el.classList.contains("selected")))) await firstOffer.click();
       await page.getByTestId("inspector").getByTestId("unit-sheet").waitFor();
       await page.getByTestId("inspector").getByTestId("buy").waitFor();
       await shot("shop-offer-inspector"); await noOverlay("offer");
       await onScreen("shop: inspector", page.getByTestId("inspector"));
       const [lineBox, insp] = [await page.getByTestId("line").boundingBox(), await page.getByTestId("inspector").boundingBox()];
-      if (!(insp.x >= lineBox.x + lineBox.width)) errors.push("shop: the inspector covers the line");
+      if (!(insp.y >= lineBox.y + lineBox.height)) errors.push("shop: the inspector covers the line");
+      const afterTap = await boxes();
+      for (const id of still) { const [a, b] = [beforeTap[id], afterTap[id]]; if (!a || !b || ["x", "y", "width", "height"].some((k) => Math.abs(a[k] - b[k]) > 0.5)) errors.push(`shop: selecting an offer moved or resized ${id}`); }
       await page.keyboard.press("Escape");
       // Double-click buys the first offer.
       const before = await lineCount();
