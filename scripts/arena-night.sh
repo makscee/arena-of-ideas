@@ -8,6 +8,9 @@
 #                                      e.g. --pairs 2); the log is data/night/night.log
 #   scripts/arena-night.sh uninstall   unload and remove the job
 #
+# The batch measures against the workshop's live pool (--pool live, #54), the
+# units and the field the workshop plays; a --pool in the args wins.
+#
 # It runs in the workshop clone (~/arena-workshop, whatever commit the
 # workshop is at) against the workshop's database, with Opus and Sonnet
 # through `claude -p` (ARENA_NIGHT_DESIGNER=claude, the workers' login on m1),
@@ -32,7 +35,7 @@ run)
   DAY=$(date +%F)
   echo "[$(date '+%F %T')] night batch $DAY starts" >> data/night/night.log
   env -u CLAUDECODE ARENA_NIGHT_DESIGNER="${ARENA_NIGHT_DESIGNER:-claude}" ARENA_CLAUDE_BIN="${ARENA_CLAUDE_BIN:-$(command -v claude)}" ARENA_CODEX=1 MVP_DB="$DB" \
-    "$NODE" --import tsx/esm scripts/night-batch.ts --day "$DAY" --out data/night --report "$REPORTS/arena-night-$DAY.html" --parallel "${ARENA_NIGHT_PARALLEL:-3}" "$@" >> data/night/night.log 2>&1
+    "$NODE" --import tsx/esm scripts/night-batch.ts --day "$DAY" --out data/night --report "$REPORTS/arena-night-$DAY.html" --parallel "${ARENA_NIGHT_PARALLEL:-3}" "$@" --pool live >> data/night/night.log 2>&1
   echo "[$(date '+%F %T')] night batch $DAY done: $REPORTS/arena-night-$DAY.html" >> data/night/night.log
   ;;
 install)

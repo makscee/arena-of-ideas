@@ -4,10 +4,15 @@
 //   npm run mvp:night -- --pairs 5 --out /tmp/night [--report ~/reports/arena-night.html] [--db data/workshop.db]
 //   npm run mvp:night -- --pool v2 --list hourglass+gambler,mirror+trickster --out /tmp/night [--db …]
 //   npm run mvp:night -- --pool v2 --list a+b,… --retune night.json --out /tmp/night   (no designer: re-tune stored candidates)
+//   npm run mvp:night -- --pool live --db data/workshop.db …   (the world's current pool, units and field)
 //
 // --pool v2 (#1065): the parents are the rules v2 pool's Awoken units
 // (src/mvp/units-v2.ts) and the field is seeded lines of them; --list names
 // the pairs outright instead of tonight's pick.
+// --pool live (#54) is the same on the world's own pool (poolContent of --db /
+// MVP_DB: what the workshop plays, swaps included) instead of the code's
+// ROWS_V2; the nightly job passes it. Without --pool the parents are the
+// eight §4 fixtures, which the workshop's pool outgrew (60 units).
 //
 // With --db (or MVP_DB): the world's wishes weight tonight's list, its Codex
 // pairs are the history, and the candidates land in the Codex tables (ready
@@ -35,6 +40,7 @@ import { ROWS_V2 } from "../src/mvp/units-v2.js";
 import { lineUnitOf } from "../src/mvp/forms.js";
 import { toBattleDef } from "../src/mvp/fight.js";
 import { contentOf } from "../server/src/mvp/content.js";
+import { poolContent } from "../server/src/mvp/pool.js";
 import type { AbilityRegistry, StatusRegistry } from "../src/types.js";
 
 const arg = (name: string, dflt?: string): string | undefined => {
@@ -86,12 +92,15 @@ function trialField(): Field {
 const out = arg("out", "night-out")!;
 const day = arg("day", new Date().toISOString().slice(0, 10))!;
 const pairs = Number(arg("pairs", "5"));
-const v2 = arg("pool") === "v2";
-const v2content = v2 ? contentOf(ROWS_V2) : undefined;
-const designer = designerFromEnv(process.env, v2content ? { abilities: v2content.abilities, statuses: v2content.statuses } : undefined);
-const now = Date.now();
+const poolArg = arg("pool");
+if (poolArg && poolArg !== "v2" && poolArg !== "live") throw new Error(`--pool is v2 or live, not ${poolArg}`);
+const v2 = poolArg === "v2" || poolArg === "live";
 const dbPath = arg("db", process.env.MVP_DB);
 const store = dbPath ? new SqliteMvpStore(dbPath) : undefined;
+if (poolArg === "live" && !store) throw new Error("--pool live needs --db (or MVP_DB)");
+const v2content = poolArg === "live" ? poolContent(store!) : poolArg === "v2" ? contentOf(ROWS_V2) : undefined;
+const designer = designerFromEnv(process.env, v2content ? { abilities: v2content.abilities, statuses: v2content.statuses } : undefined);
+const now = Date.now();
 const requests = arg("list")?.split(",").filter(Boolean);
 const units = v2content ? v2content.units.map((u, i) => ({ id: u.id, addedAt: now - i * 3600_000 })) : UNITS.map((u, i) => ({ id: slug(u.name), addedAt: now - i * 3600_000 }));
 const size = requests ? requests.length : pairs;
@@ -112,8 +121,9 @@ function v2Field(): Field {
     while (pick.size < 4) pick.add(Math.floor(rnd() * defs.length));
     ghosts.push([...pick].map((i) => defs[i]!));
   }
-  const by = (id: string) => defs[v2content!.units.findIndex((u) => u.id === id)]!;
-  const breakers = [["nautilus", "medic", "archmage", "sniper"].map(by), ["bodyguard", "hornet", "alchemist", "drummer"].map(by)];
+  // a live pool may have swapped one of these out: breakers use the ones it still has
+  const by = (id: string) => defs[v2content!.units.findIndex((u) => u.id === id)];
+  const breakers = [["nautilus", "medic", "archmage", "sniper"], ["bodyguard", "hornet", "alchemist", "drummer"]].map((ids) => ids.map(by).filter((d): d is UnitDef => !!d)).filter((line) => line.length === 4);
   // a fusion uses up two units, so it stands in for two of a line's (#1065)
   return { ghosts, breakers, abilities: v2content!.abilities, statuses: v2content!.statuses, replaces: 2 };
 }
