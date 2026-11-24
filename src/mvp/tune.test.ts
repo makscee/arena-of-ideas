@@ -54,12 +54,10 @@ describe("tuneUnit on a small field", () => {
   });
 
   it("tunes a scrambled copy of a live unit back into the band", () => {
-    // Leech (#918): revives in place, and since then once a battle, moved
-    // which weak copies the tuner can lift. This one starts below the band
-    // and is tuned into it with MvpRules.reviveInPlace on or off. Once a unit
-    // acts at most once per chain (#1030) the old scramble (seed 3) can no
-    // longer be lifted into the band; seed 10 starts just as weak and can.
-    const scrambled = scrambleRow({ ...live("Leech"), name: "Leech Copy" }, ROWS, 10);
+    // Fighter (seed 3): starts well below the band on the current
+    // meta-health.json (PR #750 shifted the field after #1030 pinned Leech
+    // seed 10) and is tuned back into the band.
+    const scrambled = scrambleRow({ ...live("Fighter"), name: "Fighter Copy" }, ROWS, 3);
     const r = tuneUnit(scrambled, { liveRows: ROWS, field, band, settings: s, meta: null });
     // It started out of the band and was moved into it.
     expect(r.steps[0]!.measure.score).toBeLessThan(band.low);

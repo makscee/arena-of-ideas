@@ -55,6 +55,7 @@ jobs:
         with:
           name: mvp-phone-shots
           path: e2e/.shots/mvp
+          retention-days: 3
 
   build-image:
     needs: test
